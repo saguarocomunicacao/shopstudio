@@ -295,3 +295,47 @@ async function runStep(
 
   return { stage: job.render_stage, done: true, progress: null };
 }
+
+/** Gera (com o Gemini) a imagem de referência da pessoa fixa de um perfil. */
+export const generateAvatarReference = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ profileId: z.string().uuid(), description: z.string().min(3).max(400) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+
+    const { data: canEdit, error: permError } = await supabase.rpc("has_profile_permission", {
+      _profile_id: data.profileId,
+      _module: "perfis",
+      _action: "editar",
+    });
+    if (permError) throw new Error(permError.message);
+    if (!canEdit) throw new Error("Você não tem permissão para editar este perfil.");
+
+    const { data: settings } = await supabase
+      .from("profile_video_settings")
+      .select("gemini_model")
+      .eq("profile_id", data.profileId)
+      .maybeSingle();
+
+    const pipeline = await import("./video-pipeline.server");
+    const generated = await pipeline.generateSceneImage({
+      model: settings?.gemini_model ?? "gemini-3.1-flash-image",
+      prompt: `Photorealistic vertical 9:16 portrait of ${data.description}. Natural lighting, neutral background, looking at the camera, social media creator look. No text.`,
+      references: [],
+    });
+
+    const stored = await pipeline.storeMedia(
+      `avatars/${data.profileId}.jpg`,
+      Uint8Array.from(atob(generated.base64), (c) => c.charCodeAt(0)),
+      generated.mimeType,
+    );
+
+    const { error } = await supabase
+      .from("profile_video_settings")
+      .upsert({ profile_id: data.profileId, avatar_mode: "fixo", avatar_reference_url: stored.url }, { onConflict: "profile_id" });
+    if (error) throw new Error(error.message);
+
+    return { url: stored.url };
+  });
