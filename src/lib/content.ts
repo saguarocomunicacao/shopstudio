@@ -72,6 +72,11 @@ export type DbJob = {
   script: string | null;
   caption: string | null;
   hashtags: string[] | null;
+  video_url: string | null;
+  video_thumbnail_url: string | null;
+  render_id: string | null;
+  render_error: string | null;
+  render_started_at: string | null;
 };
 
 export type ProfileIdentity = { profile_id: string; tone: string; language: string; style_notes: string };
@@ -144,12 +149,17 @@ export function useJobs(enabled = true) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, product_id, profile_id, status, title, created_at, script, caption, hashtags")
+        .select(
+          "id, product_id, profile_id, status, title, created_at, script, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at",
+        )
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []) as DbJob[];
     },
     enabled,
+    // Enquanto houver vídeo renderizando, reconsulta para o card avançar sozinho.
+    refetchInterval: (query) =>
+      (query.state.data ?? []).some((j: DbJob) => j.status === "gerando_video") ? 10000 : false,
   });
 }
 

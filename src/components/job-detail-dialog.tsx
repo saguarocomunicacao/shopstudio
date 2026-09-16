@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Clapperboard, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUS_LABELS, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
+import { generateJobVideo } from "@/lib/video.functions";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
@@ -27,6 +28,7 @@ export function JobDetailDialog({
 }) {
   const qc = useQueryClient();
   const generate = useServerFn(generateJobScript);
+  const generateVideo = useServerFn(generateJobVideo);
   const [script, setScript] = useState("");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
@@ -49,6 +51,12 @@ export function JobDetailDialog({
       toast.success("Roteiro gerado.");
       refresh();
     },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const runVideo = useMutation({
+    mutationFn: async (jobId: string) => generateVideo({ data: { jobId } }),
+    onSuccess: () => { toast.success("Geração de vídeo iniciada."); refresh(); },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -81,6 +89,19 @@ export function JobDetailDialog({
             </span>
             <span>{productName}</span>
           </div>
+
+          {job?.video_url && (
+            <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[420px] rounded-xl bg-black" />
+          )}
+          {job?.status === "gerando_video" && (
+            <div className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-6 text-sm">
+              <Loader2 className="size-4 animate-spin" />
+              Renderizando o vídeo... o card avança sozinho quando ficar pronto.
+            </div>
+          )}
+          {job?.render_error && (
+            <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-destructive">{job.render_error}</p>
+          )}
 
           {busy ? (
             <div className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-6 text-sm">
@@ -115,6 +136,11 @@ export function JobDetailDialog({
               <Button variant="outline" disabled={busy || !job} onClick={() => job && runGenerate.mutate(job.id)}>
                 {hasScript ? <><RefreshCw />Regenerar</> : <><Sparkles />Gerar roteiro</>}
               </Button>
+              {job?.status === "roteiro_pronto" && (
+                <Button variant="outline" disabled={runVideo.isPending} onClick={() => runVideo.mutate(job.id)}>
+                  {runVideo.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Clapperboard />{job.render_error ? "Tentar de novo" : "Gerar vídeo"}</>}
+                </Button>
+              )}
               {hasScript && (
                 <Button disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
               )}

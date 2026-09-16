@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Plus, Sparkles } from "lucide-react";
+import { Clapperboard, Loader2, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JOB_STATUSES, JOB_STATUS_LABELS, relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
+import { generateJobVideo } from "@/lib/video.functions";
 import { JobDetailDialog } from "./job-detail-dialog";
 import { useStudio } from "./studio-context";
 import { useDragScroll } from "./use-drag-scroll";
@@ -30,7 +31,9 @@ export function PipelinePage() {
   const { data: products = [] } = useProducts(can("produtos", "visualizar"));
   const [detail, setDetail] = useState<DbJob | null>(null);
   const generate = useServerFn(generateJobScript);
+  const generateVideo = useServerFn(generateJobVideo);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [renderingId, setRenderingId] = useState<string | null>(null);
 
   const productName = (id: string | null) => products.find((p) => p.id === id)?.name ?? "Sem produto";
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
@@ -44,6 +47,16 @@ export function PipelinePage() {
     onSuccess: () => { toast.success("Roteiro gerado."); qc.invalidateQueries({ queryKey: ["jobs"] }); },
     onError: (e) => toast.error(errMessage(e)),
     onSettled: () => setGeneratingId(null),
+  });
+
+  const runVideo = useMutation({
+    mutationFn: async (jobId: string) => {
+      setRenderingId(jobId);
+      return generateVideo({ data: { jobId } });
+    },
+    onSuccess: () => { toast.success("Geração de vídeo iniciada."); qc.invalidateQueries({ queryKey: ["jobs"] }); },
+    onError: (e) => toast.error(errMessage(e)),
+    onSettled: () => setRenderingId(null),
   });
 
   const filtered = activeProfileId === "all" ? jobs : jobs.filter((j) => j.profile_id === activeProfileId);
@@ -82,6 +95,29 @@ export function PipelinePage() {
                       >
                         {generatingId === job.id ? <><Loader2 className="animate-spin" />Gerando...</> : <><Sparkles />Gerar roteiro</>}
                       </Button>
+                    )}
+                    {job.render_error && (
+                      <p className="mt-3 rounded-lg bg-secondary px-3 py-2 text-[11px] text-destructive">{job.render_error}</p>
+                    )}
+                    {job.status === "roteiro_pronto" && canEditJob(job) && (
+                      <Button
+                        size="sm"
+                        className="mt-3 w-full"
+                        disabled={renderingId === job.id}
+                        onClick={(e) => { e.stopPropagation(); runVideo.mutate(job.id); }}
+                      >
+                        {renderingId === job.id
+                          ? <><Loader2 className="animate-spin" />Enviando...</>
+                          : <><Clapperboard />{job.render_error ? "Tentar de novo" : "Gerar vídeo"}</>}
+                      </Button>
+                    )}
+                    {job.status === "gerando_video" && (
+                      <p className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                        <Loader2 className="size-3 animate-spin" />Renderizando...
+                      </p>
+                    )}
+                    {job.status === "video_pronto" && job.video_thumbnail_url && (
+                      <img src={job.video_thumbnail_url} alt="" className="mt-3 aspect-[9/16] w-full rounded-lg object-cover" />
                     )}
                   </article>
                 ))}
