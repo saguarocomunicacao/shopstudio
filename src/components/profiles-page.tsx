@@ -9,8 +9,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbProfile } from "@/lib/access";
+import { TONE_OPTIONS } from "@/lib/content";
 import { formatFollowers } from "@/lib/studio-data";
 import { CategorySelect } from "./category-select";
 import { useStudio } from "./studio-context";
@@ -31,8 +33,8 @@ const slugify = (value: string) =>
 const initialsOf = (value: string) =>
   value.trim().split(/\s+/).filter((w) => w.length > 2 || value.trim().split(/\s+/).length === 1).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "??";
 
-type FormState = { name: string; handle: string; niche: string; categoryId: string; followers: string; status: string };
-const emptyForm: FormState = { name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo" };
+type FormState = { name: string; handle: string; niche: string; categoryId: string; followers: string; status: string; tone: string; language: string; notes: string };
+const emptyForm: FormState = { name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo", tone: "descontraido", language: "pt-BR", notes: "" };
 
 export function ProfilesPage() {
   const { profiles, can, loading } = useStudio();
