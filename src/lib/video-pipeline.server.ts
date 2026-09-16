@@ -303,18 +303,7 @@ export function buildMovie(opts: {
   priceLabel: string | null;
   ctaText: string | null;
 }) {
-  const readableTextSettings = {
-    "font-family": "Roboto",
-    color: "#FFFFFF",
-    "font-weight": "900",
-    "text-align": "center",
-    "horizontal-position": "center",
-    "vertical-position": "center",
-    "-webkit-text-stroke": "3px #000000",
-    "text-shadow": "0 3px 8px rgba(0, 0, 0, 0.95)",
-  };
-
-  const scenes = opts.scenes.map((scene, index) => {
+  const scenes = opts.scenes.map((scene) => {
     const elements: Record<string, unknown>[] = [
       {
         type: "video",
@@ -329,42 +318,6 @@ export function buildMovie(opts: {
       },
       { type: "voice", text: scene.narration, voice: opts.voice, model: "azure" },
     ];
-    if (index === 0 && opts.priceLabel) {
-      elements.push({
-        type: "text",
-        text: opts.priceLabel,
-        style: "001",
-        position: "custom",
-        x: "center",
-        y: 220,
-        width: "88%",
-        settings: { ...readableTextSettings, "font-size": "80px" },
-      });
-    }
-    if (scene.overlay_text) {
-      elements.push({
-        type: "text",
-        text: scene.overlay_text,
-        style: "008",
-        position: "custom",
-        x: "center",
-        y: 420,
-        width: "88%",
-        settings: { ...readableTextSettings, "font-size": "64px", "font-weight": "800" },
-      });
-    }
-    if (index === opts.scenes.length - 1 && opts.ctaText) {
-      elements.push({
-        type: "text",
-        text: opts.ctaText,
-        style: "001",
-        position: "custom",
-        x: "center",
-        y: 1240,
-        width: "88%",
-        settings: { ...readableTextSettings, "font-size": "70px" },
-      });
-    }
     return { transition: { style: "fade", duration: 0.4 }, elements };
   });
 
@@ -373,6 +326,29 @@ export function buildMovie(opts: {
     quality: "high",
     "client-data": { job_id: opts.jobId },
     scenes,
+    elements: [
+      {
+        type: "subtitles",
+        language: opts.subtitleLanguage,
+        model: "default",
+        settings: {
+          style: "classic",
+          position: "custom",
+          x: 540,
+          y: 1510,
+          "font-family": "Roboto",
+          "font-size": 72,
+          "font-weight": "900",
+          "max-words-per-line": 4,
+          "word-color": "#FFFFFF",
+          "line-color": "#FFFFFF",
+          "outline-color": "#000000",
+          "outline-width": 6,
+          "shadow-color": "#000000",
+          "shadow-offset": 4,
+        },
+      },
+    ],
     exports: [
       {
         destinations: [{ type: "webhook", endpoint: opts.webhookUrl, "content-type": "application/json" }],
