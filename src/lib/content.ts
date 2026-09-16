@@ -200,11 +200,12 @@ export function useJobs(enabled = true) {
       return (data ?? []) as DbJob[];
     },
     enabled,
-    // Enquanto houver vídeo renderizando, reconsulta para o card avançar sozinho.
+    // Enquanto houver etapa em andamento (cenas ou vídeo), reconsulta para o card avançar sozinho.
     refetchInterval: (query) =>
-      (query.state.data ?? []).some((j: DbJob) => j.status === "gerando_video") ? 6000 : false,
+      (query.state.data ?? []).some((j: DbJob) => j.status === "gerando_video" || !!j.render_stage) ? 6000 : false,
   });
 }
+
 
 export const formatPrice = (value: number) => `R$ ${value.toFixed(2).replace(".", ",")}`;
 
