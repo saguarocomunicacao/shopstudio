@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, Images, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { Clapperboard, Images, Loader2, RefreshCw, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ export function JobDetailDialog({
   canEdit,
   canDelete,
   onDelete,
+  canStepBack,
+  onStepBack,
   onOpenChange,
 }: {
   job: DbJob | null;
@@ -30,6 +32,8 @@ export function JobDetailDialog({
   canEdit: boolean;
   canDelete?: boolean;
   onDelete?: () => void;
+  canStepBack?: boolean;
+  onStepBack?: () => void;
   onOpenChange: (open: boolean) => void;
 }) {
   const qc = useQueryClient();
