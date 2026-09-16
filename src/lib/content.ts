@@ -103,6 +103,7 @@ export type VideoScene = {
   image_url?: string;
   video_url?: string;
   operation?: string;
+  attempts?: number;
 };
 
 export type DbVideoSettings = {

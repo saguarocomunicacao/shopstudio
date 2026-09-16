@@ -22,9 +22,28 @@ export type Scene = ScenePlan & {
   image_path?: string;
   image_url?: string;
   operation?: string;
+  attempts?: number;
   video_path?: string;
   video_url?: string;
 };
+
+/**
+ * O Veo 3.1 SEMPRE gera áudio nativo (não existe parâmetro para desligar na
+ * Gemini API) e bloqueia o vídeo quando o áudio é filtrado. Como a narração
+ * vem do JSON2Video, o prompt enviado ao Veo precisa ser 100% visual: qualquer
+ * frase que mencione fala, voz, música ou som é removida antes do envio.
+ */
+const AUDIO_WORDS =
+  /\b(audio|áudio|voice|voz|voice-?over|narrat\w*|narra\w*|speak\w*|speech|talking|says?|saying|dialog\w*|diálog\w*|whisper\w*|sings?|singing|song|music\w*|música|sound\w*|som|sonor\w*|asmr|noise|ruído|silent|silence|silênc\w*|mute\w*|subtitle\w*|legenda\w*|caption\w*)\b/i;
+
+export function sanitizeMotionPrompt(prompt: string): string {
+  const kept = prompt
+    .split(/(?<=[.;!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence && !AUDIO_WORDS.test(sentence));
+  const visual = kept.join(" ").trim();
+  return visual || "Cinematic handheld camera slowly moves around the subject, natural motion, vertical framing.";
+}
 
 /** Vozes Azure (incluídas no plano do JSON2Video) por idioma da identidade do perfil. */
 export const VOICE_BY_LANGUAGE: Record<string, string> = {
@@ -219,6 +238,9 @@ function findFilterReasons(node: unknown, acc: string[] = [], depth = 0): string
   return acc;
 }
 
+/** Bloqueio pelos filtros do Google (inclui o filtro do áudio nativo do Veo). */
+export class VeoFilteredError extends Error {}
+
 /** Consulta a operação do Veo; devolve o MP4 (URI ou base64) quando pronta. */
 export async function pollVeoTake(operation: string): Promise<{ done: boolean; video?: VeoVideo }> {
   const res = await fetch(`${GEMINI_BASE}/${operation}`, { headers: { "x-goog-api-key": geminiKey() } });
@@ -236,8 +258,12 @@ export async function pollVeoTake(operation: string): Promise<{ done: boolean; v
 
   const reasons = [...new Set(findFilterReasons(payload.response))].filter(Boolean);
   if (reasons.length) {
-    throw new Error(
-      `A cena foi bloqueada pelo filtro de conteúdo do Google (não é erro técnico): ${reasons.join("; ")}. Ajuste a descrição da cena e gere de novo.`,
+    const detail = reasons.join("; ");
+    const audio = /audio|áudio/i.test(detail);
+    throw new VeoFilteredError(
+      audio
+        ? `O Google bloqueou esta cena por causa do áudio que o Veo gera automaticamente (não é erro técnico): ${detail}. Estamos tentando de novo com uma descrição só visual.`
+        : `A cena foi bloqueada pelo filtro de conteúdo do Google (não é erro técnico): ${detail}. Ajuste a descrição da cena e gere de novo.`,
     );
   }
   throw new Error(`A animação terminou sem gerar vídeo. Resposta do Google: ${JSON.stringify(payload.response ?? {}).slice(0, 600)}`);
@@ -343,7 +369,11 @@ export async function planScenes(prompt: string, takes: number): Promise<ScenePl
           properties: {
             narration: { type: "string", description: "Fala narrada desta cena, no idioma do perfil" },
             image_prompt: { type: "string", description: "Prompt em inglês da imagem 9:16 com pessoa ou mão usando o produto" },
-            motion_prompt: { type: "string", description: "Prompt em inglês do movimento da cena para animação" },
+            motion_prompt: {
+              type: "string",
+              description:
+                "Prompt em inglês descrevendo APENAS o movimento visual e da câmera. Proibido mencionar fala, voz, narração, diálogo, música, som, silêncio ou legenda.",
+            },
             overlay_text: { type: "string", description: "Texto curto na tela (pode ser vazio)" },
           },
           required: ["narration", "image_prompt", "motion_prompt", "overlay_text"],
