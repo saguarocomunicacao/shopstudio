@@ -45,6 +45,7 @@ export const JOB_STATUSES = [
   "novo",
   "produto_escolhido",
   "roteiro_pronto",
+  "cenas_geradas",
   "gerando_video",
   "video_pronto",
   "rascunho_enviado",
@@ -56,11 +57,13 @@ export const JOB_STATUS_LABELS: Record<JobStatusKey, string> = {
   novo: "Novo",
   produto_escolhido: "Produto escolhido",
   roteiro_pronto: "Roteiro pronto",
+  cenas_geradas: "Cenas geradas",
   gerando_video: "Gerando vídeo",
   video_pronto: "Vídeo pronto",
   rascunho_enviado: "Rascunho enviado",
   publicado: "Publicado",
 };
+
 
 export type DbJob = {
   id: string;
