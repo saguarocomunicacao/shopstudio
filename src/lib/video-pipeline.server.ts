@@ -369,7 +369,11 @@ export async function planScenes(prompt: string, takes: number): Promise<ScenePl
           properties: {
             narration: { type: "string", description: "Fala narrada desta cena, no idioma do perfil" },
             image_prompt: { type: "string", description: "Prompt em inglês da imagem 9:16 com pessoa ou mão usando o produto" },
-            motion_prompt: { type: "string", description: "Prompt em inglês do movimento da cena para animação" },
+            motion_prompt: {
+              type: "string",
+              description:
+                "Prompt em inglês descrevendo APENAS o movimento visual e da câmera. Proibido mencionar fala, voz, narração, diálogo, música, som, silêncio ou legenda.",
+            },
             overlay_text: { type: "string", description: "Texto curto na tela (pode ser vazio)" },
           },
           required: ["narration", "image_prompt", "motion_prompt", "overlay_text"],
