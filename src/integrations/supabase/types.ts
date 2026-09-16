@@ -65,6 +65,48 @@ export type Database = {
         }
         Relationships: []
       }
+      job_stage_events: {
+        Row: {
+          entered_at: string
+          exited_at: string | null
+          id: string
+          job_id: string
+          profile_id: string
+          status: Database["public"]["Enums"]["job_status"]
+        }
+        Insert: {
+          entered_at?: string
+          exited_at?: string | null
+          id?: string
+          job_id: string
+          profile_id: string
+          status: Database["public"]["Enums"]["job_status"]
+        }
+        Update: {
+          entered_at?: string
+          exited_at?: string | null
+          id?: string
+          job_id?: string
+          profile_id?: string
+          status?: Database["public"]["Enums"]["job_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_stage_events_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_stage_events_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           caption: string | null
