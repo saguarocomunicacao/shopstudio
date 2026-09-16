@@ -19,7 +19,27 @@ export type DbProduct = {
   origin: string;
   source: string | null;
   external_id: string | null;
+  category_id: string | null;
 };
+
+export type DbCategory = { category_id: string; category_name: string; level: number; parent_id: string | null };
+
+/** Categorias oficiais do TikTok Shop (nível 1), sincronizadas do Kalodata. */
+export function useCategories(enabled = true) {
+  return useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("category_id, category_name, level, parent_id")
+        .eq("level", 1)
+        .order("category_name");
+      if (error) throw new Error(error.message);
+      return (data ?? []) as DbCategory[];
+    },
+    enabled,
+  });
+}
 
 export const JOB_STATUSES = [
   "novo",
