@@ -96,6 +96,29 @@ export function PipelinePage() {
                         {generatingId === job.id ? <><Loader2 className="animate-spin" />Gerando...</> : <><Sparkles />Gerar roteiro</>}
                       </Button>
                     )}
+                    {job.render_error && (
+                      <p className="mt-3 rounded-lg bg-secondary px-3 py-2 text-[11px] text-destructive">{job.render_error}</p>
+                    )}
+                    {job.status === "roteiro_pronto" && canEditJob(job) && (
+                      <Button
+                        size="sm"
+                        className="mt-3 w-full"
+                        disabled={renderingId === job.id}
+                        onClick={(e) => { e.stopPropagation(); runVideo.mutate(job.id); }}
+                      >
+                        {renderingId === job.id
+                          ? <><Loader2 className="animate-spin" />Enviando...</>
+                          : <><Clapperboard />{job.render_error ? "Tentar de novo" : "Gerar vídeo"}</>}
+                      </Button>
+                    )}
+                    {job.status === "gerando_video" && (
+                      <p className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                        <Loader2 className="size-3 animate-spin" />Renderizando...
+                      </p>
+                    )}
+                    {job.status === "video_pronto" && job.video_thumbnail_url && (
+                      <img src={job.video_thumbnail_url} alt="" className="mt-3 aspect-[9/16] w-full rounded-lg object-cover" />
+                    )}
                   </article>
                 ))}
                 {stage === "novo" && !filtered.length && !isLoading && (
