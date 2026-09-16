@@ -28,6 +28,7 @@ export function JobDetailDialog({
 }) {
   const qc = useQueryClient();
   const generate = useServerFn(generateJobScript);
+  const generateVideo = useServerFn(generateJobVideo);
   const [script, setScript] = useState("");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
