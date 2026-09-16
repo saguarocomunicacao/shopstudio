@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, Images, Loader2, Plus, Sparkles } from "lucide-react";
+import { Clapperboard, Images, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUSES, JOB_STATUS_LABELS, relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
@@ -43,6 +45,22 @@ export function PipelinePage() {
   const productName = (id: string | null) => products.find((p) => p.id === id)?.name ?? "Sem produto";
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
   const canEditJob = (job: DbJob) => can("pipeline", "editar", job.profile_id) || can("pipeline", "criar", job.profile_id);
+  const canRemoveJob = (job: DbJob) => can("pipeline", "remover", job.profile_id);
+  const [deleting, setDeleting] = useState<DbJob | null>(null);
+
+  const removeJob = useMutation({
+    mutationFn: async (jobId: string) => {
+      const { error } = await supabase.from("jobs").delete().eq("id", jobId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Job excluído.");
+      setDeleting(null);
+      setDetail(null);
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
 
   const runGenerate = useMutation({
     mutationFn: async (jobId: string) => {
@@ -88,7 +106,17 @@ export function PipelinePage() {
               </div>
               <div className="space-y-2">
                 {items.map((job) => (
-                  <article className="job-card cursor-pointer" key={job.id} onClick={() => setDetail(job)}>
+                  <article className="job-card relative cursor-pointer" key={job.id} onClick={() => setDetail(job)}>
+                    {canRemoveJob(job) && (
+                      <button
+                        type="button"
+                        aria-label="Excluir job"
+                        className="absolute right-2 top-2 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
+                        onClick={(e) => { e.stopPropagation(); setDeleting(job); }}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    )}
                     <p className="text-sm font-bold">{job.title || productName(job.product_id)}</p>
                     <p className="mt-2 text-xs text-muted-foreground">{productName(job.product_id)}</p>
                     <p className="mt-4 text-[11px] text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
@@ -158,8 +186,31 @@ export function PipelinePage() {
         job={current}
         productName={current ? productName(current.product_id) : ""}
         canEdit={!!current && canEditJob(current)}
+        canDelete={!!current && canRemoveJob(current)}
+        onDelete={() => current && setDeleting(current)}
         onOpenChange={(open) => !open && setDetail(null)}
       />
+
+      <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir job</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza? Esta ação não pode ser desfeita. O job será removido do pipeline; o produto do catálogo e o perfil não são afetados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={removeJob.isPending}
+              onClick={(e) => { e.preventDefault(); deleting && removeJob.mutate(deleting.id); }}
+            >
+              {removeJob.isPending ? <Loader2 className="animate-spin" /> : null}Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

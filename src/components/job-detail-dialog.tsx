@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, Images, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Clapperboard, Images, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,15 @@ export function JobDetailDialog({
   job,
   productName,
   canEdit,
+  canDelete,
+  onDelete,
   onOpenChange,
 }: {
   job: DbJob | null;
   productName: string;
   canEdit: boolean;
+  canDelete?: boolean;
+  onDelete?: () => void;
   onOpenChange: (open: boolean) => void;
 }) {
   const qc = useQueryClient();
@@ -142,7 +146,13 @@ export function JobDetailDialog({
             </p>
           )}
         </div>
-        <DialogFooter>
+        <DialogFooter className="sm:justify-between">
+          {canDelete && onDelete ? (
+            <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => { onOpenChange(false); onDelete(); }}>
+              <Trash2 />Excluir
+            </Button>
+          ) : <span />}
+          <div className="flex flex-wrap justify-end gap-2">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>Fechar</Button>
           {canEdit && (
             <>
@@ -165,6 +175,7 @@ export function JobDetailDialog({
               )}
             </>
           )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
