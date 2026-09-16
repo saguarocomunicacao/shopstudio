@@ -30,8 +30,8 @@ const slugify = (value: string) =>
 const initialsOf = (value: string) =>
   value.trim().split(/\s+/).filter((w) => w.length > 2 || value.trim().split(/\s+/).length === 1).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "??";
 
-type FormState = { name: string; handle: string; niche: string; tagline: string; followers: string; status: string };
-const emptyForm: FormState = { name: "", handle: "", niche: "", tagline: "", followers: "0", status: "Ativo" };
+type FormState = { name: string; handle: string; niche: string; categoryId: string; tagline: string; followers: string; status: string };
+const emptyForm: FormState = { name: "", handle: "", niche: "", categoryId: "", tagline: "", followers: "0", status: "Ativo" };
 
 export function ProfilesPage() {
   const { profiles, can, loading } = useStudio();
