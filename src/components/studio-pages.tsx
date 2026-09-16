@@ -2,17 +2,16 @@ import { BarChart3, CalendarClock, CheckCircle2, CircleDollarSign, Eye, FileCloc
 import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
-import { jobs, products, profiles, stages, users, videos, formatFollowers, type JobStatus } from "@/lib/studio-data";
+import { jobs, products, profiles as mockProfiles, stages, videos, formatFollowers, type JobStatus } from "@/lib/studio-data";
 import { useStudio } from "./studio-context";
 import { useDragScroll } from "./use-drag-scroll";
 
-const profileName = (id: string) => profiles.find(p => p.id === id)?.name ?? "Perfil";
+const profileName = (id: string) => mockProfiles.find(p => p.id === id)?.name ?? "Perfil";
 const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-lime", "Rascunho enviado": "status-orange", "Publicado": "status-pink", "Ativo": "status-lime", "Pausado": "status-neutral", "Em revisão": "status-orange", "Rascunho": "status-blue" };
 function Badge({ children }: { children: string }) { return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusClass[children] ?? "status-neutral"}`}>{children}</span>; }
 function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) { return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>; }
-function useFiltered<T extends { profileId: string }>(items: T[]) { const { activeProfileId } = useStudio(); return activeProfileId === "all" ? items : items.filter(i => i.profileId === activeProfileId); }
+function useFiltered<T extends { profileId: string }>(items: T[]) { const { activeSlug } = useStudio(); return activeSlug ? items.filter(i => i.profileId === activeSlug) : items; }
 function Empty() { return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhum item neste perfil.</div>; }
 
 export function DashboardPage() { const filtered = useFiltered(jobs); const { activeProfile } = useStudio(); const mult = activeProfile ? profiles.indexOf(activeProfile) + 1 : 6; const stats = [[Video, 7*mult, "Vídeos gerados hoje", "+18%"], [FileClock, Math.max(2, mult), "Rascunhos aguardando", "Revisar"], [CheckCircle2, 14*mult, "Publicados na semana", "+9%"], [CircleDollarSign, `R$ ${(1287*mult).toLocaleString("pt-BR")}`, "Comissão estimada", "+24%"]] as const; return <><Heading eyebrow={activeProfile?.name ?? "Visão consolidada"} title="Bom dia, Lauffer"/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{stats.map(([Icon,value,label,delta])=><div className="panel metric-card" key={label}><div className="mb-8 flex items-start justify-between"><span className="icon-box"><Icon/></span><span className="text-xs font-bold text-primary">{delta}</span></div><strong className="text-2xl font-black">{value}</strong><p className="mt-1 text-sm text-muted-foreground">{label}</p></div>)}</div><section className="mt-6 panel"><div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="icon"><MoreHorizontal/></Button></div><div className="divide-y divide-border">{filtered.slice(0,5).map(job=><div key={job.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{job.title}</p><p className="truncate text-xs text-muted-foreground">{profileName(job.profileId)} · {job.time}</p></div><Badge>{job.status}</Badge></div>)}{!filtered.length&&<Empty/>}</div></section></>; }
