@@ -57,7 +57,7 @@ export function CategorySelect({ id, value, onChange }: Props) {
   const selected = categories.find((c) => c.category_id === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           id={id}
