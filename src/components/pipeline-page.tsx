@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Plus, Sparkles } from "lucide-react";
+import { Clapperboard, Loader2, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JOB_STATUSES, JOB_STATUS_LABELS, relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
+import { generateJobVideo } from "@/lib/video.functions";
 import { JobDetailDialog } from "./job-detail-dialog";
 import { useStudio } from "./studio-context";
 import { useDragScroll } from "./use-drag-scroll";
