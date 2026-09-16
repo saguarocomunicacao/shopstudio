@@ -430,6 +430,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_edit_pipeline: { Args: { _profile_id: string }; Returns: boolean }
       ensure_app_user: { Args: never; Returns: undefined }
     }
     Enums: {
