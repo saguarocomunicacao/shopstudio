@@ -84,6 +84,28 @@ export const TONE_OPTIONS = [
   { value: "engracado", label: "Bem-humorado" },
 ];
 
+export const LANGUAGE_OPTIONS = [
+  { value: "pt-BR", label: "Português (Brasil)", flag: "🇧🇷" },
+  { value: "en-US", label: "Inglês", flag: "🇺🇸" },
+  { value: "es-ES", label: "Espanhol", flag: "🇪🇸" },
+  { value: "id-ID", label: "Indonésio", flag: "🇮🇩" },
+  { value: "ms-MY", label: "Malaio", flag: "🇲🇾" },
+  { value: "th-TH", label: "Tailandês", flag: "🇹🇭" },
+  { value: "vi-VN", label: "Vietnamita", flag: "🇻🇳" },
+  { value: "ja-JP", label: "Japonês", flag: "🇯🇵" },
+  { value: "ko-KR", label: "Coreano", flag: "🇰🇷" },
+  { value: "de-DE", label: "Alemão", flag: "🇩🇪" },
+  { value: "fr-FR", label: "Francês", flag: "🇫🇷" },
+  { value: "it-IT", label: "Italiano", flag: "🇮🇹" },
+  { value: "ru-RU", label: "Russo", flag: "🇷🇺" },
+  { value: "ar-SA", label: "Árabe", flag: "🇸🇦" },
+];
+
+export const languageLabel = (value: string) => {
+  const lang = LANGUAGE_OPTIONS.find((l) => l.value === value);
+  return lang ? `${lang.flag} ${lang.label}` : value;
+};
+
 export function useProfileIdentity(profileId: string | null) {
   return useQuery({
     queryKey: ["profile-identity", profileId],
