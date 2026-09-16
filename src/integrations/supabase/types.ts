@@ -59,33 +59,42 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          created_by: string | null
           followers: number
+          handle: string
           id: string
           initials: string
           name: string
           niche: string
           slug: string
           status: string
+          tagline: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           followers?: number
+          handle?: string
           id?: string
           initials?: string
           name: string
           niche?: string
           slug: string
           status?: string
+          tagline?: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           followers?: number
+          handle?: string
           id?: string
           initials?: string
           name?: string
           niche?: string
           slug?: string
           status?: string
+          tagline?: string
         }
         Relationships: []
       }
