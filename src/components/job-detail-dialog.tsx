@@ -58,11 +58,18 @@ export function JobDetailDialog({
     onError: (e) => toast.error(errMessage(e)),
   });
 
-  const runVideo = useMutation({
-    mutationFn: async (jobId: string) => generateVideo({ data: { jobId } }),
-    onSuccess: () => { toast.success("Geração de vídeo iniciada."); refresh(); },
+  const runScenes = useMutation({
+    mutationFn: async (jobId: string) => generateScenes({ data: { jobId } }),
+    onSuccess: () => { toast.success("Geração das cenas iniciada."); refresh(); },
     onError: (e) => toast.error(errMessage(e)),
   });
+
+  const runApprove = useMutation({
+    mutationFn: async (jobId: string) => approveScenes({ data: { jobId } }),
+    onSuccess: () => { toast.success("Cenas aprovadas. Gerando o vídeo."); refresh(); },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
 
   const save = useMutation({
     mutationFn: async (jobId: string) => {
