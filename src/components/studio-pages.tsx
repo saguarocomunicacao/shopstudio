@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { jobs, products, profiles as mockProfiles, stages, videos, formatFollowers, type JobStatus } from "@/lib/studio-data";
+import { jobs, products, profiles as mockProfiles, stages, videos, type JobStatus } from "@/lib/studio-data";
 import { useStudio } from "./studio-context";
 import { useDragScroll } from "./use-drag-scroll";
 
