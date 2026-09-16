@@ -61,8 +61,8 @@ async function loadJob(supabase: any, jobId: string): Promise<JobRow> {
   return job as JobRow;
 }
 
-/** Inicia o processo: limpa o estado anterior e coloca o job em "gerando_video". */
-export const generateJobVideo = createServerFn({ method: "POST" })
+/** Passo 1: inicia a geração das IMAGENS das cenas (Gemini). Não chama o Veo. */
+export const generateJobScenes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(input)
   .handler(async ({ data, context }) => {
@@ -70,22 +70,18 @@ export const generateJobVideo = createServerFn({ method: "POST" })
     const job = await loadJob(supabase, data.jobId);
 
     if (job.status !== "roteiro_pronto") {
-      throw new Error("O vídeo só pode ser gerado quando o roteiro está pronto.");
+      throw new Error("As cenas só podem ser geradas quando o roteiro está pronto.");
     }
     if (!splitScript(job.script ?? "").length) {
       throw new Error("Este job ainda não tem roteiro para narrar.");
     }
     if (!process.env["GEMINI_API_KEY"]) {
-      throw new Error("A geração de vídeo ainda não está configurada. Falta a chave do Google (Gemini/Veo).");
-    }
-    if (!process.env["JSON2VIDEO_API_KEY"]) {
-      throw new Error("A geração de vídeo ainda não está configurada. Falta a chave do JSON2Video.");
+      throw new Error("A geração de cenas ainda não está configurada. Falta a chave do Google (Gemini/Veo).");
     }
 
     const { error } = await supabase
       .from("jobs")
       .update({
-        status: "gerando_video",
         render_stage: "planejando",
         render_started_at: new Date().toISOString(),
         render_error: null,
@@ -102,6 +98,110 @@ export const generateJobVideo = createServerFn({ method: "POST" })
     return { stage: "planejando" as const };
   });
 
+/** Passo 2: aprovação humana das cenas -> anima no Veo e monta no JSON2Video. */
+export const approveJobScenes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(input)
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const job = await loadJob(supabase, data.jobId);
+
+    if (job.status !== "cenas_geradas") {
+      throw new Error("Aprove as cenas quando elas estiverem geradas.");
+    }
+    const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as { image_url?: string }[];
+    if (!scenes.length || scenes.some((s) => !s.image_url)) {
+      throw new Error("Ainda há cenas sem imagem gerada.");
+    }
+    if (!process.env["JSON2VIDEO_API_KEY"]) {
+      throw new Error("A montagem do vídeo ainda não está configurada. Falta a chave do JSON2Video.");
+    }
+
+    const { error } = await supabase
+      .from("jobs")
+      .update({
+        status: "gerando_video",
+        render_stage: "takes",
+        render_started_at: new Date().toISOString(),
+        render_error: null,
+        render_id: null,
+      })
+      .eq("id", job.id);
+    if (error) throw new Error(error.message);
+
+    return { stage: "takes" as const };
+  });
+
+/** Regera a imagem de UMA cena (barato) antes da aprovação, com prompt editável. */
+export const regenerateJobScene = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({ jobId: z.string().uuid(), index: z.number().int().min(0), prompt: z.string().min(3).max(1200).optional() })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const job = await loadJob(supabase, data.jobId);
+    if (job.status !== "cenas_geradas") throw new Error("Só é possível regerar cenas nesta etapa.");
+
+    const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as import("./video-pipeline.server").Scene[];
+    const scene = scenes[data.index];
+    if (!scene) throw new Error("Cena não encontrada.");
+
+    const pipeline = await import("./video-pipeline.server");
+    const [{ data: product }, { data: settingsRow }] = await Promise.all([
+      job.product_id
+        ? supabase.from("products").select("image_url").eq("id", job.product_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabase
+        .from("profile_video_settings")
+        .select("avatar_mode, avatar_reference_url, gemini_model")
+        .eq("profile_id", job.profile_id)
+        .maybeSingle(),
+    ]);
+
+    const imagePrompt = data.prompt?.trim() || scene.image_prompt;
+    const references: { base64: string; mimeType: string }[] = [];
+    if (product?.image_url) {
+      const img = await pipeline.fetchAsBase64(product.image_url);
+      references.push({ base64: img.base64, mimeType: img.mimeType });
+    }
+    if (settingsRow?.avatar_mode === "fixo" && settingsRow?.avatar_reference_url) {
+      const avatar = await pipeline.fetchAsBase64(settingsRow.avatar_reference_url);
+      references.push({ base64: avatar.base64, mimeType: avatar.mimeType });
+    }
+
+    const generated = await pipeline.generateSceneImage({
+      model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
+      prompt: `${imagePrompt} Vertical 9:16 framing. Keep the product identical to the product reference photo.`,
+      references,
+    });
+    const stored = await pipeline.storeMedia(
+      `${job.id}/cena-${data.index + 1}-${Date.now()}.jpg`,
+      Uint8Array.from(atob(generated.base64), (c) => c.charCodeAt(0)),
+      generated.mimeType,
+    );
+
+    // A cena regerada perde o take antigo: será animada de novo na aprovação.
+    scenes[data.index] = {
+      ...scene,
+      image_prompt: imagePrompt,
+      image_path: stored.path,
+      image_url: stored.url,
+      operation: undefined,
+      video_path: undefined,
+      video_url: undefined,
+    };
+    const { error } = await supabase
+      .from("jobs")
+      .update({ scenes, gemini_images_count: (job.gemini_images_count ?? 0) + 1, render_error: null })
+      .eq("id", job.id);
+    if (error) throw new Error(error.message);
+
+    return { url: stored.url };
+  });
+
 /** Executa a próxima etapa pendente do job (chamada repetidamente pela tela). */
 export const advanceJobVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -110,9 +210,11 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
     const { supabase } = context;
     const job = await loadJob(supabase, data.jobId);
 
-    if (job.status !== "gerando_video" || !job.render_stage || job.render_stage === "render") {
-      return { stage: job.render_stage, done: true, progress: null };
-    }
+    const running =
+      (job.status === "roteiro_pronto" || job.status === "gerando_video") &&
+      !!job.render_stage &&
+      job.render_stage !== "render";
+    if (!running) return { stage: job.render_stage, done: true, progress: null };
 
     const pipeline = await import("./video-pipeline.server");
 
@@ -120,13 +222,16 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
       return await runStep(supabase, job, pipeline);
     } catch (e) {
       const message = e instanceof Error ? e.message : "A geração do vídeo falhou.";
+      // Falha na fase de imagens volta ao roteiro; depois da aprovação volta às cenas aprovadas.
+      const backTo = job.render_stage === "planejando" || job.render_stage === "cenas" ? "roteiro_pronto" : "cenas_geradas";
       await supabase
         .from("jobs")
-        .update({ status: "roteiro_pronto", render_stage: null, render_error: message })
+        .update({ status: backTo, render_stage: null, render_error: message })
         .eq("id", job.id);
       throw new Error(message);
     }
   });
+
 
 async function runStep(
   supabase: any,
