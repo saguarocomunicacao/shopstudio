@@ -1,0 +1,109 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+
+export const MODULES = ["perfis", "produtos", "pipeline", "videos", "rascunhos", "metricas", "equipe", "configuracoes"] as const;
+export const ACTIONS = ["visualizar", "criar", "editar", "remover", "publicar", "aprovar"] as const;
+export type ModuleKey = (typeof MODULES)[number];
+export type ActionKey = (typeof ACTIONS)[number];
+
+export const MODULE_LABELS: Record<ModuleKey, string> = {
+  perfis: "Perfis", produtos: "Produtos", pipeline: "Pipeline", videos: "Vídeos",
+  rascunhos: "Rascunhos", metricas: "Métricas", equipe: "Equipe", configuracoes: "Configurações",
+};
+export const ACTION_LABELS: Record<ActionKey, string> = {
+  visualizar: "Visualizar", criar: "Criar", editar: "Editar", remover: "Remover", publicar: "Publicar", aprovar: "Aprovar",
+};
+
+export type DbProfile = { id: string; slug: string; name: string; niche: string; initials: string; followers: number; status: string };
+export type Role = { id: string; name: string; description: string; is_system: boolean; is_admin: boolean };
+export type Permission = { id: string; module: string; action: string };
+export type RolePermission = { role_id: string; permission_id: string };
+export type Assignment = { id: string; user_id: string; profile_id: string | null; role_id: string };
+export type AppUser = { id: string; email: string; name: string; avatar_url: string | null };
+export type Invite = { id: string; email: string; created_at: string };
+
+export function useSession() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+      setSession(next);
+      setLoading(false);
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  return { session, loading, userId: session?.user.id ?? null };
+}
+
+async function fetchAccess(userId: string) {
+  await supabase.rpc("ensure_app_user");
+  const [profilesRes, rolesRes, permsRes, rolePermsRes, mineRes, meRes] = await Promise.all([
+    supabase.from("profiles").select("*").order("name"),
+    supabase.from("roles").select("*").order("name"),
+    supabase.from("permissions").select("*"),
+    supabase.from("role_permissions").select("*"),
+    supabase.from("user_profile_roles").select("*").eq("user_id", userId),
+    supabase.from("app_users").select("*").eq("id", userId).maybeSingle(),
+  ]);
+
+  const roles = (rolesRes.data ?? []) as Role[];
+  const assignments = (mineRes.data ?? []) as Assignment[];
+  const adminRoleIds = new Set(roles.filter((r) => r.is_admin).map((r) => r.id));
+
+  return {
+    profiles: (profilesRes.data ?? []) as DbProfile[],
+    roles,
+    permissions: (permsRes.data ?? []) as Permission[],
+    rolePermissions: (rolePermsRes.data ?? []) as RolePermission[],
+    assignments,
+    me: (meRes.data ?? null) as AppUser | null,
+    isAdmin: assignments.some((a) => adminRoleIds.has(a.role_id)),
+  };
+}
+
+export type AccessData = Awaited<ReturnType<typeof fetchAccess>>;
+
+export function useAccess(userId: string | null) {
+  return useQuery({
+    queryKey: ["access", userId],
+    queryFn: () => fetchAccess(userId!),
+    enabled: !!userId,
+    staleTime: 30_000,
+  });
+}
+
+export function buildCan(access: AccessData | undefined) {
+  if (!access) return () => false;
+  const permById = new Map(access.permissions.map((p) => [p.id, p]));
+  const byRole = new Map<string, Set<string>>();
+  for (const rp of access.rolePermissions) {
+    const perm = permById.get(rp.permission_id);
+    if (!perm) continue;
+    if (!byRole.has(rp.role_id)) byRole.set(rp.role_id, new Set());
+    byRole.get(rp.role_id)!.add(`${perm.module}:${perm.action}`);
+  }
+  return (module: ModuleKey, action: ActionKey, profileId?: string | null) => {
+    if (access.isAdmin) return true;
+    const key = `${module}:${action}`;
+    const relevant = profileId && profileId !== "all"
+      ? access.assignments.filter((a) => a.profile_id === profileId)
+      : access.assignments;
+    return relevant.some((a) => byRole.get(a.role_id)?.has(key));
+  };
+}
+
+export function useInvalidateAccess() {
+  const qc = useQueryClient();
+  return () => {
+    qc.invalidateQueries({ queryKey: ["access"] });
+    qc.invalidateQueries({ queryKey: ["team"] });
+  };
+}
