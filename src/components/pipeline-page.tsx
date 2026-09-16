@@ -34,10 +34,11 @@ export function PipelinePage() {
   const { data: products = [] } = useProducts(can("produtos", "visualizar"));
   const [detail, setDetail] = useState<DbJob | null>(null);
   const generate = useServerFn(generateJobScript);
-  const generateVideo = useServerFn(generateJobVideo);
+  const generateScenes = useServerFn(generateJobScenes);
   useVideoDriver(jobs);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [renderingId, setRenderingId] = useState<string | null>(null);
+
 
   const productName = (id: string | null) => products.find((p) => p.id === id)?.name ?? "Sem produto";
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
