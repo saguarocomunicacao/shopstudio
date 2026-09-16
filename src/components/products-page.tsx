@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice, useProducts, type DbProduct } from "@/lib/content";
+import { DiscoverPanel } from "./discover-panel";
 import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
@@ -36,6 +37,7 @@ export function ProductsPage() {
   const [dialog, setDialog] = useState<{ open: boolean; product: DbProduct | null }>({ open: false, product: null });
   const [form, setForm] = useState<FormState>(emptyForm);
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
+  const [tab, setTab] = useState<"catalogo" | "descobrir">("catalogo");
   const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
   const [targetProfile, setTargetProfile] = useState<string>("");
 
@@ -111,9 +113,24 @@ export function ProductsPage() {
       <Heading
         eyebrow="Descoberta"
         title="Produtos em alta"
-        {...(canCreate ? { action: <Button onClick={() => setDialog({ open: true, product: null })}><Plus />Adicionar produto</Button> } : {})}
+        {...(canCreate && tab === "catalogo" ? { action: <Button onClick={() => setDialog({ open: true, product: null })}><Plus />Adicionar produto</Button> } : {})}
       />
-      <div className="panel overflow-x-auto">
+      <div className="mb-4 inline-flex gap-1 rounded-xl bg-secondary p-1">
+        {([["catalogo", "Catálogo"], ["descobrir", "Descobrir"]] as const).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setTab(key)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tab === key ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "descobrir" && <DiscoverPanel products={products} />}
+
+      <div className={`panel overflow-x-auto ${tab === "catalogo" ? "" : "hidden"}`}>
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead>
             <tr className="border-b text-xs text-muted-foreground">
