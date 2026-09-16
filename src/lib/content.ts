@@ -77,7 +77,47 @@ export type DbJob = {
   render_id: string | null;
   render_error: string | null;
   render_started_at: string | null;
+  render_stage: string | null;
+  scenes: VideoScene[] | null;
+  gemini_images_count: number;
+  veo_takes_count: number;
 };
+
+export type VideoScene = {
+  narration: string;
+  image_prompt: string;
+  motion_prompt: string;
+  overlay_text: string;
+  image_url?: string;
+  video_url?: string;
+  operation?: string;
+};
+
+export type DbVideoSettings = {
+  profile_id: string;
+  avatar_mode: "fixo" | "livre";
+  avatar_reference_url: string | null;
+  takes_count: number;
+  gemini_model: string;
+  veo_model: string;
+  take_duration: number;
+};
+
+export function useVideoSettings(profileId: string | null) {
+  return useQuery({
+    queryKey: ["video-settings", profileId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profile_video_settings")
+        .select("profile_id, avatar_mode, avatar_reference_url, takes_count, gemini_model, veo_model, take_duration")
+        .eq("profile_id", profileId!)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return (data ?? null) as DbVideoSettings | null;
+    },
+    enabled: !!profileId && profileId !== "all",
+  });
+}
 
 export type ProfileIdentity = { profile_id: string; tone: string; language: string; style_notes: string };
 
@@ -150,7 +190,7 @@ export function useJobs(enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at",
+          "id, product_id, profile_id, status, title, created_at, script, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count",
         )
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
@@ -159,7 +199,7 @@ export function useJobs(enabled = true) {
     enabled,
     // Enquanto houver vídeo renderizando, reconsulta para o card avançar sozinho.
     refetchInterval: (query) =>
-      (query.state.data ?? []).some((j: DbJob) => j.status === "gerando_video") ? 10000 : false,
+      (query.state.data ?? []).some((j: DbJob) => j.status === "gerando_video") ? 6000 : false,
   });
 }
 
