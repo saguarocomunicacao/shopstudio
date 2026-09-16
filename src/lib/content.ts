@@ -122,7 +122,7 @@ export function useJobs(enabled = true) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, product_id, profile_id, status, title, created_at")
+        .select("id, product_id, profile_id, status, title, created_at, script, caption, hashtags")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []) as DbJob[];
