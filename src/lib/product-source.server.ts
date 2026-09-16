@@ -14,6 +14,7 @@ export type DiscoveredProduct = {
   imageUrl: string;
   sellerName: string;
   category: string;
+  productUrl: string;
   hype: number;
 };
 
@@ -52,7 +53,8 @@ export function hypeScore(salesVolume: number, growthRate: number, revenue: numb
 }
 
 const KALODATA_ENDPOINT = "https://www.kalodata.com/openapi/v1/tiktok/product/rank";
-const PAGE_SIZE = 30;
+// A API devolve 10 itens por página e só aceita o parâmetro "page".
+const PAGE_SIZE = 10;
 
 // Rate limit do Kalodata: 10 req/10s. Serializamos as chamadas e garantimos
 // um intervalo mínimo de 1s entre elas (nunca em paralelo).
@@ -87,8 +89,7 @@ const kalodata: ProductSource = {
         date_range: query.dateRange,
         sort_field: { field: query.sortField, type: "DESC" },
         is_affiliate: 1,
-        page_size: PAGE_SIZE,
-        page_number: query.page,
+        page: query.page,
         need_image: 1,
       };
       if (query.keyword?.trim()) body["keyword"] = query.keyword.trim();
@@ -104,7 +105,8 @@ const kalodata: ProductSource = {
       if (response.status === 401 || response.status === 403) throw new Error("A chave da fonte de produtos foi recusada.");
       if (!response.ok) throw new Error(`A fonte de produtos respondeu com erro (${response.status}).`);
 
-      const payload = (await response.json()) as { data?: unknown; msg?: string; message?: string };
+      const payload = (await response.json()) as { success?: boolean; data?: unknown; message?: string };
+      if (payload.success === false) throw new Error(payload.message || "A fonte de produtos recusou a busca.");
       const rows = Array.isArray(payload.data)
         ? (payload.data as Record<string, unknown>[])
         : Array.isArray((payload.data as { list?: unknown } | undefined)?.list)
@@ -127,6 +129,7 @@ const kalodata: ProductSource = {
           imageUrl: String(row["master_image_url"] ?? ""),
           sellerName: String(row["seller_name"] ?? ""),
           category: String(row["category_name"] ?? row["category"] ?? ""),
+          productUrl: `https://shop.tiktok.com/view/product/${String(row["product_id"] ?? "")}`,
           hype: hypeScore(salesVolume, growthRate, revenue),
         };
       }).filter((item) => item.externalId);
