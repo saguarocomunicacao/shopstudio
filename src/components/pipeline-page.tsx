@@ -46,7 +46,26 @@ export function PipelinePage() {
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
   const canEditJob = (job: DbJob) => can("pipeline", "editar", job.profile_id) || can("pipeline", "criar", job.profile_id);
   const canRemoveJob = (job: DbJob) => can("pipeline", "remover", job.profile_id);
+  const canStepBack = (job: DbJob) => can("pipeline", "editar", job.profile_id) && !!PREVIOUS_STATUS[job.status];
   const [deleting, setDeleting] = useState<DbJob | null>(null);
+  const [reverting, setReverting] = useState<DbJob | null>(null);
+
+  const stepBack = useMutation({
+    mutationFn: async (job: DbJob) => {
+      const previous = PREVIOUS_STATUS[job.status];
+      if (!previous) throw new Error("Este job já está na primeira etapa.");
+      // Só muda o status: roteiro, cenas e vídeo continuam salvos no job.
+      const { error } = await supabase.from("jobs").update({ status: previous, render_error: null }).eq("id", job.id);
+      if (error) throw new Error(error.message);
+      return previous;
+    },
+    onSuccess: (previous) => {
+      toast.success(`Job movido para "${JOB_STATUS_LABELS[previous]}".`);
+      setReverting(null);
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
 
   const removeJob = useMutation({
     mutationFn: async (jobId: string) => {
