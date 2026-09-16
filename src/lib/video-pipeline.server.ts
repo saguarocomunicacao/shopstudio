@@ -373,29 +373,6 @@ export function buildMovie(opts: {
     quality: "high",
     "client-data": { job_id: opts.jobId },
     scenes,
-    elements: [
-      {
-        type: "subtitles",
-        language: opts.subtitleLanguage,
-        model: "default",
-        settings: {
-          style: "classic",
-          position: "custom",
-          x: 540,
-          y: 1510,
-          "font-family": "Roboto",
-          "font-size": 72,
-          "font-weight": "900",
-          "max-words-per-line": 4,
-          "word-color": "#FFFFFF",
-          "line-color": "#FFFFFF",
-          "outline-color": "#000000",
-          "outline-width": 6,
-          "shadow-color": "#000000",
-          "shadow-offset": 4,
-        },
-      },
-    ],
     exports: [
       {
         destinations: [{ type: "webhook", endpoint: opts.webhookUrl, "content-type": "application/json" }],
