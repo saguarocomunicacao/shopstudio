@@ -45,6 +45,7 @@ export const JOB_STATUSES = [
   "novo",
   "produto_escolhido",
   "roteiro_pronto",
+  "cenas_geradas",
   "gerando_video",
   "video_pronto",
   "rascunho_enviado",
@@ -56,11 +57,13 @@ export const JOB_STATUS_LABELS: Record<JobStatusKey, string> = {
   novo: "Novo",
   produto_escolhido: "Produto escolhido",
   roteiro_pronto: "Roteiro pronto",
+  cenas_geradas: "Cenas geradas",
   gerando_video: "Gerando vídeo",
   video_pronto: "Vídeo pronto",
   rascunho_enviado: "Rascunho enviado",
   publicado: "Publicado",
 };
+
 
 export type DbJob = {
   id: string;
@@ -197,11 +200,12 @@ export function useJobs(enabled = true) {
       return (data ?? []) as DbJob[];
     },
     enabled,
-    // Enquanto houver vídeo renderizando, reconsulta para o card avançar sozinho.
+    // Enquanto houver etapa em andamento (cenas ou vídeo), reconsulta para o card avançar sozinho.
     refetchInterval: (query) =>
-      (query.state.data ?? []).some((j: DbJob) => j.status === "gerando_video") ? 6000 : false,
+      (query.state.data ?? []).some((j: DbJob) => j.status === "gerando_video" || !!j.render_stage) ? 6000 : false,
   });
 }
+
 
 export const formatPrice = (value: number) => `R$ ${value.toFixed(2).replace(".", ",")}`;
 

@@ -15,8 +15,12 @@ export function useVideoDriver(jobs: DbJob[]) {
 
   useEffect(() => {
     const pending = jobs.filter(
-      (j) => j.status === "gerando_video" && !!j.render_stage && j.render_stage !== "render",
+      (j) =>
+        (j.status === "gerando_video" || j.status === "roteiro_pronto") &&
+        !!j.render_stage &&
+        j.render_stage !== "render",
     );
+
     if (!pending.length || running.current) return;
     running.current = true;
     void (async () => {

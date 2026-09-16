@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Clapperboard, Images, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUS_LABELS, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
-import { RENDER_STAGE_LABELS, generateJobVideo } from "@/lib/video.functions";
+import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/video.functions";
+import { JobScenesReview } from "./job-scenes-review";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+
 
 export function JobDetailDialog({
   job,
@@ -28,7 +30,9 @@ export function JobDetailDialog({
 }) {
   const qc = useQueryClient();
   const generate = useServerFn(generateJobScript);
-  const generateVideo = useServerFn(generateJobVideo);
+  const generateScenes = useServerFn(generateJobScenes);
+  const approveScenes = useServerFn(approveJobScenes);
+
   const [script, setScript] = useState("");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
@@ -54,11 +58,18 @@ export function JobDetailDialog({
     onError: (e) => toast.error(errMessage(e)),
   });
 
-  const runVideo = useMutation({
-    mutationFn: async (jobId: string) => generateVideo({ data: { jobId } }),
-    onSuccess: () => { toast.success("Geração de vídeo iniciada."); refresh(); },
+  const runScenes = useMutation({
+    mutationFn: async (jobId: string) => generateScenes({ data: { jobId } }),
+    onSuccess: () => { toast.success("Geração das cenas iniciada."); refresh(); },
     onError: (e) => toast.error(errMessage(e)),
   });
+
+  const runApprove = useMutation({
+    mutationFn: async (jobId: string) => approveScenes({ data: { jobId } }),
+    onSuccess: () => { toast.success("Cenas aprovadas. Gerando o vídeo."); refresh(); },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
 
   const save = useMutation({
     mutationFn: async (jobId: string) => {
@@ -93,7 +104,7 @@ export function JobDetailDialog({
           {job?.video_url && (
             <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[300px] rounded-xl bg-black" />
           )}
-          {job?.status === "gerando_video" && (
+          {(job?.status === "gerando_video" || (job?.status === "roteiro_pronto" && job.render_stage)) && (
             <div className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-6 text-sm">
               <Loader2 className="size-4 animate-spin" />
               {(job.render_stage && RENDER_STAGE_LABELS[job.render_stage]) ?? "Renderizando o vídeo"}... o card avança sozinho quando ficar pronto.
@@ -102,6 +113,8 @@ export function JobDetailDialog({
           {job?.render_error && (
             <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-destructive">{job.render_error}</p>
           )}
+          {job?.status === "cenas_geradas" && <JobScenesReview job={job} canEdit={canEdit} />}
+
 
           {busy ? (
             <div className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-6 text-sm">
@@ -136,11 +149,17 @@ export function JobDetailDialog({
               <Button variant="outline" disabled={busy || !job} onClick={() => job && runGenerate.mutate(job.id)}>
                 {hasScript ? <><RefreshCw />Regenerar</> : <><Sparkles />Gerar roteiro</>}
               </Button>
-              {job?.status === "roteiro_pronto" && (
-                <Button variant="outline" disabled={runVideo.isPending} onClick={() => runVideo.mutate(job.id)}>
-                  {runVideo.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Clapperboard />{job.render_error ? "Tentar de novo" : "Gerar vídeo"}</>}
+              {job?.status === "roteiro_pronto" && !job.render_stage && (
+                <Button variant="outline" disabled={runScenes.isPending} onClick={() => runScenes.mutate(job.id)}>
+                  {runScenes.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Images />{job.render_error ? "Tentar de novo" : "Gerar cenas"}</>}
                 </Button>
               )}
+              {job?.status === "cenas_geradas" && (
+                <Button disabled={runApprove.isPending} onClick={() => runApprove.mutate(job.id)}>
+                  {runApprove.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Clapperboard />Aprovar e gerar vídeo</>}
+                </Button>
+              )}
+
               {hasScript && (
                 <Button disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
               )}

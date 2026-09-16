@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, Loader2, Plus, Sparkles } from "lucide-react";
+import { Clapperboard, Images, Loader2, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JOB_STATUSES, JOB_STATUS_LABELS, relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
-import { RENDER_STAGE_LABELS, generateJobVideo } from "@/lib/video.functions";
+import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
 import { useVideoDriver } from "@/lib/video-driver";
 import { JobDetailDialog } from "./job-detail-dialog";
 import { useStudio } from "./studio-context";
@@ -16,11 +16,13 @@ const statusClass: Record<string, string> = {
   novo: "status-neutral",
   produto_escolhido: "status-blue",
   roteiro_pronto: "status-violet",
+  cenas_geradas: "status-orange",
   gerando_video: "status-cyan",
   video_pronto: "status-lime",
   rascunho_enviado: "status-orange",
   publicado: "status-pink",
 };
+
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
@@ -32,10 +34,11 @@ export function PipelinePage() {
   const { data: products = [] } = useProducts(can("produtos", "visualizar"));
   const [detail, setDetail] = useState<DbJob | null>(null);
   const generate = useServerFn(generateJobScript);
-  const generateVideo = useServerFn(generateJobVideo);
+  const generateScenes = useServerFn(generateJobScenes);
   useVideoDriver(jobs);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [renderingId, setRenderingId] = useState<string | null>(null);
+
 
   const productName = (id: string | null) => products.find((p) => p.id === id)?.name ?? "Sem produto";
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
@@ -51,12 +54,13 @@ export function PipelinePage() {
     onSettled: () => setGeneratingId(null),
   });
 
-  const runVideo = useMutation({
+  const runScenes = useMutation({
     mutationFn: async (jobId: string) => {
       setRenderingId(jobId);
-      return generateVideo({ data: { jobId } });
+      return generateScenes({ data: { jobId } });
     },
-    onSuccess: () => { toast.success("Geração de vídeo iniciada."); qc.invalidateQueries({ queryKey: ["jobs"] }); },
+    onSuccess: () => { toast.success("Geração das cenas iniciada."); qc.invalidateQueries({ queryKey: ["jobs"] }); },
+
     onError: (e) => toast.error(errMessage(e)),
     onSettled: () => setRenderingId(null),
   });
@@ -101,24 +105,41 @@ export function PipelinePage() {
                     {job.render_error && (
                       <p className="mt-3 rounded-lg bg-secondary px-3 py-2 text-[11px] text-destructive">{job.render_error}</p>
                     )}
-                    {job.status === "roteiro_pronto" && canEditJob(job) && (
+                    {job.status === "roteiro_pronto" && !job.render_stage && canEditJob(job) && (
                       <Button
                         size="sm"
                         className="mt-3 w-full"
                         disabled={renderingId === job.id}
-                        onClick={(e) => { e.stopPropagation(); runVideo.mutate(job.id); }}
+                        onClick={(e) => { e.stopPropagation(); runScenes.mutate(job.id); }}
                       >
                         {renderingId === job.id
                           ? <><Loader2 className="animate-spin" />Enviando...</>
-                          : <><Clapperboard />{job.render_error ? "Tentar de novo" : "Gerar vídeo"}</>}
+                          : <><Images />{job.render_error ? "Tentar de novo" : "Gerar cenas"}</>}
                       </Button>
                     )}
-                    {job.status === "gerando_video" && (
+                    {job.status === "cenas_geradas" && (
+                      <>
+                        <div className="mt-3 flex gap-1.5">
+                          {(job.scenes ?? []).slice(0, 4).map((scene, i) =>
+                            scene.image_url ? (
+                              <img key={i} src={scene.image_url} alt="" className="aspect-[9/16] w-full rounded-md object-cover" />
+                            ) : null,
+                          )}
+                        </div>
+                        {canEditJob(job) && (
+                          <Button size="sm" className="mt-3 w-full" onClick={(e) => { e.stopPropagation(); setDetail(job); }}>
+                            <Clapperboard />Revisar e aprovar
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    {(job.status === "gerando_video" || (job.status === "roteiro_pronto" && job.render_stage)) && (
                       <p className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
                         <Loader2 className="size-3 animate-spin" />
                         {(job.render_stage && RENDER_STAGE_LABELS[job.render_stage]) ?? "Renderizando"}...
                       </p>
                     )}
+
                     {job.status === "video_pronto" && job.video_thumbnail_url && (
                       <img src={job.video_thumbnail_url} alt="" className="mt-3 aspect-[9/16] w-full rounded-lg object-cover" />
                     )}
