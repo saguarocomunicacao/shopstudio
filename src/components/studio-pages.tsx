@@ -1,30 +1,56 @@
-import { BarChart3, CalendarClock, CheckCircle2, CircleDollarSign, Eye, FileClock, MoreHorizontal, Play, Plus, Send, TrendingUp, Video } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CheckCircle2, CircleDollarSign, FileClock, MoreHorizontal, Plus, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { jobs, profiles as mockProfiles, videos } from "@/lib/studio-data";
+import { JOB_STATUS_LABELS, relativeTime, useJobs } from "@/lib/content";
 import { SyncCategoriesButton } from "./category-select";
 import { useStudio } from "./studio-context";
 
-const profileName = (id: string) => mockProfiles.find(p => p.id === id)?.name ?? "Perfil";
-const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-lime", "Rascunho enviado": "status-orange", "Publicado": "status-pink", "Ativo": "status-lime", "Pausado": "status-neutral", "Em revisão": "status-orange", "Rascunho": "status-blue" };
+const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-lime", "Rascunho enviado": "status-orange", "Publicado": "status-pink", "Ativo": "status-lime", "Pausado": "status-neutral" };
 function Badge({ children }: { children: string }) { return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusClass[children] ?? "status-neutral"}`}>{children}</span>; }
 function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) { return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>; }
-function useFiltered<T extends { profileId: string }>(items: T[]) { const { activeSlug } = useStudio(); return activeSlug ? items.filter(i => i.profileId === activeSlug) : items; }
-function Empty() { return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhum item neste perfil.</div>; }
+function Empty({ children = "Nenhum item por aqui ainda." }: { children?: string }) { return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{children}</div>; }
 
-export function DashboardPage() { const filtered = useFiltered(jobs); const { activeProfile, activeSlug } = useStudio(); const mult = activeSlug ? mockProfiles.findIndex(p => p.id === activeSlug) + 1 : 6; const stats = [[Video, 7*mult, "Vídeos gerados hoje", "+18%"], [FileClock, Math.max(2, mult), "Rascunhos aguardando", "Revisar"], [CheckCircle2, 14*mult, "Publicados na semana", "+9%"], [CircleDollarSign, `R$ ${(1287*mult).toLocaleString("pt-BR")}`, "Comissão estimada", "+24%"]] as const; return <><Heading eyebrow={activeProfile?.name ?? "Visão consolidada"} title="Bom dia, Lauffer"/><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{stats.map(([Icon,value,label,delta])=><div className="panel metric-card" key={label}><div className="mb-8 flex items-start justify-between"><span className="icon-box"><Icon/></span><span className="text-xs font-bold text-primary">{delta}</span></div><strong className="text-2xl font-black">{value}</strong><p className="mt-1 text-sm text-muted-foreground">{label}</p></div>)}</div><section className="mt-6 panel"><div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="icon"><MoreHorizontal/></Button></div><div className="divide-y divide-border">{filtered.slice(0,5).map(job=><div key={job.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{job.title}</p><p className="truncate text-xs text-muted-foreground">{profileName(job.profileId)} · {job.time}</p></div><Badge>{job.status}</Badge></div>)}{!filtered.length&&<Empty/>}</div></section></>; }
+export function DashboardPage() {
+  const { activeProfile, activeProfileId, profiles } = useStudio();
+  const { data: jobs = [] } = useJobs();
+  const scoped = activeProfileId === "all" ? jobs : jobs.filter((j) => j.profile_id === activeProfileId);
+  const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
+  const stats = [
+    { icon: Video, value: scoped.filter((j) => j.status === "video_pronto").length, label: "Vídeos prontos" },
+    { icon: FileClock, value: scoped.filter((j) => j.status === "rascunho_enviado").length, label: "Rascunhos aguardando" },
+    { icon: CheckCircle2, value: scoped.filter((j) => j.status === "publicado").length, label: "Publicados" },
+    { icon: CircleDollarSign, value: scoped.length, label: "Jobs no pipeline" },
+  ];
+  return <>
+    <Heading eyebrow={activeProfile?.name ?? "Visão consolidada"} title="Painel geral" />
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{stats.map(({ icon: Icon, value, label }) => <div className="panel metric-card" key={label}><div className="mb-8 flex items-start justify-between"><span className="icon-box"><Icon /></span></div><strong className="text-2xl font-black">{value}</strong><p className="mt-1 text-sm text-muted-foreground">{label}</p></div>)}</div>
+    <section className="mt-6 panel">
+      <div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="icon"><MoreHorizontal /></Button></div>
+      <div className="divide-y divide-border">{scoped.slice(0, 5).map((job) => <div key={job.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{job.title || "Sem título"}</p><p className="truncate text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p></div><Badge>{JOB_STATUS_LABELS[job.status]}</Badge></div>)}{!scoped.length && <Empty>Nenhum job ainda. Escolha um produto para começar.</Empty>}</div>
+    </section>
+  </>;
+}
 
+export function VideosPage() {
+  return <>
+    <Heading eyebrow="0 peças" title="Biblioteca de vídeos" action={<Button disabled><Plus />Novo vídeo</Button>} />
+    <Empty>Nenhum vídeo ainda. Eles aparecerão aqui quando forem gerados.</Empty>
+  </>;
+}
 
+export function DraftsPage() {
+  return <>
+    <Heading eyebrow="Prontos para decisão" title="Fila de revisão" />
+    <Empty>Nenhum rascunho aguardando revisão.</Empty>
+  </>;
+}
 
-function VideoThumb({ tone, title }: { tone:string; title:string }) { return <div className={`video-thumb thumb-${tone}`}><span className="grid h-11 w-11 place-items-center rounded-full bg-overlay text-primary"><Play className="ml-0.5 fill-current"/></span><p className="absolute bottom-3 left-3 right-3 text-sm font-black text-video">{title}</p></div>; }
-export function VideosPage() { const filtered=useFiltered(videos); return <><Heading eyebrow={`${filtered.length} peças`} title="Biblioteca de vídeos" action={<Button><Plus/>Novo vídeo</Button>}/>{filtered.length?<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{filtered.map(v=><article className="overflow-hidden rounded-lg border bg-card" key={v.id}><VideoThumb tone={v.tone} title={v.product}/><div className="p-4"><div className="mb-3 flex items-start justify-between gap-2"><h2 className="text-sm font-bold leading-snug">{v.title}</h2><Badge>{v.status}</Badge></div><p className="text-xs text-muted-foreground">{v.date} · {profileName(v.profileId)}</p></div></article>)}</div>:<Empty/>}</>; }
-
-export function DraftsPage() { const filtered=useFiltered(videos.filter(v=>v.status!=="Publicado")); return <><Heading eyebrow="Prontos para decisão" title="Fila de revisão"/>{filtered.length?<div className="space-y-3">{filtered.map(v=><article className="panel grid gap-4 sm:grid-cols-[120px_minmax(0,1fr)_auto] sm:items-center" key={v.id}><div className={`h-20 rounded-lg thumb-${v.tone}`}/><div className="min-w-0"><Badge>{v.status}</Badge><h2 className="mt-2 truncate font-bold">{v.title}</h2><p className="text-xs text-muted-foreground">{profileName(v.profileId)} · {v.product}</p></div><div className="grid grid-cols-3 gap-2 sm:flex"><Button variant="outline" size="sm"><Eye/>Revisar</Button><Button variant="outline" size="sm"><CalendarClock/>Agendar</Button><Button size="sm"><Send/>Publicar</Button></div></article>)}</div>:<Empty/>}</>; }
-
-const chartData=[{d:"Seg",views:42,sales:18},{d:"Ter",views:56,sales:23},{d:"Qua",views:49,sales:20},{d:"Qui",views:71,sales:31},{d:"Sex",views:88,sales:39},{d:"Sáb",views:106,sales:47},{d:"Dom",views:94,sales:43}];
-const metricDetails = [{ icon: TrendingUp, value: "12,8%", label: "Taxa de conversão" }, { icon: CircleDollarSign, value: "R$ 7.724", label: "Comissão" }, { icon: BarChart3, value: "R$ 34,95", label: "Ticket médio" }];
-export function MetricsPage() { const {activeProfile}=useStudio(); return <><Heading eyebrow={activeProfile?.name??"Todos os perfis"} title="Performance dos últimos 7 dias"/><div className="grid gap-4 lg:grid-cols-3"><div className="panel lg:col-span-2"><div className="mb-6"><h2 className="font-bold">Visualizações</h2><p className="text-2xl font-black">506,2 mil</p></div><div className="h-72"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="d"/><YAxis hide/><Tooltip/><Line type="monotone" dataKey="views" stroke="var(--primary)" strokeWidth={3} dot={false}/></LineChart></ResponsiveContainer></div></div><div className="panel"><h2 className="font-bold">Vendas</h2><p className="text-2xl font-black">221</p><div className="mt-6 h-60"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><XAxis dataKey="d"/><YAxis hide/><Tooltip/><Bar dataKey="sales" fill="var(--secondary-brand)" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></div></div></div><div className="mt-4 grid gap-3 sm:grid-cols-3">{metricDetails.map(({icon:Icon,value,label})=><div className="panel flex items-center gap-4" key={label}><span className="icon-box"><Icon/></span><div><b className="text-lg">{value}</b><p className="text-xs text-muted-foreground">{label}</p></div></div>)}</div></>; }
-
+export function MetricsPage() {
+  const { activeProfile } = useStudio();
+  return <>
+    <Heading eyebrow={activeProfile?.name ?? "Todos os perfis"} title="Performance" />
+    <Empty>Ainda não há dados de desempenho. Publique conteúdo para começar a medir.</Empty>
+  </>;
+}
 
 export function SettingsPage() { const {activeProfile,isAdmin}=useStudio(); return <><Heading eyebrow={activeProfile?.name??"Configuração global"} title="Preferências do perfil"/><div className="grid gap-4 lg:grid-cols-2"><section className="panel"><h2 className="font-bold">Fluxo de publicação</h2><p className="mb-5 mt-1 text-sm text-muted-foreground">Ajustes visuais para o comportamento futuro deste perfil.</p>{[["Revisão obrigatória","Exigir aprovação antes de publicar"],["Alertas de tendência","Sinalizar produtos com hype alto"],["Resumo semanal","Receber um resumo de desempenho"]].map(([a,b],i)=><div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-t py-4" key={a}><div><p className="text-sm font-semibold">{a}</p><p className="text-xs text-muted-foreground">{b}</p></div><Switch defaultChecked={i<2}/></div>)}</section><section className="panel"><h2 className="font-bold">Identidade do perfil</h2><p className="mt-1 text-sm text-muted-foreground">Tom de voz, idioma e padrões de roteiro serão configurados aqui.</p><Button variant="outline" className="mt-5">Editar preferências</Button></section><section className="panel"><h2 className="font-bold">Fonte de dados de produto</h2><p className="mt-1 text-sm text-muted-foreground">De onde vêm os produtos em alta garimpados na aba “Descobrir”.</p><div className="mt-5 flex items-center justify-between gap-4 rounded-xl bg-secondary px-4 py-3"><div><p className="text-sm font-semibold">Kalodata</p><p className="text-xs text-muted-foreground">TikTok Shop Brasil · somente produtos com programa de afiliado</p></div><span className="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold status-lime">Ativa</span></div><p className="mt-3 text-xs text-muted-foreground">A chave de acesso fica guardada com segurança no servidor.</p>{isAdmin&&<div className="mt-4 border-t pt-4"><p className="text-sm font-semibold">Categorias oficiais do TikTok Shop</p><p className="mb-3 mt-1 text-xs text-muted-foreground">Usadas nos perfis e produtos. Sincronizadas direto da fonte.</p><SyncCategoriesButton/></div>}</section></div></>; }
