@@ -153,11 +153,18 @@ export function JobDetailDialog({
           )}
         </div>
         <DialogFooter className="sm:justify-between">
-          {canDelete && onDelete ? (
-            <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => { onOpenChange(false); onDelete(); }}>
-              <Trash2 />Excluir
-            </Button>
-          ) : <span />}
+          <div className="flex flex-wrap gap-2">
+            {canDelete && onDelete && (
+              <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => { onOpenChange(false); onDelete(); }}>
+                <Trash2 />Excluir
+              </Button>
+            )}
+            {canStepBack && onStepBack && (
+              <Button variant="outline" onClick={() => { onOpenChange(false); onStepBack(); }}>
+                <Undo2 />Voltar etapa
+              </Button>
+            )}
+          </div>
           <div className="flex flex-wrap justify-end gap-2">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>Fechar</Button>
           {canEdit && (
