@@ -113,7 +113,7 @@ export function ProfilesPage() {
                   <Badge>{p.status}</Badge>
                 </div>
                 <h2 className="text-lg font-black">{p.name}</h2>
-                <p className="mt-1 text-sm text-muted-foreground">{p.niche}{p.handle ? ` · @${p.handle}` : ""}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{p.niche || "Sem categoria"} · {p.handle ? `@${p.handle}` : "sem conta vinculada"}</p>
                 <div className="mt-6 flex items-end justify-between border-t pt-4">
                   <div>
                     <p className="text-lg font-black">{formatFollowers(p.followers)}</p>
@@ -149,7 +149,7 @@ export function ProfilesPage() {
           <DialogHeader><DialogTitle>{dialog.profile ? "Editar perfil" : "Adicionar perfil"}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-2"><Label htmlFor="p-name">Nome</Label><Input id="p-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Moda e Acessórios" /></div>
-            <div className="grid gap-2"><Label htmlFor="p-handle">@ da conta</Label><Input id="p-handle" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="modaacessorios" /></div>
+            <div className="grid gap-2"><Label htmlFor="p-handle">@ da conta <span className="font-normal text-muted-foreground">(opcional)</span></Label><Input id="p-handle" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="ainda sem conta" /></div>
             <div className="grid gap-2"><Label htmlFor="p-niche">Categoria oficial</Label><CategorySelect id="p-niche" value={form.categoryId} onChange={(categoryId, categoryName) => setForm({ ...form, categoryId, niche: categoryName })} /></div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2"><Label htmlFor="p-followers">Seguidores</Label><Input id="p-followers" inputMode="numeric" value={form.followers} onChange={(e) => setForm({ ...form, followers: e.target.value.replace(/\D/g, "") })} /></div>
