@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          category_id: string
+          category_name: string
+          created_at: string
+          level: number
+          parent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          category_name: string
+          created_at?: string
+          level?: number
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          category_name?: string
+          created_at?: string
+          level?: number
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           created_at: string
@@ -115,6 +142,7 @@ export type Database = {
       }
       products: {
         Row: {
+          category_id: string | null
           commission: number
           created_at: string
           created_by: string | null
@@ -136,6 +164,7 @@ export type Database = {
           url: string
         }
         Insert: {
+          category_id?: string | null
           commission?: number
           created_at?: string
           created_by?: string | null
@@ -157,6 +186,7 @@ export type Database = {
           url?: string
         }
         Update: {
+          category_id?: string | null
           commission?: number
           created_at?: string
           created_by?: string | null
@@ -177,10 +207,19 @@ export type Database = {
           updated_at?: string
           url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["category_id"]
+          },
+        ]
       }
       profiles: {
         Row: {
+          category_id: string | null
           created_at: string
           created_by: string | null
           followers: number
@@ -194,6 +233,7 @@ export type Database = {
           tagline: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           created_by?: string | null
           followers?: number
@@ -207,6 +247,7 @@ export type Database = {
           tagline?: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           created_by?: string | null
           followers?: number
@@ -219,7 +260,15 @@ export type Database = {
           status?: string
           tagline?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["category_id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
