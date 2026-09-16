@@ -54,6 +54,12 @@ export function JobDetailDialog({
     onError: (e) => toast.error(errMessage(e)),
   });
 
+  const runVideo = useMutation({
+    mutationFn: async (jobId: string) => generateVideo({ data: { jobId } }),
+    onSuccess: () => { toast.success("Geração de vídeo iniciada."); refresh(); },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
   const save = useMutation({
     mutationFn: async (jobId: string) => {
       const tags = hashtags.split(/[\s,]+/).map((t) => t.replace(/^#/, "").trim()).filter(Boolean);
