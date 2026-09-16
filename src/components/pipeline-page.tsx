@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JOB_STATUSES, JOB_STATUS_LABELS, relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
-import { generateJobVideo } from "@/lib/video.functions";
+import { RENDER_STAGE_LABELS, generateJobVideo } from "@/lib/video.functions";
+import { useVideoDriver } from "@/lib/video-driver";
 import { JobDetailDialog } from "./job-detail-dialog";
 import { useStudio } from "./studio-context";
 import { useDragScroll } from "./use-drag-scroll";
@@ -32,6 +33,7 @@ export function PipelinePage() {
   const [detail, setDetail] = useState<DbJob | null>(null);
   const generate = useServerFn(generateJobScript);
   const generateVideo = useServerFn(generateJobVideo);
+  useVideoDriver(jobs);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [renderingId, setRenderingId] = useState<string | null>(null);
 
@@ -113,7 +115,8 @@ export function PipelinePage() {
                     )}
                     {job.status === "gerando_video" && (
                       <p className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-                        <Loader2 className="size-3 animate-spin" />Renderizando...
+                        <Loader2 className="size-3 animate-spin" />
+                        {(job.render_stage && RENDER_STAGE_LABELS[job.render_stage]) ?? "Renderizando"}...
                       </p>
                     )}
                     {job.status === "video_pronto" && job.video_thumbnail_url && (
