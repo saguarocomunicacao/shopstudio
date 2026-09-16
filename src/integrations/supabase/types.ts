@@ -75,10 +75,14 @@ export type Database = {
           notes: string | null
           product_id: string | null
           profile_id: string
+          render_error: string | null
+          render_id: string | null
+          render_started_at: string | null
           script: string | null
           status: Database["public"]["Enums"]["job_status"]
           title: string
           updated_at: string
+          video_thumbnail_url: string | null
           video_url: string | null
         }
         Insert: {
@@ -90,10 +94,14 @@ export type Database = {
           notes?: string | null
           product_id?: string | null
           profile_id: string
+          render_error?: string | null
+          render_id?: string | null
+          render_started_at?: string | null
           script?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           title?: string
           updated_at?: string
+          video_thumbnail_url?: string | null
           video_url?: string | null
         }
         Update: {
@@ -105,10 +113,14 @@ export type Database = {
           notes?: string | null
           product_id?: string | null
           profile_id?: string
+          render_error?: string | null
+          render_id?: string | null
+          render_started_at?: string | null
           script?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           title?: string
           updated_at?: string
+          video_thumbnail_url?: string | null
           video_url?: string | null
         }
         Relationships: [

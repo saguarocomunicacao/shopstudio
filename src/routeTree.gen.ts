@@ -20,6 +20,7 @@ import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
 import { Route as AuthenticatedRascunhosRouteImport } from './routes/_authenticated/rascunhos'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
+import { Route as ApiPublicJson2videoWebhookTokenRouteImport } from './routes/api/public/json2video-webhook.$token'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -76,6 +77,12 @@ const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
   path: '/videos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicJson2videoWebhookTokenRoute =
+  ApiPublicJson2videoWebhookTokenRouteImport.update({
+    id: '/api/public/json2video-webhook/$token',
+    path: '/api/public/json2video-webhook/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/produtos': typeof AuthenticatedProdutosRoute
   '/rascunhos': typeof AuthenticatedRascunhosRoute
   '/videos': typeof AuthenticatedVideosRoute
+  '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -100,6 +108,7 @@ export interface FileRoutesByTo {
   '/rascunhos': typeof AuthenticatedRascunhosRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -114,6 +123,7 @@ export interface FileRoutesById {
   '/_authenticated/rascunhos': typeof AuthenticatedRascunhosRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/rascunhos'
     | '/videos'
+    | '/api/public/json2video-webhook/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/rascunhos'
     | '/videos'
     | '/'
+    | '/api/public/json2video-webhook/$token'
   id:
     | '__root__'
     | '/_authenticated'
@@ -153,11 +165,13 @@ export interface FileRouteTypes {
     | '/_authenticated/rascunhos'
     | '/_authenticated/videos'
     | '/_authenticated/'
+    | '/api/public/json2video-webhook/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicJson2videoWebhookTokenRoute: typeof ApiPublicJson2videoWebhookTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -239,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVideosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/json2video-webhook/$token': {
+      id: '/api/public/json2video-webhook/$token'
+      path: '/api/public/json2video-webhook/$token'
+      fullPath: '/api/public/json2video-webhook/$token'
+      preLoaderRoute: typeof ApiPublicJson2videoWebhookTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -272,6 +293,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicJson2videoWebhookTokenRoute: ApiPublicJson2videoWebhookTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
