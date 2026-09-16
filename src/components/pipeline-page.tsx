@@ -220,8 +220,33 @@ export function PipelinePage() {
         canEdit={!!current && canEditJob(current)}
         canDelete={!!current && canRemoveJob(current)}
         onDelete={() => current && setDeleting(current)}
+        canStepBack={!!current && canStepBack(current)}
+        onStepBack={() => current && setReverting(current)}
         onOpenChange={(open) => !open && setDetail(null)}
       />
+
+      <AlertDialog open={!!reverting} onOpenChange={(open) => !open && setReverting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Voltar etapa</AlertDialogTitle>
+            <AlertDialogDescription>
+              {reverting
+                ? `Voltar para a etapa "${JOB_STATUS_LABELS[PREVIOUS_STATUS[reverting.status]!]}"? O conteúdo já gerado (roteiro, cenas e vídeo) é mantido.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={stepBack.isPending}
+              onClick={(e) => { e.preventDefault(); reverting && stepBack.mutate(reverting); }}
+            >
+              {stepBack.isPending ? <Loader2 className="animate-spin" /> : null}Voltar etapa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
         <AlertDialogContent>
