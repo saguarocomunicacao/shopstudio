@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { TONE_OPTIONS, useProfileIdentity } from "@/lib/content";
+import { LanguageSelect } from "./language-select";
 import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");
