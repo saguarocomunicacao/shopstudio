@@ -1,12 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, RefreshCw } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Check, ChevronsUpDown, Loader2, RefreshCw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { syncCategories } from "@/lib/categories.functions";
 import { useCategories } from "@/lib/content";
+import { cn } from "@/lib/utils";
 import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível atualizar as categorias.");
@@ -36,12 +38,13 @@ export function SyncCategoriesButton() {
 
 type Props = { id?: string; value: string; onChange: (categoryId: string, categoryName: string) => void };
 
-/** Select das categorias oficiais; dispara a sync automática na primeira abertura (admin). */
+/** Combobox pesquisável das categorias oficiais; dispara a sync automática na primeira abertura (admin). */
 export function CategorySelect({ id, value, onChange }: Props) {
   const { isAdmin } = useStudio();
   const { data: categories = [], isLoading } = useCategories();
   const sync = useSyncCategories();
   const tried = useRef(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (isLoading || tried.current) return;
@@ -51,20 +54,47 @@ export function CategorySelect({ id, value, onChange }: Props) {
   }, [isLoading, categories.length, isAdmin]);
 
   const busy = isLoading || sync.isPending;
+  const selected = categories.find((c) => c.category_id === value);
 
   return (
-    <Select
-      value={value}
-      onValueChange={(v) => onChange(v, categories.find((c) => c.category_id === v)?.category_name ?? "")}
-    >
-      <SelectTrigger id={id}>
-        <SelectValue placeholder={busy ? "Carregando categorias..." : "Selecione a categoria oficial"} />
-      </SelectTrigger>
-      <SelectContent>
-        {categories.map((c) => (
-          <SelectItem key={c.category_id} value={c.category_id}>{c.category_name}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="secondary"
+          role="combobox"
+          aria-expanded={open}
+          className="h-10 w-full justify-between rounded-lg border-0 bg-input font-normal text-foreground hover:bg-input hover:text-foreground"
+        >
+          <span className={cn("truncate", !selected && "text-muted-foreground")}>
+            {busy ? "Carregando categorias..." : selected ? selected.category_name : "Selecione a categoria oficial"}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Buscar categoria..." />
+          <CommandList>
+            <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+            <CommandGroup>
+              {categories.map((c) => (
+                <CommandItem
+                  key={c.category_id}
+                  value={c.category_name}
+                  onSelect={() => {
+                    onChange(c.category_id, c.category_name);
+                    setOpen(false);
+                  }}
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value === c.category_id ? "opacity-100" : "opacity-0")} />
+                  {c.category_name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
