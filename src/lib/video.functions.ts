@@ -305,13 +305,11 @@ export const generateAvatarReference = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
 
-    const { data: canEdit, error: permError } = await supabase.rpc("has_profile_permission", {
-      _profile_id: data.profileId,
-      _module: "perfis",
-      _action: "editar",
-    });
-    if (permError) throw new Error(permError.message);
-    if (!canEdit) throw new Error("Você não tem permissão para editar este perfil.");
+    // A própria RLS de profile_video_settings exige a permissão perfis:editar.
+    const { error: guardError } = await supabase
+      .from("profile_video_settings")
+      .upsert({ profile_id: data.profileId, avatar_mode: "fixo" }, { onConflict: "profile_id" });
+    if (guardError) throw new Error("Você não tem permissão para editar este perfil.");
 
     const { data: settings } = await supabase
       .from("profile_video_settings")
@@ -334,7 +332,8 @@ export const generateAvatarReference = createServerFn({ method: "POST" })
 
     const { error } = await supabase
       .from("profile_video_settings")
-      .upsert({ profile_id: data.profileId, avatar_mode: "fixo", avatar_reference_url: stored.url }, { onConflict: "profile_id" });
+      .update({ avatar_reference_url: stored.url })
+      .eq("profile_id", data.profileId);
     if (error) throw new Error(error.message);
 
     return { url: stored.url };
