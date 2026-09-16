@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { LANGUAGE_OPTIONS, TONE_OPTIONS, useProfileIdentity } from "@/lib/content";
+import { TONE_OPTIONS, useProfileIdentity } from "@/lib/content";
 import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");
