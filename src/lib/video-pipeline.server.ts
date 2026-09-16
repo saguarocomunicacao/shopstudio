@@ -303,9 +303,30 @@ export function buildMovie(opts: {
   priceLabel: string | null;
   ctaText: string | null;
 }) {
+  const readableTextSettings = {
+    "font-family": "Roboto",
+    color: "#FFFFFF",
+    "font-weight": "900",
+    "text-align": "center",
+    "horizontal-position": "center",
+    "vertical-position": "center",
+    "-webkit-text-stroke": "3px #000000",
+    "text-shadow": "0 3px 8px rgba(0, 0, 0, 0.95)",
+  };
+
   const scenes = opts.scenes.map((scene, index) => {
     const elements: Record<string, unknown>[] = [
-      { type: "video", src: scene.video_url, duration: -2, fit: "cover", muted: true, loop: -1 },
+      {
+        type: "video",
+        src: scene.video_url,
+        duration: -2,
+        resize: "cover",
+        width: "100%",
+        height: "100%",
+        position: "center-center",
+        muted: true,
+        loop: -1,
+      },
       { type: "voice", text: scene.narration, voice: opts.voice, model: "azure" },
     ];
     if (index === 0 && opts.priceLabel) {
@@ -313,8 +334,11 @@ export function buildMovie(opts: {
         type: "text",
         text: opts.priceLabel,
         style: "001",
+        position: "custom",
+        x: "center",
         y: 220,
-        settings: { "font-size": "80px", color: "#FFFFFF", "font-weight": "900" },
+        width: "88%",
+        settings: { ...readableTextSettings, "font-size": "80px" },
       });
     }
     if (scene.overlay_text) {
@@ -322,8 +346,11 @@ export function buildMovie(opts: {
         type: "text",
         text: scene.overlay_text,
         style: "008",
-        y: 1500,
-        settings: { "font-size": "64px", color: "#FFFFFF", "font-weight": "800" },
+        position: "custom",
+        x: "center",
+        y: 420,
+        width: "88%",
+        settings: { ...readableTextSettings, "font-size": "64px", "font-weight": "800" },
       });
     }
     if (index === opts.scenes.length - 1 && opts.ctaText) {
@@ -331,8 +358,11 @@ export function buildMovie(opts: {
         type: "text",
         text: opts.ctaText,
         style: "001",
-        y: 1750,
-        settings: { "font-size": "70px", color: "#FFFFFF", "font-weight": "900" },
+        position: "custom",
+        x: "center",
+        y: 1240,
+        width: "88%",
+        settings: { ...readableTextSettings, "font-size": "70px" },
       });
     }
     return { transition: { style: "fade", duration: 0.4 }, elements };
@@ -343,7 +373,29 @@ export function buildMovie(opts: {
     quality: "high",
     "client-data": { job_id: opts.jobId },
     scenes,
-    elements: [{ type: "subtitles", language: opts.subtitleLanguage, model: "default" }],
+    elements: [
+      {
+        type: "subtitles",
+        language: opts.subtitleLanguage,
+        model: "default",
+        settings: {
+          style: "classic",
+          position: "custom",
+          x: 540,
+          y: 1510,
+          "font-family": "Roboto",
+          "font-size": 72,
+          "font-weight": "900",
+          "max-words-per-line": 4,
+          "word-color": "#FFFFFF",
+          "line-color": "#FFFFFF",
+          "outline-color": "#000000",
+          "outline-width": 6,
+          "shadow-color": "#000000",
+          "shadow-offset": 4,
+        },
+      },
+    ],
     exports: [
       {
         destinations: [{ type: "webhook", endpoint: opts.webhookUrl, "content-type": "application/json" }],
