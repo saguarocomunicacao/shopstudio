@@ -179,7 +179,9 @@
 .glitch-logo::before,.glitch-logo::after { content:attr(data-text); position:absolute; inset:0; pointer-events:none; opacity:.65; }
 .glitch-logo::before { color:var(--brand-cyan); transform:translate(-1px,1px); clip-path:inset(0 0 54%); }
 .glitch-logo::after { color:var(--secondary-brand); transform:translate(1px,-1px); clip-path:inset(56% 0 0); }
-.kanban { display:flex; gap:.75rem; overflow-x:auto; padding-bottom:.5rem; scroll-snap-type:x proximity; }
+.kanban { display:flex; gap:.75rem; overflow-x:auto; padding-bottom:.5rem; scroll-snap-type:x proximity; cursor:grab; }
+.kanban.is-dragging { cursor:grabbing; scroll-snap-type:none; user-select:none; }
+.kanban.is-dragging * { user-select:none; pointer-events:none; }
 .kanban::-webkit-scrollbar{height:8px}
 .kanban::-webkit-scrollbar-track{background:transparent}
 .kanban::-webkit-scrollbar-thumb{background:color-mix(in oklab,var(--foreground) 18%,transparent);border-radius:999px}
