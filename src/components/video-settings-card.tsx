@@ -19,8 +19,8 @@ const GEMINI_MODELS = [
 ];
 
 const VEO_MODELS = [
-  { value: "veo-3.1-fast-generate-001", label: "Rápido e econômico (padrão)" },
-  { value: "veo-3.1-generate-001", label: "Alta qualidade" },
+  { value: "veo-3.1-fast-generate-preview", label: "Rápido e econômico (padrão)" },
+  { value: "veo-3.1-generate-preview", label: "Alta qualidade" },
 ];
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");

@@ -257,7 +257,7 @@ async function runStep(
     avatar_reference_url: settingsRow?.avatar_reference_url ?? null,
     takes_count: settingsRow?.takes_count ?? 3,
     gemini_model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
-    veo_model: settingsRow?.veo_model ?? "veo-3.1-fast-generate-001",
+    veo_model: settingsRow?.veo_model ?? "veo-3.1-fast-generate-preview",
     take_duration: settingsRow?.take_duration ?? 8,
   };
   const language = identity?.language || "pt-BR";
