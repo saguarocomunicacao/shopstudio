@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, Images, Loader2, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { Clapperboard, Images, Loader2, RefreshCw, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ export function JobDetailDialog({
   canEdit,
   canDelete,
   onDelete,
+  canStepBack,
+  onStepBack,
   onOpenChange,
 }: {
   job: DbJob | null;
@@ -30,6 +32,8 @@ export function JobDetailDialog({
   canEdit: boolean;
   canDelete?: boolean;
   onDelete?: () => void;
+  canStepBack?: boolean;
+  onStepBack?: () => void;
   onOpenChange: (open: boolean) => void;
 }) {
   const qc = useQueryClient();
@@ -117,7 +121,9 @@ export function JobDetailDialog({
           {job?.render_error && (
             <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-destructive">{job.render_error}</p>
           )}
-          {job?.status === "cenas_geradas" && <JobScenesReview job={job} canEdit={canEdit} />}
+          {job && (job.scenes?.length ?? 0) > 0 && (
+            <JobScenesReview job={job} canEdit={canEdit && job.status === "cenas_geradas"} />
+          )}
 
 
           {busy ? (
@@ -147,11 +153,18 @@ export function JobDetailDialog({
           )}
         </div>
         <DialogFooter className="sm:justify-between">
-          {canDelete && onDelete ? (
-            <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => { onOpenChange(false); onDelete(); }}>
-              <Trash2 />Excluir
-            </Button>
-          ) : <span />}
+          <div className="flex flex-wrap gap-2">
+            {canDelete && onDelete && (
+              <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => { onOpenChange(false); onDelete(); }}>
+                <Trash2 />Excluir
+              </Button>
+            )}
+            {canStepBack && onStepBack && (
+              <Button variant="outline" onClick={() => { onOpenChange(false); onStepBack(); }}>
+                <Undo2 />Voltar etapa
+              </Button>
+            )}
+          </div>
           <div className="flex flex-wrap justify-end gap-2">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>Fechar</Button>
           {canEdit && (

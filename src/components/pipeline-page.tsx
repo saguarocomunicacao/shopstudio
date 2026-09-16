@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, Images, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Clapperboard, Images, Loader2, Plus, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { JOB_STATUSES, JOB_STATUS_LABELS, relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
+import { JOB_STATUSES, JOB_STATUS_LABELS, PREVIOUS_STATUS, relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
 import { useVideoDriver } from "@/lib/video-driver";
@@ -46,7 +46,26 @@ export function PipelinePage() {
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
   const canEditJob = (job: DbJob) => can("pipeline", "editar", job.profile_id) || can("pipeline", "criar", job.profile_id);
   const canRemoveJob = (job: DbJob) => can("pipeline", "remover", job.profile_id);
+  const canStepBack = (job: DbJob) => can("pipeline", "editar", job.profile_id) && !!PREVIOUS_STATUS[job.status];
   const [deleting, setDeleting] = useState<DbJob | null>(null);
+  const [reverting, setReverting] = useState<DbJob | null>(null);
+
+  const stepBack = useMutation({
+    mutationFn: async (job: DbJob) => {
+      const previous = PREVIOUS_STATUS[job.status];
+      if (!previous) throw new Error("Este job já está na primeira etapa.");
+      // Só muda o status: roteiro, cenas e vídeo continuam salvos no job.
+      const { error } = await supabase.from("jobs").update({ status: previous, render_error: null }).eq("id", job.id);
+      if (error) throw new Error(error.message);
+      return previous;
+    },
+    onSuccess: (previous) => {
+      toast.success(`Job movido para "${JOB_STATUS_LABELS[previous]}".`);
+      setReverting(null);
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
 
   const removeJob = useMutation({
     mutationFn: async (jobId: string) => {
@@ -107,16 +126,29 @@ export function PipelinePage() {
               <div className="space-y-2">
                 {items.map((job) => (
                   <article className="job-card relative cursor-pointer" key={job.id} onClick={() => setDetail(job)}>
-                    {canRemoveJob(job) && (
-                      <button
-                        type="button"
-                        aria-label="Excluir job"
-                        className="absolute right-2 top-2 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
-                        onClick={(e) => { e.stopPropagation(); setDeleting(job); }}
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    )}
+                    <div className="absolute right-2 top-2 flex items-center gap-0.5">
+                      {canStepBack(job) && (
+                        <button
+                          type="button"
+                          aria-label="Voltar etapa"
+                          title="Voltar etapa"
+                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                          onClick={(e) => { e.stopPropagation(); setReverting(job); }}
+                        >
+                          <Undo2 className="size-4" />
+                        </button>
+                      )}
+                      {canRemoveJob(job) && (
+                        <button
+                          type="button"
+                          aria-label="Excluir job"
+                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); setDeleting(job); }}
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      )}
+                    </div>
                     <p className="text-sm font-bold">{job.title || productName(job.product_id)}</p>
                     <p className="mt-2 text-xs text-muted-foreground">{productName(job.product_id)}</p>
                     <p className="mt-4 text-[11px] text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
@@ -188,8 +220,33 @@ export function PipelinePage() {
         canEdit={!!current && canEditJob(current)}
         canDelete={!!current && canRemoveJob(current)}
         onDelete={() => current && setDeleting(current)}
+        canStepBack={!!current && canStepBack(current)}
+        onStepBack={() => current && setReverting(current)}
         onOpenChange={(open) => !open && setDetail(null)}
       />
+
+      <AlertDialog open={!!reverting} onOpenChange={(open) => !open && setReverting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Voltar etapa</AlertDialogTitle>
+            <AlertDialogDescription>
+              {reverting
+                ? `Voltar para a etapa "${JOB_STATUS_LABELS[PREVIOUS_STATUS[reverting.status]!]}"? O conteúdo já gerado (roteiro, cenas e vídeo) é mantido.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={stepBack.isPending}
+              onClick={(e) => { e.preventDefault(); reverting && stepBack.mutate(reverting); }}
+            >
+              {stepBack.isPending ? <Loader2 className="animate-spin" /> : null}Voltar etapa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
         <AlertDialogContent>
