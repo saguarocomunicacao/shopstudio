@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Clapperboard, Images, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUS_LABELS, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
-import { RENDER_STAGE_LABELS, generateJobVideo } from "@/lib/video.functions";
+import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/video.functions";
+import { JobScenesReview } from "./job-scenes-review";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+
 
 export function JobDetailDialog({
   job,
