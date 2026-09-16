@@ -45,6 +45,22 @@ export function PipelinePage() {
   const productName = (id: string | null) => products.find((p) => p.id === id)?.name ?? "Sem produto";
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
   const canEditJob = (job: DbJob) => can("pipeline", "editar", job.profile_id) || can("pipeline", "criar", job.profile_id);
+  const canRemoveJob = (job: DbJob) => can("pipeline", "remover", job.profile_id);
+  const [deleting, setDeleting] = useState<DbJob | null>(null);
+
+  const removeJob = useMutation({
+    mutationFn: async (jobId: string) => {
+      const { error } = await supabase.from("jobs").delete().eq("id", jobId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Job excluído.");
+      setDeleting(null);
+      setDetail(null);
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
 
   const runGenerate = useMutation({
     mutationFn: async (jobId: string) => {
