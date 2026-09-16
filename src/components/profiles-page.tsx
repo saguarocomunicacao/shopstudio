@@ -31,8 +31,8 @@ const slugify = (value: string) =>
 const initialsOf = (value: string) =>
   value.trim().split(/\s+/).filter((w) => w.length > 2 || value.trim().split(/\s+/).length === 1).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "??";
 
-type FormState = { name: string; handle: string; niche: string; categoryId: string; tagline: string; followers: string; status: string };
-const emptyForm: FormState = { name: "", handle: "", niche: "", categoryId: "", tagline: "", followers: "0", status: "Ativo" };
+type FormState = { name: string; handle: string; niche: string; categoryId: string; followers: string; status: string };
+const emptyForm: FormState = { name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo" };
 
 export function ProfilesPage() {
   const { profiles, can, loading } = useStudio();
@@ -47,7 +47,7 @@ export function ProfilesPage() {
   useEffect(() => {
     if (!dialog.open) return;
     const p = dialog.profile;
-    setForm(p ? { name: p.name, handle: p.handle, niche: p.niche, categoryId: p.category_id ?? "", tagline: p.tagline, followers: String(p.followers), status: p.status } : emptyForm);
+    setForm(p ? { name: p.name, handle: p.handle, niche: p.niche, categoryId: p.category_id ?? "", followers: String(p.followers), status: p.status } : emptyForm);
   }, [dialog]);
 
   const save = useMutation({
@@ -57,7 +57,6 @@ export function ProfilesPage() {
         handle: values.handle.trim().replace(/^@/, ""),
         niche: values.niche.trim(),
         category_id: values.categoryId || null,
-        tagline: values.tagline.trim(),
         followers: Number.parseInt(values.followers, 10) || 0,
         status: values.status,
         initials: initialsOf(values.name),
@@ -115,7 +114,6 @@ export function ProfilesPage() {
                 </div>
                 <h2 className="text-lg font-black">{p.name}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">{p.niche}{p.handle ? ` · @${p.handle}` : ""}</p>
-                {p.tagline ? <p className="mt-1 text-xs text-muted-foreground">{p.tagline}</p> : null}
                 <div className="mt-6 flex items-end justify-between border-t pt-4">
                   <div>
                     <p className="text-lg font-black">{formatFollowers(p.followers)}</p>
@@ -153,7 +151,6 @@ export function ProfilesPage() {
             <div className="grid gap-2"><Label htmlFor="p-name">Nome</Label><Input id="p-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Moda e Acessórios" /></div>
             <div className="grid gap-2"><Label htmlFor="p-handle">@ da conta</Label><Input id="p-handle" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="modaacessorios" /></div>
             <div className="grid gap-2"><Label htmlFor="p-niche">Categoria oficial</Label><CategorySelect id="p-niche" value={form.categoryId} onChange={(categoryId, categoryName) => setForm({ ...form, categoryId, niche: categoryName })} /></div>
-            <div className="grid gap-2"><Label htmlFor="p-tagline">Tagline</Label><Input id="p-tagline" value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} placeholder="Looks & tendências" /></div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2"><Label htmlFor="p-followers">Seguidores</Label><Input id="p-followers" inputMode="numeric" value={form.followers} onChange={(e) => setForm({ ...form, followers: e.target.value.replace(/\D/g, "") })} /></div>
               <div className="grid gap-2">
