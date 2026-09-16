@@ -105,24 +105,41 @@ export function PipelinePage() {
                     {job.render_error && (
                       <p className="mt-3 rounded-lg bg-secondary px-3 py-2 text-[11px] text-destructive">{job.render_error}</p>
                     )}
-                    {job.status === "roteiro_pronto" && canEditJob(job) && (
+                    {job.status === "roteiro_pronto" && !job.render_stage && canEditJob(job) && (
                       <Button
                         size="sm"
                         className="mt-3 w-full"
                         disabled={renderingId === job.id}
-                        onClick={(e) => { e.stopPropagation(); runVideo.mutate(job.id); }}
+                        onClick={(e) => { e.stopPropagation(); runScenes.mutate(job.id); }}
                       >
                         {renderingId === job.id
                           ? <><Loader2 className="animate-spin" />Enviando...</>
-                          : <><Clapperboard />{job.render_error ? "Tentar de novo" : "Gerar vídeo"}</>}
+                          : <><Images />{job.render_error ? "Tentar de novo" : "Gerar cenas"}</>}
                       </Button>
                     )}
-                    {job.status === "gerando_video" && (
+                    {job.status === "cenas_geradas" && (
+                      <>
+                        <div className="mt-3 flex gap-1.5">
+                          {(job.scenes ?? []).slice(0, 4).map((scene, i) =>
+                            scene.image_url ? (
+                              <img key={i} src={scene.image_url} alt="" className="aspect-[9/16] w-full rounded-md object-cover" />
+                            ) : null,
+                          )}
+                        </div>
+                        {canEditJob(job) && (
+                          <Button size="sm" className="mt-3 w-full" onClick={(e) => { e.stopPropagation(); setDetail(job); }}>
+                            <Clapperboard />Revisar e aprovar
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    {(job.status === "gerando_video" || (job.status === "roteiro_pronto" && job.render_stage)) && (
                       <p className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
                         <Loader2 className="size-3 animate-spin" />
                         {(job.render_stage && RENDER_STAGE_LABELS[job.render_stage]) ?? "Renderizando"}...
                       </p>
                     )}
+
                     {job.status === "video_pronto" && job.video_thumbnail_url && (
                       <img src={job.video_thumbnail_url} alt="" className="mt-3 aspect-[9/16] w-full rounded-lg object-cover" />
                     )}
