@@ -149,11 +149,17 @@ export function JobDetailDialog({
               <Button variant="outline" disabled={busy || !job} onClick={() => job && runGenerate.mutate(job.id)}>
                 {hasScript ? <><RefreshCw />Regenerar</> : <><Sparkles />Gerar roteiro</>}
               </Button>
-              {job?.status === "roteiro_pronto" && (
-                <Button variant="outline" disabled={runVideo.isPending} onClick={() => runVideo.mutate(job.id)}>
-                  {runVideo.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Clapperboard />{job.render_error ? "Tentar de novo" : "Gerar vídeo"}</>}
+              {job?.status === "roteiro_pronto" && !job.render_stage && (
+                <Button variant="outline" disabled={runScenes.isPending} onClick={() => runScenes.mutate(job.id)}>
+                  {runScenes.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Images />{job.render_error ? "Tentar de novo" : "Gerar cenas"}</>}
                 </Button>
               )}
+              {job?.status === "cenas_geradas" && (
+                <Button disabled={runApprove.isPending} onClick={() => runApprove.mutate(job.id)}>
+                  {runApprove.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Clapperboard />Aprovar e gerar vídeo</>}
+                </Button>
+              )}
+
               {hasScript && (
                 <Button disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
               )}
