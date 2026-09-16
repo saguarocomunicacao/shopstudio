@@ -123,7 +123,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
 
       {run.isPending && page === 1 && <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">Garimpando produtos em alta...</div>}
 
-      {!run.isPending && results !== null && results.length > 0 && (
+      {results !== null && results.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {results.map((item) => {
             const already = saved.has(`${item.source}:${item.externalId}`);
