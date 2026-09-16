@@ -353,7 +353,7 @@ async function runStep(
       const status = await pipeline.pollVeoTake(scene.operation);
       if (!status.done) return { stage: "takes", done: false, progress: { done: index, total: scenes.length } };
 
-      const video = await pipeline.downloadVeoVideo(status.uri!);
+      const video = await pipeline.downloadVeoVideo(status.video!);
       const stored = await pipeline.storeMedia(`${job.id}/take-${index + 1}.mp4`, video.bytes, "video/mp4");
       scenes[index] = { ...scene, video_path: stored.path, video_url: stored.url };
       await supabase
