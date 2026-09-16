@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { discoverProducts } from "@/lib/discover.functions";
-import { formatPrice, type DbProduct } from "@/lib/content";
+import { formatPrice, useCategories, type DbProduct } from "@/lib/content";
 import { useStudio } from "./studio-context";
 
 type Found = {
@@ -25,6 +25,10 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
   const { can, userId } = useStudio();
   const qc = useQueryClient();
   const canCreate = can("produtos", "criar");
+  const { data: categories = [] } = useCategories();
+  const normalize = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  const categoryIdFor = (name: string) =>
+    categories.find((c) => normalize(c.category_name) === normalize(name))?.category_id ?? null;
   const search = useServerFn(discoverProducts);
 
   const [keyword, setKeyword] = useState("");
@@ -60,6 +64,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
         fresh.map((i) => ({
           name: i.name,
           niche: i.category,
+          category_id: categoryIdFor(i.category),
           price: i.price,
           commission: i.commission,
           url: i.productUrl,

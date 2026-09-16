@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice, useProducts, type DbProduct } from "@/lib/content";
+import { CategorySelect } from "./category-select";
 import { DiscoverPanel } from "./discover-panel";
 import { useStudio } from "./studio-context";
 
@@ -20,8 +21,8 @@ function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; a
   return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>;
 }
 
-type FormState = { name: string; niche: string; price: string; commission: string; url: string; hype: string; status: string };
-const emptyForm: FormState = { name: "", niche: "", price: "", commission: "", url: "", hype: "50", status: "Ativo" };
+type FormState = { name: string; niche: string; categoryId: string; price: string; commission: string; url: string; hype: string; status: string };
+const emptyForm: FormState = { name: "", niche: "", categoryId: "", price: "", commission: "", url: "", hype: "50", status: "Ativo" };
 
 const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
@@ -46,7 +47,7 @@ export function ProductsPage() {
   useEffect(() => {
     if (!dialog.open) return;
     const p = dialog.product;
-    setForm(p ? { name: p.name, niche: p.niche, price: String(p.price), commission: String(p.commission), url: p.url, hype: String(p.hype), status: p.status } : emptyForm);
+    setForm(p ? { name: p.name, niche: p.niche, categoryId: p.category_id ?? "", price: String(p.price), commission: String(p.commission), url: p.url, hype: String(p.hype), status: p.status } : emptyForm);
   }, [dialog]);
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export function ProductsPage() {
       const payload = {
         name: values.name.trim(),
         niche: values.niche.trim(),
+        category_id: values.categoryId || null,
         price: Number(values.price.replace(",", ".")) || 0,
         commission: Number(values.commission.replace(",", ".")) || 0,
         url: values.url.trim(),
@@ -181,7 +183,7 @@ export function ProductsPage() {
           <DialogHeader><DialogTitle>{dialog.product ? "Editar produto" : "Adicionar produto"}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-2"><Label htmlFor="pr-name">Nome</Label><Input id="pr-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Bolsa Vitta" /></div>
-            <div className="grid gap-2"><Label htmlFor="pr-niche">Nicho</Label><Input id="pr-niche" value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="Moda" /></div>
+            <div className="grid gap-2"><Label htmlFor="pr-niche">Categoria oficial</Label><CategorySelect id="pr-niche" value={form.categoryId} onChange={(categoryId, categoryName) => setForm({ ...form, categoryId, niche: categoryName })} /></div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2"><Label htmlFor="pr-price">Preço (R$)</Label><Input id="pr-price" inputMode="decimal" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="89,90" /></div>
               <div className="grid gap-2"><Label htmlFor="pr-comm">Comissão (%)</Label><Input id="pr-comm" inputMode="decimal" value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} placeholder="18" /></div>
