@@ -200,12 +200,7 @@ export function ProfilesPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="p-language">Idioma</Label>
-                <Select value={form.language} onValueChange={(v) => setForm({ ...form, language: v })}>
-                  <SelectTrigger id="p-language"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l.value} value={l.value}>{l.flag} {l.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <LanguageSelect id="p-language" value={form.language} onChange={(v) => setForm({ ...form, language: v })} />
               </div>
             </div>
             <div className="grid gap-2"><Label htmlFor="p-notes">Observações de estilo <span className="font-normal text-muted-foreground">(opcional)</span></Label><Textarea id="p-notes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ex: falar direto com a câmera, frases curtas, sempre mostrar o produto em uso." /></div>

@@ -62,12 +62,7 @@ export function ProfileIdentityCard() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="i-lang">Idioma</Label>
-              <Select value={language} onValueChange={setLanguage} disabled={!canEdit}>
-                <SelectTrigger id="i-lang"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l.value} value={l.value}>{l.flag} {l.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <LanguageSelect id="i-lang" value={language} onChange={setLanguage} disabled={!canEdit} />
             </div>
           </div>
           <div className="grid gap-2">
