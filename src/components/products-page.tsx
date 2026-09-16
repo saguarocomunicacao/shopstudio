@@ -26,6 +26,26 @@ const emptyForm: FormState = { name: "", niche: "", categoryId: "", price: "", c
 
 const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+// Mascara o valor digitado no formato BRL (R$ 1.234,56) enquanto o usuario digita.
+function maskPrice(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  const num = Number(digits) / 100;
+  return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+function parsePrice(masked: string): number {
+  const digits = masked.replace(/\D/g, "");
+  return digits ? Number(digits) / 100 : 0;
+}
+
+// Comissao: apenas inteiros de 0 a 100.
+function maskCommission(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  const num = Math.min(100, Math.max(0, Number(digits)));
+  return String(num);
+}
+
 export function ProductsPage() {
   const { can, profiles, userId } = useStudio();
   const qc = useQueryClient();
