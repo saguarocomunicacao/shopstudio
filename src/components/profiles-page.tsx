@@ -93,7 +93,7 @@ export function ProfilesPage() {
       const { error: identityError } = await supabase.from("profile_identities").upsert(identity, { onConflict: "profile_id" });
       if (identityError) throw new Error(identityError.message);
     },
-    onSuccess: (_d, vars) => { toast.success(vars.profile ? "Perfil atualizado." : "Perfil criado."); setDialog({ open: false, profile: null }); refresh(); },
+    onSuccess: (_d, vars) => { toast.success(vars.profile ? "Perfil atualizado." : "Perfil criado."); setDialog({ open: false, profile: null }); refresh(); qc.invalidateQueries({ queryKey: ["profile-identity"] }); },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -184,6 +184,23 @@ export function ProfilesPage() {
                 </Select>
               </div>
             </div>
+            <div className="border-t pt-4">
+              <p className="text-sm font-bold">Identidade do perfil</p>
+              <p className="text-xs text-muted-foreground">Base usada pela IA para escrever os roteiros.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="p-tone">Tom de voz</Label>
+                <Select value={form.tone} onValueChange={(v) => setForm({ ...form, tone: v })}>
+                  <SelectTrigger id="p-tone"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {TONE_OPTIONS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2"><Label htmlFor="p-language">Idioma</Label><Input id="p-language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} placeholder="pt-BR" /></div>
+            </div>
+            <div className="grid gap-2"><Label htmlFor="p-notes">Observações de estilo <span className="font-normal text-muted-foreground">(opcional)</span></Label><Textarea id="p-notes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ex: falar direto com a câmera, frases curtas, sempre mostrar o produto em uso." /></div>
           </div>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDialog({ open: false, profile: null })}>Cancelar</Button>
