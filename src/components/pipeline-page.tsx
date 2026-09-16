@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, Loader2, Plus, Sparkles } from "lucide-react";
+import { Clapperboard, Images, Loader2, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JOB_STATUSES, JOB_STATUS_LABELS, relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
-import { RENDER_STAGE_LABELS, generateJobVideo } from "@/lib/video.functions";
+import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
 import { useVideoDriver } from "@/lib/video-driver";
 import { JobDetailDialog } from "./job-detail-dialog";
 import { useStudio } from "./studio-context";
@@ -16,11 +16,13 @@ const statusClass: Record<string, string> = {
   novo: "status-neutral",
   produto_escolhido: "status-blue",
   roteiro_pronto: "status-violet",
+  cenas_geradas: "status-orange",
   gerando_video: "status-cyan",
   video_pronto: "status-lime",
   rascunho_enviado: "status-orange",
   publicado: "status-pink",
 };
+
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
