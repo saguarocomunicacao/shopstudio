@@ -339,9 +339,10 @@ async function runStep(
       const scene = scenes[index]!;
       if (!scene.operation) {
         const image = await pipeline.fetchAsBase64(scene.image_url!);
+        // Prompt 100% visual: qualquer menção a fala/som faz o Veo bloquear pelo filtro de áudio.
         const operation = await pipeline.startVeoTake({
           model: settings.veo_model,
-          prompt: `${scene.motion_prompt} No spoken dialogue, no on-screen text.`,
+          prompt: `${pipeline.sanitizeMotionPrompt(scene.motion_prompt)} Cinematic vertical framing, natural lighting, realistic motion.`,
           image: { base64: image.base64, mimeType: image.mimeType },
           durationSeconds: settings.take_duration,
         });
@@ -350,7 +351,20 @@ async function runStep(
         return { stage: "takes", done: false, progress: { done: index, total: scenes.length } };
       }
 
-      const status = await pipeline.pollVeoTake(scene.operation);
+      let status: Awaited<ReturnType<typeof pipeline.pollVeoTake>>;
+      try {
+        status = await pipeline.pollVeoTake(scene.operation);
+      } catch (e) {
+        // Bloqueio de filtro (tipicamente o áudio nativo do Veo) é intermitente:
+        // reprograma a mesma cena até 3 vezes antes de desistir.
+        const attempts = (scene.attempts ?? 0) + 1;
+        if (e instanceof pipeline.VeoFilteredError && attempts < 3) {
+          scenes[index] = { ...scene, operation: undefined, attempts };
+          await supabase.from("jobs").update({ scenes, render_error: e.message }).eq("id", job.id);
+          return { stage: "takes", done: false, progress: { done: index, total: scenes.length } };
+        }
+        throw e;
+      }
       if (!status.done) return { stage: "takes", done: false, progress: { done: index, total: scenes.length } };
 
       const video = await pipeline.downloadVeoVideo(status.video!);
