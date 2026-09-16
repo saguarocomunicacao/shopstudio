@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { LANGUAGE_OPTIONS, TONE_OPTIONS, useProfileIdentity } from "@/lib/content";
+import { TONE_OPTIONS, useProfileIdentity } from "@/lib/content";
+import { LanguageSelect } from "./language-select";
 import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");
@@ -62,12 +63,7 @@ export function ProfileIdentityCard() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="i-lang">Idioma</Label>
-              <Select value={language} onValueChange={setLanguage} disabled={!canEdit}>
-                <SelectTrigger id="i-lang"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l.value} value={l.value}>{l.flag} {l.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <LanguageSelect id="i-lang" value={language} onChange={setLanguage} disabled={!canEdit} />
             </div>
           </div>
           <div className="grid gap-2">

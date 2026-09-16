@@ -9,10 +9,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LanguageSelect } from "./language-select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbProfile } from "@/lib/access";
-import { LANGUAGE_OPTIONS, TONE_OPTIONS } from "@/lib/content";
+import { TONE_OPTIONS } from "@/lib/content";
 import { formatFollowers } from "@/lib/studio-data";
 import { CategorySelect } from "./category-select";
 import { useStudio } from "./studio-context";
@@ -200,12 +201,7 @@ export function ProfilesPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="p-language">Idioma</Label>
-                <Select value={form.language} onValueChange={(v) => setForm({ ...form, language: v })}>
-                  <SelectTrigger id="p-language"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGE_OPTIONS.map((l) => <SelectItem key={l.value} value={l.value}>{l.flag} {l.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <LanguageSelect id="p-language" value={form.language} onChange={(v) => setForm({ ...form, language: v })} />
               </div>
             </div>
             <div className="grid gap-2"><Label htmlFor="p-notes">Observações de estilo <span className="font-normal text-muted-foreground">(opcional)</span></Label><Textarea id="p-notes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ex: falar direto com a câmera, frases curtas, sempre mostrar o produto em uso." /></div>
