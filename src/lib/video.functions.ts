@@ -145,6 +145,9 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     const job = await loadJob(supabase, data.jobId);
     if (job.status !== "cenas_geradas") throw new Error("Só é possível regerar cenas nesta etapa.");
 
+    // Nova tentativa começando: limpa o erro anterior antes de gerar.
+    await supabase.from("jobs").update({ render_error: null }).eq("id", job.id);
+
     const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as import("./video-pipeline.server").Scene[];
     const scene = scenes[data.index];
     if (!scene) throw new Error("Cena não encontrada.");
@@ -324,9 +327,10 @@ async function runStep(
       return { stage: "cenas", done: false, progress: { done: index + 1, total: scenes.length } };
     }
     // Imagens prontas: pausa para revisão humana antes de gastar com a animação.
+    // Etapa concluída com sucesso: limpa qualquer erro de tentativa anterior.
     await supabase
       .from("jobs")
-      .update({ status: "cenas_geradas", render_stage: null })
+      .update({ status: "cenas_geradas", render_stage: null, render_error: null })
       .eq("id", job.id);
     return { stage: null, done: true, progress: { done: scenes.length, total: scenes.length } };
 
@@ -361,7 +365,8 @@ async function runStep(
         if (e instanceof pipeline.VeoFilteredError && attempts < 3) {
           const { operation: _drop, ...rest } = scene;
           scenes[index] = { ...rest, attempts };
-          await supabase.from("jobs").update({ scenes, render_error: e.message }).eq("id", job.id);
+          // Nova tentativa já começou: não deixa o erro antigo na tela.
+          await supabase.from("jobs").update({ scenes, render_error: null }).eq("id", job.id);
           return { stage: "takes", done: false, progress: { done: index, total: scenes.length } };
         }
         throw e;
@@ -371,9 +376,10 @@ async function runStep(
       const video = await pipeline.downloadVeoVideo(status.video!);
       const stored = await pipeline.storeMedia(`${job.id}/take-${index + 1}.mp4`, video.bytes, "video/mp4");
       scenes[index] = { ...scene, video_path: stored.path, video_url: stored.url };
+      // Take concluído: limpa o erro da tentativa anterior (ex.: bloqueio de filtro já superado).
       await supabase
         .from("jobs")
-        .update({ scenes, veo_takes_count: (job.veo_takes_count ?? 0) + 1 })
+        .update({ scenes, veo_takes_count: (job.veo_takes_count ?? 0) + 1, render_error: null })
         .eq("id", job.id);
       return { stage: "takes", done: false, progress: { done: index + 1, total: scenes.length } };
     }
@@ -412,7 +418,7 @@ async function runStep(
 
     await supabase
       .from("jobs")
-      .update({ render_id: payload.project, render_stage: "render" })
+      .update({ render_id: payload.project, render_stage: "render", render_error: null })
       .eq("id", job.id);
     return { stage: "render", done: true, progress: { done: scenes.length, total: scenes.length } };
   }
