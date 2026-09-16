@@ -238,6 +238,9 @@ function findFilterReasons(node: unknown, acc: string[] = [], depth = 0): string
   return acc;
 }
 
+/** Bloqueio pelos filtros do Google (inclui o filtro do áudio nativo do Veo). */
+export class VeoFilteredError extends Error {}
+
 /** Consulta a operação do Veo; devolve o MP4 (URI ou base64) quando pronta. */
 export async function pollVeoTake(operation: string): Promise<{ done: boolean; video?: VeoVideo }> {
   const res = await fetch(`${GEMINI_BASE}/${operation}`, { headers: { "x-goog-api-key": geminiKey() } });
