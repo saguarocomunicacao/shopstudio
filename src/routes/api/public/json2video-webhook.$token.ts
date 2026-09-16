@@ -57,7 +57,7 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
           await supabaseAdmin
             .from("jobs")
             .update({
-              status: "roteiro_pronto",
+              status: "cenas_geradas",
               render_stage: null,
               render_error: "A renderização do vídeo falhou. Tente gerar novamente.",
             })
