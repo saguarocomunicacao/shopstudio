@@ -150,12 +150,13 @@ export async function startVeoTake(opts: {
       instances: [
         {
           prompt: opts.prompt,
-          image: { inlineData: { mimeType: opts.image.mimeType, data: opts.image.base64 } },
+          // Formato oficial da Gemini API para image-to-video (não é inlineData).
+          image: { bytesBase64Encoded: opts.image.base64, mimeType: opts.image.mimeType },
         },
       ],
       parameters: {
         aspectRatio: "9:16",
-        durationSeconds: String(opts.durationSeconds),
+        durationSeconds: opts.durationSeconds,
         resolution: "720p",
         personGeneration: "allow_adult",
       },
