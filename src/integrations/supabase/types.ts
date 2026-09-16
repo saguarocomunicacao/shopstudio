@@ -230,7 +230,6 @@ export type Database = {
           niche: string
           slug: string
           status: string
-          tagline: string
         }
         Insert: {
           category_id?: string | null
@@ -244,7 +243,6 @@ export type Database = {
           niche?: string
           slug: string
           status?: string
-          tagline?: string
         }
         Update: {
           category_id?: string | null
@@ -258,7 +256,6 @@ export type Database = {
           niche?: string
           slug?: string
           status?: string
-          tagline?: string
         }
         Relationships: [
           {
