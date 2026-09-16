@@ -175,6 +175,7 @@ export function JobDetailDialog({
               )}
             </>
           )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
