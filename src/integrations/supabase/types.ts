@@ -506,6 +506,7 @@ export type Database = {
         | "novo"
         | "produto_escolhido"
         | "roteiro_pronto"
+        | "cenas_geradas"
         | "gerando_video"
         | "video_pronto"
         | "rascunho_enviado"
@@ -641,6 +642,7 @@ export const Constants = {
         "novo",
         "produto_escolhido",
         "roteiro_pronto",
+        "cenas_geradas",
         "gerando_video",
         "video_pronto",
         "rascunho_enviado",
