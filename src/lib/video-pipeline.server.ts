@@ -22,9 +22,28 @@ export type Scene = ScenePlan & {
   image_path?: string;
   image_url?: string;
   operation?: string;
+  attempts?: number;
   video_path?: string;
   video_url?: string;
 };
+
+/**
+ * O Veo 3.1 SEMPRE gera áudio nativo (não existe parâmetro para desligar na
+ * Gemini API) e bloqueia o vídeo quando o áudio é filtrado. Como a narração
+ * vem do JSON2Video, o prompt enviado ao Veo precisa ser 100% visual: qualquer
+ * frase que mencione fala, voz, música ou som é removida antes do envio.
+ */
+const AUDIO_WORDS =
+  /\b(audio|áudio|voice|voz|voice-?over|narrat\w*|narra\w*|speak\w*|speech|talking|says?|saying|dialog\w*|diálog\w*|whisper\w*|sings?|singing|song|music\w*|música|sound\w*|som|sonor\w*|asmr|noise|ruído|silent|silence|silênc\w*|mute\w*|subtitle\w*|legenda\w*|caption\w*)\b/i;
+
+export function sanitizeMotionPrompt(prompt: string): string {
+  const kept = prompt
+    .split(/(?<=[.;!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence && !AUDIO_WORDS.test(sentence));
+  const visual = kept.join(" ").trim();
+  return visual || "Cinematic handheld camera slowly moves around the subject, natural motion, vertical framing.";
+}
 
 /** Vozes Azure (incluídas no plano do JSON2Video) por idioma da identidade do perfil. */
 export const VOICE_BY_LANGUAGE: Record<string, string> = {
