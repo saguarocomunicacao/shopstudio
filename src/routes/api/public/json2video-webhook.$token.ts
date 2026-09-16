@@ -47,6 +47,7 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
             .from("jobs")
             .update({
               status: "video_pronto",
+              render_stage: null,
               video_url: url,
               video_thumbnail_url: thumbnail,
               render_error: null,
@@ -57,6 +58,7 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
             .from("jobs")
             .update({
               status: "roteiro_pronto",
+              render_stage: null,
               render_error: "A renderização do vídeo falhou. Tente gerar novamente.",
             })
             .eq("id", job.id);

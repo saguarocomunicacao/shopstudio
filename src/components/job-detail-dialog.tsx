@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUS_LABELS, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
-import { generateJobVideo } from "@/lib/video.functions";
+import { RENDER_STAGE_LABELS, generateJobVideo } from "@/lib/video.functions";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
@@ -96,7 +96,7 @@ export function JobDetailDialog({
           {job?.status === "gerando_video" && (
             <div className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-6 text-sm">
               <Loader2 className="size-4 animate-spin" />
-              Renderizando o vídeo... o card avança sozinho quando ficar pronto.
+              {(job.render_stage && RENDER_STAGE_LABELS[job.render_stage]) ?? "Renderizando o vídeo"}... o card avança sozinho quando ficar pronto.
             </div>
           )}
           {job?.render_error && (
