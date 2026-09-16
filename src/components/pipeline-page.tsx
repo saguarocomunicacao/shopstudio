@@ -54,12 +54,13 @@ export function PipelinePage() {
     onSettled: () => setGeneratingId(null),
   });
 
-  const runVideo = useMutation({
+  const runScenes = useMutation({
     mutationFn: async (jobId: string) => {
       setRenderingId(jobId);
-      return generateVideo({ data: { jobId } });
+      return generateScenes({ data: { jobId } });
     },
-    onSuccess: () => { toast.success("Geração de vídeo iniciada."); qc.invalidateQueries({ queryKey: ["jobs"] }); },
+    onSuccess: () => { toast.success("Geração das cenas iniciada."); qc.invalidateQueries({ queryKey: ["jobs"] }); },
+
     onError: (e) => toast.error(errMessage(e)),
     onSettled: () => setRenderingId(null),
   });
