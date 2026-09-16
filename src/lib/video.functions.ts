@@ -324,8 +324,13 @@ async function runStep(
         .eq("id", job.id);
       return { stage: "cenas", done: false, progress: { done: index + 1, total: scenes.length } };
     }
-    await supabase.from("jobs").update({ render_stage: "takes" }).eq("id", job.id);
-    return { stage: "takes", done: false, progress: { done: 0, total: scenes.length } };
+    // Imagens prontas: pausa para revisão humana antes de gastar com a animação.
+    await supabase
+      .from("jobs")
+      .update({ status: "cenas_geradas", render_stage: null })
+      .eq("id", job.id);
+    return { stage: null, done: true, progress: { done: scenes.length, total: scenes.length } };
+
   }
 
   // ---------- Etapa 2: animar cada cena com o Veo ----------
