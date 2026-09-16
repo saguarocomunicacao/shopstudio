@@ -1,0 +1,161 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Check, Loader2, Search, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { discoverProducts } from "@/lib/discover.functions";
+import { formatPrice, type DbProduct } from "@/lib/content";
+import { useStudio } from "./studio-context";
+
+type Found = {
+  externalId: string; source: string; name: string; price: number; commission: number;
+  salesVolume: number; growthRate: number; revenue: number; imageUrl: string; sellerName: string;
+  category: string; hype: number;
+};
+
+const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a busca.");
+const compact = (n: number) => new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+
+export function DiscoverPanel({ products }: { products: DbProduct[] }) {
+  const { can, userId } = useStudio();
+  const qc = useQueryClient();
+  const canCreate = can("produtos", "criar");
+  const search = useServerFn(discoverProducts);
+
+  const [keyword, setKeyword] = useState("");
+  const [dateRange, setDateRange] = useState<"lastDay" | "last7Day" | "last30Day">("last7Day");
+  const [sortField, setSortField] = useState<"revenue" | "sales_volumn" | "revenue_growth_rate">("revenue");
+  const [results, setResults] = useState<Found[] | null>(null);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+
+  const saved = new Set(products.filter((p) => p.external_id).map((p) => `${p.source}:${p.external_id}`));
+
+  const run = useMutation({
+    mutationFn: async (page: number) =>
+      (await search({ data: { keyword, dateRange, sortField, page } })) as { items: Found[] },
+    onSuccess: (data) => {
+      setResults(data.items);
+      setSelected({});
+      if (!data.items.length) toast.info("Nenhum produto encontrado com esses filtros.");
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const save = useMutation({
+    mutationFn: async (items: Found[]) => {
+      const fresh = items.filter((i) => !saved.has(`${i.source}:${i.externalId}`));
+      if (!fresh.length) throw new Error("Todos os selecionados já estão no catálogo.");
+      const { error } = await supabase.from("products").insert(
+        fresh.map((i) => ({
+          name: i.name,
+          niche: i.category,
+          price: i.price,
+          commission: i.commission,
+          url: "",
+          hype: i.hype,
+          status: "Ativo",
+          image_url: i.imageUrl,
+          seller_name: i.sellerName,
+          sales_volume: i.salesVolume,
+          growth_rate: i.growthRate,
+          revenue: i.revenue,
+          origin: "garimpo",
+          source: i.source,
+          external_id: i.externalId,
+          created_by: userId,
+        })),
+      );
+      if (error) throw new Error(error.message);
+      return fresh.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`${count} produto(s) salvo(s) no catálogo.`);
+      setSelected({});
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const selectedItems = (results ?? []).filter((r) => selected[r.externalId]);
+
+  return (
+    <div className="space-y-4">
+      <div className="panel grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+        <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Buscar por palavra-chave (opcional)" onKeyDown={(e) => e.key === "Enter" && run.mutate(1)} />
+        <Select value={dateRange} onValueChange={(v) => setDateRange(v as typeof dateRange)}>
+          <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="lastDay">Último dia</SelectItem>
+            <SelectItem value="last7Day">Últimos 7 dias</SelectItem>
+            <SelectItem value="last30Day">Últimos 30 dias</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortField} onValueChange={(v) => setSortField(v as typeof sortField)}>
+          <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="revenue">Maior receita</SelectItem>
+            <SelectItem value="sales_volumn">Mais vendas</SelectItem>
+            <SelectItem value="revenue_growth_rate">Maior crescimento</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button disabled={run.isPending} onClick={() => run.mutate(1)}>
+          {run.isPending ? <Loader2 className="animate-spin" /> : <Search />}Buscar
+        </Button>
+      </div>
+
+      {canCreate && selectedItems.length > 0 && (
+        <div className="panel flex items-center justify-between gap-4">
+          <p className="text-sm font-semibold">{selectedItems.length} selecionado(s)</p>
+          <Button disabled={save.isPending} onClick={() => save.mutate(selectedItems)}><Check />Salvar selecionados</Button>
+        </div>
+      )}
+
+      {run.isPending && <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">Garimpando produtos em alta...</div>}
+
+      {!run.isPending && results !== null && results.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {results.map((item) => {
+            const already = saved.has(`${item.source}:${item.externalId}`);
+            return (
+              <article key={item.externalId} className="panel flex gap-4">
+                <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-muted">
+                  {item.imageUrl ? <img src={item.imageUrl} alt={item.name} loading="lazy" className="h-full w-full object-cover" /> : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="line-clamp-2 text-sm font-bold">{item.name}</h3>
+                    {canCreate && (already
+                      ? <span className="shrink-0 text-[11px] font-bold text-muted-foreground">No catálogo</span>
+                      : <Checkbox checked={!!selected[item.externalId]} onCheckedChange={(v) => setSelected((s) => ({ ...s, [item.externalId]: !!v }))} />)}
+                  </div>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">{item.sellerName || "Vendedor não informado"}</p>
+                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                    <span><b>{formatPrice(item.price)}</b></span>
+                    <span className="text-primary font-semibold">{item.commission}% comissão</span>
+                    <span className="text-muted-foreground">{compact(item.salesVolume)} vendas</span>
+                    <span className="text-muted-foreground inline-flex items-center gap-1"><TrendingUp className="h-3 w-3" />{Math.round(item.growthRate)}%</span>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${item.hype}%` }} /></div>
+                    <b className="text-xs">{item.hype}</b>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {!run.isPending && results === null && (
+        <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+          Busque produtos em alta do TikTok Shop Brasil — só itens com programa de afiliado.
+        </div>
+      )}
+    </div>
+  );
+}

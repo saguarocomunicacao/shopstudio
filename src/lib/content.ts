@@ -11,6 +11,14 @@ export type DbProduct = {
   hype: number;
   status: string;
   created_by: string | null;
+  image_url: string;
+  seller_name: string;
+  sales_volume: number;
+  growth_rate: number;
+  revenue: number;
+  origin: string;
+  source: string | null;
+  external_id: string | null;
 };
 
 export const JOB_STATUSES = [
