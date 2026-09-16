@@ -5,8 +5,15 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export const syncCategories = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin, error: adminError } = await context.supabase.rpc("is_app_admin_self");
-    if (adminError || !isAdmin) throw new Error("Apenas administradores podem atualizar as categorias.");
+    const { data: assignments } = await context.supabase
+      .from("user_profile_roles")
+      .select("role_id")
+      .eq("user_id", context.userId);
+    const roleIds = [...new Set((assignments ?? []).map((a: { role_id: string }) => a.role_id))];
+    const { data: adminRoles } = roleIds.length
+      ? await context.supabase.from("roles").select("id").in("id", roleIds).eq("is_admin", true)
+      : { data: [] };
+    if (!(adminRoles ?? []).length) throw new Error("Apenas administradores podem atualizar as categorias.");
 
     const { fetchOfficialCategories } = await import("./product-source.server");
     const categories = await fetchOfficialCategories(1);
