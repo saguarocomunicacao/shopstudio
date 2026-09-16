@@ -129,7 +129,7 @@ export function ProfilesPage() {
                             {p.status === "Ativo" ? <><Pause />Pausar</> : <><Play />Reativar</>}
                           </DropdownMenuItem>
                         )}
-                        {canRemove && <DropdownMenuItem variant="destructive" onSelect={() => setConfirm(p)}><Trash2 />Remover</DropdownMenuItem>}
+                        {canRemove && <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setConfirm(p)}><Trash2 />Remover</DropdownMenuItem>}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   ) : null}
