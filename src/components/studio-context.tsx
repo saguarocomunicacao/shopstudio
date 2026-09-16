@@ -1,13 +1,20 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { profiles } from "@/lib/studio-data";
+import { buildCan, useAccess, useSession, type AccessData, type ActionKey, type DbProfile, type ModuleKey } from "@/lib/access";
 
 type StudioContextValue = {
   activeProfileId: string;
   setActiveProfileId: (id: string) => void;
-  activeProfile: (typeof profiles)[number] | undefined;
+  activeProfile: DbProfile | undefined;
+  activeSlug: string | null;
+  profiles: DbProfile[];
   dark: boolean;
   setDark: (dark: boolean) => void;
   isAdmin: boolean;
+  can: (module: ModuleKey, action: ActionKey, profileId?: string | null) => boolean;
+  access: AccessData | undefined;
+  loading: boolean;
+  userId: string | null;
+  pendingAccess: boolean;
 };
 
 const StudioContext = createContext<StudioContextValue | undefined>(undefined);
@@ -15,6 +22,8 @@ const StudioContext = createContext<StudioContextValue | undefined>(undefined);
 export function StudioProvider({ children }: { children: ReactNode }) {
   const [activeProfileId, setActiveProfileId] = useState("all");
   const [dark, setDark] = useState(false);
+  const { userId, loading: sessionLoading } = useSession();
+  const { data: access, isLoading: accessLoading } = useAccess(userId);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("creator-studio-theme");
@@ -29,14 +38,32 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem("creator-studio-theme", nextDark ? "dark" : "light");
   };
 
-  const value = useMemo(() => ({
-    activeProfileId,
-    setActiveProfileId,
-    activeProfile: profiles.find((profile) => profile.id === activeProfileId),
-    dark,
-    setDark: changeTheme,
-    isAdmin: true,
-  }), [activeProfileId, dark]);
+  const profiles = useMemo(() => access?.profiles ?? [], [access]);
+
+  useEffect(() => {
+    if (activeProfileId === "all") return;
+    if (!profiles.some((p) => p.id === activeProfileId)) setActiveProfileId("all");
+  }, [profiles, activeProfileId]);
+
+  const value = useMemo<StudioContextValue>(() => {
+    const activeProfile = profiles.find((p) => p.id === activeProfileId);
+    const isAdmin = access?.isAdmin ?? false;
+    return {
+      activeProfileId,
+      setActiveProfileId,
+      activeProfile,
+      activeSlug: activeProfile?.slug ?? null,
+      profiles,
+      dark,
+      setDark: changeTheme,
+      isAdmin,
+      can: buildCan(access),
+      access,
+      loading: sessionLoading || accessLoading,
+      userId,
+      pendingAccess: !!userId && !accessLoading && !isAdmin && profiles.length === 0,
+    };
+  }, [activeProfileId, dark, profiles, access, sessionLoading, accessLoading, userId]);
 
   return <StudioContext.Provider value={value}>{children}</StudioContext.Provider>;
 }
