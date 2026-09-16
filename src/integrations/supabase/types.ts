@@ -118,11 +118,19 @@ export type Database = {
           commission: number
           created_at: string
           created_by: string | null
+          external_id: string | null
+          growth_rate: number
           hype: number
           id: string
+          image_url: string
           name: string
           niche: string
+          origin: string
           price: number
+          revenue: number
+          sales_volume: number
+          seller_name: string
+          source: string | null
           status: string
           updated_at: string
           url: string
@@ -131,11 +139,19 @@ export type Database = {
           commission?: number
           created_at?: string
           created_by?: string | null
+          external_id?: string | null
+          growth_rate?: number
           hype?: number
           id?: string
+          image_url?: string
           name: string
           niche?: string
+          origin?: string
           price?: number
+          revenue?: number
+          sales_volume?: number
+          seller_name?: string
+          source?: string | null
           status?: string
           updated_at?: string
           url?: string
@@ -144,11 +160,19 @@ export type Database = {
           commission?: number
           created_at?: string
           created_by?: string | null
+          external_id?: string | null
+          growth_rate?: number
           hype?: number
           id?: string
+          image_url?: string
           name?: string
           niche?: string
+          origin?: string
           price?: number
+          revenue?: number
+          sales_volume?: number
+          seller_name?: string
+          source?: string | null
           status?: string
           updated_at?: string
           url?: string
