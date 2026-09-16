@@ -1,2 +1,0 @@
-import { createFileRoute } from "@tanstack/react-router"; import { PipelinePage } from "@/components/studio-pages";
-export const Route=createFileRoute("/pipeline")({head:()=>({meta:[{title:"Pipeline — Creator Studio"},{name:"description",content:"Acompanhe os jobs de conteúdo."},{property:"og:title",content:"Pipeline — Creator Studio"},{property:"og:description",content:"Acompanhe os jobs de conteúdo."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:PipelinePage});

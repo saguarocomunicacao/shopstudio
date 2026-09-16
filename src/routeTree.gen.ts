@@ -9,100 +9,117 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
-import { Route as EquipeRouteImport } from './routes/equipe'
-import { Route as MetricasRouteImport } from './routes/metricas'
-import { Route as PerfisRouteImport } from './routes/perfis'
-import { Route as PipelineRouteImport } from './routes/pipeline'
-import { Route as ProdutosRouteImport } from './routes/produtos'
-import { Route as RascunhosRouteImport } from './routes/rascunhos'
-import { Route as VideosRouteImport } from './routes/videos'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedEquipeRouteImport } from './routes/_authenticated/equipe'
+import { Route as AuthenticatedMetricasRouteImport } from './routes/_authenticated/metricas'
+import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
+import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
+import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
+import { Route as AuthenticatedRascunhosRouteImport } from './routes/_authenticated/rascunhos'
+import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
-  id: '/configuracoes',
-  path: '/configuracoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EquipeRoute = EquipeRouteImport.update({
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEquipeRoute = AuthenticatedEquipeRouteImport.update({
   id: '/equipe',
   path: '/equipe',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const MetricasRoute = MetricasRouteImport.update({
+const AuthenticatedMetricasRoute = AuthenticatedMetricasRouteImport.update({
   id: '/metricas',
   path: '/metricas',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const PerfisRoute = PerfisRouteImport.update({
+const AuthenticatedPerfisRoute = AuthenticatedPerfisRouteImport.update({
   id: '/perfis',
   path: '/perfis',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const PipelineRoute = PipelineRouteImport.update({
+const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
   id: '/pipeline',
   path: '/pipeline',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ProdutosRoute = ProdutosRouteImport.update({
+const AuthenticatedProdutosRoute = AuthenticatedProdutosRouteImport.update({
   id: '/produtos',
   path: '/produtos',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const RascunhosRoute = RascunhosRouteImport.update({
+const AuthenticatedRascunhosRoute = AuthenticatedRascunhosRouteImport.update({
   id: '/rascunhos',
   path: '/rascunhos',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const VideosRoute = VideosRouteImport.update({
+const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
   id: '/videos',
   path: '/videos',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/configuracoes': typeof ConfiguracoesRoute
-  '/equipe': typeof EquipeRoute
-  '/metricas': typeof MetricasRoute
-  '/perfis': typeof PerfisRoute
-  '/pipeline': typeof PipelineRoute
-  '/produtos': typeof ProdutosRoute
-  '/rascunhos': typeof RascunhosRoute
-  '/videos': typeof VideosRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/equipe': typeof AuthenticatedEquipeRoute
+  '/metricas': typeof AuthenticatedMetricasRoute
+  '/perfis': typeof AuthenticatedPerfisRoute
+  '/pipeline': typeof AuthenticatedPipelineRoute
+  '/produtos': typeof AuthenticatedProdutosRoute
+  '/rascunhos': typeof AuthenticatedRascunhosRoute
+  '/videos': typeof AuthenticatedVideosRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/configuracoes': typeof ConfiguracoesRoute
-  '/equipe': typeof EquipeRoute
-  '/metricas': typeof MetricasRoute
-  '/perfis': typeof PerfisRoute
-  '/pipeline': typeof PipelineRoute
-  '/produtos': typeof ProdutosRoute
-  '/rascunhos': typeof RascunhosRoute
-  '/videos': typeof VideosRoute
+  '/auth': typeof AuthRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/equipe': typeof AuthenticatedEquipeRoute
+  '/metricas': typeof AuthenticatedMetricasRoute
+  '/perfis': typeof AuthenticatedPerfisRoute
+  '/pipeline': typeof AuthenticatedPipelineRoute
+  '/produtos': typeof AuthenticatedProdutosRoute
+  '/rascunhos': typeof AuthenticatedRascunhosRoute
+  '/videos': typeof AuthenticatedVideosRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/configuracoes': typeof ConfiguracoesRoute
-  '/equipe': typeof EquipeRoute
-  '/metricas': typeof MetricasRoute
-  '/perfis': typeof PerfisRoute
-  '/pipeline': typeof PipelineRoute
-  '/produtos': typeof ProdutosRoute
-  '/rascunhos': typeof RascunhosRoute
-  '/videos': typeof VideosRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/_authenticated/equipe': typeof AuthenticatedEquipeRoute
+  '/_authenticated/metricas': typeof AuthenticatedMetricasRoute
+  '/_authenticated/perfis': typeof AuthenticatedPerfisRoute
+  '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
+  '/_authenticated/produtos': typeof AuthenticatedProdutosRoute
+  '/_authenticated/rascunhos': typeof AuthenticatedRascunhosRoute
+  '/_authenticated/videos': typeof AuthenticatedVideosRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/configuracoes'
     | '/equipe'
     | '/metricas'
@@ -113,7 +130,7 @@ export interface FileRouteTypes {
     | '/videos'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/auth'
     | '/configuracoes'
     | '/equipe'
     | '/metricas'
@@ -122,109 +139,139 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/rascunhos'
     | '/videos'
+    | '/'
   id:
     | '__root__'
-    | '/'
-    | '/configuracoes'
-    | '/equipe'
-    | '/metricas'
-    | '/perfis'
-    | '/pipeline'
-    | '/produtos'
-    | '/rascunhos'
-    | '/videos'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/configuracoes'
+    | '/_authenticated/equipe'
+    | '/_authenticated/metricas'
+    | '/_authenticated/perfis'
+    | '/_authenticated/pipeline'
+    | '/_authenticated/produtos'
+    | '/_authenticated/rascunhos'
+    | '/_authenticated/videos'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  ConfiguracoesRoute: typeof ConfiguracoesRoute
-  EquipeRoute: typeof EquipeRoute
-  MetricasRoute: typeof MetricasRoute
-  PerfisRoute: typeof PerfisRoute
-  PipelineRoute: typeof PipelineRoute
-  ProdutosRoute: typeof ProdutosRoute
-  RascunhosRoute: typeof RascunhosRoute
-  VideosRoute: typeof VideosRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/configuracoes': {
-      id: '/configuracoes'
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
       path: '/configuracoes'
       fullPath: '/configuracoes'
-      preLoaderRoute: typeof ConfiguracoesRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/equipe': {
-      id: '/equipe'
+    '/_authenticated/equipe': {
+      id: '/_authenticated/equipe'
       path: '/equipe'
       fullPath: '/equipe'
-      preLoaderRoute: typeof EquipeRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedEquipeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/metricas': {
-      id: '/metricas'
+    '/_authenticated/metricas': {
+      id: '/_authenticated/metricas'
       path: '/metricas'
       fullPath: '/metricas'
-      preLoaderRoute: typeof MetricasRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedMetricasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/perfis': {
-      id: '/perfis'
+    '/_authenticated/perfis': {
+      id: '/_authenticated/perfis'
       path: '/perfis'
       fullPath: '/perfis'
-      preLoaderRoute: typeof PerfisRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedPerfisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/pipeline': {
-      id: '/pipeline'
+    '/_authenticated/pipeline': {
+      id: '/_authenticated/pipeline'
       path: '/pipeline'
       fullPath: '/pipeline'
-      preLoaderRoute: typeof PipelineRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedPipelineRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/produtos': {
-      id: '/produtos'
+    '/_authenticated/produtos': {
+      id: '/_authenticated/produtos'
       path: '/produtos'
       fullPath: '/produtos'
-      preLoaderRoute: typeof ProdutosRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedProdutosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/rascunhos': {
-      id: '/rascunhos'
+    '/_authenticated/rascunhos': {
+      id: '/_authenticated/rascunhos'
       path: '/rascunhos'
       fullPath: '/rascunhos'
-      preLoaderRoute: typeof RascunhosRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedRascunhosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/videos': {
-      id: '/videos'
+    '/_authenticated/videos': {
+      id: '/_authenticated/videos'
       path: '/videos'
       fullPath: '/videos'
-      preLoaderRoute: typeof VideosRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedVideosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
+  AuthenticatedEquipeRoute: typeof AuthenticatedEquipeRoute
+  AuthenticatedMetricasRoute: typeof AuthenticatedMetricasRoute
+  AuthenticatedPerfisRoute: typeof AuthenticatedPerfisRoute
+  AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
+  AuthenticatedProdutosRoute: typeof AuthenticatedProdutosRoute
+  AuthenticatedRascunhosRoute: typeof AuthenticatedRascunhosRoute
+  AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
+  AuthenticatedEquipeRoute: AuthenticatedEquipeRoute,
+  AuthenticatedMetricasRoute: AuthenticatedMetricasRoute,
+  AuthenticatedPerfisRoute: AuthenticatedPerfisRoute,
+  AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
+  AuthenticatedProdutosRoute: AuthenticatedProdutosRoute,
+  AuthenticatedRascunhosRoute: AuthenticatedRascunhosRoute,
+  AuthenticatedVideosRoute: AuthenticatedVideosRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  ConfiguracoesRoute: ConfiguracoesRoute,
-  EquipeRoute: EquipeRoute,
-  MetricasRoute: MetricasRoute,
-  PerfisRoute: PerfisRoute,
-  PipelineRoute: PipelineRoute,
-  ProdutosRoute: ProdutosRoute,
-  RascunhosRoute: RascunhosRoute,
-  VideosRoute: VideosRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
