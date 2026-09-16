@@ -82,6 +82,19 @@ export function JobDetailDialog({
             <span>{productName}</span>
           </div>
 
+          {job?.video_url && (
+            <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[420px] rounded-xl bg-black" />
+          )}
+          {job?.status === "gerando_video" && (
+            <div className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-6 text-sm">
+              <Loader2 className="size-4 animate-spin" />
+              Renderizando o vídeo... o card avança sozinho quando ficar pronto.
+            </div>
+          )}
+          {job?.render_error && (
+            <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-destructive">{job.render_error}</p>
+          )}
+
           {busy ? (
             <div className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-6 text-sm">
               <Loader2 className="size-4 animate-spin" />
