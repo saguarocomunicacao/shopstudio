@@ -14,13 +14,215 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_users: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          id: string
+          name?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      permissions: {
+        Row: {
+          action: string
+          id: string
+          module: string
+        }
+        Insert: {
+          action: string
+          id?: string
+          module: string
+        }
+        Update: {
+          action?: string
+          id?: string
+          module?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          followers: number
+          id: string
+          initials: string
+          name: string
+          niche: string
+          slug: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          followers?: number
+          id?: string
+          initials?: string
+          name: string
+          niche?: string
+          slug: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          followers?: number
+          id?: string
+          initials?: string
+          name?: string
+          niche?: string
+          slug?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          is_admin: boolean
+          is_system: boolean
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_admin?: boolean
+          is_system?: boolean
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          is_admin?: boolean
+          is_system?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
+      user_invites: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      user_profile_roles: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string | null
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id?: string | null
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string | null
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profile_roles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_profile_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_count: { Args: never; Returns: number }
+      ensure_app_user: { Args: never; Returns: undefined }
+      has_permission: {
+        Args: {
+          _action: string
+          _module: string
+          _profile_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_app_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
