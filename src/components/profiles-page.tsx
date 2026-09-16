@@ -49,7 +49,22 @@ export function ProfilesPage() {
   useEffect(() => {
     if (!dialog.open) return;
     const p = dialog.profile;
-    setForm(p ? { name: p.name, handle: p.handle, niche: p.niche, categoryId: p.category_id ?? "", followers: String(p.followers), status: p.status } : emptyForm);
+    const base: FormState = p
+      ? { ...emptyForm, name: p.name, handle: p.handle, niche: p.niche, categoryId: p.category_id ?? "", followers: String(p.followers), status: p.status }
+      : emptyForm;
+    setForm(base);
+    if (!p) return;
+    let cancelled = false;
+    void supabase
+      .from("profile_identities")
+      .select("tone, language, style_notes")
+      .eq("profile_id", p.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setForm((f) => ({ ...f, tone: data.tone, language: data.language, notes: data.style_notes }));
+      });
+    return () => { cancelled = true; };
   }, [dialog]);
 
   const save = useMutation({
@@ -64,13 +79,19 @@ export function ProfilesPage() {
         initials: initialsOf(values.name),
       };
       if (!payload.name) throw new Error("Informe o nome do perfil.");
+      let profileId: string;
       if (profile) {
         const { error } = await supabase.from("profiles").update(payload).eq("id", profile.id);
         if (error) throw new Error(error.message);
-        return;
+        profileId = profile.id;
+      } else {
+        const { data, error } = await supabase.from("profiles").insert({ ...payload, slug: slugify(payload.handle || payload.name) }).select("id").single();
+        if (error) throw new Error(error.message);
+        profileId = data.id;
       }
-      const { error } = await supabase.from("profiles").insert({ ...payload, slug: slugify(payload.handle || payload.name) });
-      if (error) throw new Error(error.message);
+      const identity = { profile_id: profileId, tone: values.tone, language: values.language.trim() || "pt-BR", style_notes: values.notes.trim() };
+      const { error: identityError } = await supabase.from("profile_identities").upsert(identity, { onConflict: "profile_id" });
+      if (identityError) throw new Error(identityError.message);
     },
     onSuccess: (_d, vars) => { toast.success(vars.profile ? "Perfil atualizado." : "Perfil criado."); setDialog({ open: false, profile: null }); refresh(); },
     onError: (e) => toast.error(errMessage(e)),
