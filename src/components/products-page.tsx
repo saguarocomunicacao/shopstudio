@@ -61,6 +61,7 @@ export function ProductsPage() {
       const payload = {
         name: values.name.trim(),
         niche: values.niche.trim(),
+        category_id: values.categoryId || null,
         price: Number(values.price.replace(",", ".")) || 0,
         commission: Number(values.commission.replace(",", ".")) || 0,
         url: values.url.trim(),
