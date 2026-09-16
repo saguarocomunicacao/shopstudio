@@ -138,6 +138,55 @@ const kalodata: ProductSource = {
     }),
 };
 
+const KALODATA_CATEGORY_ENDPOINT = "https://www.kalodata.com/openapi/v1/tiktok/category/rank";
+
+export type OfficialCategory = { categoryId: string; categoryName: string; level: number; parentId: string | null };
+
+/** Categorias oficiais do TikTok Shop (nível 1) vindas do Kalodata. */
+export function fetchOfficialCategories(level = 1): Promise<OfficialCategory[]> {
+  return serialize(async () => {
+    const apiKey = process.env["KALODATA_API_KEY"];
+    if (!apiKey) throw new Error("A chave da fonte de produtos não está configurada.");
+
+    const response = await fetch(KALODATA_CATEGORY_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "secret-key": apiKey },
+      body: JSON.stringify({
+        region: "BR",
+        language: "pt-BR",
+        currency: "BRL",
+        date_range: "last30Day",
+        category_level: level,
+        sort_field: { field: "revenue", type: "DESC" },
+        page_size: 100,
+        page_number: 1,
+        page: 1,
+      }),
+    });
+
+    if (response.status === 429) throw new Error("A fonte limitou as requisições. Tente de novo em alguns segundos.");
+    if (response.status === 401 || response.status === 403) throw new Error("A chave da fonte de produtos foi recusada.");
+    if (!response.ok) throw new Error(`A fonte de categorias respondeu com erro (${response.status}).`);
+
+    const payload = (await response.json()) as { success?: boolean; data?: unknown; message?: string };
+    if (payload.success === false) throw new Error(payload.message || "A fonte recusou a busca de categorias.");
+    const rows = Array.isArray(payload.data)
+      ? (payload.data as Record<string, unknown>[])
+      : Array.isArray((payload.data as { list?: unknown } | undefined)?.list)
+        ? (payload.data as { list: Record<string, unknown>[] }).list
+        : [];
+
+    return rows
+      .map((row): OfficialCategory => ({
+        categoryId: String(row["category_id"] ?? row["id"] ?? ""),
+        categoryName: String(row["category_name"] ?? row["name"] ?? ""),
+        level,
+        parentId: row["parent_id"] ? String(row["parent_id"]) : null,
+      }))
+      .filter((c) => c.categoryId && c.categoryName);
+  });
+}
+
 export const PRODUCT_SOURCES: Record<string, ProductSource> = { kalodata };
 export const ACTIVE_SOURCE_ID = "kalodata";
 export const activeProductSource = (): ProductSource => PRODUCT_SOURCES[ACTIVE_SOURCE_ID]!;
