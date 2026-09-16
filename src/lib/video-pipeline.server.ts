@@ -255,8 +255,12 @@ export async function pollVeoTake(operation: string): Promise<{ done: boolean; v
 
   const reasons = [...new Set(findFilterReasons(payload.response))].filter(Boolean);
   if (reasons.length) {
-    throw new Error(
-      `A cena foi bloqueada pelo filtro de conteúdo do Google (não é erro técnico): ${reasons.join("; ")}. Ajuste a descrição da cena e gere de novo.`,
+    const detail = reasons.join("; ");
+    const audio = /audio|áudio/i.test(detail);
+    throw new VeoFilteredError(
+      audio
+        ? `O Google bloqueou esta cena por causa do áudio que o Veo gera automaticamente (não é erro técnico): ${detail}. Estamos tentando de novo com uma descrição só visual.`
+        : `A cena foi bloqueada pelo filtro de conteúdo do Google (não é erro técnico): ${detail}. Ajuste a descrição da cena e gere de novo.`,
     );
   }
   throw new Error(`A animação terminou sem gerar vídeo. Resposta do Google: ${JSON.stringify(payload.response ?? {}).slice(0, 600)}`);
