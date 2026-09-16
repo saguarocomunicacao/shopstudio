@@ -9,8 +9,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbProfile } from "@/lib/access";
+import { TONE_OPTIONS } from "@/lib/content";
 import { formatFollowers } from "@/lib/studio-data";
 import { CategorySelect } from "./category-select";
 import { useStudio } from "./studio-context";
@@ -31,8 +33,8 @@ const slugify = (value: string) =>
 const initialsOf = (value: string) =>
   value.trim().split(/\s+/).filter((w) => w.length > 2 || value.trim().split(/\s+/).length === 1).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "??";
 
-type FormState = { name: string; handle: string; niche: string; categoryId: string; followers: string; status: string };
-const emptyForm: FormState = { name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo" };
+type FormState = { name: string; handle: string; niche: string; categoryId: string; followers: string; status: string; tone: string; language: string; notes: string };
+const emptyForm: FormState = { name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo", tone: "descontraido", language: "pt-BR", notes: "" };
 
 export function ProfilesPage() {
   const { profiles, can, loading } = useStudio();
@@ -47,7 +49,22 @@ export function ProfilesPage() {
   useEffect(() => {
     if (!dialog.open) return;
     const p = dialog.profile;
-    setForm(p ? { name: p.name, handle: p.handle, niche: p.niche, categoryId: p.category_id ?? "", followers: String(p.followers), status: p.status } : emptyForm);
+    const base: FormState = p
+      ? { ...emptyForm, name: p.name, handle: p.handle, niche: p.niche, categoryId: p.category_id ?? "", followers: String(p.followers), status: p.status }
+      : emptyForm;
+    setForm(base);
+    if (!p) return;
+    let cancelled = false;
+    void supabase
+      .from("profile_identities")
+      .select("tone, language, style_notes")
+      .eq("profile_id", p.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setForm((f) => ({ ...f, tone: data.tone, language: data.language, notes: data.style_notes }));
+      });
+    return () => { cancelled = true; };
   }, [dialog]);
 
   const save = useMutation({
@@ -62,15 +79,21 @@ export function ProfilesPage() {
         initials: initialsOf(values.name),
       };
       if (!payload.name) throw new Error("Informe o nome do perfil.");
+      let profileId: string;
       if (profile) {
         const { error } = await supabase.from("profiles").update(payload).eq("id", profile.id);
         if (error) throw new Error(error.message);
-        return;
+        profileId = profile.id;
+      } else {
+        const { data, error } = await supabase.from("profiles").insert({ ...payload, slug: slugify(payload.handle || payload.name) }).select("id").single();
+        if (error) throw new Error(error.message);
+        profileId = data.id;
       }
-      const { error } = await supabase.from("profiles").insert({ ...payload, slug: slugify(payload.handle || payload.name) });
-      if (error) throw new Error(error.message);
+      const identity = { profile_id: profileId, tone: values.tone, language: values.language.trim() || "pt-BR", style_notes: values.notes.trim() };
+      const { error: identityError } = await supabase.from("profile_identities").upsert(identity, { onConflict: "profile_id" });
+      if (identityError) throw new Error(identityError.message);
     },
-    onSuccess: (_d, vars) => { toast.success(vars.profile ? "Perfil atualizado." : "Perfil criado."); setDialog({ open: false, profile: null }); refresh(); },
+    onSuccess: (_d, vars) => { toast.success(vars.profile ? "Perfil atualizado." : "Perfil criado."); setDialog({ open: false, profile: null }); refresh(); qc.invalidateQueries({ queryKey: ["profile-identity"] }); },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -161,6 +184,23 @@ export function ProfilesPage() {
                 </Select>
               </div>
             </div>
+            <div className="border-t pt-4">
+              <p className="text-sm font-bold">Identidade do perfil</p>
+              <p className="text-xs text-muted-foreground">Base usada pela IA para escrever os roteiros.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="p-tone">Tom de voz</Label>
+                <Select value={form.tone} onValueChange={(v) => setForm({ ...form, tone: v })}>
+                  <SelectTrigger id="p-tone"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {TONE_OPTIONS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2"><Label htmlFor="p-language">Idioma</Label><Input id="p-language" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })} placeholder="pt-BR" /></div>
+            </div>
+            <div className="grid gap-2"><Label htmlFor="p-notes">Observações de estilo <span className="font-normal text-muted-foreground">(opcional)</span></Label><Textarea id="p-notes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ex: falar direto com a câmera, frases curtas, sempre mostrar o produto em uso." /></div>
           </div>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDialog({ open: false, profile: null })}>Cancelar</Button>
