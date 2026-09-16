@@ -106,7 +106,17 @@ export function PipelinePage() {
               </div>
               <div className="space-y-2">
                 {items.map((job) => (
-                  <article className="job-card cursor-pointer" key={job.id} onClick={() => setDetail(job)}>
+                  <article className="job-card relative cursor-pointer" key={job.id} onClick={() => setDetail(job)}>
+                    {canRemoveJob(job) && (
+                      <button
+                        type="button"
+                        aria-label="Excluir job"
+                        className="absolute right-2 top-2 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
+                        onClick={(e) => { e.stopPropagation(); setDeleting(job); }}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    )}
                     <p className="text-sm font-bold">{job.title || productName(job.product_id)}</p>
                     <p className="mt-2 text-xs text-muted-foreground">{productName(job.product_id)}</p>
                     <p className="mt-4 text-[11px] text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
