@@ -15,7 +15,7 @@ import { useStudio } from "./studio-context";
 type Found = {
   externalId: string; source: string; name: string; price: number; commission: number;
   salesVolume: number; growthRate: number; revenue: number; imageUrl: string; sellerName: string;
-  category: string; hype: number;
+  category: string; productUrl: string; hype: number;
 };
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a busca.");
@@ -31,17 +31,23 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
   const [dateRange, setDateRange] = useState<"lastDay" | "last7Day" | "last30Day">("last7Day");
   const [sortField, setSortField] = useState<"revenue" | "sales_volumn" | "revenue_growth_rate">("revenue");
   const [results, setResults] = useState<Found[] | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   const saved = new Set(products.filter((p) => p.external_id).map((p) => `${p.source}:${p.external_id}`));
 
   const run = useMutation({
-    mutationFn: async (page: number) =>
-      (await search({ data: { keyword, dateRange, sortField, page } })) as { items: Found[] },
+    mutationFn: async (nextPage: number) => ({
+      page: nextPage,
+      ...((await search({ data: { keyword, dateRange, sortField, page: nextPage } })) as { items: Found[]; hasMore: boolean }),
+    }),
     onSuccess: (data) => {
-      setResults(data.items);
-      setSelected({});
-      if (!data.items.length) toast.info("Nenhum produto encontrado com esses filtros.");
+      setPage(data.page);
+      setHasMore(data.hasMore);
+      setResults((prev) => (data.page > 1 && prev ? [...prev, ...data.items] : data.items));
+      if (data.page === 1) setSelected({});
+      if (!data.items.length && data.page === 1) toast.info("Nenhum produto encontrado com esses filtros.");
     },
     onError: (e) => toast.error(errMessage(e)),
   });
@@ -56,7 +62,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
           niche: i.category,
           price: i.price,
           commission: i.commission,
-          url: "",
+          url: i.productUrl,
           hype: i.hype,
           status: "Ativo",
           image_url: i.imageUrl,
@@ -115,7 +121,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
         </div>
       )}
 
-      {run.isPending && <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">Garimpando produtos em alta...</div>}
+      {run.isPending && page === 1 && <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">Garimpando produtos em alta...</div>}
 
       {!run.isPending && results !== null && results.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -148,6 +154,12 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
               </article>
             );
           })}
+        </div>
+      )}
+
+      {results !== null && hasMore && (
+        <div className="flex justify-center">
+          <Button variant="secondary" disabled={run.isPending} onClick={() => run.mutate(page + 1)}>Carregar mais</Button>
         </div>
       )}
 
