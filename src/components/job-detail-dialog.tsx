@@ -121,7 +121,9 @@ export function JobDetailDialog({
           {job?.render_error && (
             <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-destructive">{job.render_error}</p>
           )}
-          {job?.status === "cenas_geradas" && <JobScenesReview job={job} canEdit={canEdit} />}
+          {job && (job.scenes?.length ?? 0) > 0 && (
+            <JobScenesReview job={job} canEdit={canEdit && job.status === "cenas_geradas"} />
+          )}
 
 
           {busy ? (
