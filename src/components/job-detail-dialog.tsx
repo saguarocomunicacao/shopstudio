@@ -78,11 +78,11 @@ export function JobDetailDialog({
 
   return (
     <Dialog open={!!job} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="grid max-h-[88vh] max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
         <DialogHeader>
           <DialogTitle>{job?.title || productName}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-2">
+        <div className="-mx-1 grid gap-4 overflow-y-auto px-1 py-2">
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="rounded-full bg-secondary px-2.5 py-1 font-semibold text-foreground">
               {job ? JOB_STATUS_LABELS[job.status] : ""}
@@ -91,7 +91,7 @@ export function JobDetailDialog({
           </div>
 
           {job?.video_url && (
-            <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[420px] rounded-xl bg-black" />
+            <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[300px] rounded-xl bg-black" />
           )}
           {job?.status === "gerando_video" && (
             <div className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-6 text-sm">
@@ -112,7 +112,7 @@ export function JobDetailDialog({
             <>
               <div className="grid gap-2">
                 <Label htmlFor="j-script">Roteiro (gancho, corpo e CTA)</Label>
-                <Textarea id="j-script" rows={14} value={script} onChange={(e) => setScript(e.target.value)} disabled={!canEdit} />
+                <Textarea id="j-script" rows={10} value={script} onChange={(e) => setScript(e.target.value)} disabled={!canEdit} />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="j-caption">Legenda sugerida</Label>
