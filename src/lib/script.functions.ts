@@ -24,7 +24,7 @@ const schema = {
   properties: {
     hook: { type: "string", description: "Gancho falado nos primeiros 3 segundos" },
     body: { type: "string", description: "Corpo do roteiro com benefícios e demonstração" },
-    cta: { type: "string", description: "Chamada para ação de afiliado" },
+    cta: { type: "string", description: "Chamada de venda apontando para o produto marcado/carrinho do TikTok" },
     caption: { type: "string", description: "Legenda sugerida para o post" },
     hashtags: { type: "array", items: { type: "string" }, description: "Hashtags sem o símbolo #" },
   },
@@ -139,10 +139,12 @@ export const generateJobScript = createServerFn({ method: "POST" })
       `Escreva o roteiro no idioma ${language}, com tom ${tone}.`,
       profile ? `Perfil: ${profile.name} (categoria: ${profile.niche || "geral"}).` : "",
       product
-        ? `Produto: ${product.name}. Preço: R$ ${Number(product.price).toFixed(2)}. Comissão de afiliado: ${Number(product.commission)}%. Categoria: ${product.niche || "geral"}. Vendas recentes: ${product.sales_volume ?? 0}.`
+        ? `Produto: ${product.name}. Preço: R$ ${Number(product.price).toFixed(2)}. Categoria: ${product.niche || "geral"}. Vendas recentes: ${product.sales_volume ?? 0}.`
         : `Produto: não definido, use o título do job "${job.title || "conteúdo"}".`,
       styleNotes ? `Observações de estilo do perfil: ${styleNotes}` : "",
-      `Entregue JSON com: hook (gancho falado nos primeiros 3 segundos, 1-2 frases de impacto), body (corpo com benefícios e demonstração, 60 a 110 palavras, em falas curtas), cta (chamada para ação mencionando o link de afiliado, 1-2 frases), caption (legenda do post com até 150 caracteres) e hashtags (6 a 10 hashtags relevantes, sem o símbolo #).`,
+      `Entregue JSON com: hook (gancho falado nos primeiros 3 segundos, 1-2 frases de impacto), body (corpo com benefícios e demonstração, 60 a 110 palavras, em falas curtas), cta (chamada de venda direta apontando para o produto marcado/carrinho do TikTok, 1-2 frases), caption (legenda do post com até 150 caracteres) e hashtags (6 a 10 hashtags relevantes, sem o símbolo #).`,
+      `REGRA ABSOLUTA: jamais mencione "afiliado", "link de afiliado", "comissão", "ganhar comissão" ou termos similares, em nenhuma parte do roteiro, legenda ou hashtags. O criador nunca revela que é afiliado nem fala sobre comissão.`,
+      `O CTA deve ser no estilo que criadores do TikTok Shop usam, apontando para o produto marcado/carrinho do vídeo — varie entre formas como: "Clica no carrinhinho pra garantir o seu", "Tá na sacolinha aqui embaixo", "Corre que o link tá no carrinho", "Toca no produto marcado no vídeo". Nunca fale em afiliado nem comissão.`,
       `Não use emojis em excesso e evite promessas irreais.`,
     ]
       .filter(Boolean)
