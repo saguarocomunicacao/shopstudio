@@ -133,7 +133,7 @@ async function runStep(
   job: JobRow,
   pipeline: typeof import("./video-pipeline.server"),
 ) {
-  const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as pipeline.Scene[];
+  const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as import("./video-pipeline.server").Scene[];
 
   const [{ data: product }, { data: identity }, { data: profile }, { data: settingsRow }] = await Promise.all([
     job.product_id
@@ -160,8 +160,6 @@ async function runStep(
 
   // ---------- Etapa 1a: planejar as cenas ----------
   if (job.render_stage === "planejando") {
-    const blocks = pipeline.splitBlocks ? [] : [];
-    void blocks;
     const scriptBlocks = splitScript(job.script ?? "");
     const prompt = [
       `Você dirige vídeos curtos verticais (9:16) de afiliado para TikTok Shop.`,
