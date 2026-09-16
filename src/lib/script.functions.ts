@@ -150,15 +150,18 @@ export const generateJobScript = createServerFn({ method: "POST" })
 
     const generated = await callLovableAi(prompt);
 
-    const update: Record<string, unknown> = {
-      script: composeScript(generated),
-      caption: generated.caption,
-      hashtags: generated.hashtags,
-    };
-    if (job.status === "produto_escolhido") update["status"] = "roteiro_pronto";
+    const nextStatus = job.status === "produto_escolhido" ? ("roteiro_pronto" as const) : job.status;
 
-    const { error: updateError } = await supabase.from("jobs").update(update).eq("id", job.id);
+    const { error: updateError } = await supabase
+      .from("jobs")
+      .update({
+        script: composeScript(generated),
+        caption: generated.caption,
+        hashtags: generated.hashtags,
+        status: nextStatus,
+      })
+      .eq("id", job.id);
     if (updateError) throw new Error(updateError.message);
 
-    return { ...generated, status: (update["status"] as string) ?? job.status };
+    return { ...generated, status: nextStatus };
   });
