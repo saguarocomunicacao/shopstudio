@@ -65,6 +65,15 @@ export const JOB_STATUS_LABELS: Record<JobStatusKey, string> = {
 };
 
 
+/** Transição guiada para trás: recua uma etapa por vez, preservando o conteúdo já gerado. */
+export const PREVIOUS_STATUS: Partial<Record<JobStatusKey, JobStatusKey>> = {
+  publicado: "rascunho_enviado",
+  rascunho_enviado: "video_pronto",
+  video_pronto: "cenas_geradas",
+  cenas_geradas: "roteiro_pronto",
+  roteiro_pronto: "produto_escolhido",
+};
+
 export type DbJob = {
   id: string;
   product_id: string | null;
