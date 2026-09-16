@@ -1,0 +1,2 @@
+import { createFileRoute } from "@tanstack/react-router"; import { VideosPage } from "@/components/studio-pages";
+export const Route=createFileRoute("/videos")({head:()=>({meta:[{title:"Vídeos — Creator Studio"},{name:"description",content:"Biblioteca de vídeos criados."},{property:"og:title",content:"Vídeos — Creator Studio"},{property:"og:description",content:"Biblioteca de vídeos criados."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:VideosPage});

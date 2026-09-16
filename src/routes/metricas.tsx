@@ -1,0 +1,2 @@
+import { createFileRoute } from "@tanstack/react-router"; import { MetricsPage } from "@/components/studio-pages";
+export const Route=createFileRoute("/metricas")({head:()=>({meta:[{title:"Métricas — Creator Studio"},{name:"description",content:"Acompanhe views, vendas e comissão."},{property:"og:title",content:"Métricas — Creator Studio"},{property:"og:description",content:"Acompanhe views, vendas e comissão."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:MetricsPage});
