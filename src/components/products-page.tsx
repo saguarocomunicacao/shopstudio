@@ -26,6 +26,26 @@ const emptyForm: FormState = { name: "", niche: "", categoryId: "", price: "", c
 
 const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+// Mascara o valor digitado no formato BRL (R$ 1.234,56) enquanto o usuario digita.
+function maskPrice(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  const num = Number(digits) / 100;
+  return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+function parsePrice(masked: string): number {
+  const digits = masked.replace(/\D/g, "");
+  return digits ? Number(digits) / 100 : 0;
+}
+
+// Comissao: apenas inteiros de 0 a 100.
+function maskCommission(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  const num = Math.min(100, Math.max(0, Number(digits)));
+  return String(num);
+}
+
 export function ProductsPage() {
   const { can, profiles, userId } = useStudio();
   const qc = useQueryClient();
@@ -47,7 +67,7 @@ export function ProductsPage() {
   useEffect(() => {
     if (!dialog.open) return;
     const p = dialog.product;
-    setForm(p ? { name: p.name, niche: p.niche, categoryId: p.category_id ?? "", price: String(p.price), commission: String(p.commission), url: p.url, hype: String(p.hype), status: p.status } : emptyForm);
+    setForm(p ? { name: p.name, niche: p.niche, categoryId: p.category_id ?? "", price: maskPrice(String(p.price * 100)), commission: String(Math.min(100, Math.max(0, Math.round(p.commission)))), url: p.url, hype: String(p.hype), status: p.status } : emptyForm);
   }, [dialog]);
 
   useEffect(() => {
@@ -62,8 +82,8 @@ export function ProductsPage() {
         name: values.name.trim(),
         niche: values.niche.trim(),
         category_id: values.categoryId || null,
-        price: Number(values.price.replace(",", ".")) || 0,
-        commission: Number(values.commission.replace(",", ".")) || 0,
+        price: parsePrice(values.price),
+        commission: Number(values.commission) || 0,
         url: values.url.trim(),
         hype: Math.min(100, Math.max(0, Number.parseInt(values.hype, 10) || 0)),
         status: values.status,
@@ -185,8 +205,8 @@ export function ProductsPage() {
             <div className="grid gap-2"><Label htmlFor="pr-name">Nome</Label><Input id="pr-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Bolsa Vitta" /></div>
             <div className="grid gap-2"><Label htmlFor="pr-niche">Categoria oficial</Label><CategorySelect id="pr-niche" value={form.categoryId} onChange={(categoryId, categoryName) => setForm({ ...form, categoryId, niche: categoryName })} /></div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2"><Label htmlFor="pr-price">Preço (R$)</Label><Input id="pr-price" inputMode="decimal" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="89,90" /></div>
-              <div className="grid gap-2"><Label htmlFor="pr-comm">Comissão (%)</Label><Input id="pr-comm" inputMode="decimal" value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} placeholder="18" /></div>
+              <div className="grid gap-2"><Label htmlFor="pr-price">Preço</Label><Input id="pr-price" inputMode="numeric" value={form.price} onChange={(e) => setForm({ ...form, price: maskPrice(e.target.value) })} placeholder="R$ 0,00" /></div>
+              <div className="grid gap-2"><Label htmlFor="pr-comm">Comissão (%)</Label><Input id="pr-comm" inputMode="numeric" value={form.commission} onChange={(e) => setForm({ ...form, commission: maskCommission(e.target.value) })} placeholder="0 a 100" /></div>
             </div>
             <div className="grid gap-2"><Label htmlFor="pr-url">Link do produto</Label><Input id="pr-url" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://..." /></div>
             <div className="grid gap-4 sm:grid-cols-2">
