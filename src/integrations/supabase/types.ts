@@ -67,8 +67,10 @@ export type Database = {
       }
       jobs: {
         Row: {
+          caption: string | null
           created_at: string
           created_by: string | null
+          hashtags: string[] | null
           id: string
           notes: string | null
           product_id: string | null
@@ -80,8 +82,10 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          caption?: string | null
           created_at?: string
           created_by?: string | null
+          hashtags?: string[] | null
           id?: string
           notes?: string | null
           product_id?: string | null
@@ -93,8 +97,10 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          caption?: string | null
           created_at?: string
           created_by?: string | null
+          hashtags?: string[] | null
           id?: string
           notes?: string | null
           product_id?: string | null
@@ -214,6 +220,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["category_id"]
+          },
+        ]
+      }
+      profile_identities: {
+        Row: {
+          created_at: string
+          language: string
+          profile_id: string
+          style_notes: string
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          language?: string
+          profile_id: string
+          style_notes?: string
+          tone?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          language?: string
+          profile_id?: string
+          style_notes?: string
+          tone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_identities_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -389,6 +430,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_edit_pipeline: { Args: { _profile_id: string }; Returns: boolean }
       ensure_app_user: { Args: never; Returns: undefined }
     }
     Enums: {

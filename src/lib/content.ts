@@ -69,7 +69,36 @@ export type DbJob = {
   status: JobStatusKey;
   title: string;
   created_at: string;
+  script: string | null;
+  caption: string | null;
+  hashtags: string[] | null;
 };
+
+export type ProfileIdentity = { profile_id: string; tone: string; language: string; style_notes: string };
+
+export const TONE_OPTIONS = [
+  { value: "descontraido", label: "Descontraído" },
+  { value: "informativo", label: "Informativo" },
+  { value: "entusiasmado", label: "Entusiasmado" },
+  { value: "elegante", label: "Elegante" },
+  { value: "engracado", label: "Bem-humorado" },
+];
+
+export function useProfileIdentity(profileId: string | null) {
+  return useQuery({
+    queryKey: ["profile-identity", profileId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profile_identities")
+        .select("profile_id, tone, language, style_notes")
+        .eq("profile_id", profileId!)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return (data ?? null) as ProfileIdentity | null;
+    },
+    enabled: !!profileId && profileId !== "all",
+  });
+}
 
 export function useProducts(enabled = true) {
   return useQuery({
@@ -93,7 +122,7 @@ export function useJobs(enabled = true) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id, product_id, profile_id, status, title, created_at")
+        .select("id, product_id, profile_id, status, title, created_at, script, caption, hashtags")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []) as DbJob[];
