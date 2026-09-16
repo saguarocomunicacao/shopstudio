@@ -70,6 +70,7 @@ export type Database = {
           caption: string | null
           created_at: string
           created_by: string | null
+          gemini_images_count: number
           hashtags: string[] | null
           id: string
           notes: string | null
@@ -77,11 +78,14 @@ export type Database = {
           profile_id: string
           render_error: string | null
           render_id: string | null
+          render_stage: string | null
           render_started_at: string | null
+          scenes: Json
           script: string | null
           status: Database["public"]["Enums"]["job_status"]
           title: string
           updated_at: string
+          veo_takes_count: number
           video_thumbnail_url: string | null
           video_url: string | null
         }
@@ -89,6 +93,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           created_by?: string | null
+          gemini_images_count?: number
           hashtags?: string[] | null
           id?: string
           notes?: string | null
@@ -96,11 +101,14 @@ export type Database = {
           profile_id: string
           render_error?: string | null
           render_id?: string | null
+          render_stage?: string | null
           render_started_at?: string | null
+          scenes?: Json
           script?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           title?: string
           updated_at?: string
+          veo_takes_count?: number
           video_thumbnail_url?: string | null
           video_url?: string | null
         }
@@ -108,6 +116,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           created_by?: string | null
+          gemini_images_count?: number
           hashtags?: string[] | null
           id?: string
           notes?: string | null
@@ -115,11 +124,14 @@ export type Database = {
           profile_id?: string
           render_error?: string | null
           render_id?: string | null
+          render_stage?: string | null
           render_started_at?: string | null
+          scenes?: Json
           script?: string | null
           status?: Database["public"]["Enums"]["job_status"]
           title?: string
           updated_at?: string
+          veo_takes_count?: number
           video_thumbnail_url?: string | null
           video_url?: string | null
         }
@@ -263,6 +275,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profile_identities_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_video_settings: {
+        Row: {
+          avatar_mode: string
+          avatar_reference_url: string | null
+          created_at: string
+          gemini_model: string
+          profile_id: string
+          take_duration: number
+          takes_count: number
+          updated_at: string
+          veo_model: string
+        }
+        Insert: {
+          avatar_mode?: string
+          avatar_reference_url?: string | null
+          created_at?: string
+          gemini_model?: string
+          profile_id: string
+          take_duration?: number
+          takes_count?: number
+          updated_at?: string
+          veo_model?: string
+        }
+        Update: {
+          avatar_mode?: string
+          avatar_reference_url?: string | null
+          created_at?: string
+          gemini_model?: string
+          profile_id?: string
+          take_duration?: number
+          takes_count?: number
+          updated_at?: string
+          veo_model?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_video_settings_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: true
             referencedRelation: "profiles"
