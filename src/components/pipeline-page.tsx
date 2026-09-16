@@ -186,8 +186,31 @@ export function PipelinePage() {
         job={current}
         productName={current ? productName(current.product_id) : ""}
         canEdit={!!current && canEditJob(current)}
+        canDelete={!!current && canRemoveJob(current)}
+        onDelete={() => current && setDeleting(current)}
         onOpenChange={(open) => !open && setDetail(null)}
       />
+
+      <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir job</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza? Esta ação não pode ser desfeita. O job será removido do pipeline; o produto do catálogo e o perfil não são afetados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={removeJob.isPending}
+              onClick={(e) => { e.preventDefault(); deleting && removeJob.mutate(deleting.id); }}
+            >
+              {removeJob.isPending ? <Loader2 className="animate-spin" /> : null}Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
