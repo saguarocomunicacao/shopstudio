@@ -31,7 +31,9 @@ export function PipelinePage() {
   const { data: products = [] } = useProducts(can("produtos", "visualizar"));
   const [detail, setDetail] = useState<DbJob | null>(null);
   const generate = useServerFn(generateJobScript);
+  const generateVideo = useServerFn(generateJobVideo);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
+  const [renderingId, setRenderingId] = useState<string | null>(null);
 
   const productName = (id: string | null) => products.find((p) => p.id === id)?.name ?? "Sem produto";
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
@@ -45,6 +47,16 @@ export function PipelinePage() {
     onSuccess: () => { toast.success("Roteiro gerado."); qc.invalidateQueries({ queryKey: ["jobs"] }); },
     onError: (e) => toast.error(errMessage(e)),
     onSettled: () => setGeneratingId(null),
+  });
+
+  const runVideo = useMutation({
+    mutationFn: async (jobId: string) => {
+      setRenderingId(jobId);
+      return generateVideo({ data: { jobId } });
+    },
+    onSuccess: () => { toast.success("Geração de vídeo iniciada."); qc.invalidateQueries({ queryKey: ["jobs"] }); },
+    onError: (e) => toast.error(errMessage(e)),
+    onSettled: () => setRenderingId(null),
   });
 
   const filtered = activeProfileId === "all" ? jobs : jobs.filter((j) => j.profile_id === activeProfileId);
