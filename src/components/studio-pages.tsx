@@ -1,11 +1,9 @@
-import { BarChart3, CalendarClock, CheckCircle2, CircleDollarSign, Eye, FileClock, MoreHorizontal, Package, Play, Plus, Send, Sparkles, TrendingUp, Video } from "lucide-react";
-import { useState } from "react";
+import { BarChart3, CalendarClock, CheckCircle2, CircleDollarSign, Eye, FileClock, MoreHorizontal, Play, Plus, Send, TrendingUp, Video } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { jobs, products, profiles as mockProfiles, stages, videos, type JobStatus } from "@/lib/studio-data";
+import { jobs, profiles as mockProfiles, videos } from "@/lib/studio-data";
 import { useStudio } from "./studio-context";
-import { useDragScroll } from "./use-drag-scroll";
 
 const profileName = (id: string) => mockProfiles.find(p => p.id === id)?.name ?? "Perfil";
 const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-lime", "Rascunho enviado": "status-orange", "Publicado": "status-pink", "Ativo": "status-lime", "Pausado": "status-neutral", "Em revisão": "status-orange", "Rascunho": "status-blue" };
