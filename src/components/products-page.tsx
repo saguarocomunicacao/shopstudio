@@ -1,0 +1,225 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { formatPrice, useProducts, type DbProduct } from "@/lib/content";
+import { useStudio } from "./studio-context";
+
+const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+
+function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) {
+  return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>;
+}
+
+type FormState = { name: string; niche: string; price: string; commission: string; url: string; hype: string; status: string };
+const emptyForm: FormState = { name: "", niche: "", price: "", commission: "", url: "", hype: "50", status: "Ativo" };
+
+const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+export function ProductsPage() {
+  const { can, profiles, userId } = useStudio();
+  const qc = useQueryClient();
+  const { data: products = [], isLoading } = useProducts(can("produtos", "visualizar"));
+
+  const canCreate = can("produtos", "criar");
+  const canEdit = can("produtos", "editar");
+  const canRemove = can("produtos", "remover");
+
+  const [dialog, setDialog] = useState<{ open: boolean; product: DbProduct | null }>({ open: false, product: null });
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [confirm, setConfirm] = useState<DbProduct | null>(null);
+  const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
+  const [targetProfile, setTargetProfile] = useState<string>("");
+
+  const jobProfiles = profiles.filter((p) => can("pipeline", "criar", p.id));
+
+  useEffect(() => {
+    if (!dialog.open) return;
+    const p = dialog.product;
+    setForm(p ? { name: p.name, niche: p.niche, price: String(p.price), commission: String(p.commission), url: p.url, hype: String(p.hype), status: p.status } : emptyForm);
+  }, [dialog]);
+
+  useEffect(() => {
+    if (!useTarget) return;
+    const match = jobProfiles.find((p) => normalize(p.niche).includes(normalize(useTarget.niche)) || normalize(useTarget.niche).includes(normalize(p.name)));
+    setTargetProfile(match?.id ?? jobProfiles[0]?.id ?? "");
+  }, [useTarget]);
+
+  const save = useMutation({
+    mutationFn: async ({ product, values }: { product: DbProduct | null; values: FormState }) => {
+      const payload = {
+        name: values.name.trim(),
+        niche: values.niche.trim(),
+        price: Number(values.price.replace(",", ".")) || 0,
+        commission: Number(values.commission.replace(",", ".")) || 0,
+        url: values.url.trim(),
+        hype: Math.min(100, Math.max(0, Number.parseInt(values.hype, 10) || 0)),
+        status: values.status,
+      };
+      if (!payload.name) throw new Error("Informe o nome do produto.");
+      if (product) {
+        const { error } = await supabase.from("products").update(payload).eq("id", product.id);
+        if (error) throw new Error(error.message);
+        return;
+      }
+      const { error } = await supabase.from("products").insert({ ...payload, created_by: userId });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: (_d, vars) => {
+      toast.success(vars.product ? "Produto atualizado." : "Produto adicionado.");
+      setDialog({ open: false, product: null });
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (product: DbProduct) => {
+      const { error } = await supabase.from("products").delete().eq("id", product.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => { toast.success("Produto removido."); setConfirm(null); qc.invalidateQueries({ queryKey: ["products"] }); },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const createJob = useMutation({
+    mutationFn: async ({ product, profileId }: { product: DbProduct; profileId: string }) => {
+      if (!profileId) throw new Error("Escolha um perfil de destino.");
+      const { error } = await supabase.from("jobs").insert({
+        product_id: product.id,
+        profile_id: profileId,
+        status: "produto_escolhido",
+        title: product.name,
+        created_by: userId,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => { toast.success("Job criado no pipeline."); setUseTarget(null); qc.invalidateQueries({ queryKey: ["jobs"] }); },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  return (
+    <>
+      <Heading
+        eyebrow="Descoberta"
+        title="Produtos em alta"
+        {...(canCreate ? { action: <Button onClick={() => setDialog({ open: true, product: null })}><Plus />Adicionar produto</Button> } : {})}
+      />
+      <div className="panel overflow-x-auto">
+        <table className="w-full min-w-[760px] text-left text-sm">
+          <thead>
+            <tr className="border-b text-xs text-muted-foreground">
+              <th className="pb-3 font-medium">Produto</th>
+              <th className="pb-3 font-medium">Nicho</th>
+              <th className="pb-3 font-medium">Preço</th>
+              <th className="pb-3 font-medium">Comissão</th>
+              <th className="pb-3 font-medium">Hype score</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((p) => (
+              <tr className="border-b last:border-0" key={p.id}>
+                <td className="py-4 font-bold">{p.name}{p.url ? <a href={p.url} target="_blank" rel="noreferrer" className="ml-2 text-xs font-medium text-muted-foreground underline">link</a> : null}</td>
+                <td className="py-4 text-muted-foreground">{p.niche}</td>
+                <td className="py-4">{formatPrice(p.price)}</td>
+                <td className="py-4 text-primary">{p.commission}%</td>
+                <td className="py-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${p.hype}%` }} /></div>
+                    <b>{p.hype}</b>
+                  </div>
+                </td>
+                <td className="py-4">
+                  <div className="flex items-center justify-end gap-2">
+                    {jobProfiles.length > 0 && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
+                    {(canEdit || canRemove) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {canEdit && <DropdownMenuItem onSelect={() => setDialog({ open: true, product: p })}><Pencil />Editar</DropdownMenuItem>}
+                          {canRemove && <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setConfirm(p)}><Trash2 />Remover</DropdownMenuItem>}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!products.length && <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{isLoading ? "Carregando produtos..." : "Nenhum produto no catálogo."}</div>}
+      </div>
+
+      <Dialog open={dialog.open} onOpenChange={(open) => setDialog({ open, product: open ? dialog.product : null })}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{dialog.product ? "Editar produto" : "Adicionar produto"}</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2"><Label htmlFor="pr-name">Nome</Label><Input id="pr-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Bolsa Vitta" /></div>
+            <div className="grid gap-2"><Label htmlFor="pr-niche">Nicho</Label><Input id="pr-niche" value={form.niche} onChange={(e) => setForm({ ...form, niche: e.target.value })} placeholder="Moda" /></div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2"><Label htmlFor="pr-price">Preço (R$)</Label><Input id="pr-price" inputMode="decimal" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="89,90" /></div>
+              <div className="grid gap-2"><Label htmlFor="pr-comm">Comissão (%)</Label><Input id="pr-comm" inputMode="decimal" value={form.commission} onChange={(e) => setForm({ ...form, commission: e.target.value })} placeholder="18" /></div>
+            </div>
+            <div className="grid gap-2"><Label htmlFor="pr-url">Link do produto</Label><Input id="pr-url" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://..." /></div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2"><Label htmlFor="pr-hype">Hype score (0-100)</Label><Input id="pr-hype" inputMode="numeric" value={form.hype} onChange={(e) => setForm({ ...form, hype: e.target.value.replace(/\D/g, "") })} /></div>
+              <div className="grid gap-2">
+                <Label htmlFor="pr-status">Status</Label>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger id="pr-status"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="Ativo">Ativo</SelectItem><SelectItem value="Pausado">Pausado</SelectItem></SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setDialog({ open: false, product: null })}>Cancelar</Button>
+            <Button disabled={save.isPending} onClick={() => save.mutate({ product: dialog.product, values: form })}>{dialog.product ? "Salvar" : "Adicionar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!useTarget} onOpenChange={(open) => !open && setUseTarget(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Usar “{useTarget?.name}”</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-2">
+            <p className="text-sm text-muted-foreground">Escolha o perfil onde este conteúdo será produzido. O job nasce na etapa “Produto escolhido”.</p>
+            <div className="grid gap-2">
+              <Label htmlFor="pr-profile">Perfil de destino</Label>
+              <Select value={targetProfile} onValueChange={setTargetProfile}>
+                <SelectTrigger id="pr-profile"><SelectValue placeholder="Selecione um perfil" /></SelectTrigger>
+                <SelectContent>{jobProfiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setUseTarget(null)}>Cancelar</Button>
+            <Button disabled={createJob.isPending} onClick={() => useTarget && createJob.mutate({ product: useTarget, profileId: targetProfile })}>Criar job</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!confirm} onOpenChange={(open) => !open && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover “{confirm?.name}”?</AlertDialogTitle>
+            <AlertDialogDescription>O produto sai do catálogo. Jobs já criados continuam existindo.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); if (confirm) remove.mutate(confirm); }}>Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

@@ -38,6 +38,63 @@ export type Database = {
         }
         Relationships: []
       }
+      jobs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          product_id: string | null
+          profile_id: string
+          script: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          profile_id: string
+          script?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          profile_id?: string
+          script?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           action: string
@@ -53,6 +110,48 @@ export type Database = {
           action?: string
           id?: string
           module?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          commission: number
+          created_at: string
+          created_by: string | null
+          hype: number
+          id: string
+          name: string
+          niche: string
+          price: number
+          status: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          commission?: number
+          created_at?: string
+          created_by?: string | null
+          hype?: number
+          id?: string
+          name: string
+          niche?: string
+          price?: number
+          status?: string
+          updated_at?: string
+          url?: string
+        }
+        Update: {
+          commission?: number
+          created_at?: string
+          created_by?: string | null
+          hype?: number
+          id?: string
+          name?: string
+          niche?: string
+          price?: number
+          status?: string
+          updated_at?: string
+          url?: string
         }
         Relationships: []
       }
@@ -223,7 +322,14 @@ export type Database = {
       ensure_app_user: { Args: never; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      job_status:
+        | "novo"
+        | "produto_escolhido"
+        | "roteiro_pronto"
+        | "gerando_video"
+        | "video_pronto"
+        | "rascunho_enviado"
+        | "publicado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -350,6 +456,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      job_status: [
+        "novo",
+        "produto_escolhido",
+        "roteiro_pronto",
+        "gerando_video",
+        "video_pronto",
+        "rascunho_enviado",
+        "publicado",
+      ],
+    },
   },
 } as const
