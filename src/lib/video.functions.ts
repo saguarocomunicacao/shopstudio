@@ -184,15 +184,14 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     );
 
     // A cena regerada perde o take antigo: será animada de novo na aprovação.
+    const { operation: _op, video_path: _vp, video_url: _vu, ...rest } = scene;
     scenes[data.index] = {
-      ...scene,
+      ...rest,
       image_prompt: imagePrompt,
       image_path: stored.path,
       image_url: stored.url,
-      operation: undefined,
-      video_path: undefined,
-      video_url: undefined,
     };
+
     const { error } = await supabase
       .from("jobs")
       .update({ scenes, gemini_images_count: (job.gemini_images_count ?? 0) + 1, render_error: null })
