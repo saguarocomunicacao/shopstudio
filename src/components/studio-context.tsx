@@ -14,11 +14,11 @@ const StudioContext = createContext<StudioContextValue | undefined>(undefined);
 
 export function StudioProvider({ children }: { children: ReactNode }) {
   const [activeProfileId, setActiveProfileId] = useState("all");
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("creator-studio-theme");
-    const nextDark = stored ? stored === "dark" : true;
+    const nextDark = stored ? stored === "dark" : false;
     setDark(nextDark);
     document.documentElement.classList.toggle("dark", nextDark);
   }, []);
