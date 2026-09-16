@@ -359,7 +359,8 @@ async function runStep(
         // reprograma a mesma cena até 3 vezes antes de desistir.
         const attempts = (scene.attempts ?? 0) + 1;
         if (e instanceof pipeline.VeoFilteredError && attempts < 3) {
-          scenes[index] = { ...scene, operation: undefined, attempts };
+          const { operation: _drop, ...rest } = scene;
+          scenes[index] = { ...rest, attempts };
           await supabase.from("jobs").update({ scenes, render_error: e.message }).eq("id", job.id);
           return { stage: "takes", done: false, progress: { done: index, total: scenes.length } };
         }
