@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleDollarSign, FileClock, MoreHorizontal, Plus, Video } from "lucide-react";
+import { CheckCircle2, CircleDollarSign, FileClock, Loader2, MoreHorizontal, Plus, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { JOB_STATUS_LABELS, relativeTime, useJobs } from "@/lib/content";
@@ -32,9 +32,28 @@ export function DashboardPage() {
 }
 
 export function VideosPage() {
+  const { activeProfileId, profiles } = useStudio();
+  const { data: jobs = [] } = useJobs();
+  const scoped = activeProfileId === "all" ? jobs : jobs.filter((j) => j.profile_id === activeProfileId);
+  const videos = scoped.filter((j) => !!j.video_url);
+  const rendering = scoped.filter((j) => j.status === "gerando_video");
+  const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
   return <>
-    <Heading eyebrow="0 peças" title="Biblioteca de vídeos" action={<Button disabled><Plus />Novo vídeo</Button>} />
-    <Empty>Nenhum vídeo ainda. Eles aparecerão aqui quando forem gerados.</Empty>
+    <Heading eyebrow={`${videos.length} ${videos.length === 1 ? "peça" : "peças"}`} title="Biblioteca de vídeos" action={<Button disabled><Plus />Novo vídeo</Button>} />
+    {rendering.length > 0 && <p className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{rendering.length} vídeo(s) renderizando...</p>}
+    {videos.length ? (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {videos.map((job) => (
+          <article className="panel" key={job.id}>
+            <video src={job.video_url!} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="aspect-[9/16] w-full rounded-xl bg-black object-cover" />
+            <p className="mt-3 truncate text-sm font-bold">{job.title || "Sem título"}</p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
+          </article>
+        ))}
+      </div>
+    ) : (
+      <Empty>Nenhum vídeo ainda. Eles aparecerão aqui quando forem gerados.</Empty>
+    )}
   </>;
 }
 
