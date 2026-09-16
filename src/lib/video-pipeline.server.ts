@@ -170,25 +170,88 @@ export async function startVeoTake(opts: {
   return payload.name;
 }
 
-/** Consulta a operação do Veo; devolve a URI do MP4 quando pronta. */
-export async function pollVeoTake(operation: string): Promise<{ done: boolean; uri?: string }> {
+type VeoVideo = { uri?: string; base64?: string; mimeType?: string };
+
+/**
+ * A resposta do Veo varia conforme o modelo/versão: o vídeo pode vir em
+ * response.generateVideoResponse.generatedSamples[].video.uri ou em
+ * response.generatedVideos[].video (uri ou bytesBase64Encoded). Procura em
+ * qualquer profundidade para não depender do formato exato.
+ */
+function findVeoVideo(node: unknown, depth = 0): VeoVideo | null {
+  if (!node || typeof node !== "object" || depth > 8) return null;
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = findVeoVideo(item, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  const obj = node as Record<string, unknown>;
+  const uri = obj["uri"] ?? obj["videoUri"] ?? obj["url"];
+  const data = obj["bytesBase64Encoded"] ?? obj["videoBytes"] ?? obj["data"];
+  const mime = typeof obj["mimeType"] === "string" ? (obj["mimeType"] as string) : "video/mp4";
+  if (typeof uri === "string" && uri) return { uri, mimeType: mime };
+  if (typeof data === "string" && data.length > 100) return { base64: data, mimeType: mime };
+  for (const value of Object.values(obj)) {
+    const found = findVeoVideo(value, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Junta motivos de bloqueio por filtro de conteúdo (RAI/safety), se houver. */
+function findFilterReasons(node: unknown, acc: string[] = [], depth = 0): string[] {
+  if (!node || typeof node !== "object" || depth > 8) return acc;
+  if (Array.isArray(node)) {
+    for (const item of node) findFilterReasons(item, acc, depth + 1);
+    return acc;
+  }
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    const k = key.toLowerCase();
+    if ((k.includes("rai") || k.includes("filter") || k.includes("safety") || k.includes("blocked")) && value) {
+      if (typeof value === "string") acc.push(value);
+      else if (typeof value === "number" && value > 0) acc.push(`${key}: ${value}`);
+      else if (Array.isArray(value)) acc.push(...value.filter((v): v is string => typeof v === "string"));
+    }
+    findFilterReasons(value, acc, depth + 1);
+  }
+  return acc;
+}
+
+/** Consulta a operação do Veo; devolve o MP4 (URI ou base64) quando pronta. */
+export async function pollVeoTake(operation: string): Promise<{ done: boolean; video?: VeoVideo }> {
   const res = await fetch(`${GEMINI_BASE}/${operation}`, { headers: { "x-goog-api-key": geminiKey() } });
   const text = await res.text();
   if (!res.ok) throw googleError(res.status, text);
-  const payload = JSON.parse(text) as {
-    done?: boolean;
-    error?: { message?: string };
-    response?: { generateVideoResponse?: { generatedSamples?: { video?: { uri?: string } }[] } };
-  };
+  const payload = JSON.parse(text) as { done?: boolean; error?: { message?: string }; response?: unknown };
   if (payload.error?.message) throw new Error(`A animação da cena falhou: ${payload.error.message}`);
   if (!payload.done) return { done: false };
-  const uri = payload.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri;
-  if (!uri) throw new Error("A animação terminou sem gerar vídeo. Tente novamente.");
-  return { done: true, uri };
+
+  // Operação concluída: registra a resposta inteira para diagnóstico.
+  console.log("[veo] operação concluída", operation, text.slice(0, 4000));
+
+  const video = findVeoVideo(payload.response);
+  if (video) return { done: true, video };
+
+  const reasons = [...new Set(findFilterReasons(payload.response))].filter(Boolean);
+  if (reasons.length) {
+    throw new Error(
+      `A cena foi bloqueada pelo filtro de conteúdo do Google (não é erro técnico): ${reasons.join("; ")}. Ajuste a descrição da cena e gere de novo.`,
+    );
+  }
+  throw new Error(`A animação terminou sem gerar vídeo. Resposta do Google: ${JSON.stringify(payload.response ?? {}).slice(0, 600)}`);
 }
 
-/** Baixa o MP4 do Veo (precisa da chave no header). */
-export const downloadVeoVideo = (uri: string) => fetchAsBase64(uri, { "x-goog-api-key": geminiKey() });
+/** Baixa o MP4 do Veo: da URI (Files API, exige a chave) ou do base64 devolvido na operação. */
+export async function downloadVeoVideo(video: VeoVideo) {
+  if (video.uri) return fetchAsBase64(video.uri, { "x-goog-api-key": geminiKey() });
+  if (!video.base64) throw new Error("A animação terminou sem gerar vídeo.");
+  const binary = atob(video.base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return { base64: video.base64, bytes, mimeType: video.mimeType ?? "video/mp4" };
+}
 
 /** Guarda um arquivo no bucket privado e devolve caminho + URL assinada. */
 export async function storeMedia(path: string, bytes: Uint8Array, contentType: string) {
