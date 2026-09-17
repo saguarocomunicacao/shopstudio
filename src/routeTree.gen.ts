@@ -21,12 +21,12 @@ import { Route as AuthenticatedAppCustosRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAppEquipeRouteImport } from './routes/_authenticated/app/equipe'
 import { Route as AuthenticatedAppInvestimentoRouteImport } from './routes/_authenticated/app/investimento'
 import { Route as AuthenticatedAppMetricasRouteImport } from './routes/_authenticated/app/metricas'
-import { Route as AuthenticatedAppPerfisRouteImport } from './routes/_authenticated/app/perfis'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/app/pipeline'
 import { Route as AuthenticatedAppProdutosRouteImport } from './routes/_authenticated/app/produtos'
 import { Route as AuthenticatedAppPromptsRouteImport } from './routes/_authenticated/app/prompts'
 import { Route as AuthenticatedAppRascunhosRouteImport } from './routes/_authenticated/app/rascunhos'
 import { Route as AuthenticatedAppVideosRouteImport } from './routes/_authenticated/app/videos'
+import { Route as AuthenticatedAppPerfisIndexRouteImport } from './routes/_authenticated/app/perfis.index'
 import { Route as ApiPublicJson2videoWebhookTokenRouteImport } from './routes/api/public/json2video-webhook.$token'
 
 const IndexRoute = IndexRouteImport.update({
@@ -92,11 +92,6 @@ const AuthenticatedAppMetricasRoute =
     path: '/app/metricas',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAppPerfisRoute = AuthenticatedAppPerfisRouteImport.update({
-  id: '/app/perfis',
-  path: '/app/perfis',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedAppPipelineRoute =
   AuthenticatedAppPipelineRouteImport.update({
     id: '/app/pipeline',
@@ -125,6 +120,12 @@ const AuthenticatedAppVideosRoute = AuthenticatedAppVideosRouteImport.update({
   path: '/app/videos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAppPerfisIndexRoute =
+  AuthenticatedAppPerfisIndexRouteImport.update({
+    id: '/app/perfis/',
+    path: '/app/perfis/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicJson2videoWebhookTokenRoute =
   ApiPublicJson2videoWebhookTokenRouteImport.update({
     id: '/api/public/json2video-webhook/$token',
@@ -143,7 +144,6 @@ export interface FileRoutesByFullPath {
   '/app/equipe': typeof AuthenticatedAppEquipeRoute
   '/app/investimento': typeof AuthenticatedAppInvestimentoRoute
   '/app/metricas': typeof AuthenticatedAppMetricasRoute
-  '/app/perfis': typeof AuthenticatedAppPerfisRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/produtos': typeof AuthenticatedAppProdutosRoute
   '/app/prompts': typeof AuthenticatedAppPromptsRoute
@@ -151,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/app/videos': typeof AuthenticatedAppVideosRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
+  '/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -163,7 +164,6 @@ export interface FileRoutesByTo {
   '/app/equipe': typeof AuthenticatedAppEquipeRoute
   '/app/investimento': typeof AuthenticatedAppInvestimentoRoute
   '/app/metricas': typeof AuthenticatedAppMetricasRoute
-  '/app/perfis': typeof AuthenticatedAppPerfisRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/app/produtos': typeof AuthenticatedAppProdutosRoute
   '/app/prompts': typeof AuthenticatedAppPromptsRoute
@@ -171,6 +171,7 @@ export interface FileRoutesByTo {
   '/app/videos': typeof AuthenticatedAppVideosRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
+  '/app/perfis': typeof AuthenticatedAppPerfisIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -185,7 +186,6 @@ export interface FileRoutesById {
   '/_authenticated/app/equipe': typeof AuthenticatedAppEquipeRoute
   '/_authenticated/app/investimento': typeof AuthenticatedAppInvestimentoRoute
   '/_authenticated/app/metricas': typeof AuthenticatedAppMetricasRoute
-  '/_authenticated/app/perfis': typeof AuthenticatedAppPerfisRoute
   '/_authenticated/app/pipeline': typeof AuthenticatedAppPipelineRoute
   '/_authenticated/app/produtos': typeof AuthenticatedAppProdutosRoute
   '/_authenticated/app/prompts': typeof AuthenticatedAppPromptsRoute
@@ -193,6 +193,7 @@ export interface FileRoutesById {
   '/_authenticated/app/videos': typeof AuthenticatedAppVideosRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
+  '/_authenticated/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -207,7 +208,6 @@ export interface FileRouteTypes {
     | '/app/equipe'
     | '/app/investimento'
     | '/app/metricas'
-    | '/app/perfis'
     | '/app/pipeline'
     | '/app/produtos'
     | '/app/prompts'
@@ -215,6 +215,7 @@ export interface FileRouteTypes {
     | '/app/videos'
     | '/app/'
     | '/api/public/json2video-webhook/$token'
+    | '/app/perfis/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -227,7 +228,6 @@ export interface FileRouteTypes {
     | '/app/equipe'
     | '/app/investimento'
     | '/app/metricas'
-    | '/app/perfis'
     | '/app/pipeline'
     | '/app/produtos'
     | '/app/prompts'
@@ -235,6 +235,7 @@ export interface FileRouteTypes {
     | '/app/videos'
     | '/app'
     | '/api/public/json2video-webhook/$token'
+    | '/app/perfis'
   id:
     | '__root__'
     | '/'
@@ -248,7 +249,6 @@ export interface FileRouteTypes {
     | '/_authenticated/app/equipe'
     | '/_authenticated/app/investimento'
     | '/_authenticated/app/metricas'
-    | '/_authenticated/app/perfis'
     | '/_authenticated/app/pipeline'
     | '/_authenticated/app/produtos'
     | '/_authenticated/app/prompts'
@@ -256,6 +256,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/videos'
     | '/_authenticated/app/'
     | '/api/public/json2video-webhook/$token'
+    | '/_authenticated/app/perfis/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -353,13 +354,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppMetricasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/app/perfis': {
-      id: '/_authenticated/app/perfis'
-      path: '/app/perfis'
-      fullPath: '/app/perfis'
-      preLoaderRoute: typeof AuthenticatedAppPerfisRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/app/pipeline': {
       id: '/_authenticated/app/pipeline'
       path: '/app/pipeline'
@@ -395,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppVideosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/app/perfis/': {
+      id: '/_authenticated/app/perfis/'
+      path: '/app/perfis'
+      fullPath: '/app/perfis/'
+      preLoaderRoute: typeof AuthenticatedAppPerfisIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/json2video-webhook/$token': {
       id: '/api/public/json2video-webhook/$token'
       path: '/api/public/json2video-webhook/$token'
@@ -412,13 +413,13 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppEquipeRoute: typeof AuthenticatedAppEquipeRoute
   AuthenticatedAppInvestimentoRoute: typeof AuthenticatedAppInvestimentoRoute
   AuthenticatedAppMetricasRoute: typeof AuthenticatedAppMetricasRoute
-  AuthenticatedAppPerfisRoute: typeof AuthenticatedAppPerfisRoute
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
   AuthenticatedAppProdutosRoute: typeof AuthenticatedAppProdutosRoute
   AuthenticatedAppPromptsRoute: typeof AuthenticatedAppPromptsRoute
   AuthenticatedAppRascunhosRoute: typeof AuthenticatedAppRascunhosRoute
   AuthenticatedAppVideosRoute: typeof AuthenticatedAppVideosRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppPerfisIndexRoute: typeof AuthenticatedAppPerfisIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -428,13 +429,13 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppEquipeRoute: AuthenticatedAppEquipeRoute,
   AuthenticatedAppInvestimentoRoute: AuthenticatedAppInvestimentoRoute,
   AuthenticatedAppMetricasRoute: AuthenticatedAppMetricasRoute,
-  AuthenticatedAppPerfisRoute: AuthenticatedAppPerfisRoute,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
   AuthenticatedAppProdutosRoute: AuthenticatedAppProdutosRoute,
   AuthenticatedAppPromptsRoute: AuthenticatedAppPromptsRoute,
   AuthenticatedAppRascunhosRoute: AuthenticatedAppRascunhosRoute,
   AuthenticatedAppVideosRoute: AuthenticatedAppVideosRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppPerfisIndexRoute: AuthenticatedAppPerfisIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
