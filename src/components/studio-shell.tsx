@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ModuleKey } from "@/lib/access";
 import { StudioProvider, useStudio } from "./studio-context";
 import logoLightAsset from "@/assets/logo-light.png.asset.json";
+import logoMarkLightAsset from "@/assets/logo-mark-light.png.asset.json";
+import logoMarkDarkAsset from "@/assets/logo-mark-dark.png.asset.json";
 
 const items: readonly (readonly [string, string, typeof CircleGauge, ModuleKey | null])[] = [
   ["Dashboard", "/app", CircleGauge, null], ["Perfis", "/app/perfis", UserSquare2, "perfis"], ["Produtos", "/app/produtos", Package, "produtos"],
@@ -24,7 +26,10 @@ function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex h-16 items-center gap-3 px-4">
       {compact ? (
-        <span className="logo-mark grid h-9 w-9 shrink-0 place-items-center rounded-full bg-foreground text-sm font-black text-background">SS</span>
+        <>
+          <img src={logoMarkLightAsset.url} alt="Shop Studio" className="h-9 w-9 shrink-0 dark:hidden" />
+          <img src={logoMarkDarkAsset.url} alt="Shop Studio" className="hidden h-9 w-9 shrink-0 dark:block" />
+        </>
       ) : (
         <>
           <img src={logoLightAsset.url} alt="Shop Studio" className="h-7 w-auto shrink-0 dark:hidden" />
