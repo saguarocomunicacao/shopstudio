@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbProfile } from "@/lib/access";
 import { TONE_OPTIONS } from "@/lib/content";
-import { generateAvatarReference } from "@/lib/video.functions";
+import { generateAvatarReference, saveAvatarReferences } from "@/lib/video.functions";
 import { formatFollowers } from "@/lib/studio-data";
 import { CategorySelect } from "./category-select";
 import { ProfilePrompts } from "./profile-prompts";
@@ -47,6 +47,22 @@ const VEO_MODELS = [
   { value: "veo-3.1-fast-generate-preview", label: "Rápido e econômico (padrão)" },
   { value: "veo-3.1-generate-preview", label: "Alta qualidade" },
 ];
+
+/** Foto de referência da pessoa: já salva (url) ou recém-escolhida (base64). */
+type AvatarItem = { preview: string; url?: string; base64?: string; mimeType?: string };
+
+const MAX_AVATARS = 3;
+
+const readFile = (file: File) =>
+  new Promise<AvatarItem>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
+    reader.onload = () => {
+      const result = String(reader.result);
+      resolve({ preview: result, base64: result.split(",")[1] ?? "", mimeType: file.type });
+    };
+    reader.readAsDataURL(file);
+  });
 
 type FormState = {
   name: string; handle: string; niche: string; categoryId: string; followers: string; status: string;
