@@ -15,6 +15,7 @@ export const RENDER_STAGE_LABELS: Record<string, string> = {
   planejando: "Planejando as cenas",
   cenas: "Gerando as cenas",
   takes: "Animando os takes",
+  narracao: "Gerando a narração",
   montagem: "Montando o vídeo",
   render: "Finalizando a montagem",
 };
