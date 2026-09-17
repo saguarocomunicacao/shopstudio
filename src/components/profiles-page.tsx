@@ -127,14 +127,15 @@ function ProfileExpanded({ profile }: { profile: DbProfile }) {
           <span className="text-muted-foreground">Pessoa: </span><span className="font-semibold">{avatarModeLabel}</span>
         </p>
         <p className="mt-1 text-sm">
-          <span className="text-muted-foreground">Cenas: </span><span className="font-semibold tabular-nums">{details.takesCount ?? "—"}</span>
+          <span className="text-muted-foreground">Nº de cenas: </span><span className="font-semibold tabular-nums">{details.takesCount ?? "—"}</span>
           <span className="mx-2 text-muted-foreground">·</span>
           <span className="text-muted-foreground">Duração: </span><span className="font-semibold tabular-nums">{details.takeDuration ? `${details.takeDuration}s` : "—"}</span>
         </p>
         <p className="mt-1 text-sm">
-          <span className="text-muted-foreground">Cenas: </span><span className="font-semibold">{details.geminiModel ? GEMINI_LABELS[details.geminiModel] ?? details.geminiModel : "—"}</span>
-          <span className="mx-2 text-muted-foreground">·</span>
-          <span className="text-muted-foreground">Animação: </span><span className="font-semibold">{details.veoModel ? VEO_LABELS[details.veoModel] ?? details.veoModel : "—"}</span>
+          <span className="text-muted-foreground">Qualidade das cenas: </span><span className="font-semibold">{details.geminiModel ? GEMINI_LABELS[details.geminiModel] ?? details.geminiModel : "—"}</span>
+        </p>
+        <p className="mt-1 text-sm">
+          <span className="text-muted-foreground">Qualidade da animação: </span><span className="font-semibold">{details.veoModel ? VEO_LABELS[details.veoModel] ?? details.veoModel : "—"}</span>
         </p>
       </div>
       <div>
