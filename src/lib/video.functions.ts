@@ -584,6 +584,7 @@ async function runStep(
       voice: pipeline.VOICE_BY_LANGUAGE[language] ?? pipeline.VOICE_BY_LANGUAGE["pt-BR"]!,
       subtitleLanguage: pipeline.SUBTITLE_LANGUAGES.has(language) ? language : "auto",
       webhookUrl: `${PUBLIC_BASE}/api/public/json2video-webhook/${token}`,
+      sceneDuration: settings.take_duration,
       settings: movieSettings,
     });
 
