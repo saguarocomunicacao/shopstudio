@@ -198,6 +198,7 @@ export function computeJobCusto(eventos: ConsumoEventoRow[], tarifas: TarifaRow[
     "cena_gemini",
     "animacao_veo",
     "montagem_json2video",
+    "narracao_elevenlabs",
     "busca_kalodata",
   ];
   const etapas = ordem.map((e) => porEtapa.get(e)).filter((e): e is CustoEtapa => !!e);

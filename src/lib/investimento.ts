@@ -14,7 +14,7 @@ import {
 } from "./custo";
 import { useAppConfig } from "./orcamento";
 
-export type FornecedorKey = "google" | "kalodata" | "json2video";
+export type FornecedorKey = "google" | "kalodata" | "json2video" | "elevenlabs";
 export type TipoCarteira = "prepaga" | "assinatura";
 
 export const CONFIG_INVESTIMENTO = {
@@ -63,10 +63,25 @@ export const FORNECEDORES: FornecedorDef[] = [
     unidade: "créditos",
     unidadeLabel: (q) => `${Number(q.toFixed(2))} ${q === 1 ? "crédito" : "créditos"}`,
   },
+  {
+    key: "elevenlabs",
+    nome: "ElevenLabs",
+    tipo: "assinatura",
+    descricao: "Narração das vozes clonadas e do catálogo. Assinatura mensal com cota de caracteres.",
+    etapas: ["narracao_elevenlabs"],
+    unidade: "mil caracteres",
+    unidadeLabel: (q) => `${Number(q.toFixed(2))} mil caracteres`,
+  },
 ];
 
 export const fornecedorDe = (etapa: EtapaConsumo): FornecedorKey =>
-  etapa === "busca_kalodata" ? "kalodata" : etapa === "montagem_json2video" ? "json2video" : "google";
+  etapa === "busca_kalodata"
+    ? "kalodata"
+    : etapa === "montagem_json2video"
+      ? "json2video"
+      : etapa === "narracao_elevenlabs"
+        ? "elevenlabs"
+        : "google";
 
 export const fornecedorInfo = (key: FornecedorKey) => FORNECEDORES.find((f) => f.key === key)!;
 
