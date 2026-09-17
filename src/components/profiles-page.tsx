@@ -9,9 +9,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbProfile } from "@/lib/access";
-import { LANGUAGE_OPTIONS, TONE_OPTIONS, formatFollowers, useCategories } from "@/lib/content";
+import { LANGUAGE_OPTIONS, TONE_OPTIONS, formatPrice, useCategories } from "@/lib/content";
 import { ETAPA_VISUAL_ORDEM, useCustoPeriodo } from "@/lib/custo-periodo";
-import { formatPrice } from "@/lib/custo";
+import { formatFollowers } from "@/lib/studio-data";
 import { useStudio } from "./studio-context";
 
 const statusClass: Record<string, string> = { Ativo: "status-lime", Pausado: "status-neutral" };
