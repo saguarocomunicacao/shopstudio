@@ -30,5 +30,18 @@ export const syncCategories = createServerFn({ method: "POST" })
       { onConflict: "category_id" },
     );
     if (error) throw new Error(error.message);
+
+    // Consumo global: a atualização de categorias usa a mesma API paga da busca.
+    const { recordConsumo } = await import("./consumo.server");
+    await recordConsumo({
+      jobId: null,
+      profileId: null,
+      etapa: "busca_kalodata",
+      modelo: "kalodata-product-rank",
+      unidade: "bloco_linhas_kalodata",
+      quantidade: categories.length,
+      metadados: { tipo: "atualizacao_categorias", linhas: categories.length },
+    });
+
     return { count: categories.length };
   });

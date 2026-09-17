@@ -8,7 +8,13 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 
-type Unidade = "imagem" | "segundo_video" | "credito_montagem" | "bloco_linhas_kalodata";
+type Unidade =
+  | "imagem"
+  | "segundo_video"
+  | "credito_montagem"
+  | "bloco_linhas_kalodata"
+  | "token_input"
+  | "token_output";
 
 type Tarifa = {
   id: string;
@@ -25,6 +31,8 @@ const UNIDADES: { value: Unidade; label: string }[] = [
   { value: "segundo_video", label: "Por segundo de vídeo" },
   { value: "credito_montagem", label: "Por crédito de montagem" },
   { value: "bloco_linhas_kalodata", label: "Por 100 linhas de busca" },
+  { value: "token_input", label: "Por token de entrada (texto)" },
+  { value: "token_output", label: "Por token de saída (texto)" },
 ];
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");

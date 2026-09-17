@@ -7,6 +7,7 @@ const unidadeDaEtapa = {
   animacao_veo: "segundo_video",
   montagem_json2video: "credito_montagem",
   busca_kalodata: "bloco_linhas_kalodata",
+  roteiro_texto: "token_input",
 } as const;
 
 export function useJobCusto(jobId: string): CustoJob | null {

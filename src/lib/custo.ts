@@ -7,13 +7,24 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type EtapaConsumo = "cena_gemini" | "animacao_veo" | "montagem_json2video" | "busca_kalodata";
-export type UnidadeTarifa = "imagem" | "segundo_video" | "credito_montagem" | "bloco_linhas_kalodata";
+export type EtapaConsumo =
+  | "cena_gemini"
+  | "animacao_veo"
+  | "montagem_json2video"
+  | "busca_kalodata"
+  | "roteiro_texto";
+export type UnidadeTarifa =
+  | "imagem"
+  | "segundo_video"
+  | "credito_montagem"
+  | "bloco_linhas_kalodata"
+  | "token_input"
+  | "token_output";
 
 export type ConsumoEventoRow = {
   id: string;
   job_id: string | null;
-  profile_id: string;
+  profile_id: string | null;
   etapa: EtapaConsumo;
   modelo: string;
   quantidade: number | null;
@@ -69,6 +80,7 @@ export const ETAPA_LABELS: Record<EtapaConsumo, string> = {
   animacao_veo: "Animação",
   montagem_json2video: "Montagem",
   busca_kalodata: "Busca de produto",
+  roteiro_texto: "Roteiro",
 };
 
 export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
@@ -76,6 +88,8 @@ export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
   segundo_video: (q) => `${Math.round(q)} seg`,
   credito_montagem: (q) => `${Number(q.toFixed(2))} ${q === 1 ? "crédito" : "créditos"}`,
   bloco_linhas_kalodata: (q) => `${Number(q.toFixed(2))} pontos`,
+  token_input: (q) => `${Math.round(q)} tokens`,
+  token_output: (q) => `${Math.round(q)} tokens`,
 };
 
 /** Tarifa vigente: mesmo modelo e unidade, ativa, com a vigência mais recente até a data. */
@@ -175,7 +189,13 @@ export function computeJobCusto(eventos: ConsumoEventoRow[], tarifas: TarifaRow[
     porEtapa.set(evento.etapa, atual);
   }
 
-  const ordem: EtapaConsumo[] = ["cena_gemini", "animacao_veo", "montagem_json2video", "busca_kalodata"];
+  const ordem: EtapaConsumo[] = [
+    "roteiro_texto",
+    "cena_gemini",
+    "animacao_veo",
+    "montagem_json2video",
+    "busca_kalodata",
+  ];
   const etapas = ordem.map((e) => porEtapa.get(e)).filter((e): e is CustoEtapa => !!e);
 
   return {

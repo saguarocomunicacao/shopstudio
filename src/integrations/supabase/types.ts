@@ -103,7 +103,7 @@ export type Database = {
           job_id: string | null
           metadados: Json
           modelo: string
-          profile_id: string
+          profile_id: string | null
           quantidade: number | null
           unidade: Database["public"]["Enums"]["unidade_tarifa"]
         }
@@ -114,7 +114,7 @@ export type Database = {
           job_id?: string | null
           metadados?: Json
           modelo?: string
-          profile_id: string
+          profile_id?: string | null
           quantidade?: number | null
           unidade: Database["public"]["Enums"]["unidade_tarifa"]
         }
@@ -125,7 +125,7 @@ export type Database = {
           job_id?: string | null
           metadados?: Json
           modelo?: string
-          profile_id?: string
+          profile_id?: string | null
           quantidade?: number | null
           unidade?: Database["public"]["Enums"]["unidade_tarifa"]
         }
@@ -746,6 +746,7 @@ export type Database = {
         | "animacao_veo"
         | "montagem_json2video"
         | "busca_kalodata"
+        | "roteiro_texto"
       job_status:
         | "novo"
         | "produto_escolhido"
@@ -761,6 +762,8 @@ export type Database = {
         | "segundo_video"
         | "credito_montagem"
         | "bloco_linhas_kalodata"
+        | "token_input"
+        | "token_output"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -893,6 +896,7 @@ export const Constants = {
         "animacao_veo",
         "montagem_json2video",
         "busca_kalodata",
+        "roteiro_texto",
       ],
       job_status: [
         "novo",
@@ -910,6 +914,8 @@ export const Constants = {
         "segundo_video",
         "credito_montagem",
         "bloco_linhas_kalodata",
+        "token_input",
+        "token_output",
       ],
     },
   },
