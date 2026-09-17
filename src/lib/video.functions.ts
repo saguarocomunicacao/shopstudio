@@ -117,6 +117,10 @@ export const approveJobScenes = createServerFn({ method: "POST" })
       throw new Error("A montagem do vídeo ainda não está configurada. Falta a chave do JSON2Video.");
     }
 
+    // Etapa cara: respeita o teto de orçamento do mês.
+    const { assertOrcamento } = await import("./orcamento.server");
+    await assertOrcamento(job.profile_id);
+
     const { error } = await supabase
       .from("jobs")
       .update({
