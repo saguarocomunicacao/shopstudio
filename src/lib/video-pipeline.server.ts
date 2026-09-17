@@ -25,6 +25,13 @@ export type Scene = ScenePlan & {
   attempts?: number;
   video_path?: string;
   video_url?: string;
+  /** Narração em mp3 gerada na ElevenLabs (só quando o perfil usa voz ElevenLabs). */
+  audio_path?: string;
+  audio_url?: string;
+  audio_duration?: number;
+  /** Texto e voz usados no mp3: mudou o roteiro/voz, a cena é regerada. */
+  audio_text?: string;
+  audio_voice?: string;
 };
 
 /**
