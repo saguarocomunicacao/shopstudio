@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "../components/ui/sonner";
 import { AppTransitionProvider } from "../components/app-transition";
 import { supabase } from "../integrations/supabase/client";
+import { installSessionGuard } from "../lib/session-guard";
 
 function NotFoundComponent() {
   return (
@@ -125,10 +126,21 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
+    installSessionGuard();
     const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED") {
+        // Sessao renovada: o router revalida para usar sempre o token novo.
+        router.invalidate();
+        return;
+      }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      if (event === "SIGNED_OUT") {
+        const path = window.location.pathname;
+        if (path.startsWith("/app")) router.navigate({ to: "/entrar", replace: true });
+        return;
+      }
+      queryClient.invalidateQueries();
     });
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
