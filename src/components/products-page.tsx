@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { formatPrice, useProducts, type DbProduct } from "@/lib/content";
+import { useProducts, type DbProduct } from "@/lib/content";
 import { CategorySelect } from "./category-select";
 import { DiscoverPanel } from "./discover-panel";
+import { ProductDataTable } from "./product-data-table";
 import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
@@ -152,49 +153,24 @@ export function ProductsPage() {
 
       {tab === "descobrir" && <DiscoverPanel products={products} />}
 
-      <div className={`panel overflow-x-auto ${tab === "catalogo" ? "" : "hidden"}`}>
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead>
-            <tr className="border-b text-xs text-muted-foreground">
-              <th className="pb-3 font-medium">Produto</th>
-              <th className="pb-3 font-medium">Nicho</th>
-              <th className="pb-3 font-medium">Preço</th>
-              <th className="pb-3 font-medium">Comissão</th>
-              <th className="pb-3 font-medium">Hype score</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr className="border-b last:border-0" key={p.id}>
-                <td className="py-4 font-bold">{p.name}{p.url ? <a href={p.url} target="_blank" rel="noreferrer" className="ml-2 text-xs font-medium text-muted-foreground underline">link</a> : null}</td>
-                <td className="py-4 text-muted-foreground">{p.niche}</td>
-                <td className="py-4">{formatPrice(p.price)}</td>
-                <td className="py-4 text-primary">{p.commission}%</td>
-                <td className="py-4">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${p.hype}%` }} /></div>
-                    <b>{p.hype}</b>
-                  </div>
-                </td>
-                <td className="py-4">
-                  <div className="flex items-center justify-end gap-2">
-                    {jobProfiles.length > 0 && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
-                    {(canEdit || canRemove) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {canEdit && <DropdownMenuItem onSelect={() => setDialog({ open: true, product: p })}><Pencil />Editar</DropdownMenuItem>}
-                          {canRemove && <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setConfirm(p)}><Trash2 />Remover</DropdownMenuItem>}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className={`panel ${tab === "catalogo" ? "" : "hidden"}`}>
+        <ProductDataTable
+          items={products.map((p) => ({ ...p, imageUrl: p.image_url, productUrl: p.url }))}
+          renderActions={(p) => (
+            <>
+              {jobProfiles.length > 0 && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
+              {(canEdit || canRemove) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {canEdit && <DropdownMenuItem onSelect={() => setDialog({ open: true, product: p })}><Pencil />Editar</DropdownMenuItem>}
+                    {canRemove && <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setConfirm(p)}><Trash2 />Remover</DropdownMenuItem>}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </>
+          )}
+        />
         {!products.length && <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{isLoading ? "Carregando produtos..." : "Nenhum produto no catálogo."}</div>}
       </div>
 

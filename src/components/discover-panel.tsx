@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Loader2, Search, TrendingUp } from "lucide-react";
+import { Check, Loader2, Search } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { discoverProducts } from "@/lib/discover.functions";
-import { formatPrice, useCategories, type DbProduct } from "@/lib/content";
+import { useCategories, type DbProduct } from "@/lib/content";
+import { ProductDataTable } from "./product-data-table";
 import { useStudio } from "./studio-context";
 
 type Found = {
@@ -19,8 +20,6 @@ type Found = {
 };
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a busca.");
-const compact = (n: number) => new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
-
 export function DiscoverPanel({ products }: { products: DbProduct[] }) {
   const { can, userId } = useStudio();
   const qc = useQueryClient();
@@ -136,36 +135,23 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
       {run.isPending && page === 1 && <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">Garimpando produtos em alta...</div>}
 
       {results !== null && results.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {results.map((item) => {
-            const already = saved.has(`${item.source}:${item.externalId}`);
-            return (
-              <article key={item.externalId} className="panel flex gap-4">
-                <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-muted">
-                  {item.imageUrl ? <img src={item.imageUrl} alt={item.name} loading="lazy" className="h-full w-full object-cover" /> : null}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="line-clamp-2 text-sm font-bold">{item.name}</h3>
-                    {canCreate && (already
-                      ? <span className="shrink-0 text-[11px] font-bold text-muted-foreground">No catálogo</span>
-                      : <Checkbox checked={!!selected[item.externalId]} onCheckedChange={(v) => setSelected((s) => ({ ...s, [item.externalId]: !!v }))} />)}
-                  </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{item.sellerName || "Vendedor não informado"}</p>
-                  <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                    <span><b>{formatPrice(item.price)}</b></span>
-                    <span className="text-primary font-semibold">{item.commission}% comissão</span>
-                    <span className="text-muted-foreground">{compact(item.salesVolume)} vendas</span>
-                    <span className="text-muted-foreground inline-flex items-center gap-1"><TrendingUp className="h-3 w-3" />{Math.round(item.growthRate)}%</span>
-                  </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary" style={{ width: `${item.hype}%` }} /></div>
-                    <b className="text-xs">{item.hype}</b>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+        <div className="panel">
+          <ProductDataTable
+            items={results.map((item) => ({ ...item, id: `${item.source}:${item.externalId}`, niche: item.category }))}
+            renderActions={(item) => {
+              const already = saved.has(`${item.source}:${item.externalId}`);
+              if (!canCreate) return null;
+              return already ? (
+                <span className="shrink-0 text-[11px] font-bold text-muted-foreground">No catálogo</span>
+              ) : (
+                <Checkbox
+                  aria-label={`Selecionar ${item.name}`}
+                  checked={!!selected[item.externalId]}
+                  onCheckedChange={(value) => setSelected((current) => ({ ...current, [item.externalId]: !!value }))}
+                />
+              );
+            }}
+          />
         </div>
       )}
 
