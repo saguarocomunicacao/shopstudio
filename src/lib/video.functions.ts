@@ -301,7 +301,7 @@ async function runStep(
     supabase.from("profiles").select("name, niche").eq("id", job.profile_id).maybeSingle(),
     supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration, voice_ref")
       .eq("profile_id", job.profile_id)
       .maybeSingle(),
   ]);
