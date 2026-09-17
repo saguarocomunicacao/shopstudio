@@ -204,8 +204,8 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
 
   const startSearch = () => {
     const range = dateRange();
-    if (range === "excede") return toast.error("O intervalo personalizado pode ter no máximo 30 dias.");
-    if (!range) return toast.error("Informe as datas de início e fim do período.");
+    if (range === "excede") { toast.error("O intervalo personalizado pode ter no máximo 30 dias."); return; }
+    if (!range) { toast.error("Informe as datas de início e fim do período."); return; }
     searchId.current += 1;
     setResults(null);
     setPage(1);
