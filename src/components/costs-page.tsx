@@ -117,15 +117,34 @@ export function CostsPage() {
   const [periodo, setPeriodo] = useState<PeriodoKey>("mes");
   const [de, setDe] = useState(iso(startOfToday()));
   const [ate, setAte] = useState(iso(startOfToday()));
-  const [todosPerfisRaw, setTodosPerfis] = useState(false);
-  const todosPerfis = todosPerfisRaw && podeVerGlobal;
-  const [etapa, setEtapa] = useState<EtapaVisual | "todas">("todas");
+  const [perfisSel, setPerfisSel] = useState<string[]>(() => lerListaUrl("perfis"));
+  const [etapasSelRaw, setEtapasSel] = useState<EtapaVisual[]>(
+    () => lerListaUrl("etapa").filter((e): e is EtapaVisual => (ETAPA_VISUAL_ORDEM as string[]).includes(e)),
+  );
   const [ordem, setOrdem] = useState<"total" | "data">("total");
   const [detalhe, setDetalhe] = useState<DbJob | null>(null);
 
+  const todosPerfis = perfisSel.includes(TODOS) && podeVerGlobal;
+  const perfisEscolhidos = perfisSel.filter((id) => id !== TODOS && profiles.some((p) => p.id === id));
+  const etapasSel = etapasSelRaw;
+
+  // Reflete os filtros na URL (?perfis=..., ?etapa=...) sem recarregar a tela.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const perfisParam = todosPerfis ? TODOS : perfisEscolhidos.join(",");
+    if (perfisParam) url.searchParams.set("perfis", perfisParam);
+    else url.searchParams.delete("perfis");
+    if (etapasSel.length) url.searchParams.set("etapa", etapasSel.join(","));
+    else url.searchParams.delete("etapa");
+    window.history.replaceState(window.history.state, "", url.toString());
+  }, [todosPerfis, perfisEscolhidos.join(","), etapasSel.join(",")]);
+
+  // Sem escolha explícita, o filtro segue o perfil ativo global.
+  const perfisEfetivos = perfisEscolhidos.length ? perfisEscolhidos : activeProfileId ? [activeProfileId] : [];
+
   const intervalo = useMemo(() => intervaloDe(periodo, de, ate), [periodo, de, ate]);
-  const perfilFiltro = todosPerfis ? null : activeProfileId;
-  const { data, isLoading } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapa);
+  const perfilFiltro = todosPerfis ? null : perfisEfetivos;
+  const { data, isLoading } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapasSel);
   const gasto = useGastoMes(activeProfileId);
 
   const jobsLinhas = useMemo(() => {
