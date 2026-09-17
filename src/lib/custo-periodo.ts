@@ -219,6 +219,7 @@ export function useEventosPeriodo(desde: string, ate: string, profileIds: string
     queryKey: ["custo-periodo", desde, ate, chavePerfis],
     staleTime: 30_000,
     queryFn: async () => {
+      if (profileIds && profileIds.length === 0) return [] as ConsumoEventoRow[];
       let query = supabase
         .from("consumo_eventos")
         .select(selectEventos)
