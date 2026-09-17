@@ -168,7 +168,7 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
         : Promise.resolve({ data: null }),
       supabase
         .from("profile_video_settings")
-        .select("avatar_mode, avatar_reference_url, gemini_model")
+        .select("avatar_mode, avatar_reference_url, avatar_reference_urls, gemini_model")
         .eq("profile_id", job.profile_id)
         .maybeSingle(),
     ]);
@@ -179,14 +179,13 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
       const img = await pipeline.fetchAsBase64(product.image_url);
       references.push({ base64: img.base64, mimeType: img.mimeType });
     }
-    if (settingsRow?.avatar_mode === "fixo" && settingsRow?.avatar_reference_url) {
-      const avatar = await pipeline.fetchAsBase64(settingsRow.avatar_reference_url);
-      references.push({ base64: avatar.base64, mimeType: avatar.mimeType });
-    }
+    const personUrls = personReferenceUrls(settingsRow, scenes, data.index);
+    const personRefs = await pipeline.loadPersonReferences(personUrls);
+    references.push(...personRefs);
 
     const generated = await pipeline.generateSceneImage({
       model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
-      prompt: `${imagePrompt} Vertical 9:16 framing. Keep the product identical to the product reference photo.`,
+      prompt: `${imagePrompt} Vertical 9:16 framing. Keep the product identical to the product reference photo.${personRefs.length ? pipeline.SAME_PERSON_SUFFIX : ""}`,
       references,
     });
     const stored = await pipeline.storeMedia(
