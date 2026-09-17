@@ -2,10 +2,25 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+/** Faixa aceita pela API: "1-1000", ">1" ou "<1000". */
+const faixa = z.string().regex(/^(\d+(\.\d+)?-\d+(\.\d+)?|[<>]\d+(\.\d+)?)$/).optional();
+
 const schema = z.object({
   keyword: z.string().max(120).optional(),
-  dateRange: z.enum(["lastDay", "last7Day", "last30Day"]).default("last7Day"),
-  sortField: z.enum(["revenue", "sales_volumn", "revenue_growth_rate"]).default("revenue"),
+  dateRange: z
+    .string()
+    .regex(/^(lastDay|last7Day|last30Day|\d{4}-\d{2}-\d{2}~\d{4}-\d{2}-\d{2})$/)
+    .default("last7Day"),
+  sortField: z
+    .enum(["revenue", "commission_rate", "revenue_growth_rate", "sales_volumn", "unit_price", "video_revenue"])
+    .default("revenue"),
+  sortType: z.enum(["ASC", "DESC"]).default("DESC"),
+  unitPriceRange: faixa,
+  commissionRate: faixa,
+  revenueRange: faixa,
+  launchDate: z.enum(["<3", "<7", "<30", ">30"]).optional(),
+  deliveryType: z.enum(["local", "global"]).optional(),
+  needAll: z.boolean().default(false),
   page: z.number().int().min(1).max(20).default(1),
   profileId: z.string().uuid().nullable().optional(),
 });
