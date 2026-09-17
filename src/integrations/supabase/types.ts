@@ -236,6 +236,7 @@ export type Database = {
           niche: string
           origin: string
           price: number
+          profile_id: string | null
           revenue: number
           sales_volume: number
           seller_name: string
@@ -258,6 +259,7 @@ export type Database = {
           niche?: string
           origin?: string
           price?: number
+          profile_id?: string | null
           revenue?: number
           sales_volume?: number
           seller_name?: string
@@ -280,6 +282,7 @@ export type Database = {
           niche?: string
           origin?: string
           price?: number
+          profile_id?: string | null
           revenue?: number
           sales_volume?: number
           seller_name?: string
@@ -295,6 +298,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "products_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
