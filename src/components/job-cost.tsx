@@ -1,14 +1,15 @@
 import { AlertTriangle } from "lucide-react";
-import { ETAPA_LABELS, UNIDADE_LABELS, brl, useJobCustos, type CustoJob } from "@/lib/custo";
+import { ETAPA_LABELS, UNIDADE_LABELS, brl, useJobCustos, type CustoEtapa, type CustoJob, type EtapaConsumo } from "@/lib/custo";
 import { useStudio } from "./studio-context";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const unidadeDaEtapa = {
+const unidadeDaEtapa: Record<EtapaConsumo, "imagem" | "segundo_video" | "credito_montagem" | "bloco_linhas_kalodata" | "token_input"> = {
   cena_gemini: "imagem",
   animacao_veo: "segundo_video",
   montagem_json2video: "credito_montagem",
   busca_kalodata: "bloco_linhas_kalodata",
   roteiro_texto: "token_input",
-} as const;
+};
 
 export function useJobCusto(jobId: string): CustoJob | null {
   const { activeProfileId } = useStudio();
@@ -28,6 +29,13 @@ export function JobCostBadge({ jobId }: { jobId: string }) {
   );
 }
 
+const consumoDaEtapa = (etapa: CustoEtapa) => {
+  const unidade = unidadeDaEtapa[etapa.etapa];
+  const base = UNIDADE_LABELS[unidade](etapa.quantidade);
+  const flags = [etapa.estimado ? "estimado" : null, etapa.semTarifa ? "sem tarifa" : null].filter(Boolean).join(" · ");
+  return flags ? `${base} · ${flags}` : base;
+};
+
 /** Quebra por etapa no detalhe do job. */
 export function JobCostSummary({ jobId }: { jobId: string }) {
   const custo = useJobCusto(jobId);
@@ -36,23 +44,31 @@ export function JobCostSummary({ jobId }: { jobId: string }) {
   return (
     <div className="grid gap-2">
       <p className="text-sm font-semibold">Custo</p>
-      <ul className="grid gap-1.5 rounded-xl bg-secondary px-4 py-3 text-sm">
-        {custo.etapas.map((etapa) => (
-          <li key={etapa.etapa} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-            <span className="font-semibold text-foreground">{ETAPA_LABELS[etapa.etapa]}</span>
-            <span className="text-xs text-muted-foreground">
-              {UNIDADE_LABELS[unidadeDaEtapa[etapa.etapa]](etapa.quantidade)}
-              {etapa.estimado && " · estimado"}
-              {etapa.semTarifa && " · sem tarifa"}
-            </span>
-            <span className="text-xs font-semibold text-foreground">{brl(etapa.valorBrl)}</span>
-          </li>
-        ))}
-        <li className="mt-1 flex items-baseline justify-between border-t pt-2">
-          <span className="font-bold">Total do job</span>
-          <span className="font-bold text-primary">{brl(custo.totalBrl)}</span>
-        </li>
-      </ul>
+      <div className="overflow-hidden rounded-xl border bg-background">
+        <Table>
+          <TableHeader className="bg-secondary/60">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="px-4 text-xs font-semibold">Etapa</TableHead>
+              <TableHead className="px-4 text-xs font-semibold">Consumo</TableHead>
+              <TableHead className="px-4 text-right text-xs font-semibold">Valor</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {custo.etapas.map((etapa) => (
+              <TableRow key={etapa.etapa}>
+                <TableCell className="px-4 py-3 font-semibold text-foreground">{ETAPA_LABELS[etapa.etapa]}</TableCell>
+                <TableCell className="px-4 py-3 text-muted-foreground">{consumoDaEtapa(etapa)}</TableCell>
+                <TableCell className="whitespace-nowrap px-4 py-3 text-right font-medium text-foreground">{brl(etapa.valorBrl)}</TableCell>
+              </TableRow>
+            ))}
+            <TableRow className="hover:bg-transparent">
+              <TableCell className="px-4 py-3 font-bold text-foreground">Total do job</TableCell>
+              <TableCell className="px-4 py-3" />
+              <TableCell className="whitespace-nowrap px-4 py-3 text-right font-bold text-primary">{brl(custo.totalBrl)}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
       {(custo.regeneracoes > 0 || custo.takesDescartados > 0 || custo.estimado || custo.semTarifa) && (
         <p className="text-xs text-muted-foreground">
           {[

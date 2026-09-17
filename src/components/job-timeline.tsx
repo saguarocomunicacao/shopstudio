@@ -59,7 +59,7 @@ export function JobTimeline({ jobId }: { jobId: string }) {
     <div className="grid gap-2">
       <p className="text-sm font-semibold">Histórico</p>
       <div className="overflow-hidden rounded-xl border bg-background">
-        <Table className="min-w-[620px]">
+        <Table>
           <TableHeader className="bg-secondary/60">
             <TableRow className="hover:bg-transparent">
               <TableHead className="px-4 text-xs font-semibold">Etapa</TableHead>
