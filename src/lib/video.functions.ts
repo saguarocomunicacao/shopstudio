@@ -45,6 +45,31 @@ export function splitScript(script: string): string[] {
 
 const input = (data: unknown) => z.object({ jobId: z.string().uuid() }).parse(data);
 
+/** Lista de URLs de referência da pessoa salvas no perfil (até 3). */
+export function profileAvatarUrls(settings: { avatar_reference_url?: string | null; avatar_reference_urls?: unknown } | null): string[] {
+  const list = Array.isArray(settings?.avatar_reference_urls)
+    ? (settings!.avatar_reference_urls as unknown[]).filter((u): u is string => typeof u === "string" && !!u)
+    : [];
+  if (list.length) return list.slice(0, 3);
+  return settings?.avatar_reference_url ? [settings.avatar_reference_url] : [];
+}
+
+/**
+ * Referências de pessoa para uma cena.
+ * - Pessoa fixa: todas as fotos do perfil.
+ * - Pessoa nova: a primeira cena cria a pessoa e as demais reaproveitam a
+ *   imagem dela, para o vídeo inteiro ter a MESMA pessoa.
+ */
+function personReferenceUrls(
+  settings: { avatar_mode?: string | null; avatar_reference_url?: string | null; avatar_reference_urls?: unknown } | null,
+  scenes: { image_url?: string }[],
+  index: number,
+): string[] {
+  if (settings?.avatar_mode === "fixo") return profileAvatarUrls(settings);
+  const first = scenes[0]?.image_url;
+  return index > 0 && first ? [first] : [];
+}
+
 /** Carrega o job, valida permissão de pipeline e devolve os dados. */
 async function loadJob(supabase: any, jobId: string): Promise<JobRow> {
   const { data: job, error } = await supabase
