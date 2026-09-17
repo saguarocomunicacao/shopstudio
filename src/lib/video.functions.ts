@@ -316,6 +316,7 @@ async function runStep(
     gemini_model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
     veo_model: settingsRow?.veo_model ?? "veo-3.1-fast-generate-preview",
     take_duration: settingsRow?.take_duration ?? 8,
+    voice_ref: settingsRow?.voice_ref ?? null,
   };
   const language = identity?.language || "pt-BR";
 
