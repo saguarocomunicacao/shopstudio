@@ -10,12 +10,12 @@ import type { ModuleKey } from "@/lib/access";
 import { StudioProvider, useStudio } from "./studio-context";
 
 const items: readonly (readonly [string, string, typeof CircleGauge, ModuleKey | null])[] = [
-  ["Dashboard", "/", CircleGauge, null], ["Perfis", "/perfis", UserSquare2, "perfis"], ["Produtos", "/produtos", Package, "produtos"],
-  ["Pipeline", "/pipeline", KanbanSquare, "pipeline"], ["Vídeos", "/videos", Clapperboard, "videos"], ["Rascunhos", "/rascunhos", FileClock, "rascunhos"],
-  ["Métricas", "/metricas", BarChart3, "metricas"], ["Equipe", "/equipe", Users, "equipe"], ["Prompts", "/prompts", Wand2, "prompts" as never], ["Aprovações", "/aprovacoes", ShieldCheck, "aprovacoes" as never], ["Configurações", "/configuracoes", Settings, "configuracoes"],
+  ["Dashboard", "/app", CircleGauge, null], ["Perfis", "/app/perfis", UserSquare2, "perfis"], ["Produtos", "/app/produtos", Package, "produtos"],
+  ["Pipeline", "/app/pipeline", KanbanSquare, "pipeline"], ["Vídeos", "/app/videos", Clapperboard, "videos"], ["Rascunhos", "/app/rascunhos", FileClock, "rascunhos"],
+  ["Métricas", "/app/metricas", BarChart3, "metricas"], ["Equipe", "/app/equipe", Users, "equipe"], ["Prompts", "/app/prompts", Wand2, "prompts" as never], ["Aprovações", "/app/aprovacoes", ShieldCheck, "aprovacoes" as never], ["Configurações", "/app/configuracoes", Settings, "configuracoes"],
 ];
 
-const titles: Record<string, string> = { "/": "Visão geral", "/perfis": "Perfis", "/produtos": "Produtos em alta", "/pipeline": "Pipeline de conteúdo", "/videos": "Biblioteca de vídeos", "/rascunhos": "Rascunhos", "/metricas": "Métricas", "/equipe": "Equipe e permissões", "/prompts": "Prompts do sistema", "/aprovacoes": "Aprovação de cadastros", "/configuracoes": "Configurações" };
+const titles: Record<string, string> = { "/app": "Visão geral", "/app/perfis": "Perfis", "/app/produtos": "Produtos em alta", "/app/pipeline": "Pipeline de conteúdo", "/app/videos": "Biblioteca de vídeos", "/app/rascunhos": "Rascunhos", "/app/metricas": "Métricas", "/app/equipe": "Equipe e permissões", "/app/prompts": "Prompts do sistema", "/app/aprovacoes": "Aprovação de cadastros", "/app/configuracoes": "Configurações" };
 
 const initialsOf = (value: string) => value.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("") || "US";
 
@@ -27,8 +27,8 @@ function useVisibleItems() {
   const { isAdmin, isSuperAdmin, can, activeProfileId } = useStudio();
   return items.filter(([, to, , module]) => {
     if (!module) return true;
-    if (to === "/prompts") return isAdmin;
-    if (to === "/aprovacoes") return isSuperAdmin;
+    if (to === "/app/prompts") return isAdmin;
+    if (to === "/app/aprovacoes") return isSuperAdmin;
     if (module === "equipe") return isAdmin;
     return can(module, "visualizar", activeProfileId);
   });
@@ -36,7 +36,7 @@ function useVisibleItems() {
 
 function Nav({ compact, close }: { compact?: boolean; close?: () => void }) {
   const visible = useVisibleItems();
-  return <nav className="space-y-1 px-2 py-3">{visible.map(([label, to, Icon]) => <Link key={to} to={to} activeOptions={{ exact: to === "/" }} onClick={close} className="group flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground data-[status=active]:bg-sidebar-accent data-[status=active]:font-semibold data-[status=active]:text-primary"><Icon strokeWidth={1.8} className="h-[18px] w-[18px] shrink-0" />{!compact && <span>{label}</span>}</Link>)}</nav>;
+  return <nav className="space-y-1 px-2 py-3">{visible.map(([label, to, Icon]) => <Link key={to} to={to} activeOptions={{ exact: to === "/app" }} onClick={close} className="group flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground data-[status=active]:bg-sidebar-accent data-[status=active]:font-semibold data-[status=active]:text-primary"><Icon strokeWidth={1.8} className="h-[18px] w-[18px] shrink-0" />{!compact && <span>{label}</span>}</Link>)}</nav>;
 }
 
 function ProfilePicker() {
@@ -51,7 +51,7 @@ function useSignOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/entrar", replace: true });
   };
 }
 

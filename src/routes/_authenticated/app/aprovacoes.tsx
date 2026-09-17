@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ApprovalsPage } from "@/components/approvals-page";
 
-export const Route = createFileRoute("/_authenticated/aprovacoes")({
+export const Route = createFileRoute("/_authenticated/app/aprovacoes")({
   head: () => ({
     meta: [
       { title: "Aprovação de cadastros — Shop Studio" },

@@ -1,0 +1,2 @@
+import { createFileRoute } from "@tanstack/react-router"; import { TeamPage } from "@/components/team-page";
+export const Route=createFileRoute("/_authenticated/app/equipe")({head:()=>({meta:[{title:"Equipe — Shop Studio"},{name:"description",content:"Gerencie equipe e acessos."},{property:"og:title",content:"Equipe — Shop Studio"},{property:"og:description",content:"Gerencie equipe e acessos."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:TeamPage});

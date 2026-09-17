@@ -9,21 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedAprovacoesRouteImport } from './routes/_authenticated/aprovacoes'
-import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
-import { Route as AuthenticatedEquipeRouteImport } from './routes/_authenticated/equipe'
-import { Route as AuthenticatedMetricasRouteImport } from './routes/_authenticated/metricas'
-import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
-import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
-import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
-import { Route as AuthenticatedPromptsRouteImport } from './routes/_authenticated/prompts'
-import { Route as AuthenticatedRascunhosRouteImport } from './routes/_authenticated/rascunhos'
-import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
+import { Route as EntrarRouteImport } from './routes/entrar'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
+import { Route as AuthenticatedAppAprovacoesRouteImport } from './routes/_authenticated/app/aprovacoes'
+import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
+import { Route as AuthenticatedAppEquipeRouteImport } from './routes/_authenticated/app/equipe'
+import { Route as AuthenticatedAppMetricasRouteImport } from './routes/_authenticated/app/metricas'
+import { Route as AuthenticatedAppPerfisRouteImport } from './routes/_authenticated/app/perfis'
+import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/app/pipeline'
+import { Route as AuthenticatedAppProdutosRouteImport } from './routes/_authenticated/app/produtos'
+import { Route as AuthenticatedAppPromptsRouteImport } from './routes/_authenticated/app/prompts'
+import { Route as AuthenticatedAppRascunhosRouteImport } from './routes/_authenticated/app/rascunhos'
+import { Route as AuthenticatedAppVideosRouteImport } from './routes/_authenticated/app/videos'
 import { Route as ApiPublicJson2videoWebhookTokenRouteImport } from './routes/api/public/json2video-webhook.$token'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -33,60 +41,75 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/',
-  path: '/',
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
+  id: '/app/',
+  path: '/app/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAprovacoesRoute = AuthenticatedAprovacoesRouteImport.update({
-  id: '/aprovacoes',
-  path: '/aprovacoes',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedConfiguracoesRoute =
-  AuthenticatedConfiguracoesRouteImport.update({
-    id: '/configuracoes',
-    path: '/configuracoes',
+const AuthenticatedAppAprovacoesRoute =
+  AuthenticatedAppAprovacoesRouteImport.update({
+    id: '/app/aprovacoes',
+    path: '/app/aprovacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedEquipeRoute = AuthenticatedEquipeRouteImport.update({
-  id: '/equipe',
-  path: '/equipe',
+const AuthenticatedAppConfiguracoesRoute =
+  AuthenticatedAppConfiguracoesRouteImport.update({
+    id: '/app/configuracoes',
+    path: '/app/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppEquipeRoute = AuthenticatedAppEquipeRouteImport.update({
+  id: '/app/equipe',
+  path: '/app/equipe',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedMetricasRoute = AuthenticatedMetricasRouteImport.update({
-  id: '/metricas',
-  path: '/metricas',
+const AuthenticatedAppMetricasRoute =
+  AuthenticatedAppMetricasRouteImport.update({
+    id: '/app/metricas',
+    path: '/app/metricas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppPerfisRoute = AuthenticatedAppPerfisRouteImport.update({
+  id: '/app/perfis',
+  path: '/app/perfis',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPerfisRoute = AuthenticatedPerfisRouteImport.update({
-  id: '/perfis',
-  path: '/perfis',
+const AuthenticatedAppPipelineRoute =
+  AuthenticatedAppPipelineRouteImport.update({
+    id: '/app/pipeline',
+    path: '/app/pipeline',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppProdutosRoute =
+  AuthenticatedAppProdutosRouteImport.update({
+    id: '/app/produtos',
+    path: '/app/produtos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppPromptsRoute = AuthenticatedAppPromptsRouteImport.update({
+  id: '/app/prompts',
+  path: '/app/prompts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPipelineRoute = AuthenticatedPipelineRouteImport.update({
-  id: '/pipeline',
-  path: '/pipeline',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedProdutosRoute = AuthenticatedProdutosRouteImport.update({
-  id: '/produtos',
-  path: '/produtos',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPromptsRoute = AuthenticatedPromptsRouteImport.update({
-  id: '/prompts',
-  path: '/prompts',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedRascunhosRoute = AuthenticatedRascunhosRouteImport.update({
-  id: '/rascunhos',
-  path: '/rascunhos',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedVideosRoute = AuthenticatedVideosRouteImport.update({
-  id: '/videos',
-  path: '/videos',
+const AuthenticatedAppRascunhosRoute =
+  AuthenticatedAppRascunhosRouteImport.update({
+    id: '/app/rascunhos',
+    path: '/app/rascunhos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppVideosRoute = AuthenticatedAppVideosRouteImport.update({
+  id: '/app/videos',
+  path: '/app/videos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiPublicJson2videoWebhookTokenRoute =
@@ -97,50 +120,59 @@ const ApiPublicJson2videoWebhookTokenRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedIndexRoute
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/aprovacoes': typeof AuthenticatedAprovacoesRoute
-  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
-  '/equipe': typeof AuthenticatedEquipeRoute
-  '/metricas': typeof AuthenticatedMetricasRoute
-  '/perfis': typeof AuthenticatedPerfisRoute
-  '/pipeline': typeof AuthenticatedPipelineRoute
-  '/produtos': typeof AuthenticatedProdutosRoute
-  '/prompts': typeof AuthenticatedPromptsRoute
-  '/rascunhos': typeof AuthenticatedRascunhosRoute
-  '/videos': typeof AuthenticatedVideosRoute
+  '/entrar': typeof EntrarRoute
+  '/login': typeof LoginRoute
+  '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/equipe': typeof AuthenticatedAppEquipeRoute
+  '/app/metricas': typeof AuthenticatedAppMetricasRoute
+  '/app/perfis': typeof AuthenticatedAppPerfisRoute
+  '/app/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/app/produtos': typeof AuthenticatedAppProdutosRoute
+  '/app/prompts': typeof AuthenticatedAppPromptsRoute
+  '/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
+  '/app/videos': typeof AuthenticatedAppVideosRoute
+  '/app/': typeof AuthenticatedAppIndexRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/aprovacoes': typeof AuthenticatedAprovacoesRoute
-  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
-  '/equipe': typeof AuthenticatedEquipeRoute
-  '/metricas': typeof AuthenticatedMetricasRoute
-  '/perfis': typeof AuthenticatedPerfisRoute
-  '/pipeline': typeof AuthenticatedPipelineRoute
-  '/produtos': typeof AuthenticatedProdutosRoute
-  '/prompts': typeof AuthenticatedPromptsRoute
-  '/rascunhos': typeof AuthenticatedRascunhosRoute
-  '/videos': typeof AuthenticatedVideosRoute
-  '/': typeof AuthenticatedIndexRoute
+  '/entrar': typeof EntrarRoute
+  '/login': typeof LoginRoute
+  '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/equipe': typeof AuthenticatedAppEquipeRoute
+  '/app/metricas': typeof AuthenticatedAppMetricasRoute
+  '/app/perfis': typeof AuthenticatedAppPerfisRoute
+  '/app/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/app/produtos': typeof AuthenticatedAppProdutosRoute
+  '/app/prompts': typeof AuthenticatedAppPromptsRoute
+  '/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
+  '/app/videos': typeof AuthenticatedAppVideosRoute
+  '/app': typeof AuthenticatedAppIndexRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/aprovacoes': typeof AuthenticatedAprovacoesRoute
-  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
-  '/_authenticated/equipe': typeof AuthenticatedEquipeRoute
-  '/_authenticated/metricas': typeof AuthenticatedMetricasRoute
-  '/_authenticated/perfis': typeof AuthenticatedPerfisRoute
-  '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
-  '/_authenticated/produtos': typeof AuthenticatedProdutosRoute
-  '/_authenticated/prompts': typeof AuthenticatedPromptsRoute
-  '/_authenticated/rascunhos': typeof AuthenticatedRascunhosRoute
-  '/_authenticated/videos': typeof AuthenticatedVideosRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/entrar': typeof EntrarRoute
+  '/login': typeof LoginRoute
+  '/_authenticated/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
+  '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/_authenticated/app/equipe': typeof AuthenticatedAppEquipeRoute
+  '/_authenticated/app/metricas': typeof AuthenticatedAppMetricasRoute
+  '/_authenticated/app/perfis': typeof AuthenticatedAppPerfisRoute
+  '/_authenticated/app/pipeline': typeof AuthenticatedAppPipelineRoute
+  '/_authenticated/app/produtos': typeof AuthenticatedAppProdutosRoute
+  '/_authenticated/app/prompts': typeof AuthenticatedAppPromptsRoute
+  '/_authenticated/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
+  '/_authenticated/app/videos': typeof AuthenticatedAppVideosRoute
+  '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
 }
 export interface FileRouteTypes {
@@ -148,58 +180,77 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/aprovacoes'
-    | '/configuracoes'
-    | '/equipe'
-    | '/metricas'
-    | '/perfis'
-    | '/pipeline'
-    | '/produtos'
-    | '/prompts'
-    | '/rascunhos'
-    | '/videos'
+    | '/entrar'
+    | '/login'
+    | '/app/aprovacoes'
+    | '/app/configuracoes'
+    | '/app/equipe'
+    | '/app/metricas'
+    | '/app/perfis'
+    | '/app/pipeline'
+    | '/app/produtos'
+    | '/app/prompts'
+    | '/app/rascunhos'
+    | '/app/videos'
+    | '/app/'
     | '/api/public/json2video-webhook/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/auth'
-    | '/aprovacoes'
-    | '/configuracoes'
-    | '/equipe'
-    | '/metricas'
-    | '/perfis'
-    | '/pipeline'
-    | '/produtos'
-    | '/prompts'
-    | '/rascunhos'
-    | '/videos'
     | '/'
+    | '/auth'
+    | '/entrar'
+    | '/login'
+    | '/app/aprovacoes'
+    | '/app/configuracoes'
+    | '/app/equipe'
+    | '/app/metricas'
+    | '/app/perfis'
+    | '/app/pipeline'
+    | '/app/produtos'
+    | '/app/prompts'
+    | '/app/rascunhos'
+    | '/app/videos'
+    | '/app'
     | '/api/public/json2video-webhook/$token'
   id:
     | '__root__'
+    | '/'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/aprovacoes'
-    | '/_authenticated/configuracoes'
-    | '/_authenticated/equipe'
-    | '/_authenticated/metricas'
-    | '/_authenticated/perfis'
-    | '/_authenticated/pipeline'
-    | '/_authenticated/produtos'
-    | '/_authenticated/prompts'
-    | '/_authenticated/rascunhos'
-    | '/_authenticated/videos'
-    | '/_authenticated/'
+    | '/entrar'
+    | '/login'
+    | '/_authenticated/app/aprovacoes'
+    | '/_authenticated/app/configuracoes'
+    | '/_authenticated/app/equipe'
+    | '/_authenticated/app/metricas'
+    | '/_authenticated/app/perfis'
+    | '/_authenticated/app/pipeline'
+    | '/_authenticated/app/produtos'
+    | '/_authenticated/app/prompts'
+    | '/_authenticated/app/rascunhos'
+    | '/_authenticated/app/videos'
+    | '/_authenticated/app/'
     | '/api/public/json2video-webhook/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  EntrarRoute: typeof EntrarRoute
+  LoginRoute: typeof LoginRoute
   ApiPublicJson2videoWebhookTokenRoute: typeof ApiPublicJson2videoWebhookTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -214,81 +265,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/': {
-      id: '/_authenticated/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/app/': {
+      id: '/_authenticated/app/'
+      path: '/app'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/aprovacoes': {
-      id: '/_authenticated/aprovacoes'
-      path: '/aprovacoes'
-      fullPath: '/aprovacoes'
-      preLoaderRoute: typeof AuthenticatedAprovacoesRouteImport
+    '/_authenticated/app/aprovacoes': {
+      id: '/_authenticated/app/aprovacoes'
+      path: '/app/aprovacoes'
+      fullPath: '/app/aprovacoes'
+      preLoaderRoute: typeof AuthenticatedAppAprovacoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/configuracoes': {
-      id: '/_authenticated/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/configuracoes'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+    '/_authenticated/app/configuracoes': {
+      id: '/_authenticated/app/configuracoes'
+      path: '/app/configuracoes'
+      fullPath: '/app/configuracoes'
+      preLoaderRoute: typeof AuthenticatedAppConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/equipe': {
-      id: '/_authenticated/equipe'
-      path: '/equipe'
-      fullPath: '/equipe'
-      preLoaderRoute: typeof AuthenticatedEquipeRouteImport
+    '/_authenticated/app/equipe': {
+      id: '/_authenticated/app/equipe'
+      path: '/app/equipe'
+      fullPath: '/app/equipe'
+      preLoaderRoute: typeof AuthenticatedAppEquipeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/metricas': {
-      id: '/_authenticated/metricas'
-      path: '/metricas'
-      fullPath: '/metricas'
-      preLoaderRoute: typeof AuthenticatedMetricasRouteImport
+    '/_authenticated/app/metricas': {
+      id: '/_authenticated/app/metricas'
+      path: '/app/metricas'
+      fullPath: '/app/metricas'
+      preLoaderRoute: typeof AuthenticatedAppMetricasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/perfis': {
-      id: '/_authenticated/perfis'
-      path: '/perfis'
-      fullPath: '/perfis'
-      preLoaderRoute: typeof AuthenticatedPerfisRouteImport
+    '/_authenticated/app/perfis': {
+      id: '/_authenticated/app/perfis'
+      path: '/app/perfis'
+      fullPath: '/app/perfis'
+      preLoaderRoute: typeof AuthenticatedAppPerfisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/pipeline': {
-      id: '/_authenticated/pipeline'
-      path: '/pipeline'
-      fullPath: '/pipeline'
-      preLoaderRoute: typeof AuthenticatedPipelineRouteImport
+    '/_authenticated/app/pipeline': {
+      id: '/_authenticated/app/pipeline'
+      path: '/app/pipeline'
+      fullPath: '/app/pipeline'
+      preLoaderRoute: typeof AuthenticatedAppPipelineRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/produtos': {
-      id: '/_authenticated/produtos'
-      path: '/produtos'
-      fullPath: '/produtos'
-      preLoaderRoute: typeof AuthenticatedProdutosRouteImport
+    '/_authenticated/app/produtos': {
+      id: '/_authenticated/app/produtos'
+      path: '/app/produtos'
+      fullPath: '/app/produtos'
+      preLoaderRoute: typeof AuthenticatedAppProdutosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/prompts': {
-      id: '/_authenticated/prompts'
-      path: '/prompts'
-      fullPath: '/prompts'
-      preLoaderRoute: typeof AuthenticatedPromptsRouteImport
+    '/_authenticated/app/prompts': {
+      id: '/_authenticated/app/prompts'
+      path: '/app/prompts'
+      fullPath: '/app/prompts'
+      preLoaderRoute: typeof AuthenticatedAppPromptsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/rascunhos': {
-      id: '/_authenticated/rascunhos'
-      path: '/rascunhos'
-      fullPath: '/rascunhos'
-      preLoaderRoute: typeof AuthenticatedRascunhosRouteImport
+    '/_authenticated/app/rascunhos': {
+      id: '/_authenticated/app/rascunhos'
+      path: '/app/rascunhos'
+      fullPath: '/app/rascunhos'
+      preLoaderRoute: typeof AuthenticatedAppRascunhosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/videos': {
-      id: '/_authenticated/videos'
-      path: '/videos'
-      fullPath: '/videos'
-      preLoaderRoute: typeof AuthenticatedVideosRouteImport
+    '/_authenticated/app/videos': {
+      id: '/_authenticated/app/videos'
+      path: '/app/videos'
+      fullPath: '/app/videos'
+      preLoaderRoute: typeof AuthenticatedAppVideosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/json2video-webhook/$token': {
@@ -302,39 +367,42 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAprovacoesRoute: typeof AuthenticatedAprovacoesRoute
-  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
-  AuthenticatedEquipeRoute: typeof AuthenticatedEquipeRoute
-  AuthenticatedMetricasRoute: typeof AuthenticatedMetricasRoute
-  AuthenticatedPerfisRoute: typeof AuthenticatedPerfisRoute
-  AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
-  AuthenticatedProdutosRoute: typeof AuthenticatedProdutosRoute
-  AuthenticatedPromptsRoute: typeof AuthenticatedPromptsRoute
-  AuthenticatedRascunhosRoute: typeof AuthenticatedRascunhosRoute
-  AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAppAprovacoesRoute: typeof AuthenticatedAppAprovacoesRoute
+  AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
+  AuthenticatedAppEquipeRoute: typeof AuthenticatedAppEquipeRoute
+  AuthenticatedAppMetricasRoute: typeof AuthenticatedAppMetricasRoute
+  AuthenticatedAppPerfisRoute: typeof AuthenticatedAppPerfisRoute
+  AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
+  AuthenticatedAppProdutosRoute: typeof AuthenticatedAppProdutosRoute
+  AuthenticatedAppPromptsRoute: typeof AuthenticatedAppPromptsRoute
+  AuthenticatedAppRascunhosRoute: typeof AuthenticatedAppRascunhosRoute
+  AuthenticatedAppVideosRoute: typeof AuthenticatedAppVideosRoute
+  AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAprovacoesRoute: AuthenticatedAprovacoesRoute,
-  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
-  AuthenticatedEquipeRoute: AuthenticatedEquipeRoute,
-  AuthenticatedMetricasRoute: AuthenticatedMetricasRoute,
-  AuthenticatedPerfisRoute: AuthenticatedPerfisRoute,
-  AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
-  AuthenticatedProdutosRoute: AuthenticatedProdutosRoute,
-  AuthenticatedPromptsRoute: AuthenticatedPromptsRoute,
-  AuthenticatedRascunhosRoute: AuthenticatedRascunhosRoute,
-  AuthenticatedVideosRoute: AuthenticatedVideosRoute,
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAppAprovacoesRoute: AuthenticatedAppAprovacoesRoute,
+  AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
+  AuthenticatedAppEquipeRoute: AuthenticatedAppEquipeRoute,
+  AuthenticatedAppMetricasRoute: AuthenticatedAppMetricasRoute,
+  AuthenticatedAppPerfisRoute: AuthenticatedAppPerfisRoute,
+  AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,
+  AuthenticatedAppProdutosRoute: AuthenticatedAppProdutosRoute,
+  AuthenticatedAppPromptsRoute: AuthenticatedAppPromptsRoute,
+  AuthenticatedAppRascunhosRoute: AuthenticatedAppRascunhosRoute,
+  AuthenticatedAppVideosRoute: AuthenticatedAppVideosRoute,
+  AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  EntrarRoute: EntrarRoute,
+  LoginRoute: LoginRoute,
   ApiPublicJson2videoWebhookTokenRoute: ApiPublicJson2videoWebhookTokenRoute,
 }
 export const routeTree = rootRouteImport

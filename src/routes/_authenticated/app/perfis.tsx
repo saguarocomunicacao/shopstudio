@@ -1,0 +1,2 @@
+import { createFileRoute } from "@tanstack/react-router"; import { ProfilesPage } from "@/components/profiles-page";
+export const Route=createFileRoute("/_authenticated/app/perfis")({head:()=>({meta:[{title:"Perfis — Shop Studio"},{name:"description",content:"Gerencie os perfis de conteúdo."},{property:"og:title",content:"Perfis — Shop Studio"},{property:"og:description",content:"Gerencie os perfis de conteúdo."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:ProfilesPage});
