@@ -124,7 +124,12 @@ function AporteDialog({ fornecedor, unidade, onSaved }: { fornecedor: Fornecedor
           {unidade && (
             <div className="grid gap-1">
               <label className="text-xs font-semibold text-muted-foreground">Quantidade que entrou ({unidade})</label>
-              <Input inputMode="decimal" placeholder="100" value={unidades} onChange={(e) => setUnidades(e.target.value)} />
+              <Input
+                inputMode="decimal"
+                placeholder="100"
+                value={unidades}
+                onChange={(e) => setUnidades(mascaraNumero(e.target.value))}
+              />
             </div>
           )}
           <div className="grid gap-1">
