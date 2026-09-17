@@ -15,6 +15,8 @@ type StudioContextValue = {
   loading: boolean;
   userId: string | null;
   pendingAccess: boolean;
+  isSuperAdmin: boolean;
+  approvalStatus: string;
 };
 
 const StudioContext = createContext<StudioContextValue | undefined>(undefined);
@@ -61,7 +63,10 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       access,
       loading: sessionLoading || accessLoading,
       userId,
-      pendingAccess: !!userId && !accessLoading && !isAdmin && profiles.length === 0,
+      isSuperAdmin: access?.isSuperAdmin ?? false,
+      approvalStatus: access?.approvalStatus ?? "pendente",
+      pendingAccess:
+        !!userId && !accessLoading && (access?.approvalStatus !== "aprovado" || (!isAdmin && profiles.length === 0)),
     };
   }, [activeProfileId, dark, profiles, access, sessionLoading, accessLoading, userId]);
 

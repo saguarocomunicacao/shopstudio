@@ -21,7 +21,10 @@ export type Role = { id: string; name: string; description: string; is_system: b
 export type Permission = { id: string; module: string; action: string };
 export type RolePermission = { role_id: string; permission_id: string };
 export type Assignment = { id: string; user_id: string; profile_id: string | null; role_id: string };
-export type AppUser = { id: string; email: string; name: string; avatar_url: string | null };
+export type AppUser = { id: string; email: string; name: string; avatar_url: string | null; status: string; created_at: string };
+
+/** Dono do backoffice: sempre tem acesso total e nunca pode ser bloqueado. */
+export const SUPER_ADMIN_EMAIL = "saguaro.comunicacao@gmail.com";
 export type Invite = { id: string; email: string; created_at: string };
 
 export function useSession() {
@@ -40,7 +43,7 @@ export function useSession() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  return { session, loading, userId: session?.user.id ?? null };
+  return { session, loading, userId: session?.user.id ?? null, email: session?.user.email ?? null };
 }
 
 async function fetchAccess(userId: string) {
@@ -54,6 +57,8 @@ async function fetchAccess(userId: string) {
     supabase.from("app_users").select("*").eq("id", userId).maybeSingle(),
   ]);
 
+  const me = (meRes.data ?? null) as AppUser | null;
+  const isSuperAdmin = (me?.email ?? "").toLowerCase() === SUPER_ADMIN_EMAIL;
   const roles = (rolesRes.data ?? []) as Role[];
   const assignments = (mineRes.data ?? []) as Assignment[];
   const adminRoleIds = new Set(roles.filter((r) => r.is_admin).map((r) => r.id));
@@ -64,8 +69,10 @@ async function fetchAccess(userId: string) {
     permissions: (permsRes.data ?? []) as Permission[],
     rolePermissions: (rolePermsRes.data ?? []) as RolePermission[],
     assignments,
-    me: (meRes.data ?? null) as AppUser | null,
-    isAdmin: assignments.some((a) => adminRoleIds.has(a.role_id)),
+    me,
+    isSuperAdmin,
+    approvalStatus: isSuperAdmin ? "aprovado" : (me?.status ?? "pendente"),
+    isAdmin: isSuperAdmin || assignments.some((a) => adminRoleIds.has(a.role_id)),
   };
 }
 
@@ -91,6 +98,7 @@ export function buildCan(access: AccessData | undefined) {
     byRole.get(rp.role_id)!.add(`${perm.module}:${perm.action}`);
   }
   return (module: ModuleKey, action: ActionKey, profileId?: string | null) => {
+    if (access.approvalStatus !== "aprovado") return false;
     if (access.isAdmin) return true;
     const key = `${module}:${action}`;
     const relevant = profileId && profileId !== "all"
