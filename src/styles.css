@@ -111,16 +111,16 @@
   --brand-cyan: oklch(0.88 0.15 190);
   --overlay: oklch(0.08 0 0 / 82%);
   --video-text: oklch(1 0 0);
-  --landing-bg: oklch(0.1625 0.0143 258.36);
-  --landing-surface: oklch(0.216 0.0266 258.31);
-  --landing-surface-raised: oklch(0.2488 0.0287 255.23);
-  --landing-text: oklch(0.97 0.006 255);
-  --landing-muted: oklch(0.72 0.025 255);
+  --landing-bg: oklch(0.155 0.003 285);
+  --landing-surface: oklch(0.205 0.004 285);
+  --landing-surface-raised: oklch(0.245 0.005 285);
+  --landing-text: oklch(0.98 0 0);
+  --landing-muted: oklch(0.74 0.005 285);
   --landing-line: oklch(1 0 0 / 8%);
-  --landing-mint: oklch(0.8549 0.1251 181.07);
-  --landing-plasma-a: oklch(0.6123 0.2294 291.39);
-  --landing-plasma-b: oklch(0.6689 0.2382 309.97);
-  --landing-plasma-c: oklch(0.7096 0.2092 354.95);
+  --landing-mint: oklch(0.865 0.15 192);
+  --landing-plasma-a: oklch(0.865 0.15 192);
+  --landing-plasma-b: oklch(0.75 0.19 5);
+  --landing-plasma-c: oklch(0.635 0.243 20.5);
 }
 
 .dark {
