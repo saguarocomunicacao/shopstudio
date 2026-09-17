@@ -33,11 +33,37 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        const query = supabaseAdmin.from("jobs").select("id, status").limit(1);
+        const query = supabaseAdmin.from("jobs").select("id, status, profile_id").limit(1);
         const { data: job } = jobId
           ? await query.eq("id", jobId).maybeSingle()
           : await query.eq("render_id", renderId!).maybeSingle();
         if (!job) return new Response("Job not found", { status: 404 });
+
+        // Consumo da montagem: grava os créditos se vierem, senão registra o evento sem quantidade.
+        const consumo = await import("@/lib/consumo.server");
+        const credits = consumo.findCredits(payload);
+        const { data: jaRegistrado } = await supabaseAdmin
+          .from("consumo_eventos")
+          .select("id")
+          .eq("job_id", job.id)
+          .eq("etapa", "montagem_json2video")
+          .not("quantidade", "is", null)
+          .limit(1)
+          .maybeSingle();
+        if (!jaRegistrado) {
+          await consumo.recordConsumo({
+            jobId: job.id,
+            profileId: job.profile_id,
+            etapa: "montagem_json2video",
+            modelo: "json2video",
+            quantidade: credits,
+            unidade: "credito_montagem",
+            metadados:
+              credits === null
+                ? { origem: "webhook", creditos_nao_retornados: true }
+                : { origem: "webhook" },
+          });
+        }
 
         const url = typeof payload["url"] === "string" ? payload["url"] : "";
         const thumbnail = typeof payload["thumbnail"] === "string" ? payload["thumbnail"] : null;

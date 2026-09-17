@@ -201,6 +201,17 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
       .eq("id", job.id);
     if (error) throw new Error(error.message);
 
+    const { recordConsumo } = await import("./consumo.server");
+    await recordConsumo({
+      jobId: job.id,
+      profileId: job.profile_id,
+      etapa: "cena_gemini",
+      modelo: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
+      quantidade: 1,
+      unidade: "imagem",
+      metadados: { cena: data.index + 1, origem: "regeneracao" },
+    });
+
     return { url: stored.url };
   });
 
@@ -254,6 +265,9 @@ async function runStep(
       .eq("profile_id", job.profile_id)
       .maybeSingle(),
   ]);
+
+  const consumo = await import("./consumo.server");
+
 
   const settings = {
     avatar_mode: settingsRow?.avatar_mode ?? "livre",
@@ -328,6 +342,15 @@ async function runStep(
         .from("jobs")
         .update({ scenes, gemini_images_count: (job.gemini_images_count ?? 0) + 1 })
         .eq("id", job.id);
+      await consumo.recordConsumo({
+        jobId: job.id,
+        profileId: job.profile_id,
+        etapa: "cena_gemini",
+        modelo: settings.gemini_model,
+        quantidade: 1,
+        unidade: "imagem",
+        metadados: { cena: index + 1, origem: "geracao_inicial" },
+      });
       return { stage: "cenas", done: false, progress: { done: index + 1, total: scenes.length } };
     }
     // Imagens prontas: pausa para revisão humana antes de gastar com a animação.
@@ -375,6 +398,16 @@ async function runStep(
           scenes[index] = { ...rest, attempts };
           // Nova tentativa já começou: não deixa o erro antigo na tela.
           await supabase.from("jobs").update({ scenes, render_error: null }).eq("id", job.id);
+          // O take descartado já foi gerado (e cobrado): registra o consumo.
+          await consumo.recordConsumo({
+            jobId: job.id,
+            profileId: job.profile_id,
+            etapa: "animacao_veo",
+            modelo: settings.veo_model,
+            quantidade: settings.take_duration,
+            unidade: "segundo_video",
+            metadados: { cena: index + 1, tentativa: attempts, descartado: true, duracao_estimada: true },
+          });
           return { stage: "takes", done: false, progress: { done: index, total: scenes.length } };
         }
         throw e;
@@ -389,6 +422,20 @@ async function runStep(
         .from("jobs")
         .update({ scenes, veo_takes_count: (job.veo_takes_count ?? 0) + 1, render_error: null })
         .eq("id", job.id);
+      const realDuration = status.durationSeconds ?? null;
+      await consumo.recordConsumo({
+        jobId: job.id,
+        profileId: job.profile_id,
+        etapa: "animacao_veo",
+        modelo: settings.veo_model,
+        quantidade: realDuration ?? settings.take_duration,
+        unidade: "segundo_video",
+        metadados: {
+          cena: index + 1,
+          duracao_estimada: realDuration === null,
+          ...(realDuration === null ? { duracao_configurada: settings.take_duration } : {}),
+        },
+      });
       return { stage: "takes", done: false, progress: { done: index + 1, total: scenes.length } };
     }
     await supabase.from("jobs").update({ render_stage: "montagem" }).eq("id", job.id);
@@ -430,6 +477,20 @@ async function runStep(
       .from("jobs")
       .update({ render_id: payload.project, render_stage: "render", render_error: null })
       .eq("id", job.id);
+
+    // Créditos da montagem: alguns retornos já trazem aqui; senão fica com o webhook.
+    const credits = consumo.findCredits(payload);
+    if (credits !== null) {
+      await consumo.recordConsumo({
+        jobId: job.id,
+        profileId: job.profile_id,
+        etapa: "montagem_json2video",
+        modelo: "json2video",
+        quantidade: credits,
+        unidade: "credito_montagem",
+        metadados: { origem: "resposta_envio", project: payload.project },
+      });
+    }
     return { stage: "render", done: true, progress: { done: scenes.length, total: scenes.length } };
   }
 

@@ -241,8 +241,32 @@ function findFilterReasons(node: unknown, acc: string[] = [], depth = 0): string
 /** Bloqueio pelos filtros do Google (inclui o filtro do áudio nativo do Veo). */
 export class VeoFilteredError extends Error {}
 
+/** Procura a duração real do vídeo na resposta do Veo (varia por modelo/versão). */
+function findVeoDuration(node: unknown, depth = 0): number | null {
+  if (!node || typeof node !== "object" || depth > 8) return null;
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = findVeoDuration(item, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    const k = key.toLowerCase();
+    if (k.includes("duration")) {
+      const n = typeof value === "number" ? value : typeof value === "string" ? Number.parseFloat(value) : NaN;
+      if (Number.isFinite(n) && n > 0) return k.includes("ms") || n > 600 ? n / 1000 : n;
+    }
+    const found = findVeoDuration(value, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+
 /** Consulta a operação do Veo; devolve o MP4 (URI ou base64) quando pronta. */
-export async function pollVeoTake(operation: string): Promise<{ done: boolean; video?: VeoVideo }> {
+export async function pollVeoTake(
+  operation: string,
+): Promise<{ done: boolean; video?: VeoVideo; durationSeconds?: number }> {
   const res = await fetch(`${GEMINI_BASE}/${operation}`, { headers: { "x-goog-api-key": geminiKey() } });
   const text = await res.text();
   if (!res.ok) throw googleError(res.status, text);
@@ -254,7 +278,10 @@ export async function pollVeoTake(operation: string): Promise<{ done: boolean; v
   console.log("[veo] operação concluída", operation, text.slice(0, 4000));
 
   const video = findVeoVideo(payload.response);
-  if (video) return { done: true, video };
+  if (video) {
+    const duration = findVeoDuration(payload.response);
+    return { done: true, video, ...(duration ? { durationSeconds: duration } : {}) };
+  }
 
   const reasons = [...new Set(findFilterReasons(payload.response))].filter(Boolean);
   if (reasons.length) {

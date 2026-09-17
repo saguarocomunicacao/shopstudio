@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value_num: number | null
+          value_text: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value_num?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value_num?: number | null
+          value_text?: string | null
+        }
+        Relationships: []
+      }
       app_users: {
         Row: {
           avatar_url: string | null
@@ -73,6 +94,57 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      consumo_eventos: {
+        Row: {
+          created_at: string
+          etapa: Database["public"]["Enums"]["etapa_consumo"]
+          id: string
+          job_id: string | null
+          metadados: Json
+          modelo: string
+          profile_id: string
+          quantidade: number | null
+          unidade: Database["public"]["Enums"]["unidade_tarifa"]
+        }
+        Insert: {
+          created_at?: string
+          etapa: Database["public"]["Enums"]["etapa_consumo"]
+          id?: string
+          job_id?: string | null
+          metadados?: Json
+          modelo?: string
+          profile_id: string
+          quantidade?: number | null
+          unidade: Database["public"]["Enums"]["unidade_tarifa"]
+        }
+        Update: {
+          created_at?: string
+          etapa?: Database["public"]["Enums"]["etapa_consumo"]
+          id?: string
+          job_id?: string | null
+          metadados?: Json
+          modelo?: string
+          profile_id?: string
+          quantidade?: number | null
+          unidade?: Database["public"]["Enums"]["unidade_tarifa"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consumo_eventos_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consumo_eventos_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       job_stage_events: {
         Row: {
@@ -563,6 +635,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tarifas: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          modelo: string
+          moeda: Database["public"]["Enums"]["moeda_tarifa"]
+          preco_unitario: number
+          tipo_unidade: Database["public"]["Enums"]["unidade_tarifa"]
+          updated_at: string
+          vigente_desde: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          modelo: string
+          moeda?: Database["public"]["Enums"]["moeda_tarifa"]
+          preco_unitario?: number
+          tipo_unidade: Database["public"]["Enums"]["unidade_tarifa"]
+          updated_at?: string
+          vigente_desde?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          modelo?: string
+          moeda?: Database["public"]["Enums"]["moeda_tarifa"]
+          preco_unitario?: number
+          tipo_unidade?: Database["public"]["Enums"]["unidade_tarifa"]
+          updated_at?: string
+          vigente_desde?: string
+        }
+        Relationships: []
+      }
       user_invites: {
         Row: {
           created_at: string
@@ -633,6 +741,11 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      etapa_consumo:
+        | "cena_gemini"
+        | "animacao_veo"
+        | "montagem_json2video"
+        | "busca_kalodata"
       job_status:
         | "novo"
         | "produto_escolhido"
@@ -642,6 +755,12 @@ export type Database = {
         | "video_pronto"
         | "rascunho_enviado"
         | "publicado"
+      moeda_tarifa: "USD" | "BRL"
+      unidade_tarifa:
+        | "imagem"
+        | "segundo_video"
+        | "credito_montagem"
+        | "bloco_linhas_kalodata"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -769,6 +888,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      etapa_consumo: [
+        "cena_gemini",
+        "animacao_veo",
+        "montagem_json2video",
+        "busca_kalodata",
+      ],
       job_status: [
         "novo",
         "produto_escolhido",
@@ -778,6 +903,13 @@ export const Constants = {
         "video_pronto",
         "rascunho_enviado",
         "publicado",
+      ],
+      moeda_tarifa: ["USD", "BRL"],
+      unidade_tarifa: [
+        "imagem",
+        "segundo_video",
+        "credito_montagem",
+        "bloco_linhas_kalodata",
       ],
     },
   },
