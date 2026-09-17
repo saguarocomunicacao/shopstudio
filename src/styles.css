@@ -229,11 +229,7 @@
 .landing-feature-glow { background:linear-gradient(145deg,color-mix(in oklab,var(--landing-plasma-c) 16%,var(--landing-surface)),color-mix(in oklab,var(--landing-plasma-a) 8%,var(--landing-surface))); }
 .landing-magenta { background:var(--landing-plasma-c); color:var(--landing-text); }
 .landing-magenta:hover { background:color-mix(in oklab,var(--landing-plasma-c) 85%,white); }
-.landing-glitch { position:relative; display:inline-block; white-space:nowrap; color:var(--landing-text); }
-.landing-glitch::before,.landing-glitch::after { content:attr(data-text); position:absolute; inset:0; pointer-events:none; }
-.landing-glitch::before { color:var(--landing-plasma-a); transform:translate(-3px,-2px); mix-blend-mode:screen; }
-.landing-glitch::after { color:var(--landing-plasma-c); transform:translate(3px,2px); mix-blend-mode:screen; }
-.landing-focus:focus-visible { outline:2px solid var(--landing-mint); outline-offset:3px; }
+.landing-glitch { color:var(--landing-text); text-shadow:-3px -2px 0 color-mix(in oklab,var(--landing-plasma-a) 85%,transparent),3px 2px 0 color-mix(in oklab,var(--landing-plasma-c) 85%,transparent); }
 .landing-float { animation:landing-float 6s ease-in-out infinite; }
 .landing-float-delay { animation-delay:-2s; }
 @keyframes landing-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
