@@ -143,7 +143,7 @@ function PlanoForm({ carteira }: { carteira: CarteiraFornecedor }) {
 
   useEffect(() => {
     setCreditos(plano ? String(plano.creditos_mes) : "");
-    setValor(plano ? String(plano.valor_mensal) : "");
+    setValor(plano ? mascaraBrl(String(Math.round(plano.valor_mensal * 100))) : "");
     setDia(plano ? String(plano.dia_renovacao) : "1");
   }, [plano?.creditos_mes, plano?.valor_mensal, plano?.dia_renovacao]);
 
