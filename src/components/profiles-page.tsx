@@ -204,13 +204,9 @@ export function ProfilesPage() {
       if (!id) throw new Error("Salve o perfil antes de criar a pessoa fixa.");
       return generateAvatar({ data: { profileId: id, description: avatarDescription } });
     },
-    onSuccess: async () => {
+    onSuccess: (result) => {
       toast.success("Pessoa de referência criada.");
-      const id = dialog.profile?.id;
-      if (id) {
-        const { data } = await supabase.from("profile_video_settings").select("avatar_reference_url").eq("profile_id", id).maybeSingle();
-        setAvatarUrl(data?.avatar_reference_url ?? null);
-      }
+      setAvatarItems([{ preview: result.url, url: result.url }]);
       qc.invalidateQueries({ queryKey: ["video-settings"] });
     },
     onError: (e) => toast.error(errMessage(e)),
