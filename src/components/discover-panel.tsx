@@ -425,7 +425,6 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
           </div>
         )}
 
-        <SearchCostHistory />
       </div>
     </TooltipProvider>
   );
