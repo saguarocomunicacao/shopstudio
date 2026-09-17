@@ -73,14 +73,17 @@ export function JobTimeline({ jobId }: { jobId: string }) {
             {events.map((e) => {
               const start = new Date(e.entered_at).getTime();
               const end = e.exited_at ? new Date(e.exited_at).getTime() : now;
-              const live = !e.exited_at;
+              const isFinal = FINAL_STATUSES.includes(e.status);
+              const live = !e.exited_at && !isFinal;
               return (
                 <TableRow key={e.id}>
                   <TableCell className="px-4 py-3 font-semibold text-foreground">{JOB_STATUS_LABELS[e.status]}</TableCell>
                   <TableCell className="whitespace-nowrap px-4 py-3 text-muted-foreground">{clock(e.entered_at)}</TableCell>
-                  <TableCell className="whitespace-nowrap px-4 py-3 text-muted-foreground">{e.exited_at ? clock(e.exited_at) : "—"}</TableCell>
+                  <TableCell className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                    {isFinal ? "—" : e.exited_at ? clock(e.exited_at) : "—"}
+                  </TableCell>
                   <TableCell className={live ? "whitespace-nowrap px-4 py-3 text-right font-semibold text-primary" : "whitespace-nowrap px-4 py-3 text-right font-medium text-foreground"}>
-                    {live ? `rodando há ${formatDuration(end - start)}` : formatDuration(end - start)}
+                    {isFinal ? "concluído" : live ? `rodando há ${formatDuration(end - start)}` : formatDuration(end - start)}
                   </TableCell>
                 </TableRow>
               );
