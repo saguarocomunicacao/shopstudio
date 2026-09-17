@@ -247,30 +247,35 @@ export function CostsPage() {
         )}
         <div className="grid gap-1">
           <label className="text-xs font-semibold text-muted-foreground">Perfil</label>
-          <Select
-            value={todosPerfis ? "todos" : "ativo"}
-            onValueChange={(v) => setTodosPerfis(v === "todos")}
-          >
-            <SelectTrigger className="w-60"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ativo">
-                {activeProfileId ? profiles.find((p) => p.id === activeProfileId)?.name ?? "Perfil ativo" : "Perfil ativo"}
-              </SelectItem>
-              {podeVerGlobal && <SelectItem value="todos">Todos os perfis</SelectItem>}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            className="w-60"
+            options={[
+              ...(podeVerGlobal ? [{ value: TODOS, label: "Todos os perfis" }] : []),
+              ...profiles.map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            value={perfisSel}
+            onChange={setPerfisSel}
+            exclusiveValues={[TODOS]}
+            placeholder={
+              activeProfileId
+                ? profiles.find((p) => p.id === activeProfileId)?.name ?? "Perfil ativo"
+                : "Perfil ativo"
+            }
+            searchPlaceholder="Buscar perfil..."
+            emptyText="Nenhum perfil encontrado"
+          />
         </div>
         <div className="grid gap-1">
           <label className="text-xs font-semibold text-muted-foreground">Etapa</label>
-          <Select value={etapa} onValueChange={(v) => setEtapa(v as EtapaVisual | "todas")}>
-            <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas as etapas</SelectItem>
-              {ETAPA_VISUAL_ORDEM.map((e) => (
-                <SelectItem key={e} value={e}>{ETAPA_VISUAL_LABELS[e]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            className="w-56"
+            options={ETAPA_VISUAL_ORDEM.map((e) => ({ value: e, label: ETAPA_VISUAL_LABELS[e] }))}
+            value={etapasSel}
+            onChange={(v) => setEtapasSel(v as EtapaVisual[])}
+            placeholder="Todas as etapas"
+            searchPlaceholder="Buscar etapa..."
+            emptyText="Nenhuma etapa encontrada"
+          />
         </div>
       </div>
 
