@@ -27,7 +27,9 @@ import { Route as AuthenticatedAppPromptsRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAppRascunhosRouteImport } from './routes/_authenticated/app/rascunhos'
 import { Route as AuthenticatedAppVideosRouteImport } from './routes/_authenticated/app/videos'
 import { Route as AuthenticatedAppPerfisIndexRouteImport } from './routes/_authenticated/app/perfis.index'
+import { Route as AuthenticatedAppPerfisNovoRouteImport } from './routes/_authenticated/app/perfis.novo'
 import { Route as ApiPublicJson2videoWebhookTokenRouteImport } from './routes/api/public/json2video-webhook.$token'
+import { Route as AuthenticatedAppPerfisIdEditarRouteImport } from './routes/_authenticated/app/perfis.$id.editar'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -126,11 +128,23 @@ const AuthenticatedAppPerfisIndexRoute =
     path: '/app/perfis/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAppPerfisNovoRoute =
+  AuthenticatedAppPerfisNovoRouteImport.update({
+    id: '/app/perfis/novo',
+    path: '/app/perfis/novo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicJson2videoWebhookTokenRoute =
   ApiPublicJson2videoWebhookTokenRouteImport.update({
     id: '/api/public/json2video-webhook/$token',
     path: '/api/public/json2video-webhook/$token',
     getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedAppPerfisIdEditarRoute =
+  AuthenticatedAppPerfisIdEditarRouteImport.update({
+    id: '/app/perfis/$id/editar',
+    path: '/app/perfis/$id/editar',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -150,8 +164,10 @@ export interface FileRoutesByFullPath {
   '/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
   '/app/videos': typeof AuthenticatedAppVideosRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
+  '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -170,8 +186,10 @@ export interface FileRoutesByTo {
   '/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
   '/app/videos': typeof AuthenticatedAppVideosRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/app/perfis': typeof AuthenticatedAppPerfisIndexRoute
+  '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -192,8 +210,10 @@ export interface FileRoutesById {
   '/_authenticated/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
   '/_authenticated/app/videos': typeof AuthenticatedAppVideosRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/_authenticated/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
+  '/_authenticated/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -214,8 +234,10 @@ export interface FileRouteTypes {
     | '/app/rascunhos'
     | '/app/videos'
     | '/app/'
+    | '/app/perfis/novo'
     | '/api/public/json2video-webhook/$token'
     | '/app/perfis/'
+    | '/app/perfis/$id/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -234,8 +256,10 @@ export interface FileRouteTypes {
     | '/app/rascunhos'
     | '/app/videos'
     | '/app'
+    | '/app/perfis/novo'
     | '/api/public/json2video-webhook/$token'
     | '/app/perfis'
+    | '/app/perfis/$id/editar'
   id:
     | '__root__'
     | '/'
@@ -255,8 +279,10 @@ export interface FileRouteTypes {
     | '/_authenticated/app/rascunhos'
     | '/_authenticated/app/videos'
     | '/_authenticated/app/'
+    | '/_authenticated/app/perfis/novo'
     | '/api/public/json2video-webhook/$token'
     | '/_authenticated/app/perfis/'
+    | '/_authenticated/app/perfis/$id/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -396,12 +422,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppPerfisIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/app/perfis/novo': {
+      id: '/_authenticated/app/perfis/novo'
+      path: '/app/perfis/novo'
+      fullPath: '/app/perfis/novo'
+      preLoaderRoute: typeof AuthenticatedAppPerfisNovoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/json2video-webhook/$token': {
       id: '/api/public/json2video-webhook/$token'
       path: '/api/public/json2video-webhook/$token'
       fullPath: '/api/public/json2video-webhook/$token'
       preLoaderRoute: typeof ApiPublicJson2videoWebhookTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/app/perfis/$id/editar': {
+      id: '/_authenticated/app/perfis/$id/editar'
+      path: '/app/perfis/$id/editar'
+      fullPath: '/app/perfis/$id/editar'
+      preLoaderRoute: typeof AuthenticatedAppPerfisIdEditarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
@@ -419,7 +459,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppRascunhosRoute: typeof AuthenticatedAppRascunhosRoute
   AuthenticatedAppVideosRoute: typeof AuthenticatedAppVideosRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppPerfisNovoRoute: typeof AuthenticatedAppPerfisNovoRoute
   AuthenticatedAppPerfisIndexRoute: typeof AuthenticatedAppPerfisIndexRoute
+  AuthenticatedAppPerfisIdEditarRoute: typeof AuthenticatedAppPerfisIdEditarRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -435,7 +477,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppRascunhosRoute: AuthenticatedAppRascunhosRoute,
   AuthenticatedAppVideosRoute: AuthenticatedAppVideosRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppPerfisNovoRoute: AuthenticatedAppPerfisNovoRoute,
   AuthenticatedAppPerfisIndexRoute: AuthenticatedAppPerfisIndexRoute,
+  AuthenticatedAppPerfisIdEditarRoute: AuthenticatedAppPerfisIdEditarRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
