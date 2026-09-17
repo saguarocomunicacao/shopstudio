@@ -5,11 +5,12 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Download, UserSquare2, Users, Wallet } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip as ReTooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,6 +31,15 @@ import { JobDetailDialog } from "./job-detail-dialog";
 import { useStudio } from "./studio-context";
 
 type PeriodoKey = "hoje" | "7d" | "30d" | "mes" | "custom";
+
+/** Valor especial do filtro de perfil: visão consolidada. */
+const TODOS = "todos";
+
+const lerListaUrl = (chave: string): string[] => {
+  if (typeof window === "undefined") return [];
+  const bruto = new URL(window.location.href).searchParams.get(chave);
+  return bruto ? bruto.split(",").filter(Boolean) : [];
+};
 
 const PERIODO_LABELS: Record<PeriodoKey, string> = {
   hoje: "Hoje",
@@ -117,15 +127,34 @@ export function CostsPage() {
   const [periodo, setPeriodo] = useState<PeriodoKey>("mes");
   const [de, setDe] = useState(iso(startOfToday()));
   const [ate, setAte] = useState(iso(startOfToday()));
-  const [todosPerfisRaw, setTodosPerfis] = useState(false);
-  const todosPerfis = todosPerfisRaw && podeVerGlobal;
-  const [etapa, setEtapa] = useState<EtapaVisual | "todas">("todas");
+  const [perfisSel, setPerfisSel] = useState<string[]>(() => lerListaUrl("perfis"));
+  const [etapasSelRaw, setEtapasSel] = useState<EtapaVisual[]>(
+    () => lerListaUrl("etapa").filter((e): e is EtapaVisual => (ETAPA_VISUAL_ORDEM as string[]).includes(e)),
+  );
   const [ordem, setOrdem] = useState<"total" | "data">("total");
   const [detalhe, setDetalhe] = useState<DbJob | null>(null);
 
+  const todosPerfis = perfisSel.includes(TODOS) && podeVerGlobal;
+  const perfisEscolhidos = perfisSel.filter((id) => id !== TODOS && profiles.some((p) => p.id === id));
+  const etapasSel = etapasSelRaw;
+
+  // Reflete os filtros na URL (?perfis=..., ?etapa=...) sem recarregar a tela.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const perfisParam = todosPerfis ? TODOS : perfisEscolhidos.join(",");
+    if (perfisParam) url.searchParams.set("perfis", perfisParam);
+    else url.searchParams.delete("perfis");
+    if (etapasSel.length) url.searchParams.set("etapa", etapasSel.join(","));
+    else url.searchParams.delete("etapa");
+    window.history.replaceState(window.history.state, "", url.toString());
+  }, [todosPerfis, perfisEscolhidos.join(","), etapasSel.join(",")]);
+
+  // Sem escolha explícita, o filtro segue o perfil ativo global.
+  const perfisEfetivos = perfisEscolhidos.length ? perfisEscolhidos : activeProfileId ? [activeProfileId] : [];
+
   const intervalo = useMemo(() => intervaloDe(periodo, de, ate), [periodo, de, ate]);
-  const perfilFiltro = todosPerfis ? null : activeProfileId;
-  const { data, isLoading } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapa);
+  const perfilFiltro = todosPerfis ? null : perfisEfetivos;
+  const { data, isLoading } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapasSel);
   const gasto = useGastoMes(activeProfileId);
 
   const jobsLinhas = useMemo(() => {
@@ -194,7 +223,7 @@ export function CostsPage() {
     );
   }
 
-  const semSelecao = !todosPerfis && !activeProfileId;
+  const semSelecao = !todosPerfis && perfisEfetivos.length === 0;
   const teto = gasto?.tetoPerfil ?? gasto?.tetoGlobal ?? null;
   const consumidoMes = gasto ? (gasto.tetoPerfil ? gasto.perfilBrl : gasto.globalBrl) : 0;
 
@@ -228,30 +257,35 @@ export function CostsPage() {
         )}
         <div className="grid gap-1">
           <label className="text-xs font-semibold text-muted-foreground">Perfil</label>
-          <Select
-            value={todosPerfis ? "todos" : "ativo"}
-            onValueChange={(v) => setTodosPerfis(v === "todos")}
-          >
-            <SelectTrigger className="w-60"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ativo">
-                {activeProfileId ? profiles.find((p) => p.id === activeProfileId)?.name ?? "Perfil ativo" : "Perfil ativo"}
-              </SelectItem>
-              {podeVerGlobal && <SelectItem value="todos">Todos os perfis</SelectItem>}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            className="w-60"
+            options={[
+              ...(podeVerGlobal ? [{ value: TODOS, label: "Todos os perfis" }] : []),
+              ...profiles.map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            value={perfisSel}
+            onChange={setPerfisSel}
+            exclusiveValues={[TODOS]}
+            placeholder={
+              activeProfileId
+                ? profiles.find((p) => p.id === activeProfileId)?.name ?? "Perfil ativo"
+                : "Perfil ativo"
+            }
+            searchPlaceholder="Buscar perfil..."
+            emptyText="Nenhum perfil encontrado"
+          />
         </div>
         <div className="grid gap-1">
           <label className="text-xs font-semibold text-muted-foreground">Etapa</label>
-          <Select value={etapa} onValueChange={(v) => setEtapa(v as EtapaVisual | "todas")}>
-            <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas as etapas</SelectItem>
-              {ETAPA_VISUAL_ORDEM.map((e) => (
-                <SelectItem key={e} value={e}>{ETAPA_VISUAL_LABELS[e]}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            className="w-56"
+            options={ETAPA_VISUAL_ORDEM.map((e) => ({ value: e, label: ETAPA_VISUAL_LABELS[e] }))}
+            value={etapasSel}
+            onChange={(v) => setEtapasSel(v as EtapaVisual[])}
+            placeholder="Todas as etapas"
+            searchPlaceholder="Buscar etapa..."
+            emptyText="Nenhuma etapa encontrada"
+          />
         </div>
       </div>
 
