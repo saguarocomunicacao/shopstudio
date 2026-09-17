@@ -281,7 +281,8 @@
 .landing-phone-screen { background:var(--landing-bg); box-shadow:inset 0 0 0 1px oklch(0 0 0 / 80%); }
 .landing-video-vignette { background:linear-gradient(to top,oklch(0 0 0 / 84%) 0%,oklch(0 0 0 / 45%) 24%,transparent 52%); }
 .landing-avatar { background:linear-gradient(145deg,var(--landing-mint),var(--landing-plasma-c)); color:var(--landing-text); box-shadow:0 5px 16px oklch(0 0 0 / 38%); }
-.landing-assembly-line { background:linear-gradient(to bottom,var(--landing-mint),var(--landing-plasma-c)); box-shadow:0 0 18px color-mix(in oklab,var(--landing-mint) 26%,transparent); }
+.landing-assembly-line { background:var(--landing-done); box-shadow:0 0 18px color-mix(in oklab,var(--landing-done) 30%,transparent); }
+.landing-assembly-track { background:color-mix(in oklab,var(--landing-plasma-c) 26%,transparent); }
 .landing-assembly-node { background:var(--landing-plasma-c); box-shadow:0 0 0 1px color-mix(in oklab,var(--landing-text) 10%,transparent); transition:background .45s ease,box-shadow .45s ease; }
 .landing-assembly-node.is-done { background:var(--landing-done); box-shadow:0 0 0 1px color-mix(in oklab,var(--landing-done) 30%,transparent),0 0 22px color-mix(in oklab,var(--landing-done) 32%,transparent); }
 .landing-float { animation:landing-float 6s ease-in-out infinite; }
@@ -290,7 +291,7 @@
 .landing-float-three { animation-delay:-4.1s; }
 @keyframes landing-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 @media (max-width:639px) { .landing-phone-stage { max-width:340px; } }
-@media (min-width:768px) { .landing-assembly-line { background:linear-gradient(to right,var(--landing-mint),var(--landing-plasma-c)); } }
+@media (min-width:768px) { .landing-assembly-line { background:var(--landing-done); } }
 @media (prefers-reduced-motion:reduce) {
   .landing-float,.app-transition,.app-transition-mark,.app-transition-copy,.app-transition-check,.app-transition-progress span,.app-transition-glow { animation:none; }
   .app-transition-check { opacity:1; }
