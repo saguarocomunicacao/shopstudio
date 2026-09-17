@@ -180,6 +180,8 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
           Busque produtos em alta do TikTok Shop Brasil — só itens com programa de afiliado.
         </div>
       )}
+
+      <SearchCostHistory />
     </div>
   );
 }
