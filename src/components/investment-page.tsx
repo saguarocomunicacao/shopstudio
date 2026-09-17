@@ -42,6 +42,13 @@ const mascaraBrl = (raw: string) => {
   const n = Number(digits) / 100;
   return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
+/** Máscara de número decimal: só dígitos e uma vírgula decimal (ex: 1234,5). */
+const mascaraNumero = (raw: string) => {
+  let s = raw.replace(/[^\d,]/g, "");
+  const i = s.indexOf(",");
+  if (i !== -1) s = s.slice(0, i + 1) + s.slice(i + 1).replace(/,/g, "");
+  return s;
+};
 
 function Resumo({ label, value, hint, destaque }: { label: string; value: string; hint?: string; destaque?: boolean }) {
   return (
