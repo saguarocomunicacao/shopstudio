@@ -10,6 +10,8 @@ export type ProductTableItem = {
   imageUrl?: string | null;
   niche?: string | null;
   category?: string | null;
+  sellerName?: string | null;
+  skuCount?: number | null;
   price: number;
   commission: number;
   hype: number;
@@ -48,12 +50,15 @@ function ProductImage({ item }: { item: ProductTableItem }) {
 
 function ProductName({ item }: { item: ProductTableItem }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="block min-w-0 truncate font-semibold">{item.name}</span>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-sm">{item.name}</TooltipContent>
-    </Tooltip>
+    <div className="min-w-0">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="block min-w-0 truncate font-semibold">{item.name}</span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-sm">{item.name}</TooltipContent>
+      </Tooltip>
+      {item.sellerName ? <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{item.sellerName}</span> : null}
+    </div>
   );
 }
 
@@ -93,6 +98,13 @@ function Details({ item }: { item: ProductTableItem }) {
       <div>
         <p className="text-[11px] font-semibold uppercase text-muted-foreground">Categoria / nicho</p>
         <p className="mt-1 text-sm">{productCategory(item)}</p>
+      </div>
+      <div>
+        <p className="text-[11px] font-semibold uppercase text-muted-foreground">Vendedor</p>
+        <p className="mt-1 text-sm">
+          {item.sellerName?.trim() || "Não informado"}
+          {item.skuCount ? <span className="ml-2 text-muted-foreground">{item.skuCount} SKU(s)</span> : null}
+        </p>
       </div>
       <div>
         <p className="text-[11px] font-semibold uppercase text-muted-foreground">Desempenho</p>

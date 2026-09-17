@@ -91,7 +91,7 @@ function ProductsContent() {
 
       <div className={`panel ${tab === "catalogo" ? "" : "hidden"}`}>
         <ProductDataTable
-          items={products.map((p) => ({ ...p, imageUrl: p.image_url, productUrl: p.url }))}
+          items={products.map((p) => ({ ...p, imageUrl: p.image_url, productUrl: p.url, sellerName: p.seller_name }))}
           renderActions={(p) => (
             <>
               {canCreateJob && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}

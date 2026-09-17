@@ -13,16 +13,36 @@ export type DiscoveredProduct = {
   revenue: number;
   imageUrl: string;
   sellerName: string;
+  skuCount: number;
   category: string;
   productUrl: string;
   hype: number;
 };
 
+export type SortField =
+  | "revenue"
+  | "commission_rate"
+  | "revenue_growth_rate"
+  | "sales_volumn"
+  | "unit_price"
+  | "video_revenue";
+
 export type DiscoverQuery = {
   keyword?: string;
-  dateRange: "lastDay" | "last7Day" | "last30Day";
-  sortField: "revenue" | "sales_volumn" | "revenue_growth_rate";
+  /** "lastDay" | "last7Day" | "last30Day" ou intervalo "yyyy-MM-dd~yyyy-MM-dd". */
+  dateRange: string;
+  sortField: SortField;
+  sortType?: "ASC" | "DESC";
   categoryIds?: string[];
+  /** Faixas no formato aceito pela API: "1-1000", ">1", "<1000". */
+  unitPriceRange?: string;
+  commissionRate?: string;
+  revenueRange?: string;
+  /** "<3" | "<7" | "<30" | ">30" */
+  launchDate?: string;
+  /** "local" | "global" */
+  deliveryType?: string;
+  needAll?: boolean;
   page: number;
 };
 
@@ -87,13 +107,20 @@ const kalodata: ProductSource = {
         language: "pt-BR",
         currency: "BRL",
         date_range: query.dateRange,
-        sort_field: { field: query.sortField, type: "DESC" },
+        sort_field: { field: query.sortField, type: query.sortType ?? "DESC" },
         is_affiliate: 1,
         page: query.page,
         need_image: 1,
+        need_extra: true,
+        need_all: query.needAll ?? false,
       };
       if (query.keyword?.trim()) body["keyword"] = query.keyword.trim();
       if (query.categoryIds?.length) body["category_ids"] = query.categoryIds;
+      if (query.unitPriceRange) body["unit_price_range"] = query.unitPriceRange;
+      if (query.commissionRate) body["commission_rate"] = query.commissionRate;
+      if (query.revenueRange) body["revenue_range"] = query.revenueRange;
+      if (query.launchDate) body["launch_date"] = query.launchDate;
+      if (query.deliveryType) body["delivery_type"] = query.deliveryType;
 
       const response = await fetch(KALODATA_ENDPOINT, {
         method: "POST",
@@ -127,7 +154,8 @@ const kalodata: ProductSource = {
           growthRate,
           revenue,
           imageUrl: String(row["master_image_url"] ?? ""),
-          sellerName: String(row["seller_name"] ?? ""),
+          sellerName: String(row["seller_name"] ?? row["shop_name"] ?? ""),
+          skuCount: Math.round(num(row["sku_count"])),
           category: String(row["category_name"] ?? row["category"] ?? ""),
           productUrl: `https://shop.tiktok.com/view/product/${String(row["product_id"] ?? "")}`,
           hype: hypeScore(salesVolume, growthRate, revenue),
