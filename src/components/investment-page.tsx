@@ -42,6 +42,13 @@ const mascaraBrl = (raw: string) => {
   const n = Number(digits) / 100;
   return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
+/** Máscara de número decimal: só dígitos e uma vírgula decimal (ex: 1234,5). */
+const mascaraNumero = (raw: string) => {
+  let s = raw.replace(/[^\d,]/g, "");
+  const i = s.indexOf(",");
+  if (i !== -1) s = s.slice(0, i + 1) + s.slice(i + 1).replace(/,/g, "");
+  return s;
+};
 
 function Resumo({ label, value, hint, destaque }: { label: string; value: string; hint?: string; destaque?: boolean }) {
   return (
@@ -117,7 +124,12 @@ function AporteDialog({ fornecedor, unidade, onSaved }: { fornecedor: Fornecedor
           {unidade && (
             <div className="grid gap-1">
               <label className="text-xs font-semibold text-muted-foreground">Quantidade que entrou ({unidade})</label>
-              <Input inputMode="decimal" placeholder="100" value={unidades} onChange={(e) => setUnidades(e.target.value)} />
+              <Input
+                inputMode="decimal"
+                placeholder="100"
+                value={unidades}
+                onChange={(e) => setUnidades(mascaraNumero(e.target.value))}
+              />
             </div>
           )}
           <div className="grid gap-1">
