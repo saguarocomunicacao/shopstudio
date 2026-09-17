@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
 import { Route as AuthenticatedAppAprovacoesRouteImport } from './routes/_authenticated/app/aprovacoes'
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
+import { Route as AuthenticatedAppCustosRouteImport } from './routes/_authenticated/app/custos'
 import { Route as AuthenticatedAppEquipeRouteImport } from './routes/_authenticated/app/equipe'
 import { Route as AuthenticatedAppMetricasRouteImport } from './routes/_authenticated/app/metricas'
 import { Route as AuthenticatedAppPerfisRouteImport } from './routes/_authenticated/app/perfis'
@@ -68,6 +69,11 @@ const AuthenticatedAppConfiguracoesRoute =
     path: '/app/configuracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAppCustosRoute = AuthenticatedAppCustosRouteImport.update({
+  id: '/app/custos',
+  path: '/app/custos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAppEquipeRoute = AuthenticatedAppEquipeRouteImport.update({
   id: '/app/equipe',
   path: '/app/equipe',
@@ -126,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/custos': typeof AuthenticatedAppCustosRoute
   '/app/equipe': typeof AuthenticatedAppEquipeRoute
   '/app/metricas': typeof AuthenticatedAppMetricasRoute
   '/app/perfis': typeof AuthenticatedAppPerfisRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/custos': typeof AuthenticatedAppCustosRoute
   '/app/equipe': typeof AuthenticatedAppEquipeRoute
   '/app/metricas': typeof AuthenticatedAppMetricasRoute
   '/app/perfis': typeof AuthenticatedAppPerfisRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/_authenticated/app/custos': typeof AuthenticatedAppCustosRoute
   '/_authenticated/app/equipe': typeof AuthenticatedAppEquipeRoute
   '/_authenticated/app/metricas': typeof AuthenticatedAppMetricasRoute
   '/_authenticated/app/perfis': typeof AuthenticatedAppPerfisRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/aprovacoes'
     | '/app/configuracoes'
+    | '/app/custos'
     | '/app/equipe'
     | '/app/metricas'
     | '/app/perfis'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/app/aprovacoes'
     | '/app/configuracoes'
+    | '/app/custos'
     | '/app/equipe'
     | '/app/metricas'
     | '/app/perfis'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/app/aprovacoes'
     | '/_authenticated/app/configuracoes'
+    | '/_authenticated/app/custos'
     | '/_authenticated/app/equipe'
     | '/_authenticated/app/metricas'
     | '/_authenticated/app/perfis'
@@ -300,6 +312,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/app/custos': {
+      id: '/_authenticated/app/custos'
+      path: '/app/custos'
+      fullPath: '/app/custos'
+      preLoaderRoute: typeof AuthenticatedAppCustosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/app/equipe': {
       id: '/_authenticated/app/equipe'
       path: '/app/equipe'
@@ -369,6 +388,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppAprovacoesRoute: typeof AuthenticatedAppAprovacoesRoute
   AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
+  AuthenticatedAppCustosRoute: typeof AuthenticatedAppCustosRoute
   AuthenticatedAppEquipeRoute: typeof AuthenticatedAppEquipeRoute
   AuthenticatedAppMetricasRoute: typeof AuthenticatedAppMetricasRoute
   AuthenticatedAppPerfisRoute: typeof AuthenticatedAppPerfisRoute
@@ -383,6 +403,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppAprovacoesRoute: AuthenticatedAppAprovacoesRoute,
   AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
+  AuthenticatedAppCustosRoute: AuthenticatedAppCustosRoute,
   AuthenticatedAppEquipeRoute: AuthenticatedAppEquipeRoute,
   AuthenticatedAppMetricasRoute: AuthenticatedAppMetricasRoute,
   AuthenticatedAppPerfisRoute: AuthenticatedAppPerfisRoute,
