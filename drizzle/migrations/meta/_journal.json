@@ -8,6 +8,13 @@
       "when": 1789650374107,
       "tag": "0000_create_prompt_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789650805166,
+      "tag": "0001_user_approval_super_admin",
+      "breakpoints": true
     }
   ]
 }

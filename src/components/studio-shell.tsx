@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Settings, ShieldAlert, Sun, Users, UserSquare2, Wand2, X } from "lucide-react";
+import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Settings, ShieldAlert, ShieldCheck, Sun, Users, UserSquare2, Wand2, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,10 @@ import { StudioProvider, useStudio } from "./studio-context";
 const items: readonly (readonly [string, string, typeof CircleGauge, ModuleKey | null])[] = [
   ["Dashboard", "/", CircleGauge, null], ["Perfis", "/perfis", UserSquare2, "perfis"], ["Produtos", "/produtos", Package, "produtos"],
   ["Pipeline", "/pipeline", KanbanSquare, "pipeline"], ["Vídeos", "/videos", Clapperboard, "videos"], ["Rascunhos", "/rascunhos", FileClock, "rascunhos"],
-  ["Métricas", "/metricas", BarChart3, "metricas"], ["Equipe", "/equipe", Users, "equipe"], ["Prompts", "/prompts", Wand2, "prompts" as never], ["Configurações", "/configuracoes", Settings, "configuracoes"],
+  ["Métricas", "/metricas", BarChart3, "metricas"], ["Equipe", "/equipe", Users, "equipe"], ["Prompts", "/prompts", Wand2, "prompts" as never], ["Aprovações", "/aprovacoes", ShieldCheck, "aprovacoes" as never], ["Configurações", "/configuracoes", Settings, "configuracoes"],
 ];
 
-const titles: Record<string, string> = { "/": "Visão geral", "/perfis": "Perfis", "/produtos": "Produtos em alta", "/pipeline": "Pipeline de conteúdo", "/videos": "Biblioteca de vídeos", "/rascunhos": "Rascunhos", "/metricas": "Métricas", "/equipe": "Equipe e permissões", "/prompts": "Prompts do sistema", "/configuracoes": "Configurações" };
+const titles: Record<string, string> = { "/": "Visão geral", "/perfis": "Perfis", "/produtos": "Produtos em alta", "/pipeline": "Pipeline de conteúdo", "/videos": "Biblioteca de vídeos", "/rascunhos": "Rascunhos", "/metricas": "Métricas", "/equipe": "Equipe e permissões", "/prompts": "Prompts do sistema", "/aprovacoes": "Aprovação de cadastros", "/configuracoes": "Configurações" };
 
 const initialsOf = (value: string) => value.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("") || "US";
 
@@ -24,10 +24,11 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 function useVisibleItems() {
-  const { isAdmin, can, activeProfileId } = useStudio();
+  const { isAdmin, isSuperAdmin, can, activeProfileId } = useStudio();
   return items.filter(([, to, , module]) => {
     if (!module) return true;
     if (to === "/prompts") return isAdmin;
+    if (to === "/aprovacoes") return isSuperAdmin;
     if (module === "equipe") return isAdmin;
     return can(module, "visualizar", activeProfileId);
   });
@@ -62,9 +63,17 @@ function UserMenu() {
 }
 
 function PendingAccess() {
-  const { access } = useStudio();
+  const { access, approvalStatus } = useStudio();
   const signOut = useSignOut();
-  return <div className="grid min-h-screen place-items-center bg-background px-4 text-foreground"><div className="panel max-w-md text-center"><span className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-full bg-secondary"><ShieldAlert className="h-5 w-5 text-primary"/></span><h1 className="text-xl font-black">Aguardando liberação de acesso</h1><p className="mt-2 text-sm text-muted-foreground">Sua conta ({access?.me?.email}) foi criada, mas ainda não recebeu nenhum perfil. Peça ao administrador para liberar seu acesso na tela de Equipe.</p><Button variant="secondary" className="mt-6" onClick={signOut}>Sair</Button></div></div>;
+  const refused = approvalStatus === "recusado";
+  const waiting = approvalStatus === "pendente";
+  const title = refused ? "Acesso não liberado" : waiting ? "Aguardando aprovação" : "Aguardando liberação de acesso";
+  const text = refused
+    ? `O cadastro de ${access?.me?.email ?? "sua conta"} não foi liberado pelo administrador.`
+    : waiting
+      ? `Seu cadastro (${access?.me?.email ?? ""}) foi recebido e passará por avaliação. Você poderá acessar assim que for liberado pelo administrador.`
+      : `Sua conta (${access?.me?.email ?? ""}) foi liberada, mas ainda não recebeu nenhum perfil. Peça ao administrador para configurar seu acesso na tela de Equipe.`;
+  return <div className="grid min-h-screen place-items-center bg-background px-4 text-foreground"><div className="panel max-w-md text-center"><span className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-full bg-secondary"><ShieldAlert className="h-5 w-5 text-primary"/></span><h1 className="text-xl font-black">{title}</h1><p className="mt-2 text-sm text-muted-foreground">{text}</p><Button variant="secondary" className="mt-6" onClick={signOut}>Sair</Button></div></div>;
 }
 
 function ShellContent({ children }: { children: ReactNode }) {

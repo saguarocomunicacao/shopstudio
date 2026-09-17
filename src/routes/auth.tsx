@@ -49,7 +49,7 @@ function AuthPage() {
           options: { emailRedirectTo: window.location.origin, data: { name } },
         });
         if (signUpError) throw signUpError;
-        if (!data.session) { setInfo("Conta criada. Confirme seu email para entrar."); return; }
+        if (!data.session) { setInfo("Cadastro recebido. Confirme seu email e aguarde: seu acesso passará por avaliação do administrador."); return; }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
