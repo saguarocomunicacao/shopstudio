@@ -351,6 +351,16 @@ export function ProfilesPage() {
                 </div>
               </div>
             )}
+
+            <div className="border-t pt-4">
+              <p className="text-sm font-bold">Prompts deste perfil</p>
+              <p className="text-xs text-muted-foreground">
+                {dialog.profile
+                  ? "Cada prompt segue o padrão do sistema até você criar uma versão só deste perfil."
+                  : "Salve o perfil primeiro para personalizar os prompts."}
+              </p>
+            </div>
+            {dialog.profile && <ProfilePrompts profileId={dialog.profile.id} />}
           </div>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDialog({ open: false, profile: null })}>Cancelar</Button>

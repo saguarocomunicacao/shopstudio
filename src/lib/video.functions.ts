@@ -265,25 +265,29 @@ async function runStep(
   };
   const language = identity?.language || "pt-BR";
 
+  const prompts = await import("./prompts.server");
+  const promptVars = {
+    perfil: profile?.name ?? "",
+    categoria: profile?.niche || "geral",
+    produto: product?.name ?? "",
+    preco: product ? Number(product.price).toFixed(2) : "",
+    comissao: product ? `${Number(product.commission)}%` : "",
+    categoria_produto: product?.niche || "",
+    idioma: language,
+    tom_de_voz: identity?.tone ?? "",
+    observacoes_estilo: identity?.style_notes ?? "",
+    numero_cenas: settings.takes_count,
+    duracao_cena: settings.take_duration,
+  };
+
   // ---------- Etapa 1a: planejar as cenas ----------
   if (job.render_stage === "planejando") {
     const scriptBlocks = splitScript(job.script ?? "");
-    const prompt = [
-      `Você dirige vídeos curtos verticais (9:16) de afiliado para TikTok Shop.`,
-      `Crie exatamente ${settings.takes_count} cenas para este roteiro.`,
-      `Perfil: ${profile?.name ?? "perfil"} (categoria: ${profile?.niche || "geral"}).`,
-      product ? `Produto: ${product.name} (categoria ${product.niche || "geral"}, R$ ${Number(product.price).toFixed(2)}).` : "",
-      `Roteiro (narração já escrita, distribua entre as cenas mantendo a ordem e o idioma ${language}):`,
-      scriptBlocks.map((b, i) => `${i + 1}. ${b}`).join("\n"),
-      identity?.style_notes ? `Estilo do perfil: ${identity.style_notes}` : "",
-      `REGRA OBRIGATÓRIA: em TODAS as cenas deve aparecer uma PESSOA ou uma MÃO usando, vestindo, aplicando ou demonstrando o produto — nunca o produto sozinho parado.`,
-      `image_prompt: em inglês, descreve uma foto realista vertical 9:16, iluminação natural, estética TikTok, pessoa/mão real usando o produto no contexto certo da categoria. O produto DEVE permanecer idêntico à foto de referência enviada (forma, cor, rótulo, proporções).`,
-      `motion_prompt: em inglês, descreve apenas o MOVIMENTO da cena (a mão mexendo, a pessoa girando, a câmera aproximando), curto e concreto.`,
-      `narration: a fala daquela cena no idioma ${language}, curta o suficiente para caber em ${settings.take_duration} segundos.`,
-      `overlay_text: até 5 palavras para aparecer na tela (ou vazio).`,
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const template = await prompts.resolvePrompt(supabase, job.profile_id, "cena");
+    const prompt = prompts.renderPrompt(template, {
+      ...promptVars,
+      roteiro: scriptBlocks.map((b, i) => `${i + 1}. ${b}`).join("\n"),
+    });
 
     const planned = await pipeline.planScenes(prompt, settings.takes_count);
     await supabase.from("jobs").update({ scenes: planned, render_stage: "cenas" }).eq("id", job.id);
@@ -344,9 +348,13 @@ async function runStep(
       if (!scene.operation) {
         const image = await pipeline.fetchAsBase64(scene.image_url!);
         // Prompt 100% visual: qualquer menção a fala/som faz o Veo bloquear pelo filtro de áudio.
+        const motionTemplate = await prompts.resolvePrompt(supabase, job.profile_id, "movimento");
+        const motionPrompt = pipeline.sanitizeMotionPrompt(
+          prompts.renderPrompt(motionTemplate, { ...promptVars, cena_descricao: scene.motion_prompt }),
+        );
         const operation = await pipeline.startVeoTake({
           model: settings.veo_model,
-          prompt: `${pipeline.sanitizeMotionPrompt(scene.motion_prompt)} Cinematic vertical framing, natural lighting, realistic motion.`,
+          prompt: motionPrompt,
           image: { base64: image.base64, mimeType: image.mimeType },
           durationSeconds: settings.take_duration,
         });
@@ -393,14 +401,16 @@ async function runStep(
     const token = process.env["JSON2VIDEO_WEBHOOK_TOKEN"];
     if (!apiKey || !token) throw new Error("A montagem do vídeo não está configurada corretamente.");
 
+    const assemblyTemplate = await prompts.resolvePrompt(supabase, job.profile_id, "montagem");
+    const movieSettings = prompts.parseMovieSettings(prompts.renderPrompt(assemblyTemplate, promptVars));
+
     const movie = pipeline.buildMovie({
       jobId: job.id,
       scenes,
       voice: pipeline.VOICE_BY_LANGUAGE[language] ?? pipeline.VOICE_BY_LANGUAGE["pt-BR"]!,
       subtitleLanguage: pipeline.SUBTITLE_LANGUAGES.has(language) ? language : "auto",
       webhookUrl: `${PUBLIC_BASE}/api/public/json2video-webhook/${token}`,
-      priceLabel: product ? `R$ ${Number(product.price).toFixed(2).replace(".", ",")}` : null,
-      ctaText: "Link na bio",
+      settings: movieSettings,
     });
 
     const res = await fetch(J2V_ENDPOINT, {

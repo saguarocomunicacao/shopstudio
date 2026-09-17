@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Settings, ShieldAlert, Sun, Users, UserSquare2, X } from "lucide-react";
+import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Settings, ShieldAlert, Sun, Users, UserSquare2, Wand2, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,10 @@ import { StudioProvider, useStudio } from "./studio-context";
 const items: readonly (readonly [string, string, typeof CircleGauge, ModuleKey | null])[] = [
   ["Dashboard", "/", CircleGauge, null], ["Perfis", "/perfis", UserSquare2, "perfis"], ["Produtos", "/produtos", Package, "produtos"],
   ["Pipeline", "/pipeline", KanbanSquare, "pipeline"], ["Vídeos", "/videos", Clapperboard, "videos"], ["Rascunhos", "/rascunhos", FileClock, "rascunhos"],
-  ["Métricas", "/metricas", BarChart3, "metricas"], ["Equipe", "/equipe", Users, "equipe"], ["Configurações", "/configuracoes", Settings, "configuracoes"],
+  ["Métricas", "/metricas", BarChart3, "metricas"], ["Equipe", "/equipe", Users, "equipe"], ["Prompts", "/prompts", Wand2, "prompts" as never], ["Configurações", "/configuracoes", Settings, "configuracoes"],
 ];
 
-const titles: Record<string, string> = { "/": "Visão geral", "/perfis": "Perfis", "/produtos": "Produtos em alta", "/pipeline": "Pipeline de conteúdo", "/videos": "Biblioteca de vídeos", "/rascunhos": "Rascunhos", "/metricas": "Métricas", "/equipe": "Equipe e permissões", "/configuracoes": "Configurações" };
+const titles: Record<string, string> = { "/": "Visão geral", "/perfis": "Perfis", "/produtos": "Produtos em alta", "/pipeline": "Pipeline de conteúdo", "/videos": "Biblioteca de vídeos", "/rascunhos": "Rascunhos", "/metricas": "Métricas", "/equipe": "Equipe e permissões", "/prompts": "Prompts do sistema", "/configuracoes": "Configurações" };
 
 const initialsOf = (value: string) => value.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("") || "US";
 
@@ -25,8 +25,9 @@ function Brand({ compact = false }: { compact?: boolean }) {
 
 function useVisibleItems() {
   const { isAdmin, can, activeProfileId } = useStudio();
-  return items.filter(([, , , module]) => {
+  return items.filter(([, to, , module]) => {
     if (!module) return true;
+    if (to === "/prompts") return isAdmin;
     if (module === "equipe") return isAdmin;
     return can(module, "visualizar", activeProfileId);
   });

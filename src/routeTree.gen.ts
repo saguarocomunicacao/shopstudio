@@ -18,6 +18,7 @@ import { Route as AuthenticatedMetricasRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedPerfisRouteImport } from './routes/_authenticated/perfis'
 import { Route as AuthenticatedPipelineRouteImport } from './routes/_authenticated/pipeline'
 import { Route as AuthenticatedProdutosRouteImport } from './routes/_authenticated/produtos'
+import { Route as AuthenticatedPromptsRouteImport } from './routes/_authenticated/prompts'
 import { Route as AuthenticatedRascunhosRouteImport } from './routes/_authenticated/rascunhos'
 import { Route as AuthenticatedVideosRouteImport } from './routes/_authenticated/videos'
 import { Route as ApiPublicJson2videoWebhookTokenRouteImport } from './routes/api/public/json2video-webhook.$token'
@@ -67,6 +68,11 @@ const AuthenticatedProdutosRoute = AuthenticatedProdutosRouteImport.update({
   path: '/produtos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPromptsRoute = AuthenticatedPromptsRouteImport.update({
+  id: '/prompts',
+  path: '/prompts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRascunhosRoute = AuthenticatedRascunhosRouteImport.update({
   id: '/rascunhos',
   path: '/rascunhos',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/produtos': typeof AuthenticatedProdutosRoute
+  '/prompts': typeof AuthenticatedPromptsRoute
   '/rascunhos': typeof AuthenticatedRascunhosRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/perfis': typeof AuthenticatedPerfisRoute
   '/pipeline': typeof AuthenticatedPipelineRoute
   '/produtos': typeof AuthenticatedProdutosRoute
+  '/prompts': typeof AuthenticatedPromptsRoute
   '/rascunhos': typeof AuthenticatedRascunhosRoute
   '/videos': typeof AuthenticatedVideosRoute
   '/': typeof AuthenticatedIndexRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/_authenticated/perfis': typeof AuthenticatedPerfisRoute
   '/_authenticated/pipeline': typeof AuthenticatedPipelineRoute
   '/_authenticated/produtos': typeof AuthenticatedProdutosRoute
+  '/_authenticated/prompts': typeof AuthenticatedPromptsRoute
   '/_authenticated/rascunhos': typeof AuthenticatedRascunhosRoute
   '/_authenticated/videos': typeof AuthenticatedVideosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/perfis'
     | '/pipeline'
     | '/produtos'
+    | '/prompts'
     | '/rascunhos'
     | '/videos'
     | '/api/public/json2video-webhook/$token'
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/perfis'
     | '/pipeline'
     | '/produtos'
+    | '/prompts'
     | '/rascunhos'
     | '/videos'
     | '/'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/_authenticated/perfis'
     | '/_authenticated/pipeline'
     | '/_authenticated/produtos'
+    | '/_authenticated/prompts'
     | '/_authenticated/rascunhos'
     | '/_authenticated/videos'
     | '/_authenticated/'
@@ -239,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProdutosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/prompts': {
+      id: '/_authenticated/prompts'
+      path: '/prompts'
+      fullPath: '/prompts'
+      preLoaderRoute: typeof AuthenticatedPromptsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/rascunhos': {
       id: '/_authenticated/rascunhos'
       path: '/rascunhos'
@@ -270,6 +289,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPerfisRoute: typeof AuthenticatedPerfisRoute
   AuthenticatedPipelineRoute: typeof AuthenticatedPipelineRoute
   AuthenticatedProdutosRoute: typeof AuthenticatedProdutosRoute
+  AuthenticatedPromptsRoute: typeof AuthenticatedPromptsRoute
   AuthenticatedRascunhosRoute: typeof AuthenticatedRascunhosRoute
   AuthenticatedVideosRoute: typeof AuthenticatedVideosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -282,6 +302,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPerfisRoute: AuthenticatedPerfisRoute,
   AuthenticatedPipelineRoute: AuthenticatedPipelineRoute,
   AuthenticatedProdutosRoute: AuthenticatedProdutosRoute,
+  AuthenticatedPromptsRoute: AuthenticatedPromptsRoute,
   AuthenticatedRascunhosRoute: AuthenticatedRascunhosRoute,
   AuthenticatedVideosRoute: AuthenticatedVideosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
