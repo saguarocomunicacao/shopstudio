@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Pencil, Play, Plus, Sparkles, Trash2, Pause } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Loader2, Pencil, Play, Plus, Sparkles, Trash2, Pause, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbProfile } from "@/lib/access";
 import { TONE_OPTIONS } from "@/lib/content";
-import { generateAvatarReference } from "@/lib/video.functions";
+import { generateAvatarReference, saveAvatarReferences } from "@/lib/video.functions";
 import { formatFollowers } from "@/lib/studio-data";
 import { CategorySelect } from "./category-select";
 import { ProfilePrompts } from "./profile-prompts";
@@ -48,6 +48,22 @@ const VEO_MODELS = [
   { value: "veo-3.1-generate-preview", label: "Alta qualidade" },
 ];
 
+/** Foto de referência da pessoa: já salva (url) ou recém-escolhida (base64). */
+type AvatarItem = { preview: string; url?: string; base64?: string; mimeType?: string };
+
+const MAX_AVATARS = 3;
+
+const readFile = (file: File) =>
+  new Promise<AvatarItem>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
+    reader.onload = () => {
+      const result = String(reader.result);
+      resolve({ preview: result, base64: result.split(",")[1] ?? "", mimeType: file.type });
+    };
+    reader.readAsDataURL(file);
+  });
+
 type FormState = {
   name: string; handle: string; niche: string; categoryId: string; followers: string; status: string;
   tone: string; language: string; notes: string;
@@ -68,9 +84,12 @@ export function ProfilesPage() {
   const [dialog, setDialog] = useState<{ open: boolean; profile: DbProfile | null }>({ open: false, profile: null });
   const [form, setForm] = useState<FormState>(emptyForm);
   const [confirm, setConfirm] = useState<DbProfile | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarItems, setAvatarItems] = useState<AvatarItem[]>([]);
+  const [avatarSource, setAvatarSource] = useState<"ia" | "upload">("ia");
+  const fileInput = useRef<HTMLInputElement>(null);
   const [avatarDescription, setAvatarDescription] = useState("");
   const generateAvatar = useServerFn(generateAvatarReference);
+  const saveAvatars = useServerFn(saveAvatarReferences);
 
   useEffect(() => {
     if (!dialog.open) return;
@@ -79,7 +98,8 @@ export function ProfilesPage() {
       ? { ...emptyForm, name: p.name, handle: p.handle, niche: p.niche, categoryId: p.category_id ?? "", followers: String(p.followers), status: p.status }
       : emptyForm;
     setForm(base);
-    setAvatarUrl(null);
+    setAvatarItems([]);
+    setAvatarSource("ia");
     setAvatarDescription("");
     if (!p) return;
     let cancelled = false;
@@ -94,12 +114,17 @@ export function ProfilesPage() {
       });
     void supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, takes_count, gemini_model, veo_model, take_duration")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration")
       .eq("profile_id", p.id)
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled || !data) return;
-        setAvatarUrl(data.avatar_reference_url);
+        const list = Array.isArray(data.avatar_reference_urls)
+          ? (data.avatar_reference_urls as unknown[]).filter((u): u is string => typeof u === "string" && !!u)
+          : [];
+        const urls = list.length ? list : data.avatar_reference_url ? [data.avatar_reference_url] : [];
+        setAvatarItems(urls.slice(0, MAX_AVATARS).map((url) => ({ preview: url, url })));
+        if (urls.length > 1) setAvatarSource("upload");
         setForm((f) => ({
           ...f,
           avatarMode: data.avatar_mode,
@@ -180,17 +205,52 @@ export function ProfilesPage() {
       if (!id) throw new Error("Salve o perfil antes de criar a pessoa fixa.");
       return generateAvatar({ data: { profileId: id, description: avatarDescription } });
     },
-    onSuccess: async () => {
+    onSuccess: (result) => {
       toast.success("Pessoa de referência criada.");
-      const id = dialog.profile?.id;
-      if (id) {
-        const { data } = await supabase.from("profile_video_settings").select("avatar_reference_url").eq("profile_id", id).maybeSingle();
-        setAvatarUrl(data?.avatar_reference_url ?? null);
-      }
+      setAvatarItems([{ preview: result.url, url: result.url }]);
       qc.invalidateQueries({ queryKey: ["video-settings"] });
     },
     onError: (e) => toast.error(errMessage(e)),
   });
+
+  const uploadAvatars = useMutation({
+    mutationFn: async (items: AvatarItem[]) => {
+      const id = dialog.profile?.id;
+      if (!id) throw new Error("Salve o perfil antes de enviar as fotos.");
+      const images = items.map((item) =>
+        item.base64 ? { base64: item.base64, mimeType: item.mimeType! } : { url: item.url! },
+      );
+      return saveAvatars({ data: { profileId: id, images } });
+    },
+    onSuccess: (result) => {
+      toast.success("Fotos de referência salvas.");
+      setAvatarItems(result.urls.map((url) => ({ preview: url, url })));
+      qc.invalidateQueries({ queryKey: ["video-settings"] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const pickAvatarFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const free = MAX_AVATARS - avatarItems.length;
+    if (free <= 0) {
+      toast.error("Máximo de 3 fotos. Remova uma para enviar outra.");
+      return;
+    }
+    const chosen = Array.from(files)
+      .filter((f) => ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(f.type))
+      .slice(0, free);
+    if (!chosen.length) {
+      toast.error("Envie imagens JPG ou PNG.");
+      return;
+    }
+    if (chosen.some((f) => f.size > 5 * 1024 * 1024)) {
+      toast.error("Cada foto precisa ter até 5 MB.");
+      return;
+    }
+    const read = await Promise.all(chosen.map(readFile));
+    uploadAvatars.mutate([...avatarItems, ...read]);
+  };
 
   return (
     <>
@@ -331,9 +391,40 @@ export function ProfilesPage() {
                 <p className="mb-3 mt-1 text-xs text-muted-foreground">
                   {dialog.profile ? "Uma imagem de referência reutilizada em todos os vídeos." : "Salve o perfil primeiro para criar a pessoa fixa."}
                 </p>
-                <div className="flex items-start gap-4">
-                  {avatarUrl && <img src={avatarUrl} alt="" className="size-24 rounded-xl object-cover" />}
-                  <div className="grid flex-1 gap-2">
+                <div className="mb-3 inline-flex rounded-lg bg-background p-1">
+                  {([["ia", "Gerar por IA"], ["upload", "Enviar fotos"]] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setAvatarSource(value)}
+                      className={`rounded-md px-3 py-1.5 text-xs font-bold transition ${avatarSource === value ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {avatarItems.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-3">
+                    {avatarItems.map((item, i) => (
+                      <div className="relative" key={item.url ?? i}>
+                        <img src={item.preview} alt="" className="size-24 rounded-xl object-cover" />
+                        <button
+                          type="button"
+                          aria-label="Remover foto"
+                          className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow"
+                          disabled={uploadAvatars.isPending}
+                          onClick={() => uploadAvatars.mutate(avatarItems.filter((_, idx) => idx !== i))}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {avatarSource === "ia" ? (
+                  <div className="grid gap-2">
                     <Input
                       value={avatarDescription}
                       onChange={(e) => setAvatarDescription(e.target.value)}
@@ -349,7 +440,29 @@ export function ProfilesPage() {
                       {avatar.isPending ? <><Loader2 className="animate-spin" />Criando...</> : <><Sparkles />Criar pessoa</>}
                     </Button>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      Envie de 1 a 3 fotos da mesma pessoa (ângulos e expressões diferentes deixam os vídeos mais consistentes). JPG ou PNG, até 5 MB cada.
+                    </p>
+                    <input
+                      ref={fileInput}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => { void pickAvatarFiles(e.target.files); e.target.value = ""; }}
+                    />
+                    <Button
+                      variant="secondary"
+                      className="justify-self-start"
+                      disabled={!dialog.profile || uploadAvatars.isPending || avatarItems.length >= MAX_AVATARS}
+                      onClick={() => fileInput.current?.click()}
+                    >
+                      {uploadAvatars.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Upload />Enviar fotos ({avatarItems.length}/{MAX_AVATARS})</>}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 

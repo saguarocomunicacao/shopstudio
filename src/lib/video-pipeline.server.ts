@@ -306,6 +306,38 @@ export async function downloadVeoVideo(video: VeoVideo) {
   return { base64: video.base64, bytes, mimeType: video.mimeType ?? "video/mp4" };
 }
 
+/**
+ * URLs assinadas expiram. Quando a URL aponta para o bucket privado job-media,
+ * assina de novo a partir do caminho do objeto antes de usar.
+ */
+export async function refreshMediaUrl(url: string): Promise<string> {
+  const match = url.match(/\/object\/(?:sign|public)\/job-media\/([^?]+)/);
+  if (!match?.[1]) return url;
+  const path = decodeURIComponent(match[1]);
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin.storage.from("job-media").createSignedUrl(path, SIGNED_URL_TTL);
+  return data?.signedUrl ?? url;
+}
+
+/** Baixa as imagens de referência da pessoa (até 3) para mandar ao Gemini. */
+export async function loadPersonReferences(urls: (string | null | undefined)[]) {
+  const refs: { base64: string; mimeType: string }[] = [];
+  for (const raw of urls.filter((u): u is string => !!u).slice(0, 3)) {
+    try {
+      const fresh = await refreshMediaUrl(raw);
+      const img = await fetchAsBase64(fresh);
+      refs.push({ base64: img.base64, mimeType: img.mimeType });
+    } catch {
+      // Referência indisponível não pode derrubar a geração da cena.
+    }
+  }
+  return refs;
+}
+
+/** Sufixo que força a mesma pessoa em todas as cenas. */
+export const SAME_PERSON_SUFFIX =
+  " Use the same person shown in the reference portrait(s), keeping face, hair and body consistent.";
+
 /** Guarda um arquivo no bucket privado e devolve caminho + URL assinada. */
 export async function storeMedia(path: string, bytes: Uint8Array, contentType: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

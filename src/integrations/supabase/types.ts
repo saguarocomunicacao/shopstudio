@@ -518,6 +518,7 @@ export type Database = {
         Row: {
           avatar_mode: string
           avatar_reference_url: string | null
+          avatar_reference_urls: Json
           created_at: string
           gemini_model: string
           profile_id: string
@@ -529,6 +530,7 @@ export type Database = {
         Insert: {
           avatar_mode?: string
           avatar_reference_url?: string | null
+          avatar_reference_urls?: Json
           created_at?: string
           gemini_model?: string
           profile_id: string
@@ -540,6 +542,7 @@ export type Database = {
         Update: {
           avatar_mode?: string
           avatar_reference_url?: string | null
+          avatar_reference_urls?: Json
           created_at?: string
           gemini_model?: string
           profile_id?: string

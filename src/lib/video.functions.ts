@@ -45,6 +45,31 @@ export function splitScript(script: string): string[] {
 
 const input = (data: unknown) => z.object({ jobId: z.string().uuid() }).parse(data);
 
+/** Lista de URLs de referência da pessoa salvas no perfil (até 3). */
+export function profileAvatarUrls(settings: { avatar_reference_url?: string | null; avatar_reference_urls?: unknown } | null): string[] {
+  const list = Array.isArray(settings?.avatar_reference_urls)
+    ? (settings!.avatar_reference_urls as unknown[]).filter((u): u is string => typeof u === "string" && !!u)
+    : [];
+  if (list.length) return list.slice(0, 3);
+  return settings?.avatar_reference_url ? [settings.avatar_reference_url] : [];
+}
+
+/**
+ * Referências de pessoa para uma cena.
+ * - Pessoa fixa: todas as fotos do perfil.
+ * - Pessoa nova: a primeira cena cria a pessoa e as demais reaproveitam a
+ *   imagem dela, para o vídeo inteiro ter a MESMA pessoa.
+ */
+function personReferenceUrls(
+  settings: { avatar_mode?: string | null; avatar_reference_url?: string | null; avatar_reference_urls?: unknown } | null,
+  scenes: { image_url?: string }[],
+  index: number,
+): string[] {
+  if (settings?.avatar_mode === "fixo") return profileAvatarUrls(settings);
+  const first = scenes[0]?.image_url;
+  return index > 0 && first ? [first] : [];
+}
+
 /** Carrega o job, valida permissão de pipeline e devolve os dados. */
 async function loadJob(supabase: any, jobId: string): Promise<JobRow> {
   const { data: job, error } = await supabase
@@ -168,7 +193,7 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
         : Promise.resolve({ data: null }),
       supabase
         .from("profile_video_settings")
-        .select("avatar_mode, avatar_reference_url, gemini_model")
+        .select("avatar_mode, avatar_reference_url, avatar_reference_urls, gemini_model")
         .eq("profile_id", job.profile_id)
         .maybeSingle(),
     ]);
@@ -179,14 +204,13 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
       const img = await pipeline.fetchAsBase64(product.image_url);
       references.push({ base64: img.base64, mimeType: img.mimeType });
     }
-    if (settingsRow?.avatar_mode === "fixo" && settingsRow?.avatar_reference_url) {
-      const avatar = await pipeline.fetchAsBase64(settingsRow.avatar_reference_url);
-      references.push({ base64: avatar.base64, mimeType: avatar.mimeType });
-    }
+    const personUrls = personReferenceUrls(settingsRow, scenes, data.index);
+    const personRefs = await pipeline.loadPersonReferences(personUrls);
+    references.push(...personRefs);
 
     const generated = await pipeline.generateSceneImage({
       model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
-      prompt: `${imagePrompt} Vertical 9:16 framing. Keep the product identical to the product reference photo.`,
+      prompt: `${imagePrompt} Vertical 9:16 framing. Keep the product identical to the product reference photo.${personRefs.length ? pipeline.SAME_PERSON_SUFFIX : ""}`,
       references,
     });
     const stored = await pipeline.storeMedia(
@@ -270,7 +294,7 @@ async function runStep(
     supabase.from("profiles").select("name, niche").eq("id", job.profile_id).maybeSingle(),
     supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, takes_count, gemini_model, veo_model, take_duration")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration")
       .eq("profile_id", job.profile_id)
       .maybeSingle(),
   ]);
@@ -327,14 +351,12 @@ async function runStep(
         const productImage = await pipeline.fetchAsBase64(product.image_url);
         references.push({ base64: productImage.base64, mimeType: productImage.mimeType });
       }
-      if (settings.avatar_mode === "fixo" && settings.avatar_reference_url) {
-        const avatar = await pipeline.fetchAsBase64(settings.avatar_reference_url);
-        references.push({ base64: avatar.base64, mimeType: avatar.mimeType });
-      }
+      const personRefs = await pipeline.loadPersonReferences(
+        personReferenceUrls(settingsRow, scenes, index),
+      );
+      references.push(...personRefs);
 
-      const promptSuffix = settings.avatar_mode === "fixo" && settings.avatar_reference_url
-        ? " Use the same person shown in the reference portrait, keeping face, hair and body consistent."
-        : "";
+      const promptSuffix = personRefs.length ? pipeline.SAME_PERSON_SUFFIX : "";
       const generated = await pipeline.generateSceneImage({
         model: settings.gemini_model,
         prompt: `${scene.image_prompt} Vertical 9:16 framing. Keep the product identical to the product reference photo.${promptSuffix}`,
@@ -542,9 +564,64 @@ export const generateAvatarReference = createServerFn({ method: "POST" })
 
     const { error } = await supabase
       .from("profile_video_settings")
-      .update({ avatar_reference_url: stored.url })
+      .update({ avatar_reference_url: stored.url, avatar_reference_urls: [stored.url] })
       .eq("profile_id", data.profileId);
     if (error) throw new Error(error.message);
 
     return { url: stored.url };
+  });
+
+/** Salva até 3 fotos enviadas pelo usuário como referência da pessoa fixa. */
+export const saveAvatarReferences = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        profileId: z.string().uuid(),
+        images: z
+          .array(
+            z.union([
+              z.object({
+                base64: z.string().min(16).max(9_000_000),
+                mimeType: z.enum(["image/jpeg", "image/png", "image/jpg", "image/webp"]),
+              }),
+              z.object({ url: z.string().url() }),
+            ]),
+          )
+          .max(3),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+
+    // A própria RLS de profile_video_settings exige a permissão perfis:editar.
+    const { error: guardError } = await supabase
+      .from("profile_video_settings")
+      .upsert({ profile_id: data.profileId, avatar_mode: "fixo" }, { onConflict: "profile_id" });
+    if (guardError) throw new Error("Você não tem permissão para editar este perfil.");
+
+    const pipeline = await import("./video-pipeline.server");
+    const urls: string[] = [];
+    for (const [i, image] of data.images.entries()) {
+      if ("url" in image) {
+        urls.push(image.url);
+        continue;
+      }
+      const ext = image.mimeType === "image/png" ? "png" : image.mimeType === "image/webp" ? "webp" : "jpg";
+      const stored = await pipeline.storeMedia(
+        `avatars/${data.profileId}/${Date.now()}-${i + 1}.${ext}`,
+        Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0)),
+        image.mimeType,
+      );
+      urls.push(stored.url);
+    }
+
+    const { error } = await supabase
+      .from("profile_video_settings")
+      .update({ avatar_reference_urls: urls, avatar_reference_url: urls[0] ?? null })
+      .eq("profile_id", data.profileId);
+    if (error) throw new Error(error.message);
+
+    return { urls };
   });
