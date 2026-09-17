@@ -1,0 +1,2 @@
+import { createFileRoute } from "@tanstack/react-router"; import { ProductsPage } from "@/components/products-page";
+export const Route=createFileRoute("/_authenticated/app/produtos")({head:()=>({meta:[{title:"Produtos — Shop Studio"},{name:"description",content:"Descubra produtos em alta."},{property:"og:title",content:"Produtos — Shop Studio"},{property:"og:description",content:"Descubra produtos em alta."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:ProductsPage});

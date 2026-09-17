@@ -1,0 +1,2 @@
+import { createFileRoute } from "@tanstack/react-router"; import { DraftsPage } from "@/components/studio-pages";
+export const Route=createFileRoute("/_authenticated/app/rascunhos")({head:()=>({meta:[{title:"Rascunhos — Shop Studio"},{name:"description",content:"Revise e publique vídeos prontos."},{property:"og:title",content:"Rascunhos — Shop Studio"},{property:"og:description",content:"Revise e publique vídeos prontos."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:DraftsPage});

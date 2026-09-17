@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PromptsPage } from "@/components/prompts-page";
 
-export const Route = createFileRoute("/_authenticated/prompts")({
+export const Route = createFileRoute("/_authenticated/app/prompts")({
   head: () => ({
     meta: [
       { title: "Prompts do sistema — Shop Studio" },
