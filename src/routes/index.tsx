@@ -187,14 +187,16 @@ function AssemblyLine() {
   return (
     <section ref={sectionRef} id="como-funciona" className="relative scroll-mt-0 h-[170vh]">
       <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
-        <div className="mx-auto w-full max-w-7xl px-5 py-10 lg:px-8">
-          <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
-          <div className="relative mt-14 py-8 md:mt-20">
-            <div className="landing-assembly-track absolute bottom-17 left-9 top-17 w-0.5 overflow-hidden rounded-full md:bottom-auto md:left-[10%] md:right-[10%] md:top-20 md:h-0.5 md:w-auto">
+        <div className="mx-auto w-full max-w-7xl px-5 py-6 lg:px-8">
+          <div className="[&_h2]:text-2xl [&_h2]:leading-tight [&_p]:mt-3 [&_p]:text-base [&_p]:leading-7 md:[&_h2]:text-5xl md:[&_p]:mt-5 md:[&_p]:text-lg md:[&_p]:leading-8">
+            <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
+          </div>
+          <div className="relative mt-8 py-4 md:mt-20 md:py-8">
+            <div className="landing-assembly-track absolute bottom-11 left-7 top-11 w-0.5 overflow-hidden rounded-full md:bottom-auto md:left-[10%] md:right-[10%] md:top-20 md:h-0.5 md:w-auto">
               <motion.div className="landing-assembly-line h-full w-full origin-top md:hidden" style={{ scaleY: reduceMotion ? 1 : lineProgress }} />
               <motion.div className="landing-assembly-line hidden h-full w-full origin-left md:block" style={{ scaleX: reduceMotion ? 1 : lineProgress }} />
             </div>
-            <div className="relative grid gap-6 md:grid-cols-5 md:gap-5">
+            <div className="relative grid gap-4 md:grid-cols-5 md:gap-5">
               {assemblySteps.map((step, index) => <AssemblyStep key={step.title} step={step} index={index} progress={scrollYProgress} reduceMotion={Boolean(reduceMotion)} />)}
             </div>
           </div>
