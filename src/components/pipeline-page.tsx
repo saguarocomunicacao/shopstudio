@@ -13,6 +13,7 @@ import { useVideoDriver } from "@/lib/video-driver";
 import { JobDetailDialog } from "./job-detail-dialog";
 import { JobCostBadge } from "./job-cost";
 import { BudgetBanner } from "./budget-banner";
+import { SupplierBalanceBanner } from "./supplier-balance-banner";
 import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
 import { useDragScroll } from "./use-drag-scroll";
@@ -120,6 +121,7 @@ function PipelineContent() {
         <Button disabled><Plus />Novo job</Button>
       </div>
       <BudgetBanner />
+      <SupplierBalanceBanner />
       <div ref={kanbanRef} className="kanban min-h-0 flex-1">
         {JOB_STATUSES.map((stage) => {
           const items = filtered.filter((j) => j.status === stage);

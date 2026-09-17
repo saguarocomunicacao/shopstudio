@@ -122,8 +122,9 @@ export const approveJobScenes = createServerFn({ method: "POST" })
     }
 
     // Etapa cara: respeita o teto de orçamento do mês.
-    const { assertOrcamento } = await import("./orcamento.server");
+    const { assertOrcamento, assertSaldoFornecedor } = await import("./orcamento.server");
     await assertOrcamento(job.profile_id);
+    await assertSaldoFornecedor("animacao_veo");
 
     const { error } = await supabase
       .from("jobs")

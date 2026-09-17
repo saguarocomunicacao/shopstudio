@@ -110,3 +110,46 @@ export async function assertOrcamento(profileId: string, opts: { barata?: boolea
     `O orçamento do mês (${brl(teto ?? 0)}) foi atingido. Um administrador precisa aumentar o teto em Configurações para continuar gerando.`,
   );
 }
+
+/**
+ * Guarda de saldo do fornecedor pré-pago (Google): aportes lançados menos o
+ * consumo já gravado. Só bloqueia quando o admin liga o bloqueio por saldo.
+ */
+export async function assertSaldoFornecedor(etapa: "animacao_veo") {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const [eventosRes, tarifasRes, configRes, aportesRes] = await Promise.all([
+    supabaseAdmin.from("consumo_eventos").select("profile_id, modelo, quantidade, unidade, etapa, metadados, created_at"),
+    supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    supabaseAdmin.from("app_config").select("key, value_num"),
+    supabaseAdmin.from("fornecedor_aportes").select("fornecedor, valor_brl"),
+  ]);
+
+  const config = new Map(
+    ((configRes.data ?? []) as { key: string; value_num: number | null }[]).map((r) => [r.key, Number(r.value_num ?? 0)]),
+  );
+  if (config.get("investimento_bloqueio_saldo") !== 1) return;
+
+  const cotacao = config.get("cotacao_usd_brl") || 1;
+  const limitePercent = config.get("investimento_alerta_percent") || 20;
+  const tarifas = (tarifasRes.data ?? []) as unknown as Tarifa[];
+  const eventos = (eventosRes.data ?? []) as unknown as Evento[];
+
+  const googleEtapas = new Set(["roteiro_texto", "cena_gemini", "animacao_veo"]);
+  let consumo = 0;
+  for (const evento of eventos) {
+    if (!googleEtapas.has(evento.etapa)) continue;
+    consumo += custoEvento(evento, tarifas, cotacao);
+  }
+  const aportado = ((aportesRes.data ?? []) as { fornecedor: string; valor_brl: number | string }[])
+    .filter((a) => a.fornecedor === "google")
+    .reduce((s, a) => s + Number(a.valor_brl), 0);
+
+  if (aportado <= 0) return;
+  const restante = (aportado - consumo) / aportado;
+  if (restante * 100 >= limitePercent) return;
+
+  void etapa;
+  throw new Error(
+    `O saldo do Google está baixo (${brl(aportado - consumo)} restantes). Registre um novo aporte em Investimento para continuar gerando vídeos.`,
+  );
+}

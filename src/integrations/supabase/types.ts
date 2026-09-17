@@ -146,6 +146,69 @@ export type Database = {
           },
         ]
       }
+      fornecedor_aportes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: string
+          fornecedor: string
+          id: string
+          observacao: string | null
+          unidade: string | null
+          unidades: number | null
+          valor_brl: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          fornecedor: string
+          id?: string
+          observacao?: string | null
+          unidade?: string | null
+          unidades?: number | null
+          valor_brl?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          fornecedor?: string
+          id?: string
+          observacao?: string | null
+          unidade?: string | null
+          unidades?: number | null
+          valor_brl?: number
+        }
+        Relationships: []
+      }
+      fornecedor_planos: {
+        Row: {
+          ativo: boolean
+          creditos_mes: number
+          dia_renovacao: number
+          fornecedor: string
+          updated_at: string
+          valor_mensal: number
+        }
+        Insert: {
+          ativo?: boolean
+          creditos_mes?: number
+          dia_renovacao?: number
+          fornecedor: string
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Update: {
+          ativo?: boolean
+          creditos_mes?: number
+          dia_renovacao?: number
+          fornecedor?: string
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Relationships: []
+      }
       job_stage_events: {
         Row: {
           entered_at: string
