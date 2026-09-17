@@ -195,7 +195,7 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     );
 
     // A cena regerada perde o take antigo: será animada de novo na aprovação.
-    const { operation: _op, video_path: _vp, video_url: _vu, ...rest } = scene;
+    const { operation: _op, video_path: _vp, video_url: _vu, approved: _approved, ...rest } = scene as typeof scene & { approved?: boolean };
     scenes[data.index] = {
       ...rest,
       image_prompt: imagePrompt,

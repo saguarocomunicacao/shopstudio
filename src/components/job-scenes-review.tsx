@@ -31,7 +31,15 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
       const prompt = prompts[index]?.trim();
       return regenerate({ data: { jobId: job.id, index, ...(prompt ? { prompt } : {}) } });
     },
-    onSuccess: () => { toast.success("Cena regerada."); qc.invalidateQueries({ queryKey: ["jobs"] }); },
+    onSuccess: (_, index) => {
+      setApproved((current) => {
+        const next = new Set(current);
+        next.delete(index);
+        return next;
+      });
+      toast.success("Cena regerada.");
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
     onError: (e) => toast.error(errMessage(e)),
     onSettled: () => setBusyIndex(null),
   });
@@ -52,6 +60,10 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
     },
     onError: (e) => toast.error(errMessage(e)),
   });
+
+  useEffect(() => {
+    setApproved(new Set(scenes.flatMap((scene, index) => scene.approved ? [index] : [])));
+  }, [job.id, job.scenes]);
 
   useEffect(() => {
     if (lightboxIndex === null) return;
@@ -79,9 +91,10 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
       {scenes.map((scene, index) => (
         <div className="grid gap-3 rounded-2xl border p-3 sm:grid-cols-[120px_minmax(0,1fr)]" key={index}>
           {scene.image_url ? (
-            <button
+            <Button
               type="button"
-              className="group relative overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              variant="ghost"
+              className="group relative h-auto w-full overflow-hidden rounded-xl p-0 focus-visible:ring-offset-2"
               onClick={() => setLightboxIndex(index)}
               aria-label={`Ampliar cena ${index + 1}`}
             >
@@ -89,7 +102,7 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
               <span className="absolute inset-x-0 bottom-0 bg-foreground/70 px-2 py-1.5 text-center text-xs font-semibold text-background opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
                 Ver em tela cheia
               </span>
-            </button>
+            </Button>
           ) : (
             <div className="flex aspect-[9/16] items-center justify-center rounded-xl bg-secondary text-xs text-muted-foreground">
               sem imagem
@@ -130,12 +143,12 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
         </div>
       ))}
       <Dialog open={lightboxIndex !== null} onOpenChange={(open) => !open && setLightboxIndex(null)}>
-        <DialogContent className="h-dvh w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-3 rounded-none border-0 bg-foreground/95 p-3 text-background sm:p-6">
+        <DialogContent className="h-dvh w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden rounded-none border-0 bg-foreground/95 p-3 text-background sm:p-6">
           <DialogTitle className="pr-12 text-sm font-semibold text-background">
             {lightboxIndex === null ? "Cenas do job" : `Cena ${lightboxIndex + 1} de ${scenes.length}`}
           </DialogTitle>
           {lightboxIndex !== null && scenes[lightboxIndex] && (
-            <div className="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)]">
+            <div className="grid min-h-0 grid-rows-[minmax(280px,1fr)_auto] gap-4 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1 lg:overflow-hidden">
               <div className="relative flex min-h-0 items-center justify-center px-11">
                 <Button
                   type="button"
