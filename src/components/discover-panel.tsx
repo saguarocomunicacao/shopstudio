@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { discoverProducts } from "@/lib/discover.functions";
 import { useCategories, type DbProduct } from "@/lib/content";
 import { ProductDataTable } from "./product-data-table";
+import { SearchCostHistory } from "./search-cost-history";
 import { useStudio } from "./studio-context";
 
 type Found = {
