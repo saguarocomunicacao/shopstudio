@@ -76,6 +76,7 @@ function ProductsContent() {
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
   const [tab, setTab] = useState<"catalogo" | "descobrir">("catalogo");
   const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
+  const [details, setDetails] = useState<DbProduct | null>(null);
 
   const canCreateJob = can("pipeline", "criar", activeProfileId);
 
@@ -167,7 +168,7 @@ function ProductsContent() {
           renderActions={(p) => (
             <>
               {canCreateJob && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
-               {canEdit && (
+               {canEdit && isManual(p) ? (
                  <Tooltip>
                    <TooltipTrigger asChild>
                      <Button variant="ghost" size="icon" className="size-8" onClick={() => setDialog({ open: true, product: p })} aria-label={`Editar ${p.name}`}>
@@ -175,6 +176,15 @@ function ProductsContent() {
                      </Button>
                    </TooltipTrigger>
                    <TooltipContent>Editar</TooltipContent>
+                 </Tooltip>
+               ) : (
+                 <Tooltip>
+                   <TooltipTrigger asChild>
+                     <Button variant="ghost" size="icon" className="size-8" onClick={() => setDetails(p)} aria-label={`Ver detalhes de ${p.name}`}>
+                       <Eye className="size-4" />
+                     </Button>
+                   </TooltipTrigger>
+                   <TooltipContent>Ver detalhes</TooltipContent>
                  </Tooltip>
                )}
                {canRemove && (
