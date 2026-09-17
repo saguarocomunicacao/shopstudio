@@ -21,7 +21,7 @@ type Found = {
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a busca.");
 export function DiscoverPanel({ products }: { products: DbProduct[] }) {
-  const { can, userId } = useStudio();
+  const { can, userId, activeProfileId } = useStudio();
   const qc = useQueryClient();
   const canCreate = can("produtos", "criar");
   const { data: categories = [] } = useCategories();
