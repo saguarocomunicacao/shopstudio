@@ -35,6 +35,13 @@ const parseNum = (v: string) => {
   const n = Number(v.trim().replace(/\./g, "").replace(",", "."));
   return Number.isFinite(n) ? n : null;
 };
+/** Máscara de moeda BRL: aceita só dígitos e formata com separador de milhar e 2 casas. */
+const mascaraBrl = (raw: string) => {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  const n = Number(digits) / 100;
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
 
 function Resumo({ label, value, hint, destaque }: { label: string; value: string; hint?: string; destaque?: boolean }) {
   return (
