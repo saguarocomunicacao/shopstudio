@@ -86,6 +86,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
           external_id: i.externalId,
           created_by: userId,
         })),
+        { onConflict: "source,external_id", ignoreDuplicates: true },
       );
       if (error) throw new Error(error.message);
       return fresh.length;
