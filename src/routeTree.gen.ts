@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
+import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
 import { Route as AuthenticatedAppAprovacoesRouteImport } from './routes/_authenticated/app/aprovacoes'
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
@@ -28,9 +28,9 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const EntrarRoute = EntrarRouteImport.update({
+  id: '/entrar',
+  path: '/entrar',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
@@ -103,7 +103,7 @@ const ApiPublicJson2videoWebhookTokenRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/entrar': typeof EntrarRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/equipe': typeof AuthenticatedAppEquipeRoute
@@ -119,7 +119,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/entrar': typeof EntrarRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/equipe': typeof AuthenticatedAppEquipeRoute
@@ -136,7 +136,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
+  '/entrar': typeof EntrarRoute
   '/_authenticated/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/_authenticated/app/equipe': typeof AuthenticatedAppEquipeRoute
@@ -154,7 +154,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
+    | '/entrar'
     | '/app/aprovacoes'
     | '/app/configuracoes'
     | '/app/equipe'
@@ -170,7 +170,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
+    | '/entrar'
     | '/app/aprovacoes'
     | '/app/configuracoes'
     | '/app/equipe'
@@ -186,7 +186,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
-    | '/auth'
+    | '/entrar'
     | '/_authenticated/app/aprovacoes'
     | '/_authenticated/app/configuracoes'
     | '/_authenticated/app/equipe'
@@ -203,7 +203,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
+  EntrarRoute: typeof EntrarRoute
   ApiPublicJson2videoWebhookTokenRoute: typeof ApiPublicJson2videoWebhookTokenRoute
 }
 
@@ -216,11 +216,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/entrar': {
+      id: '/entrar'
+      path: '/entrar'
+      fullPath: '/entrar'
+      preLoaderRoute: typeof EntrarRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/app/': {
@@ -343,7 +343,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
+  EntrarRoute: EntrarRoute,
   ApiPublicJson2videoWebhookTokenRoute: ApiPublicJson2videoWebhookTokenRoute,
 }
 export const routeTree = rootRouteImport
