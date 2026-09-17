@@ -254,5 +254,3 @@ export function useCustoPeriodo(
 }
 
 export type { UnidadeTarifa };
-
-export type { UnidadeTarifa };
