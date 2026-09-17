@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Play, Plus, Trash2, Pause } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Loader2, Pencil, Play, Plus, Sparkles, Trash2, Pause } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -14,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbProfile } from "@/lib/access";
 import { TONE_OPTIONS } from "@/lib/content";
+import { generateAvatarReference } from "@/lib/video.functions";
 import { formatFollowers } from "@/lib/studio-data";
 import { CategorySelect } from "./category-select";
 import { useStudio } from "./studio-context";
@@ -34,8 +36,27 @@ const slugify = (value: string) =>
 const initialsOf = (value: string) =>
   value.trim().split(/\s+/).filter((w) => w.length > 2 || value.trim().split(/\s+/).length === 1).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "??";
 
-type FormState = { name: string; handle: string; niche: string; categoryId: string; followers: string; status: string; tone: string; language: string; notes: string };
-const emptyForm: FormState = { name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo", tone: "descontraido", language: "pt-BR", notes: "" };
+const GEMINI_MODELS = [
+  { value: "gemini-3.1-flash-image", label: "Equilibrado (padrão)" },
+  { value: "gemini-3.1-flash-lite-image", label: "Econômico" },
+  { value: "gemini-3-pro-image", label: "Máxima qualidade" },
+];
+
+const VEO_MODELS = [
+  { value: "veo-3.1-fast-generate-preview", label: "Rápido e econômico (padrão)" },
+  { value: "veo-3.1-generate-preview", label: "Alta qualidade" },
+];
+
+type FormState = {
+  name: string; handle: string; niche: string; categoryId: string; followers: string; status: string;
+  tone: string; language: string; notes: string;
+  avatarMode: string; takes: string; duration: string; geminiModel: string; veoModel: string;
+};
+const emptyForm: FormState = {
+  name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo",
+  tone: "descontraido", language: "pt-BR", notes: "",
+  avatarMode: "livre", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value,
+};
 
 export function ProfilesPage() {
   const { profiles, can, loading } = useStudio();
@@ -46,6 +67,9 @@ export function ProfilesPage() {
   const [dialog, setDialog] = useState<{ open: boolean; profile: DbProfile | null }>({ open: false, profile: null });
   const [form, setForm] = useState<FormState>(emptyForm);
   const [confirm, setConfirm] = useState<DbProfile | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarDescription, setAvatarDescription] = useState("");
+  const generateAvatar = useServerFn(generateAvatarReference);
 
   useEffect(() => {
     if (!dialog.open) return;
@@ -54,6 +78,8 @@ export function ProfilesPage() {
       ? { ...emptyForm, name: p.name, handle: p.handle, niche: p.niche, categoryId: p.category_id ?? "", followers: String(p.followers), status: p.status }
       : emptyForm;
     setForm(base);
+    setAvatarUrl(null);
+    setAvatarDescription("");
     if (!p) return;
     let cancelled = false;
     void supabase
@@ -64,6 +90,23 @@ export function ProfilesPage() {
       .then(({ data }) => {
         if (cancelled || !data) return;
         setForm((f) => ({ ...f, tone: data.tone, language: data.language, notes: data.style_notes }));
+      });
+    void supabase
+      .from("profile_video_settings")
+      .select("avatar_mode, avatar_reference_url, takes_count, gemini_model, veo_model, take_duration")
+      .eq("profile_id", p.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setAvatarUrl(data.avatar_reference_url);
+        setForm((f) => ({
+          ...f,
+          avatarMode: data.avatar_mode,
+          takes: String(data.takes_count),
+          duration: String(data.take_duration),
+          geminiModel: data.gemini_model,
+          veoModel: data.veo_model,
+        }));
       });
     return () => { cancelled = true; };
   }, [dialog]);
@@ -93,8 +136,20 @@ export function ProfilesPage() {
       const identity = { profile_id: profileId, tone: values.tone, language: values.language.trim() || "pt-BR", style_notes: values.notes.trim() };
       const { error: identityError } = await supabase.from("profile_identities").upsert(identity, { onConflict: "profile_id" });
       if (identityError) throw new Error(identityError.message);
+      const { error: videoError } = await supabase.from("profile_video_settings").upsert(
+        {
+          profile_id: profileId,
+          avatar_mode: values.avatarMode,
+          takes_count: Number(values.takes),
+          take_duration: Number(values.duration),
+          gemini_model: values.geminiModel,
+          veo_model: values.veoModel,
+        },
+        { onConflict: "profile_id" },
+      );
+      if (videoError) throw new Error(videoError.message);
     },
-    onSuccess: (_d, vars) => { toast.success(vars.profile ? "Perfil atualizado." : "Perfil criado."); setDialog({ open: false, profile: null }); refresh(); qc.invalidateQueries({ queryKey: ["profile-identity"] }); },
+    onSuccess: (_d, vars) => { toast.success(vars.profile ? "Perfil atualizado." : "Perfil criado."); setDialog({ open: false, profile: null }); refresh(); qc.invalidateQueries({ queryKey: ["profile-identity"] }); qc.invalidateQueries({ queryKey: ["video-settings"] }); },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -115,6 +170,24 @@ export function ProfilesPage() {
       if (error) throw new Error(error.message);
     },
     onSuccess: () => { toast.success("Perfil removido."); setConfirm(null); refresh(); },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const avatar = useMutation({
+    mutationFn: async () => {
+      const id = dialog.profile?.id;
+      if (!id) throw new Error("Salve o perfil antes de criar a pessoa fixa.");
+      return generateAvatar({ data: { profileId: id, description: avatarDescription } });
+    },
+    onSuccess: async () => {
+      toast.success("Pessoa de referência criada.");
+      const id = dialog.profile?.id;
+      if (id) {
+        const { data } = await supabase.from("profile_video_settings").select("avatar_reference_url").eq("profile_id", id).maybeSingle();
+        setAvatarUrl(data?.avatar_reference_url ?? null);
+      }
+      qc.invalidateQueries({ queryKey: ["video-settings"] });
+    },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -169,7 +242,7 @@ export function ProfilesPage() {
       )}
 
       <Dialog open={dialog.open} onOpenChange={(open) => setDialog({ open, profile: open ? dialog.profile : null })}>
-        <DialogContent>
+        <DialogContent className="max-h-[88vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{dialog.profile ? "Editar perfil" : "Adicionar perfil"}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-2"><Label htmlFor="p-name">Nome</Label><Input id="p-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Moda e Acessórios" /></div>
@@ -205,6 +278,79 @@ export function ProfilesPage() {
               </div>
             </div>
             <div className="grid gap-2"><Label htmlFor="p-notes">Observações de estilo <span className="font-normal text-muted-foreground">(opcional)</span></Label><Textarea id="p-notes" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ex: falar direto com a câmera, frases curtas, sempre mostrar o produto em uso." /></div>
+
+            <div className="border-t pt-4">
+              <p className="text-sm font-bold">Geração de vídeo</p>
+              <p className="text-xs text-muted-foreground">Todo vídeo deste perfil mostra uma pessoa ou mão usando o produto.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="p-avatar-mode">Pessoa do vídeo</Label>
+                <Select value={form.avatarMode} onValueChange={(v) => setForm({ ...form, avatarMode: v })}>
+                  <SelectTrigger id="p-avatar-mode"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="livre">Pessoa nova a cada vídeo</SelectItem>
+                    <SelectItem value="fixo">Sempre a mesma pessoa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="p-takes">Cenas por vídeo</Label>
+                <Select value={form.takes} onValueChange={(v) => setForm({ ...form, takes: v })}>
+                  <SelectTrigger id="p-takes"><SelectValue /></SelectTrigger>
+                  <SelectContent>{[3, 4, 5].map((n) => <SelectItem key={n} value={String(n)}>{n} cenas</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="p-duration">Duração de cada cena</Label>
+                <Select value={form.duration} onValueChange={(v) => setForm({ ...form, duration: v })}>
+                  <SelectTrigger id="p-duration"><SelectValue /></SelectTrigger>
+                  <SelectContent>{[4, 6, 8].map((n) => <SelectItem key={n} value={String(n)}>{n} segundos</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="p-gemini">Qualidade das cenas</Label>
+                <Select value={form.geminiModel} onValueChange={(v) => setForm({ ...form, geminiModel: v })}>
+                  <SelectTrigger id="p-gemini"><SelectValue /></SelectTrigger>
+                  <SelectContent>{GEMINI_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2 sm:col-span-2">
+                <Label htmlFor="p-veo">Qualidade da animação</Label>
+                <Select value={form.veoModel} onValueChange={(v) => setForm({ ...form, veoModel: v })}>
+                  <SelectTrigger id="p-veo"><SelectValue /></SelectTrigger>
+                  <SelectContent>{VEO_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {form.avatarMode === "fixo" && (
+              <div className="rounded-xl bg-secondary p-4">
+                <p className="text-sm font-semibold">Pessoa fixa do perfil</p>
+                <p className="mb-3 mt-1 text-xs text-muted-foreground">
+                  {dialog.profile ? "Uma imagem de referência reutilizada em todos os vídeos." : "Salve o perfil primeiro para criar a pessoa fixa."}
+                </p>
+                <div className="flex items-start gap-4">
+                  {avatarUrl && <img src={avatarUrl} alt="" className="size-24 rounded-xl object-cover" />}
+                  <div className="grid flex-1 gap-2">
+                    <Input
+                      value={avatarDescription}
+                      onChange={(e) => setAvatarDescription(e.target.value)}
+                      placeholder="mulher brasileira de 28 anos, cabelo cacheado, estilo casual"
+                      disabled={!dialog.profile}
+                    />
+                    <Button
+                      variant="secondary"
+                      className="justify-self-start"
+                      disabled={!dialog.profile || avatar.isPending || avatarDescription.trim().length < 3}
+                      onClick={() => avatar.mutate()}
+                    >
+                      {avatar.isPending ? <><Loader2 className="animate-spin" />Criando...</> : <><Sparkles />Criar pessoa</>}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDialog({ open: false, profile: null })}>Cancelar</Button>
