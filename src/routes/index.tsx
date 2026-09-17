@@ -189,8 +189,8 @@ function AssemblyLine() {
       <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
       <div className="relative mt-16 md:mt-20">
         <div className="absolute bottom-8 left-7 top-7 w-0.5 overflow-hidden rounded-full bg-landing-line md:bottom-auto md:left-[10%] md:right-[10%] md:top-8 md:h-0.5 md:w-auto">
-          <motion.div className="landing-assembly-line h-full w-full origin-top md:hidden" style={reduceMotion ? undefined : { scaleY: lineProgress }} />
-          <motion.div className="landing-assembly-line hidden h-full w-full origin-left md:block" style={reduceMotion ? undefined : { scaleX: lineProgress }} />
+          <motion.div className="landing-assembly-line h-full w-full origin-top md:hidden" style={{ scaleY: reduceMotion ? 1 : lineProgress }} />
+          <motion.div className="landing-assembly-line hidden h-full w-full origin-left md:block" style={{ scaleX: reduceMotion ? 1 : lineProgress }} />
         </div>
         <div className="relative grid gap-12 md:grid-cols-5 md:gap-5">
           {assemblySteps.map((step, index) => <AssemblyStep key={step.title} step={step} index={index} progress={scrollYProgress} reduceMotion={Boolean(reduceMotion)} />)}
@@ -210,11 +210,11 @@ function AssemblyStep({ step, index, progress, reduceMotion }: { step: (typeof a
 
   return (
     <article className="relative grid grid-cols-[56px_1fr] gap-5 md:block md:text-center">
-      <motion.div className="landing-assembly-node relative z-10 grid size-14 place-items-center rounded-full md:mx-auto md:size-16" style={reduceMotion ? undefined : { opacity: nodeOpacity, scale: nodeScale }}>
+      <motion.div className="landing-assembly-node relative z-10 grid size-14 place-items-center rounded-full md:mx-auto md:size-16" style={{ opacity: reduceMotion ? 1 : nodeOpacity, scale: reduceMotion ? 1 : nodeScale }}>
         <Icon className="size-6 text-landing-text md:size-7" strokeWidth={1.9} aria-hidden="true" />
         <span className="landing-display absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-landing-line bg-landing-bg text-[10px] font-bold text-landing-text">{index + 1}</span>
       </motion.div>
-      <motion.div className="pt-0.5 md:pt-6" style={reduceMotion ? undefined : { opacity: textOpacity, y: textY }}>
+      <motion.div className="pt-0.5 md:pt-6" style={{ opacity: reduceMotion ? 1 : textOpacity, y: reduceMotion ? 0 : textY }}>
         <h3 className="landing-display text-lg font-bold">{step.title}</h3>
         <p className="mt-2 text-sm leading-6 text-landing-muted">{step.text}</p>
       </motion.div>
