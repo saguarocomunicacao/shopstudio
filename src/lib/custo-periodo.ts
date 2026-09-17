@@ -213,9 +213,10 @@ export function agregarPeriodo(
 const selectEventos = "id, job_id, profile_id, etapa, modelo, quantidade, unidade, metadados, created_at";
 
 /** Eventos de consumo do intervalo; profileId nulo traz todos os perfis acessíveis. */
-export function useEventosPeriodo(desde: string, ate: string, profileId: string | null) {
+export function useEventosPeriodo(desde: string, ate: string, profileIds: string[] | null) {
+  const chavePerfis = profileIds ? [...profileIds].sort().join(",") : "todos";
   return useQuery({
-    queryKey: ["custo-periodo", desde, ate, profileId ?? "todos"],
+    queryKey: ["custo-periodo", desde, ate, chavePerfis],
     staleTime: 30_000,
     queryFn: async () => {
       let query = supabase
@@ -224,7 +225,8 @@ export function useEventosPeriodo(desde: string, ate: string, profileId: string 
         .gte("created_at", desde)
         .lte("created_at", ate)
         .order("created_at", { ascending: true });
-      if (profileId) query = query.eq("profile_id", profileId);
+      if (profileIds && profileIds.length === 1) query = query.eq("profile_id", profileIds[0]!);
+      else if (profileIds && profileIds.length > 1) query = query.in("profile_id", profileIds);
       const { data, error } = await query;
       if (error) throw new Error(error.message);
       return (data ?? []) as unknown as ConsumoEventoRow[];
@@ -236,16 +238,20 @@ export function useEventosPeriodo(desde: string, ate: string, profileId: string 
 export function useCustoPeriodo(
   desde: string,
   ate: string,
-  profileId: string | null,
-  etapa: EtapaVisual | "todas",
+  profileIds: string[] | null,
+  etapas: EtapaVisual[],
 ) {
   const { data: precos } = useTarifas();
-  const { data: eventos, isLoading } = useEventosPeriodo(desde, ate, profileId);
+  const { data: eventos, isLoading } = useEventosPeriodo(desde, ate, profileIds);
+  const chaveEtapas = [...etapas].sort().join(",");
   const pronto = !!precos && !!eventos;
   return {
     isLoading: isLoading || !pronto,
-    data: pronto ? agregarPeriodo(eventos!, precos!.tarifas, precos!.cotacao, etapa) : null,
+    data: pronto ? agregarPeriodo(eventos!, precos!.tarifas, precos!.cotacao, etapas) : null,
+    chaveEtapas,
   };
 }
+
+export type { UnidadeTarifa };
 
 export type { UnidadeTarifa };
