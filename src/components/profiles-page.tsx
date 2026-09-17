@@ -212,6 +212,45 @@ export function ProfilesPage() {
     onError: (e) => toast.error(errMessage(e)),
   });
 
+  const uploadAvatars = useMutation({
+    mutationFn: async (items: AvatarItem[]) => {
+      const id = dialog.profile?.id;
+      if (!id) throw new Error("Salve o perfil antes de enviar as fotos.");
+      const images = items.map((item) =>
+        item.base64 ? { base64: item.base64, mimeType: item.mimeType! } : { url: item.url! },
+      );
+      return saveAvatars({ data: { profileId: id, images } });
+    },
+    onSuccess: (result) => {
+      toast.success("Fotos de referência salvas.");
+      setAvatarItems(result.urls.map((url) => ({ preview: url, url })));
+      qc.invalidateQueries({ queryKey: ["video-settings"] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const pickAvatarFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const free = MAX_AVATARS - avatarItems.length;
+    if (free <= 0) {
+      toast.error("Máximo de 3 fotos. Remova uma para enviar outra.");
+      return;
+    }
+    const chosen = Array.from(files)
+      .filter((f) => ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(f.type))
+      .slice(0, free);
+    if (!chosen.length) {
+      toast.error("Envie imagens JPG ou PNG.");
+      return;
+    }
+    if (chosen.some((f) => f.size > 5 * 1024 * 1024)) {
+      toast.error("Cada foto precisa ter até 5 MB.");
+      return;
+    }
+    const read = await Promise.all(chosen.map(readFile));
+    uploadAvatars.mutate([...avatarItems, ...read]);
+  };
+
   return (
     <>
       <Heading
