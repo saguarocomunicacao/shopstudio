@@ -173,11 +173,9 @@ export const refreshVoicePreview = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!voice?.preview_url) throw new Error("Esta voz ainda não tem preview.");
 
-    const match = /\/object\/sign\/job-media\/([^?]+)/.exec(voice.preview_url);
-    if (!match) return { url: voice.preview_url };
-
     const pipeline = await import("./video-pipeline.server");
-    const url = await pipeline.refreshSignedUrl(decodeURIComponent(match[1]!), voice.preview_url);
+    const url = await pipeline.refreshMediaUrl(voice.preview_url);
+    if (url === voice.preview_url) return { url };
     await context.supabase.from("voices").update({ preview_url: url }).eq("id", voice.id);
     return { url };
   });
