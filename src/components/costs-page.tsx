@@ -32,6 +32,15 @@ import { useStudio } from "./studio-context";
 
 type PeriodoKey = "hoje" | "7d" | "30d" | "mes" | "custom";
 
+/** Valor especial do filtro de perfil: visão consolidada. */
+const TODOS = "todos";
+
+const lerListaUrl = (chave: string): string[] => {
+  if (typeof window === "undefined") return [];
+  const bruto = new URL(window.location.href).searchParams.get(chave);
+  return bruto ? bruto.split(",").filter(Boolean) : [];
+};
+
 const PERIODO_LABELS: Record<PeriodoKey, string> = {
   hoje: "Hoje",
   "7d": "Últimos 7 dias",
