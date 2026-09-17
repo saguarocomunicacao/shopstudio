@@ -71,6 +71,24 @@ function personReferenceUrls(
   return index > 0 && first ? [first] : [];
 }
 
+/**
+ * Voz do perfil quando ela é da ElevenLabs (clonada ou catálogo). Voz padrão
+ * Azure (ou nada configurado) devolve null e o fluxo antigo segue intacto.
+ */
+async function resolveElevenLabsVoice(
+  supabase: any,
+  voiceRef: string | null,
+): Promise<{ id: string; nome: string; voice_id: string } | null> {
+  if (!voiceRef) return null;
+  const { data } = await supabase
+    .from("voices")
+    .select("id, nome, fonte, voice_id")
+    .eq("id", voiceRef)
+    .maybeSingle();
+  if (!data || data.fonte === "azure_padrao" || !data.voice_id) return null;
+  return { id: data.id, nome: data.nome, voice_id: data.voice_id };
+}
+
 /** Carrega o job, valida permissão de pipeline e devolve os dados. */
 async function loadJob(supabase: any, jobId: string): Promise<JobRow> {
   const { data: job, error } = await supabase
