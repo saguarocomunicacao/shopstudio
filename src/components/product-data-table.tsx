@@ -50,12 +50,15 @@ function ProductImage({ item }: { item: ProductTableItem }) {
 
 function ProductName({ item }: { item: ProductTableItem }) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span className="block min-w-0 truncate font-semibold">{item.name}</span>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-sm">{item.name}</TooltipContent>
-    </Tooltip>
+    <div className="min-w-0">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="block min-w-0 truncate font-semibold">{item.name}</span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-sm">{item.name}</TooltipContent>
+      </Tooltip>
+      {item.sellerName ? <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{item.sellerName}</span> : null}
+    </div>
   );
 }
 
