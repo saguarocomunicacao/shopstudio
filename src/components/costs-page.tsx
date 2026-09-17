@@ -247,11 +247,11 @@ export function CostsPage() {
           <>
             <div className="grid gap-1">
               <label className="text-xs font-semibold text-muted-foreground">Início</label>
-              <Input type="date" value={de} onChange={(e) => setDe(e.target.value)} className="w-40 bg-background" />
+              <Input type="date" value={de} onChange={(e) => setDe(e.target.value)} className="w-40" />
             </div>
             <div className="grid gap-1">
               <label className="text-xs font-semibold text-muted-foreground">Fim</label>
-              <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-40 bg-background" />
+              <Input type="date" value={ate} onChange={(e) => setAte(e.target.value)} className="w-40" />
             </div>
           </>
         )}

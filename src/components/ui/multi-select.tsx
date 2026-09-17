@@ -67,7 +67,10 @@ export function MultiSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("justify-between gap-2 bg-background font-semibold", className)}
+          className={cn(
+            "justify-between gap-2 h-10 w-full rounded-lg border-0 bg-input px-3 py-2 text-sm font-medium text-foreground hover:bg-input",
+            className,
+          )}
         >
           <span className="truncate text-left">{resumo}</span>
           <span className="flex shrink-0 items-center gap-1">
