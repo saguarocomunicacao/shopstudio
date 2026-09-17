@@ -97,7 +97,8 @@ export function ProfilesPage() {
       ? { ...emptyForm, name: p.name, handle: p.handle, niche: p.niche, categoryId: p.category_id ?? "", followers: String(p.followers), status: p.status }
       : emptyForm;
     setForm(base);
-    setAvatarUrl(null);
+    setAvatarItems([]);
+    setAvatarSource("ia");
     setAvatarDescription("");
     if (!p) return;
     let cancelled = false;
@@ -112,12 +113,17 @@ export function ProfilesPage() {
       });
     void supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, takes_count, gemini_model, veo_model, take_duration")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration")
       .eq("profile_id", p.id)
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled || !data) return;
-        setAvatarUrl(data.avatar_reference_url);
+        const list = Array.isArray(data.avatar_reference_urls)
+          ? (data.avatar_reference_urls as unknown[]).filter((u): u is string => typeof u === "string" && !!u)
+          : [];
+        const urls = list.length ? list : data.avatar_reference_url ? [data.avatar_reference_url] : [];
+        setAvatarItems(urls.slice(0, MAX_AVATARS).map((url) => ({ preview: url, url })));
+        if (urls.length > 1) setAvatarSource("upload");
         setForm((f) => ({
           ...f,
           avatarMode: data.avatar_mode,
