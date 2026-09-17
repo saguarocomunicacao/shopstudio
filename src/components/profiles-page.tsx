@@ -18,6 +18,7 @@ import { TONE_OPTIONS } from "@/lib/content";
 import { generateAvatarReference } from "@/lib/video.functions";
 import { formatFollowers } from "@/lib/studio-data";
 import { CategorySelect } from "./category-select";
+import { ProfilePrompts } from "./profile-prompts";
 import { useStudio } from "./studio-context";
 
 const statusClass: Record<string, string> = { Ativo: "status-lime", Pausado: "status-neutral" };
