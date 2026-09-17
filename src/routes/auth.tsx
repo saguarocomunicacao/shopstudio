@@ -10,10 +10,10 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Entrar — Creator Studio" },
-      { name: "description", content: "Acesse o painel de gestão de conteúdo afiliado do Creator Studio." },
-      { property: "og:title", content: "Entrar — Creator Studio" },
-      { property: "og:description", content: "Acesse o painel de gestão de conteúdo afiliado do Creator Studio." },
+      { title: "Entrar — Shop Studio" },
+      { name: "description", content: "Acesse o painel de gestão de conteúdo afiliado do Shop Studio." },
+      { property: "og:title", content: "Entrar — Shop Studio" },
+      { property: "og:description", content: "Acesse o painel de gestão de conteúdo afiliado do Shop Studio." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -69,7 +69,7 @@ function AuthPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
           <span className="grid h-12 w-12 place-items-center rounded-full bg-foreground text-sm font-black text-background">CS</span>
-          <h1 className="glitch-logo text-2xl font-black" data-text="Creator Studio">Creator Studio</h1>
+          <h1 className="glitch-logo text-2xl font-black" data-text="Shop Studio">Shop Studio</h1>
           <p className="text-sm text-muted-foreground">Conteúdo afiliado, sob controle.</p>
         </div>
 
