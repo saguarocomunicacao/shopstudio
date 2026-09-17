@@ -219,7 +219,7 @@
 .app-transition-content { position:relative; display:flex; width:min(82vw,30rem); flex-direction:column; align-items:center; text-align:center; }
 .app-transition-mark { position:relative; display:grid; min-height:5rem; width:100%; place-items:center; animation:transition-rise 500ms cubic-bezier(.2,.8,.2,1) both; }
 .app-transition-logo { position:relative; z-index:1; width:min(15rem,68vw); height:auto; }
-.app-transition-orbit { position:absolute; width:18rem; height:4.5rem; border:1px solid color-mix(in oklab,var(--landing-mint) 28%,transparent); border-radius:50%; transform:rotate(-8deg); box-shadow:10px 8px 0 -9px var(--landing-plasma-c), -10px -8px 0 -9px var(--landing-mint); animation:transition-orbit 2.4s linear infinite; }
+
 .app-transition-copy { margin-top:2.75rem; animation:transition-rise 500ms 160ms cubic-bezier(.2,.8,.2,1) both; }
 .app-transition-copy h1 { margin-top:.75rem; font-family:var(--font-display); font-size:clamp(1.45rem,4vw,2rem); font-weight:700; letter-spacing:0; }
 .app-transition-copy p { margin-top:.4rem; color:var(--landing-muted); font-size:.875rem; }
@@ -230,7 +230,7 @@
 @keyframes transition-reveal { from { opacity:0; } to { opacity:1; } }
 @keyframes transition-rise { from { opacity:0; transform:translateY(12px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
 @keyframes transition-progress { from { transform:scaleX(0); } to { transform:scaleX(1); } }
-@keyframes transition-orbit { from { transform:rotate(-8deg); } to { transform:rotate(352deg); } }
+
 @keyframes transition-drift { from { transform:translate3d(0,0,0); } to { transform:translate3d(3rem,2rem,0); } }
 @keyframes transition-check { from { opacity:0; transform:scale(.7); } to { opacity:1; transform:scale(1); } }
 
@@ -290,7 +290,7 @@
 @media (max-width:639px) { .landing-phone-stage { max-width:340px; } }
 @media (min-width:768px) { .landing-assembly-line { background:linear-gradient(to right,var(--landing-mint),var(--landing-plasma-c)); } }
 @media (prefers-reduced-motion:reduce) {
-  .landing-float,.app-transition,.app-transition-mark,.app-transition-copy,.app-transition-check,.app-transition-progress span,.app-transition-orbit,.app-transition-glow { animation:none; }
+  .landing-float,.app-transition,.app-transition-mark,.app-transition-copy,.app-transition-check,.app-transition-progress span,.app-transition-glow { animation:none; }
   .app-transition-check { opacity:1; }
   .landing-magenta,.landing-outline { transition:none; }
   .landing-magenta:hover,.landing-outline:hover { transform:none; }
