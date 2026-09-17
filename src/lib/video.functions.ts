@@ -48,7 +48,7 @@ const input = (data: unknown) => z.object({ jobId: z.string().uuid() }).parse(da
 /** Lista de URLs de referência da pessoa salvas no perfil (até 3). */
 export function profileAvatarUrls(settings: { avatar_reference_url?: string | null; avatar_reference_urls?: unknown } | null): string[] {
   const list = Array.isArray(settings?.avatar_reference_urls)
-    ? (settings!.avatar_reference_urls as unknown[]).filter((u): u is string => typeof u === "string" && !!u)
+    ? settings.avatar_reference_urls.filter((u): u is string => typeof u === "string" && !!u)
     : [];
   if (list.length) return list.slice(0, 3);
   return settings?.avatar_reference_url ? [settings.avatar_reference_url] : [];
