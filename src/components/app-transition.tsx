@@ -49,7 +49,11 @@ export function AppTransitionProvider({ children }: { children: ReactNode }) {
     if (activeRef.current) return;
     activeRef.current = true;
     setMode(nextMode);
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 1200));
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 950));
+    window.setTimeout(() => {
+      setMode(null);
+      activeRef.current = false;
+    }, 450);
   }, []);
 
   const value = useMemo(() => ({ active: mode !== null, runTransition }), [mode, runTransition]);

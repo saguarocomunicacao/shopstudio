@@ -292,4 +292,9 @@
 .landing-float-three { animation-delay:-4.1s; }
 @keyframes landing-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 @media (max-width:639px) { .landing-phone-stage { max-width:340px; } }
-@media (prefers-reduced-motion:reduce) { .landing-float { animation:none; } .landing-magenta,.landing-outline { transition:none; } .landing-magenta:hover,.landing-outline:hover { transform:none; } }
+@media (prefers-reduced-motion:reduce) {
+  .landing-float,.app-transition,.app-transition-mark,.app-transition-copy,.app-transition-check,.app-transition-progress span,.app-transition-orbit,.app-transition-glow { animation:none; }
+  .app-transition-check { opacity:1; }
+  .landing-magenta,.landing-outline { transition:none; }
+  .landing-magenta:hover,.landing-outline:hover { transform:none; }
+}
