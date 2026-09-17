@@ -84,8 +84,9 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
           source: i.source,
           external_id: i.externalId,
           created_by: userId,
+          profile_id: activeProfileId,
         })),
-        { onConflict: "source,external_id", ignoreDuplicates: true },
+        { onConflict: "profile_id,source,external_id", ignoreDuplicates: true },
       );
       if (error) throw new Error(error.message);
       return fresh.length;
@@ -93,7 +94,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
     onSuccess: (count) => {
       toast.success(`${count} produto(s) salvo(s) no catálogo.`);
       setSelected({});
-      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
     },
     onError: (e) => toast.error(errMessage(e)),
   });

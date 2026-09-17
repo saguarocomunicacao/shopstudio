@@ -26,7 +26,6 @@ function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; a
 type FormState = { name: string; niche: string; categoryId: string; price: string; commission: string; url: string; hype: string; status: string };
 const emptyForm: FormState = { name: "", niche: "", categoryId: "", price: "", commission: "", url: "", hype: "50", status: "Ativo" };
 
-const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 // Mascara o valor digitado no formato BRL (R$ 1.234,56) enquanto o usuario digita.
 function maskPrice(raw: string): string {
