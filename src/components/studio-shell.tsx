@@ -20,7 +20,7 @@ import logoMarkDarkAsset from "@/assets/logo-mark-dark.png.asset.json";
 const items: readonly (readonly [string, string, typeof CircleGauge, ModuleKey | null])[] = [
   ["Dashboard", "/app", CircleGauge, null], ["Perfis", "/app/perfis", UserSquare2, "perfis"], ["Produtos", "/app/produtos", Package, "produtos"],
   ["Pipeline", "/app/pipeline", KanbanSquare, "pipeline"], ["Vídeos", "/app/videos", Clapperboard, "videos"], ["Rascunhos", "/app/rascunhos", FileClock, "rascunhos"],
-  ["Métricas", "/app/metricas", BarChart3, "metricas"], ["Custos", "/app/custos", Wallet, "metricas"], ["Equipe", "/app/equipe", Users, "equipe"], ["Prompts", "/app/prompts", Wand2, "prompts" as never], ["Aprovações", "/app/aprovacoes", ShieldCheck, "aprovacoes" as never], ["Configurações", "/app/configuracoes", Settings, "configuracoes"],
+  ["Métricas", "/app/metricas", BarChart3, "metricas"], ["Custos", "/app/custos", Wallet, "custos"], ["Equipe", "/app/equipe", Users, "equipe"], ["Prompts", "/app/prompts", Wand2, "prompts" as never], ["Aprovações", "/app/aprovacoes", ShieldCheck, "aprovacoes" as never], ["Configurações", "/app/configuracoes", Settings, "configuracoes"],
 ];
 
 const titles: Record<string, string> = { "/app": "Visão geral", "/app/perfis": "Perfis", "/app/produtos": "Produtos em alta", "/app/pipeline": "Pipeline de conteúdo", "/app/videos": "Biblioteca de vídeos", "/app/rascunhos": "Rascunhos", "/app/metricas": "Métricas", "/app/custos": "Custos", "/app/equipe": "Equipe e permissões", "/app/prompts": "Prompts do sistema", "/app/aprovacoes": "Aprovação de cadastros", "/app/configuracoes": "Configurações" };

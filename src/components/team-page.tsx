@@ -284,7 +284,7 @@ function RoleDialog({ open, role, permissions, rolePermissions, onClose, onSaved
                     <td className="py-3 font-semibold">{MODULE_LABELS[m]}</td>
                     {ACTIONS.map((a) => {
                       const id = permId(m, a);
-                      return <td key={a} className="py-3 text-center"><Checkbox className="mx-auto" aria-label={`${MODULE_LABELS[m]} ${ACTION_LABELS[a]}`} checked={!!id && selected.has(id)} onCheckedChange={() => toggle(id)} /></td>;
+                      return <td key={a} className="py-3 text-center"><Checkbox className="mx-auto" aria-label={`${MODULE_LABELS[m]} ${ACTION_LABELS[a]}`} disabled={!id} checked={!!id && selected.has(id)} onCheckedChange={() => toggle(id)} /></td>;
                     })}
                   </tr>
                 ))}

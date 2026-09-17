@@ -111,11 +111,14 @@ function useJobsDoPeriodo(jobIds: string[]) {
 }
 
 export function CostsPage() {
-  const { profiles, activeProfileId, isAdmin } = useStudio();
+  const { profiles, activeProfileId, isAdmin, can } = useStudio();
+  const podeVer = isAdmin || can("custos", "visualizar", activeProfileId);
+  const podeVerGlobal = isAdmin || can("custos", "ver_global");
   const [periodo, setPeriodo] = useState<PeriodoKey>("mes");
   const [de, setDe] = useState(iso(startOfToday()));
   const [ate, setAte] = useState(iso(startOfToday()));
-  const [todosPerfis, setTodosPerfis] = useState(false);
+  const [todosPerfisRaw, setTodosPerfis] = useState(false);
+  const todosPerfis = todosPerfisRaw && podeVerGlobal;
   const [etapa, setEtapa] = useState<EtapaVisual | "todas">("todas");
   const [ordem, setOrdem] = useState<"total" | "data">("total");
   const [detalhe, setDetalhe] = useState<DbJob | null>(null);
@@ -157,6 +160,20 @@ export function CostsPage() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  if (!podeVer) {
+    return (
+      <div className="grid min-h-[60vh] place-items-center">
+        <div className="panel max-w-md text-center">
+          <span className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-full bg-secondary text-primary">
+            <Users className="h-5 w-5" />
+          </span>
+          <h2 className="text-xl font-black">Sem acesso aos custos</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Você não tem permissão para ver os custos deste perfil. Peça acesso a um administrador.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!profiles.length) {
     return (
@@ -220,7 +237,7 @@ export function CostsPage() {
               <SelectItem value="ativo">
                 {activeProfileId ? profiles.find((p) => p.id === activeProfileId)?.name ?? "Perfil ativo" : "Perfil ativo"}
               </SelectItem>
-              <SelectItem value="todos">Todos os perfis</SelectItem>
+              {podeVerGlobal && <SelectItem value="todos">Todos os perfis</SelectItem>}
             </SelectContent>
           </Select>
         </div>
@@ -272,7 +289,7 @@ export function CostsPage() {
             <Card label="Buscas de produto" value={String(data.buscasCount)} hint="inclui atualizações de categorias" />
           </div>
 
-          {isAdmin && teto && (
+          {podeVerGlobal && teto && (
             <div className="panel grid gap-2">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="text-sm font-black">Orçamento do mês</p>
