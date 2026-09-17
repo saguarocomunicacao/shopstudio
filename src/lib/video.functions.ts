@@ -339,6 +339,15 @@ async function runStep(
         .from("jobs")
         .update({ scenes, gemini_images_count: (job.gemini_images_count ?? 0) + 1 })
         .eq("id", job.id);
+      await consumo.recordConsumo({
+        jobId: job.id,
+        profileId: job.profile_id,
+        etapa: "cena_gemini",
+        modelo: settings.gemini_model,
+        quantidade: 1,
+        unidade: "imagem",
+        metadados: { cena: index + 1, origem: "geracao_inicial" },
+      });
       return { stage: "cenas", done: false, progress: { done: index + 1, total: scenes.length } };
     }
     // Imagens prontas: pausa para revisão humana antes de gastar com a animação.
