@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import logoLightAsset from "@/assets/logo-light.png.asset.json";
 
 export const Route = createFileRoute("/entrar")({
   ssr: false,
@@ -68,8 +69,9 @@ function AuthPage() {
     <main className="grid min-h-screen place-items-center bg-background px-4 py-10 text-foreground">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <span className="grid h-12 w-12 place-items-center rounded-full bg-foreground text-sm font-black text-background">CS</span>
-          <h1 className="glitch-logo text-2xl font-black" data-text="Shop Studio">Shop Studio</h1>
+          <img src={logoLightAsset.url} alt="Shop Studio" className="h-10 w-auto dark:hidden" />
+          <span className="hidden h-12 w-12 place-items-center rounded-full bg-foreground text-sm font-black text-background dark:grid">CS</span>
+          <h1 className="glitch-logo text-2xl font-black hidden dark:block" data-text="Shop Studio">Shop Studio</h1>
           <p className="text-sm text-muted-foreground">Conteúdo afiliado, sob controle.</p>
         </div>
 
