@@ -12,14 +12,16 @@ export type EtapaConsumo =
   | "animacao_veo"
   | "montagem_json2video"
   | "busca_kalodata"
-  | "roteiro_texto";
+  | "roteiro_texto"
+  | "narracao_elevenlabs";
 export type UnidadeTarifa =
   | "imagem"
   | "segundo_video"
   | "credito_montagem"
   | "bloco_linhas_kalodata"
   | "token_input"
-  | "token_output";
+  | "token_output"
+  | "mil_caracteres";
 
 export type ConsumoEventoRow = {
   id: string;
@@ -81,6 +83,7 @@ export const ETAPA_LABELS: Record<EtapaConsumo, string> = {
   montagem_json2video: "Montagem",
   busca_kalodata: "Busca de produto",
   roteiro_texto: "Roteiro",
+  narracao_elevenlabs: "Narração (ElevenLabs)",
 };
 
 export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
@@ -90,6 +93,7 @@ export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
   bloco_linhas_kalodata: (q) => `${Number(q.toFixed(2))} pontos`,
   token_input: (q) => `${Math.round(q)} tokens`,
   token_output: (q) => `${Math.round(q)} tokens`,
+  mil_caracteres: (q) => `${Number(q.toFixed(2))} mil caracteres`,
 };
 
 /** Tarifa vigente: mesmo modelo e unidade, ativa, com a vigência mais recente até a data. */
@@ -194,6 +198,7 @@ export function computeJobCusto(eventos: ConsumoEventoRow[], tarifas: TarifaRow[
     "cena_gemini",
     "animacao_veo",
     "montagem_json2video",
+    "narracao_elevenlabs",
     "busca_kalodata",
   ];
   const etapas = ordem.map((e) => porEtapa.get(e)).filter((e): e is CustoEtapa => !!e);

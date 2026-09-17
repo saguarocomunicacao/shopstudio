@@ -8,7 +8,7 @@ export type ConsumoEvento = {
   jobId?: string | null;
   /** Nulo em consumo global, como a atualização de categorias oficiais. */
   profileId: string | null;
-  etapa: "cena_gemini" | "animacao_veo" | "montagem_json2video" | "busca_kalodata" | "roteiro_texto";
+  etapa: "cena_gemini" | "animacao_veo" | "montagem_json2video" | "busca_kalodata" | "roteiro_texto" | "narracao_elevenlabs";
   modelo: string;
   quantidade: number | null;
   unidade:
@@ -17,7 +17,8 @@ export type ConsumoEvento = {
     | "credito_montagem"
     | "bloco_linhas_kalodata"
     | "token_input"
-    | "token_output";
+    | "token_output"
+    | "mil_caracteres";
   metadados?: Record<string, unknown>;
 };
 

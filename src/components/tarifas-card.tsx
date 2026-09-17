@@ -14,7 +14,8 @@ type Unidade =
   | "credito_montagem"
   | "bloco_linhas_kalodata"
   | "token_input"
-  | "token_output";
+  | "token_output"
+  | "mil_caracteres";
 
 type Tarifa = {
   id: string;
@@ -33,6 +34,7 @@ const UNIDADES: { value: Unidade; label: string }[] = [
   { value: "bloco_linhas_kalodata", label: "Por 100 linhas de busca" },
   { value: "token_input", label: "Por token de entrada (texto)" },
   { value: "token_output", label: "Por token de saída (texto)" },
+  { value: "mil_caracteres", label: "Por mil caracteres (narração)" },
 ];
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");

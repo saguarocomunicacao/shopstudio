@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LanguageSelect } from "./language-select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { VoiceSelect } from "@/components/voice-select";
 import type { DbProfile } from "@/lib/access";
 import { TONE_OPTIONS } from "@/lib/content";
 import { generateAvatarReference, saveAvatarReferences } from "@/lib/video.functions";
@@ -67,12 +68,12 @@ const readFile = (file: File) =>
 type FormState = {
   name: string; handle: string; niche: string; categoryId: string; followers: string; status: string;
   tone: string; language: string; notes: string;
-  avatarMode: string; takes: string; duration: string; geminiModel: string; veoModel: string;
+  avatarMode: string; takes: string; duration: string; geminiModel: string; veoModel: string; voiceRef: string | null;
 };
 const emptyForm: FormState = {
   name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo",
   tone: "descontraido", language: "pt-BR", notes: "",
-  avatarMode: "livre", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value,
+  avatarMode: "livre", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value, voiceRef: null,
 };
 
 export function ProfilesPage() {
@@ -114,7 +115,7 @@ export function ProfilesPage() {
       });
     void supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration, voice_ref")
       .eq("profile_id", p.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -132,6 +133,7 @@ export function ProfilesPage() {
           duration: String(data.take_duration),
           geminiModel: data.gemini_model,
           veoModel: data.veo_model,
+          voiceRef: data.voice_ref ?? null,
         }));
       });
     return () => { cancelled = true; };
@@ -170,6 +172,7 @@ export function ProfilesPage() {
           take_duration: Number(values.duration),
           gemini_model: values.geminiModel,
           veo_model: values.veoModel,
+          voice_ref: values.voiceRef,
         },
         { onConflict: "profile_id" },
       );
@@ -382,6 +385,13 @@ export function ProfilesPage() {
                   <SelectTrigger id="p-veo"><SelectValue /></SelectTrigger>
                   <SelectContent>{VEO_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                 </Select>
+              </div>
+              <div className="sm:col-span-2">
+                <VoiceSelect
+                  profileId={dialog.profile?.id ?? null}
+                  value={form.voiceRef}
+                  onChange={(voiceRef) => setForm({ ...form, voiceRef })}
+                />
               </div>
             </div>
 

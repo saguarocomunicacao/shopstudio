@@ -22,6 +22,7 @@ export const ETAPA_VISUAL_LABELS: Record<EtapaVisual, string> = {
   cena_gemini: "Cenas (Gemini)",
   animacao_veo: "Animação (Veo)",
   montagem_json2video: "Montagem (JSON2Video)",
+  narracao_elevenlabs: "Narração (ElevenLabs)",
   busca_kalodata: "Buscas (Kalodata)",
   categorias_kalodata: "Categorias (Kalodata)",
 };
@@ -31,6 +32,7 @@ export const ETAPA_VISUAL_ORDEM: EtapaVisual[] = [
   "cena_gemini",
   "animacao_veo",
   "montagem_json2video",
+  "narracao_elevenlabs",
   "busca_kalodata",
   "categorias_kalodata",
 ];
@@ -40,6 +42,7 @@ const CONSUMO_LABEL: Record<EtapaVisual, (q: number, eventos: number) => string>
   cena_gemini: (q) => `${Math.round(q)} ${Math.round(q) === 1 ? "imagem" : "imagens"}`,
   animacao_veo: (q) => `${Math.round(q)} seg`,
   montagem_json2video: (q) => `${Number(q.toFixed(2))} créditos`,
+  narracao_elevenlabs: (q) => `${Number(q.toFixed(2))} mil caracteres`,
   busca_kalodata: (_q, eventos) => `${eventos} ${eventos === 1 ? "chamada" : "chamadas"}`,
   categorias_kalodata: (_q, eventos) => `${eventos} ${eventos === 1 ? "chamada" : "chamadas"}`,
 };

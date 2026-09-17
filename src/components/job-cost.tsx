@@ -3,12 +3,13 @@ import { ETAPA_LABELS, UNIDADE_LABELS, brl, useJobCustos, type CustoEtapa, type 
 import { useStudio } from "./studio-context";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const unidadeDaEtapa: Record<EtapaConsumo, "imagem" | "segundo_video" | "credito_montagem" | "bloco_linhas_kalodata" | "token_input"> = {
+const unidadeDaEtapa: Record<EtapaConsumo, "imagem" | "segundo_video" | "credito_montagem" | "bloco_linhas_kalodata" | "token_input" | "mil_caracteres"> = {
   cena_gemini: "imagem",
   animacao_veo: "segundo_video",
   montagem_json2video: "credito_montagem",
   busca_kalodata: "bloco_linhas_kalodata",
   roteiro_texto: "token_input",
+  narracao_elevenlabs: "mil_caracteres",
 };
 
 export function useJobCusto(jobId: string): CustoJob | null {
