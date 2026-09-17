@@ -58,9 +58,15 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
 
   const save = useMutation({
     mutationFn: async (items: Found[]) => {
-      const fresh = items.filter((i) => !saved.has(`${i.source}:${i.externalId}`));
+      const seen = new Set<string>();
+      const fresh = items.filter((i) => {
+        const key = `${i.source}:${i.externalId}`;
+        if (saved.has(key) || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
       if (!fresh.length) throw new Error("Todos os selecionados já estão no catálogo.");
-      const { error } = await supabase.from("products").insert(
+      const { error } = await supabase.from("products").upsert(
         fresh.map((i) => ({
           name: i.name,
           niche: i.category,
@@ -80,6 +86,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
           external_id: i.externalId,
           created_by: userId,
         })),
+        { onConflict: "source,external_id", ignoreDuplicates: true },
       );
       if (error) throw new Error(error.message);
       return fresh.length;
