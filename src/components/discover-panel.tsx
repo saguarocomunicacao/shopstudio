@@ -170,7 +170,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
 
       {results !== null && hasMore && (
         <div className="flex justify-center">
-          <Button variant="secondary" disabled={run.isPending} onClick={() => run.mutate(page + 1)}>Carregar mais</Button>
+          <Button variant="secondary" disabled={run.isPending} onClick={() => run.mutate({ nextPage: page + 1, id: searchId.current })}>Carregar mais</Button>
         </div>
       )}
 
