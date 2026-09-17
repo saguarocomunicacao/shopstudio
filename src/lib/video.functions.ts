@@ -564,9 +564,57 @@ export const generateAvatarReference = createServerFn({ method: "POST" })
 
     const { error } = await supabase
       .from("profile_video_settings")
-      .update({ avatar_reference_url: stored.url })
+      .update({ avatar_reference_url: stored.url, avatar_reference_urls: [stored.url] })
       .eq("profile_id", data.profileId);
     if (error) throw new Error(error.message);
 
     return { url: stored.url };
+  });
+
+/** Salva até 3 fotos enviadas pelo usuário como referência da pessoa fixa. */
+export const saveAvatarReferences = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        profileId: z.string().uuid(),
+        images: z
+          .array(
+            z.object({
+              base64: z.string().min(16).max(9_000_000),
+              mimeType: z.enum(["image/jpeg", "image/png", "image/jpg", "image/webp"]),
+            }),
+          )
+          .max(3),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+
+    // A própria RLS de profile_video_settings exige a permissão perfis:editar.
+    const { error: guardError } = await supabase
+      .from("profile_video_settings")
+      .upsert({ profile_id: data.profileId, avatar_mode: "fixo" }, { onConflict: "profile_id" });
+    if (guardError) throw new Error("Você não tem permissão para editar este perfil.");
+
+    const pipeline = await import("./video-pipeline.server");
+    const urls: string[] = [];
+    for (const [i, image] of data.images.entries()) {
+      const ext = image.mimeType === "image/png" ? "png" : image.mimeType === "image/webp" ? "webp" : "jpg";
+      const stored = await pipeline.storeMedia(
+        `avatars/${data.profileId}/${i + 1}.${ext}`,
+        Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0)),
+        image.mimeType,
+      );
+      urls.push(stored.url);
+    }
+
+    const { error } = await supabase
+      .from("profile_video_settings")
+      .update({ avatar_reference_urls: urls, avatar_reference_url: urls[0] ?? null })
+      .eq("profile_id", data.profileId);
+    if (error) throw new Error(error.message);
+
+    return { urls };
   });
