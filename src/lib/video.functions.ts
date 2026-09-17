@@ -294,7 +294,7 @@ async function runStep(
     supabase.from("profiles").select("name, niche").eq("id", job.profile_id).maybeSingle(),
     supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, takes_count, gemini_model, veo_model, take_duration")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration")
       .eq("profile_id", job.profile_id)
       .maybeSingle(),
   ]);
@@ -351,14 +351,12 @@ async function runStep(
         const productImage = await pipeline.fetchAsBase64(product.image_url);
         references.push({ base64: productImage.base64, mimeType: productImage.mimeType });
       }
-      if (settings.avatar_mode === "fixo" && settings.avatar_reference_url) {
-        const avatar = await pipeline.fetchAsBase64(settings.avatar_reference_url);
-        references.push({ base64: avatar.base64, mimeType: avatar.mimeType });
-      }
+      const personRefs = await pipeline.loadPersonReferences(
+        personReferenceUrls(settingsRow, scenes, index),
+      );
+      references.push(...personRefs);
 
-      const promptSuffix = settings.avatar_mode === "fixo" && settings.avatar_reference_url
-        ? " Use the same person shown in the reference portrait, keeping face, hair and body consistent."
-        : "";
+      const promptSuffix = personRefs.length ? pipeline.SAME_PERSON_SUFFIX : "";
       const generated = await pipeline.generateSceneImage({
         model: settings.gemini_model,
         prompt: `${scene.image_prompt} Vertical 9:16 framing. Keep the product identical to the product reference photo.${promptSuffix}`,
