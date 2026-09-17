@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -47,6 +47,19 @@ function maskCommission(raw: string): string {
   return String(num);
 }
 
+const brl = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+/** Produto manual = nao veio de fonte externa (Kalodata). So esses podem ser editados. */
+const isManual = (p: DbProduct) => !p.source;
+
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-1">
+      <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
+      <div className="text-sm font-medium break-words">{children}</div>
+    </div>
+  );
+}
+
 export function ProductsPage() { return <ProfileGate><ProductsContent /></ProfileGate>; }
 
 function ProductsContent() {
@@ -63,6 +76,7 @@ function ProductsContent() {
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
   const [tab, setTab] = useState<"catalogo" | "descobrir">("catalogo");
   const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
+  const [details, setDetails] = useState<DbProduct | null>(null);
 
   const canCreateJob = can("pipeline", "criar", activeProfileId);
 
@@ -154,7 +168,7 @@ function ProductsContent() {
           renderActions={(p) => (
             <>
               {canCreateJob && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
-               {canEdit && (
+               {canEdit && isManual(p) ? (
                  <Tooltip>
                    <TooltipTrigger asChild>
                      <Button variant="ghost" size="icon" className="size-8" onClick={() => setDialog({ open: true, product: p })} aria-label={`Editar ${p.name}`}>
@@ -162,6 +176,15 @@ function ProductsContent() {
                      </Button>
                    </TooltipTrigger>
                    <TooltipContent>Editar</TooltipContent>
+                 </Tooltip>
+               ) : (
+                 <Tooltip>
+                   <TooltipTrigger asChild>
+                     <Button variant="ghost" size="icon" className="size-8" onClick={() => setDetails(p)} aria-label={`Ver detalhes de ${p.name}`}>
+                       <Eye className="size-4" />
+                     </Button>
+                   </TooltipTrigger>
+                   <TooltipContent>Ver detalhes</TooltipContent>
                  </Tooltip>
                )}
                {canRemove && (
@@ -205,6 +228,38 @@ function ProductsContent() {
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDialog({ open: false, product: null })}>Cancelar</Button>
             <Button disabled={save.isPending} onClick={() => save.mutate({ product: dialog.product, values: form })}>{dialog.product ? "Salvar" : "Adicionar"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!details} onOpenChange={(open) => !open && setDetails(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="pr-6 text-left">{details?.name}</DialogTitle></DialogHeader>
+          {details && (
+            <div className="grid gap-4 py-2">
+              <div className="flex items-center gap-3">
+                {details.image_url ? <img src={details.image_url} alt="" className="size-16 rounded-xl object-cover" /> : null}
+                <p className="text-xs text-muted-foreground">Dados vindos da fonte externa. Somente leitura.</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailRow label="Categoria">{details.niche || "—"}</DetailRow>
+                <DetailRow label="Hype score">{details.hype}</DetailRow>
+                <DetailRow label="Preço">{brl(details.price)}</DetailRow>
+                <DetailRow label="Comissão">
+                  {details.commission}%
+                  <span className="ml-2 font-bold text-primary">{brl(details.price * (details.commission / 100))} por venda</span>
+                </DetailRow>
+                <DetailRow label="Vendas">{details.sales_volume?.toLocaleString("pt-BR") ?? "—"}</DetailRow>
+                <DetailRow label="Crescimento">{details.growth_rate ? `${details.growth_rate}%` : "—"}</DetailRow>
+              </div>
+              <DetailRow label="Link do produto">
+                {details.url ? <a href={details.url} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">{details.url}</a> : "—"}
+              </DetailRow>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setDetails(null)}>Fechar</Button>
+            {canCreateJob && <Button onClick={() => { const p = details; setDetails(null); setUseTarget(p); }}><Sparkles />Usar</Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
