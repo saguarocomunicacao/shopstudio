@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+export type TokenUsage = { input: number; output: number };
+
 export type GeneratedScript = {
   hook: string;
   body: string;
@@ -31,7 +33,7 @@ const schema = {
   required: ["hook", "body", "cta", "caption", "hashtags"],
 } as const;
 
-async function callLovableAi(prompt: string): Promise<GeneratedScript> {
+async function callLovableAi(prompt: string): Promise<{ script: GeneratedScript; usage: TokenUsage }> {
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("A inteligência artificial não está configurada.");
 
@@ -62,6 +64,7 @@ async function callLovableAi(prompt: string): Promise<GeneratedScript> {
   const decoder = new TextDecoder();
   let buffer = "";
   let text = "";
+  const usage: TokenUsage = { input: 0, output: 0 };
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
