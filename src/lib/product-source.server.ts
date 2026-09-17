@@ -107,13 +107,20 @@ const kalodata: ProductSource = {
         language: "pt-BR",
         currency: "BRL",
         date_range: query.dateRange,
-        sort_field: { field: query.sortField, type: "DESC" },
+        sort_field: { field: query.sortField, type: query.sortType ?? "DESC" },
         is_affiliate: 1,
         page: query.page,
         need_image: 1,
+        need_extra: true,
+        need_all: query.needAll ?? false,
       };
       if (query.keyword?.trim()) body["keyword"] = query.keyword.trim();
       if (query.categoryIds?.length) body["category_ids"] = query.categoryIds;
+      if (query.unitPriceRange) body["unit_price_range"] = query.unitPriceRange;
+      if (query.commissionRate) body["commission_rate"] = query.commissionRate;
+      if (query.revenueRange) body["revenue_range"] = query.revenueRange;
+      if (query.launchDate) body["launch_date"] = query.launchDate;
+      if (query.deliveryType) body["delivery_type"] = query.deliveryType;
 
       const response = await fetch(KALODATA_ENDPOINT, {
         method: "POST",
