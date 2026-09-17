@@ -217,8 +217,8 @@ function AssemblyStep({ step, index, progress, reduceMotion }: { step: (typeof a
   return (
     <article className="relative grid grid-cols-[72px_1fr] gap-5 md:block md:text-center">
       <motion.div className={`landing-assembly-node ${done ? "is-done" : ""} relative z-10 grid size-18 place-items-center rounded-full md:mx-auto md:size-24`} style={{ scale: reduceMotion ? 1 : nodeScale }}>
-        <Icon className="size-8 text-landing-text md:size-10" strokeWidth={1.9} aria-hidden="true" />
-        <span className="landing-display absolute -right-1 -top-1 grid size-6 place-items-center rounded-full border border-landing-line bg-landing-bg text-[11px] font-bold text-landing-text">{index + 1}</span>
+        <Icon className={`size-8 md:size-10 ${done ? "text-landing-bg" : "text-landing-text"}`} strokeWidth={1.9} aria-hidden="true" />
+        <span className={`landing-display absolute -right-1 -top-1 grid size-6 place-items-center rounded-full border border-landing-line ${done ? "bg-landing-bg text-landing-done" : "bg-landing-bg text-landing-text"} text-[11px] font-bold`}>{index + 1}</span>
       </motion.div>
       <motion.div className="pt-1.5 md:pt-10" style={{ opacity: reduceMotion ? 1 : textOpacity, y: reduceMotion ? 0 : textY }}>
         <h3 className="landing-display text-lg font-bold md:text-2xl">{step.title}</h3>
