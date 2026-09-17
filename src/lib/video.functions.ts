@@ -266,6 +266,9 @@ async function runStep(
       .maybeSingle(),
   ]);
 
+  const consumo = await import("./consumo.server");
+
+
   const settings = {
     avatar_mode: settingsRow?.avatar_mode ?? "livre",
     avatar_reference_url: settingsRow?.avatar_reference_url ?? null,
