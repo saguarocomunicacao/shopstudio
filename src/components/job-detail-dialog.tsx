@@ -14,6 +14,7 @@ import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/video.functions";
 import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
+import { JobCostSummary } from "./job-cost";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
@@ -125,6 +126,7 @@ export function JobDetailDialog({
           {job && (job.scenes?.length ?? 0) > 0 && (
             <JobScenesReview job={job} canEdit={canEdit && job.status === "cenas_geradas"} />
           )}
+          {job && <JobCostSummary jobId={job.id} />}
           {job && <JobTimeline jobId={job.id} />}
 
 

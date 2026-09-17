@@ -11,6 +11,7 @@ import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
 import { useVideoDriver } from "@/lib/video-driver";
 import { JobDetailDialog } from "./job-detail-dialog";
+import { JobCostBadge } from "./job-cost";
 import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
 import { useDragScroll } from "./use-drag-scroll";
@@ -155,6 +156,7 @@ function PipelineContent() {
                     <p className="text-sm font-bold">{job.title || productName(job.product_id)}</p>
                     <p className="mt-2 text-xs text-muted-foreground">{productName(job.product_id)}</p>
                     <p className="mt-4 text-[11px] text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
+                    <JobCostBadge jobId={job.id} />
                     {job.status === "produto_escolhido" && canEditJob(job) && (
                       <Button
                         size="sm"
