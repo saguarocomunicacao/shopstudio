@@ -181,31 +181,36 @@ const assemblySteps: readonly { title: string; text: string; icon: LucideIcon }[
 function AssemblyLine() {
   const sectionRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start end", "end start"] });
-  const lineProgress = useTransform(scrollYProgress, [0.16, 0.78], [0, 1]);
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
+  const lineProgress = useTransform(scrollYProgress, [0.08, 0.92], [0, 1]);
 
   return (
-    <section ref={sectionRef} id="como-funciona" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-24 lg:px-8 lg:py-32">
-      <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
-      <div className="relative mt-16 md:mt-20">
-        <div className="absolute bottom-8 left-7 top-7 w-0.5 overflow-hidden rounded-full bg-landing-line md:bottom-auto md:left-[10%] md:right-[10%] md:top-8 md:h-0.5 md:w-auto">
-          <motion.div className="landing-assembly-line h-full w-full origin-top md:hidden" style={{ scaleY: reduceMotion ? 1 : lineProgress }} />
-          <motion.div className="landing-assembly-line hidden h-full w-full origin-left md:block" style={{ scaleX: reduceMotion ? 1 : lineProgress }} />
-        </div>
-        <div className="relative grid gap-12 md:grid-cols-5 md:gap-5">
-          {assemblySteps.map((step, index) => <AssemblyStep key={step.title} step={step} index={index} progress={scrollYProgress} reduceMotion={Boolean(reduceMotion)} />)}
+    <section ref={sectionRef} id="como-funciona" className="relative scroll-mt-0 h-[300vh] md:h-[340vh]">
+      <div className="sticky top-0 flex h-screen items-center overflow-hidden">
+        <div className="mx-auto w-full max-w-7xl px-5 py-10 lg:px-8">
+          <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
+          <div className="relative mt-10 md:mt-20">
+            <div className="absolute bottom-8 left-7 top-7 w-0.5 overflow-hidden rounded-full bg-landing-line md:bottom-auto md:left-[10%] md:right-[10%] md:top-8 md:h-0.5 md:w-auto">
+              <motion.div className="landing-assembly-line h-full w-full origin-top md:hidden" style={{ scaleY: reduceMotion ? 1 : lineProgress }} />
+              <motion.div className="landing-assembly-line hidden h-full w-full origin-left md:block" style={{ scaleX: reduceMotion ? 1 : lineProgress }} />
+            </div>
+            <div className="relative grid gap-6 md:grid-cols-5 md:gap-5">
+              {assemblySteps.map((step, index) => <AssemblyStep key={step.title} step={step} index={index} progress={scrollYProgress} reduceMotion={Boolean(reduceMotion)} />)}
+            </div>
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
+
 function AssemblyStep({ step, index, progress, reduceMotion }: { step: (typeof assemblySteps)[number]; index: number; progress: MotionValue<number>; reduceMotion: boolean }) {
-  const threshold = 0.2 + index * 0.12;
-  const nodeOpacity = useTransform(progress, [threshold - 0.035, threshold], [0.35, 1]);
-  const nodeScale = useTransform(progress, [threshold - 0.035, threshold], [0.9, 1]);
-  const textOpacity = useTransform(progress, [threshold, threshold + 0.055], [0, 1]);
-  const textY = useTransform(progress, [threshold, threshold + 0.055], [10, 0]);
+  const threshold = 0.16 + index * 0.16;
+  const nodeOpacity = useTransform(progress, [threshold - 0.07, threshold], [0.35, 1]);
+  const nodeScale = useTransform(progress, [threshold - 0.07, threshold], [0.9, 1]);
+  const textOpacity = useTransform(progress, [threshold, threshold + 0.08], [0, 1]);
+  const textY = useTransform(progress, [threshold, threshold + 0.08], [10, 0]);
   const Icon = step.icon;
 
   return (
