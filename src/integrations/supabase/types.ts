@@ -526,6 +526,7 @@ export type Database = {
           takes_count: number
           updated_at: string
           veo_model: string
+          voice_ref: string | null
         }
         Insert: {
           avatar_mode?: string
@@ -538,6 +539,7 @@ export type Database = {
           takes_count?: number
           updated_at?: string
           veo_model?: string
+          voice_ref?: string | null
         }
         Update: {
           avatar_mode?: string
@@ -550,6 +552,7 @@ export type Database = {
           takes_count?: number
           updated_at?: string
           veo_model?: string
+          voice_ref?: string | null
         }
         Relationships: [
           {
@@ -557,6 +560,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_video_settings_voice_ref_fkey"
+            columns: ["voice_ref"]
+            isOneToOne: false
+            referencedRelation: "voices"
             referencedColumns: ["id"]
           },
         ]
@@ -797,6 +807,50 @@ export type Database = {
           },
         ]
       }
+      voices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          fonte: string
+          genero: string | null
+          id: string
+          nome: string
+          preview_url: string | null
+          profile_id: string | null
+          voice_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          fonte: string
+          genero?: string | null
+          id?: string
+          nome: string
+          preview_url?: string | null
+          profile_id?: string | null
+          voice_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          fonte?: string
+          genero?: string | null
+          id?: string
+          nome?: string
+          preview_url?: string | null
+          profile_id?: string | null
+          voice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voices_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -813,6 +867,7 @@ export type Database = {
         | "montagem_json2video"
         | "busca_kalodata"
         | "roteiro_texto"
+        | "narracao_elevenlabs"
       job_status:
         | "novo"
         | "produto_escolhido"
@@ -830,6 +885,7 @@ export type Database = {
         | "bloco_linhas_kalodata"
         | "token_input"
         | "token_output"
+        | "mil_caracteres"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -963,6 +1019,7 @@ export const Constants = {
         "montagem_json2video",
         "busca_kalodata",
         "roteiro_texto",
+        "narracao_elevenlabs",
       ],
       job_status: [
         "novo",
@@ -982,6 +1039,7 @@ export const Constants = {
         "bloco_linhas_kalodata",
         "token_input",
         "token_output",
+        "mil_caracteres",
       ],
     },
   },
