@@ -201,6 +201,17 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
       .eq("id", job.id);
     if (error) throw new Error(error.message);
 
+    const { recordConsumo } = await import("./consumo.server");
+    await recordConsumo({
+      jobId: job.id,
+      profileId: job.profile_id,
+      etapa: "cena_gemini",
+      modelo: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
+      quantidade: 1,
+      unidade: "imagem",
+      metadados: { cena: data.index + 1, origem: "regeneracao" },
+    });
+
     return { url: stored.url };
   });
 
