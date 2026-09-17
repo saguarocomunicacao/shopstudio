@@ -292,9 +292,50 @@
 @keyframes landing-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 @media (max-width:639px) { .landing-phone-stage { max-width:340px; } }
 @media (min-width:768px) { .landing-assembly-line { background:var(--landing-done); } }
+.route-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklab, oklch(0.16 0.02 280) 72%, transparent);
+  backdrop-filter: blur(10px) saturate(130%);
+  animation: route-loader-in 140ms ease-out both;
+}
+.route-loader-leaving { animation: route-loader-out 260ms ease-in both; pointer-events: none; }
+.route-loader-mark { position: relative; display: grid; width: 7.5rem; height: 7.5rem; place-items: center; }
+.route-loader-logo {
+  position: relative;
+  z-index: 1;
+  width: 3.75rem;
+  height: 3.75rem;
+  object-fit: contain;
+  animation: route-loader-breathe 1.8s ease-in-out infinite, route-loader-glow 2.4s ease-in-out infinite;
+}
+.route-loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: conic-gradient(from 0deg, transparent 0deg, var(--brand-cyan) 120deg, var(--secondary-brand) 260deg, transparent 330deg);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  animation: route-loader-spin 1.1s linear infinite;
+  opacity: .9;
+}
+@keyframes route-loader-in { from { opacity:0; } to { opacity:1; } }
+@keyframes route-loader-out { from { opacity:1; } to { opacity:0; } }
+@keyframes route-loader-spin { to { transform: rotate(360deg); } }
+@keyframes route-loader-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+@keyframes route-loader-glow {
+  0%,100% { filter: drop-shadow(0 0 10px color-mix(in oklab, var(--brand-cyan) 65%, transparent)); }
+  50% { filter: drop-shadow(0 0 14px color-mix(in oklab, var(--secondary-brand) 70%, transparent)); }
+}
+
 @media (prefers-reduced-motion:reduce) {
   .landing-float,.app-transition,.app-transition-mark,.app-transition-copy,.app-transition-check,.app-transition-progress span,.app-transition-glow { animation:none; }
   .app-transition-check { opacity:1; }
   .landing-magenta,.landing-outline { transition:none; }
   .landing-magenta:hover,.landing-outline:hover { transform:none; }
+  .route-loader-logo { animation:none; filter:none; }
+  .route-loader-ring { display:none; }
 }
+
