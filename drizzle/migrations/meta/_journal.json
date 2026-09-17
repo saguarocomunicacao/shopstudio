@@ -57,6 +57,13 @@
       "when": 1789686513581,
       "tag": "0007_add_avatar_reference_urls",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789688437633,
+      "tag": "0008_create_voices",
+      "breakpoints": true
     }
   ]
 }
