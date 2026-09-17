@@ -56,12 +56,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
 
   // Se o perfil guardado nao existe mais, volta para "nenhum selecionado".
   useEffect(() => {
-    if (!activeProfileId || accessLoading) return;
+    if (!activeProfileId || sessionLoading || accessLoading || !access) return;
     if (!profiles.some((p) => p.id === activeProfileId)) {
       setActiveProfileIdState(null);
       window.localStorage.removeItem(PROFILE_STORAGE_KEY);
     }
-  }, [profiles, activeProfileId, accessLoading]);
+  }, [profiles, activeProfileId, accessLoading, sessionLoading, access]);
 
   // Mantem ?perfil=id na URL ao navegar entre telas e no refresh.
   useEffect(() => {
