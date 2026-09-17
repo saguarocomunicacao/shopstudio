@@ -116,7 +116,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
   return (
     <div className="space-y-4">
       <div className="panel grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
-        <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Buscar por palavra-chave (opcional)" onKeyDown={(e) => e.key === "Enter" && run.mutate(1)} />
+        <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Buscar por palavra-chave (opcional)" onKeyDown={(e) => e.key === "Enter" && startSearch()} />
         <Select value={dateRange} onValueChange={(v) => setDateRange(v as typeof dateRange)}>
           <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -133,8 +133,8 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
             <SelectItem value="revenue_growth_rate">Maior crescimento</SelectItem>
           </SelectContent>
         </Select>
-        <Button disabled={run.isPending} onClick={() => run.mutate(1)}>
-          {run.isPending ? <Loader2 className="animate-spin" /> : <Search />}Buscar
+        <Button disabled={run.isPending && page === 1} onClick={startSearch}>
+          {run.isPending && page === 1 ? <Loader2 className="animate-spin" /> : <Search />}Buscar
         </Button>
       </div>
 
