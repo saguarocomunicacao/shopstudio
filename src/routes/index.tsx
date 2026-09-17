@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoDark from "@/assets/logo-dark.png.asset.json";
+import heroPowerbank from "@/assets/hero-powerbank.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -71,10 +72,7 @@ function LandingPage() {
               <div className="landing-phone-glow" aria-hidden="true" />
               <div className="landing-phone-frame relative mx-auto aspect-[9/16] w-[270px] overflow-hidden rounded-[44px] p-[7px] sm:w-[310px]">
                 <div className="landing-phone-screen relative h-full overflow-hidden rounded-[37px]">
-                  <div className="landing-video-scene absolute inset-0" aria-hidden="true">
-                    <div className="landing-person-silhouette" />
-                    <div className="landing-product-prop"><span /><span /></div>
-                  </div>
+                  <img src={heroPowerbank.url} alt="Mão segurando um celular com 5% de bateria e um power bank rosa" className="absolute inset-0 h-full w-full object-cover" />
                   <div className="landing-video-vignette absolute inset-0" />
                   <div className="absolute left-1/2 top-2.5 z-20 h-[25px] w-[92px] -translate-x-1/2 rounded-full bg-landing-bg shadow-sm">
                     <span className="absolute right-3 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-landing-surface-raised" />
@@ -87,7 +85,7 @@ function LandingPage() {
                     <PhoneAction icon={<Share2 />} label="Enviar" />
                   </div>
                   <div className="absolute inset-x-4 bottom-5 z-10 pr-12 text-left">
-                    <p className="text-[13px] font-bold text-landing-text">@achadinhosdalu</p>
+                    <p className="text-[13px] font-bold text-landing-text">@promosdaregina</p>
                     <p className="mt-1.5 text-[15px] font-bold leading-5 text-landing-text">Bateria no fim na hora de sair?</p>
                     <p className="mt-1 text-[11px] leading-4 text-landing-text/65">#tiktokshop #achadinhos #bateriaportatil</p>
                     <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-landing-text px-3 py-2 text-[11px] font-bold text-landing-bg shadow-lg"><ShoppingBag className="size-3.5" /> Toque no carrinho <ChevronRight className="size-3.5" /></div>
