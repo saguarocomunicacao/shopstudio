@@ -499,6 +499,72 @@ async function runStep(
       });
       return { stage: "takes", done: false, progress: { done: index + 1, total: scenes.length } };
     }
+    // Perfil com voz ElevenLabs gera a narração antes da montagem.
+    const voice = await resolveElevenLabsVoice(supabase, settings.voice_ref);
+    const next = voice ? "narracao" : "montagem";
+    await supabase.from("jobs").update({ render_stage: next }).eq("id", job.id);
+    return { stage: next, done: false, progress: { done: scenes.length, total: scenes.length } };
+  }
+
+  // ---------- Etapa 2b: narração na ElevenLabs (uma cena por chamada) ----------
+  if (job.render_stage === "narracao") {
+    const voice = await resolveElevenLabsVoice(supabase, settings.voice_ref);
+    if (!voice) {
+      await supabase.from("jobs").update({ render_stage: "montagem" }).eq("id", job.id);
+      return { stage: "montagem", done: false, progress: { done: scenes.length, total: scenes.length } };
+    }
+
+    // Idempotência: só regera a cena cujo texto ou voz mudou.
+    const index = scenes.findIndex(
+      (s) => !s.audio_url || s.audio_text !== s.narration || s.audio_voice !== voice.voice_id,
+    );
+    if (index >= 0) {
+      const scene = scenes[index]!;
+      const texto = (scene.narration ?? "").trim();
+      if (!texto) {
+        scenes[index] = { ...scene, audio_text: scene.narration, audio_voice: voice.voice_id };
+        await supabase.from("jobs").update({ scenes }).eq("id", job.id);
+        return { stage: "narracao", done: false, progress: { done: index + 1, total: scenes.length } };
+      }
+
+      const audio = await pipeline.synthesizeNarration({
+        voiceId: voice.voice_id,
+        text: texto,
+        language,
+      });
+      const stored = await pipeline.storeMedia(
+        `narration/${job.id}/${index}.mp3`,
+        audio.bytes,
+        "audio/mpeg",
+      );
+      scenes[index] = {
+        ...scene,
+        audio_path: stored.path,
+        audio_url: stored.url,
+        ...(audio.durationSeconds ? { audio_duration: audio.durationSeconds } : {}),
+        audio_text: scene.narration,
+        audio_voice: voice.voice_id,
+      };
+      await supabase.from("jobs").update({ scenes, render_error: null }).eq("id", job.id);
+
+      await consumo.recordConsumo({
+        jobId: job.id,
+        profileId: job.profile_id,
+        etapa: "narracao_elevenlabs",
+        modelo: pipeline.ELEVENLABS_TARIFA_MODELO,
+        quantidade: texto.length / 1000,
+        unidade: "mil_caracteres",
+        metadados: {
+          cena: index + 1,
+          caracteres: texto.length,
+          voz: voice.nome,
+          voice_id: voice.voice_id,
+          duracao: audio.durationSeconds,
+        },
+      });
+      return { stage: "narracao", done: false, progress: { done: index + 1, total: scenes.length } };
+    }
+
     await supabase.from("jobs").update({ render_stage: "montagem" }).eq("id", job.id);
     return { stage: "montagem", done: false, progress: { done: scenes.length, total: scenes.length } };
   }
