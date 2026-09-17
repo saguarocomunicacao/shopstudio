@@ -194,6 +194,46 @@
 @utility avatar-3 { background:oklch(0.31 0.015 275); }
 @utility avatar-4 { background:oklch(0.37 0.015 275); }
 
+.app-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: oklch(0.145 0.003 285);
+  color: var(--landing-text);
+  animation: transition-reveal 260ms ease-out both;
+}
+.app-transition-grid {
+  position: absolute;
+  inset: 0;
+  opacity: .14;
+  background-image: linear-gradient(var(--landing-line) 1px, transparent 1px), linear-gradient(90deg, var(--landing-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at center, black, transparent 68%);
+}
+.app-transition-glow { position:absolute; width:38rem; height:38rem; border-radius:999px; filter:blur(100px); opacity:.11; }
+.app-transition-glow-cyan { top:-22rem; left:-16rem; background:var(--landing-mint); animation:transition-drift 3s ease-in-out infinite alternate; }
+.app-transition-glow-pink { right:-16rem; bottom:-22rem; background:var(--landing-plasma-c); animation:transition-drift 3s ease-in-out -1.5s infinite alternate-reverse; }
+.app-transition-content { position:relative; display:flex; width:min(82vw,30rem); flex-direction:column; align-items:center; text-align:center; }
+.app-transition-mark { position:relative; display:grid; min-height:5rem; width:100%; place-items:center; animation:transition-rise 500ms cubic-bezier(.2,.8,.2,1) both; }
+.app-transition-logo { position:relative; z-index:1; width:min(15rem,68vw); height:auto; }
+.app-transition-orbit { position:absolute; width:18rem; height:4.5rem; border:1px solid color-mix(in oklab,var(--landing-mint) 28%,transparent); border-radius:50%; transform:rotate(-8deg); box-shadow:10px 8px 0 -9px var(--landing-plasma-c), -10px -8px 0 -9px var(--landing-mint); animation:transition-orbit 2.4s linear infinite; }
+.app-transition-copy { margin-top:2.75rem; animation:transition-rise 500ms 160ms cubic-bezier(.2,.8,.2,1) both; }
+.app-transition-copy h1 { margin-top:.75rem; font-family:var(--font-display); font-size:clamp(1.45rem,4vw,2rem); font-weight:700; letter-spacing:0; }
+.app-transition-copy p { margin-top:.4rem; color:var(--landing-muted); font-size:.875rem; }
+.app-transition-check { margin-inline:auto; display:grid; width:1.75rem; height:1.75rem; place-items:center; border-radius:999px; background:color-mix(in oklab,var(--landing-mint) 12%,transparent); color:var(--landing-mint); opacity:0; animation:transition-check 280ms 720ms ease-out forwards; }
+.app-transition-check svg { width:.95rem; height:.95rem; stroke-width:2.5; }
+.app-transition-progress { margin-top:2rem; width:min(18rem,72vw); height:2px; overflow:hidden; border-radius:999px; background:var(--landing-line); }
+.app-transition-progress span { display:block; height:100%; width:100%; transform-origin:left; background:linear-gradient(90deg,var(--landing-mint),var(--landing-plasma-c)); animation:transition-progress 1.15s cubic-bezier(.4,0,.2,1) both; }
+@keyframes transition-reveal { from { opacity:0; } to { opacity:1; } }
+@keyframes transition-rise { from { opacity:0; transform:translateY(12px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes transition-progress { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+@keyframes transition-orbit { from { transform:rotate(-8deg); } to { transform:rotate(352deg); } }
+@keyframes transition-drift { from { transform:translate3d(0,0,0); } to { transform:translate3d(3rem,2rem,0); } }
+@keyframes transition-check { from { opacity:0; transform:scale(.7); } to { opacity:1; transform:scale(1); } }
+
 .glitch-logo { position:relative; letter-spacing:0; }
 .glitch-logo::before,.glitch-logo::after { content:attr(data-text); position:absolute; inset:0; pointer-events:none; opacity:.65; }
 .glitch-logo::before { color:var(--brand-cyan); transform:translate(-1px,1px); clip-path:inset(0 0 54%); }

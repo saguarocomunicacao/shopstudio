@@ -3,6 +3,7 @@ import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSqu
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { AppTransition, useAppTransition } from "@/components/app-transition";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,7 +66,9 @@ function ProfilePicker() {
 function useSignOut() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { runTransition } = useAppTransition();
   return async () => {
+    await runTransition("leaving");
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
@@ -98,7 +101,7 @@ function ShellContent({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false); const [mobile, setMobile] = useState(false);
   const path = useRouterState({ select: s => s.location.pathname }); const { dark, setDark, loading, pendingAccess } = useStudio();
 
-  if (loading) return <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">Carregando...</div>;
+  if (loading) return <AppTransition mode="loading" />;
   if (pendingAccess) return <PendingAccess/>;
 
   return <div className="min-h-screen bg-background text-foreground">
