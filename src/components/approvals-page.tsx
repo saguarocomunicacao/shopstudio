@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { SUPER_ADMIN_EMAIL, type AppUser } from "@/lib/access";
 import { useStudio } from "./studio-context";
@@ -23,6 +24,8 @@ function useAppUsers(enabled: boolean) {
     },
   });
 }
+
+const fmt = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) + " · " + new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
 export function ApprovalsPage() {
   const { isSuperAdmin } = useStudio();
@@ -53,36 +56,6 @@ export function ApprovalsPage() {
   const pending = users.filter((u) => u.status === "pendente");
   const reviewed = users.filter((u) => u.status !== "pendente");
 
-  const row = (user: AppUser) => {
-    const superAdmin = user.email.toLowerCase() === SUPER_ADMIN_EMAIL;
-    return (
-      <div key={user.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-secondary p-4">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{user.email}</p>
-          <p className="truncate text-xs text-muted-foreground">
-            Cadastro em {new Date(user.created_at).toLocaleDateString("pt-BR")}
-            {superAdmin ? " · dono do sistema" : ""}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${STATUS_CLASS[user.status] ?? "status-neutral"}`}>
-            {STATUS_LABEL[user.status] ?? user.status}
-          </span>
-          {!superAdmin && user.status !== "aprovado" && (
-            <Button size="sm" disabled={review.isPending} onClick={() => review.mutate({ id: user.id, status: "aprovado" })}>
-              <Check />Aprovar
-            </Button>
-          )}
-          {!superAdmin && user.status !== "recusado" && (
-            <Button size="sm" variant="ghost" disabled={review.isPending} onClick={() => review.mutate({ id: user.id, status: "recusado" })}>
-              <X />Recusar
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <>
       <div className="mb-6">
@@ -97,13 +70,78 @@ export function ApprovalsPage() {
         <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Carregando cadastros...</div>
       ) : (
         <div className="grid gap-6">
-          <section className="panel">
-            <h2 className="mb-3 font-bold">Aguardando aprovação ({pending.length})</h2>
-            {pending.length ? <div className="grid gap-2">{pending.map(row)}</div> : <p className="text-sm text-muted-foreground">Nenhum cadastro pendente.</p>}
+          <section className="panel space-y-3">
+            <h2 className="font-bold">Aguardando aprovação ({pending.length})</h2>
+            {pending.length ? (
+              <div className="overflow-hidden rounded-xl border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead>E-mail</TableHead>
+                      <TableHead className="w-44">Data do cadastro</TableHead>
+                      <TableHead className="w-44 text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pending.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="truncate font-semibold text-foreground max-w-[28rem]">{user.email}</TableCell>
+                        <TableCell className="text-muted-foreground tabular-nums">{fmt(user.created_at)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <Button size="sm" disabled={review.isPending} onClick={() => review.mutate({ id: user.id, status: "aprovado" })}>
+                              <Check />Aprovar
+                            </Button>
+                            <Button size="sm" variant="ghost" disabled={review.isPending} onClick={() => review.mutate({ id: user.id, status: "recusado" })}>
+                              <X />Recusar
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nenhum cadastro pendente.</p>
+            )}
           </section>
-          <section className="panel">
-            <h2 className="mb-3 font-bold">Já avaliados</h2>
-            {reviewed.length ? <div className="grid gap-2">{reviewed.map(row)}</div> : <p className="text-sm text-muted-foreground">Nada por aqui ainda.</p>}
+
+          <section className="panel space-y-3">
+            <h2 className="font-bold">Já avaliados</h2>
+            {reviewed.length ? (
+              <div className="overflow-hidden rounded-xl border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead>E-mail</TableHead>
+                      <TableHead className="w-44">Data do cadastro</TableHead>
+                      <TableHead className="w-56">Observação</TableHead>
+                      <TableHead className="w-28 text-right">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reviewed.map((user) => {
+                      const superAdmin = user.email.toLowerCase() === SUPER_ADMIN_EMAIL;
+                      return (
+                        <TableRow key={user.id}>
+                          <TableCell className="truncate font-semibold text-foreground max-w-[24rem]">{user.email}</TableCell>
+                          <TableCell className="text-muted-foreground tabular-nums">{fmt(user.created_at)}</TableCell>
+                          <TableCell className="text-muted-foreground truncate max-w-[14rem]">{superAdmin ? "dono do sistema" : "—"}</TableCell>
+                          <TableCell className="text-right">
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${STATUS_CLASS[user.status] ?? "status-neutral"}`}>
+                              {STATUS_LABEL[user.status] ?? user.status}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nada por aqui ainda.</p>
+            )}
           </section>
         </div>
       )}
