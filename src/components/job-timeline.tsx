@@ -50,7 +50,8 @@ export function JobTimeline({ jobId }: { jobId: string }) {
     refetchInterval: 10000,
   });
 
-  const running = events.some((e) => !e.exited_at);
+  const FINAL_STATUSES: JobStatusKey[] = ["video_pronto", "publicado"];
+  const running = events.some((e) => !e.exited_at && !FINAL_STATUSES.includes(e.status));
   const now = useNow(running);
 
   if (events.length === 0) return null;
