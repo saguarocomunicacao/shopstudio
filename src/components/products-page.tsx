@@ -1,17 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Eye, Sparkles, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useProducts, type DbProduct } from "@/lib/content";
-import { CategorySelect } from "./category-select";
 import { DiscoverPanel } from "./discover-panel";
 import { ProductDataTable } from "./product-data-table";
 import { ProfileGate } from "./profile-gate";
@@ -23,33 +19,7 @@ function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; a
   return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>;
 }
 
-type FormState = { name: string; niche: string; categoryId: string; price: string; commission: string; url: string; hype: string; status: string };
-const emptyForm: FormState = { name: "", niche: "", categoryId: "", price: "", commission: "", url: "", hype: "50", status: "Ativo" };
-
-
-// Mascara o valor digitado no formato BRL (R$ 1.234,56) enquanto o usuario digita.
-function maskPrice(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (!digits) return "";
-  const num = Number(digits) / 100;
-  return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-function parsePrice(masked: string): number {
-  const digits = masked.replace(/\D/g, "");
-  return digits ? Number(digits) / 100 : 0;
-}
-
-// Comissao: apenas inteiros de 0 a 100.
-function maskCommission(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (!digits) return "";
-  const num = Math.min(100, Math.max(0, Number(digits)));
-  return String(num);
-}
-
 const brl = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-/** Produto manual = nao veio de fonte externa (Kalodata). So esses podem ser editados. */
-const isManual = (p: DbProduct) => !p.source;
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -67,53 +37,14 @@ function ProductsContent() {
   const qc = useQueryClient();
   const { data: products = [], isLoading } = useProducts(activeProfileId, can("produtos", "visualizar"));
 
-  const canCreate = can("produtos", "criar");
-  const canEdit = can("produtos", "editar");
   const canRemove = can("produtos", "remover");
 
-  const [dialog, setDialog] = useState<{ open: boolean; product: DbProduct | null }>({ open: false, product: null });
-  const [form, setForm] = useState<FormState>(emptyForm);
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
   const [tab, setTab] = useState<"catalogo" | "descobrir">("catalogo");
   const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
   const [details, setDetails] = useState<DbProduct | null>(null);
 
   const canCreateJob = can("pipeline", "criar", activeProfileId);
-
-  useEffect(() => {
-    if (!dialog.open) return;
-    const p = dialog.product;
-    setForm(p ? { name: p.name, niche: p.niche, categoryId: p.category_id ?? "", price: maskPrice(String(p.price * 100)), commission: String(Math.min(100, Math.max(0, Math.round(p.commission)))), url: p.url, hype: String(p.hype), status: p.status } : emptyForm);
-  }, [dialog]);
-
-  const save = useMutation({
-    mutationFn: async ({ product, values }: { product: DbProduct | null; values: FormState }) => {
-      const payload = {
-        name: values.name.trim(),
-        niche: values.niche.trim(),
-        category_id: values.categoryId || null,
-        price: parsePrice(values.price),
-        commission: Number(values.commission) || 0,
-        url: values.url.trim(),
-        hype: Math.min(100, Math.max(0, Number.parseInt(values.hype, 10) || 0)),
-        status: values.status,
-      };
-      if (!payload.name) throw new Error("Informe o nome do produto.");
-      if (product) {
-        const { error } = await supabase.from("products").update(payload).eq("id", product.id);
-        if (error) throw new Error(error.message);
-        return;
-      }
-      const { error } = await supabase.from("products").insert({ ...payload, created_by: userId, profile_id: activeProfileId });
-      if (error) throw new Error(error.message);
-    },
-    onSuccess: (_d, vars) => {
-      toast.success(vars.product ? "Produto atualizado." : "Produto adicionado.");
-      setDialog({ open: false, product: null });
-      qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
-    },
-    onError: (e) => toast.error(errMessage(e)),
-  });
 
   const remove = useMutation({
     mutationFn: async (product: DbProduct) => {
@@ -142,11 +73,7 @@ function ProductsContent() {
 
   return (
     <>
-      <Heading
-        eyebrow="Descoberta"
-        title="Produtos em alta"
-        {...(canCreate && tab === "catalogo" ? { action: <Button onClick={() => setDialog({ open: true, product: null })}><Plus />Adicionar produto</Button> } : {})}
-      />
+      <Heading eyebrow="Descoberta" title="Produtos em alta" />
       <div className="mb-4 inline-flex gap-1 rounded-xl bg-secondary p-1">
         {([["catalogo", "Catálogo"], ["descobrir", "Descobrir"]] as const).map(([key, label]) => (
           <button
@@ -168,69 +95,29 @@ function ProductsContent() {
           renderActions={(p) => (
             <>
               {canCreateJob && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
-               {canEdit && isManual(p) ? (
-                 <Tooltip>
-                   <TooltipTrigger asChild>
-                     <Button variant="ghost" size="icon" className="size-8" onClick={() => setDialog({ open: true, product: p })} aria-label={`Editar ${p.name}`}>
-                       <Pencil className="size-4" />
-                     </Button>
-                   </TooltipTrigger>
-                   <TooltipContent>Editar</TooltipContent>
-                 </Tooltip>
-               ) : (
-                 <Tooltip>
-                   <TooltipTrigger asChild>
-                     <Button variant="ghost" size="icon" className="size-8" onClick={() => setDetails(p)} aria-label={`Ver detalhes de ${p.name}`}>
-                       <Eye className="size-4" />
-                     </Button>
-                   </TooltipTrigger>
-                   <TooltipContent>Ver detalhes</TooltipContent>
-                 </Tooltip>
-               )}
-               {canRemove && (
-                 <Tooltip>
-                   <TooltipTrigger asChild>
-                     <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive" onClick={() => setConfirm(p)} aria-label={`Remover ${p.name}`}>
-                       <Trash2 className="size-4" />
-                     </Button>
-                   </TooltipTrigger>
-                   <TooltipContent>Remover</TooltipContent>
-                 </Tooltip>
-               )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="size-8" onClick={() => setDetails(p)} aria-label={`Ver detalhes de ${p.name}`}>
+                    <Eye className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Ver detalhes</TooltipContent>
+              </Tooltip>
+              {canRemove && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive" onClick={() => setConfirm(p)} aria-label={`Remover ${p.name}`}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Remover</TooltipContent>
+                </Tooltip>
+              )}
             </>
           )}
         />
         {!products.length && <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{isLoading ? "Carregando produtos..." : "Nenhum produto no catálogo."}</div>}
       </div>
-
-      <Dialog open={dialog.open} onOpenChange={(open) => setDialog({ open, product: open ? dialog.product : null })}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{dialog.product ? "Editar produto" : "Adicionar produto"}</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-2"><Label htmlFor="pr-name">Nome</Label><Input id="pr-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Bolsa Vitta" /></div>
-            <div className="grid gap-2"><Label htmlFor="pr-niche">Categoria oficial</Label><CategorySelect id="pr-niche" value={form.categoryId} onChange={(categoryId, categoryName) => setForm({ ...form, categoryId, niche: categoryName })} /></div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2"><Label htmlFor="pr-price">Preço</Label><Input id="pr-price" inputMode="numeric" value={form.price} onChange={(e) => setForm({ ...form, price: maskPrice(e.target.value) })} placeholder="R$ 0,00" /></div>
-              <div className="grid gap-2"><Label htmlFor="pr-comm">Comissão (%)</Label><Input id="pr-comm" inputMode="numeric" value={form.commission} onChange={(e) => setForm({ ...form, commission: maskCommission(e.target.value) })} placeholder="0 a 100" /></div>
-            </div>
-            <div className="grid gap-2"><Label htmlFor="pr-url">Link do produto</Label><Input id="pr-url" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://..." /></div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2"><Label htmlFor="pr-hype">Hype score (0-100)</Label><Input id="pr-hype" inputMode="numeric" value={form.hype} onChange={(e) => setForm({ ...form, hype: e.target.value.replace(/\D/g, "") })} /></div>
-              <div className="grid gap-2">
-                <Label htmlFor="pr-status">Status</Label>
-                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                  <SelectTrigger id="pr-status"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="Ativo">Ativo</SelectItem><SelectItem value="Pausado">Pausado</SelectItem></SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setDialog({ open: false, product: null })}>Cancelar</Button>
-            <Button disabled={save.isPending} onClick={() => save.mutate({ product: dialog.product, values: form })}>{dialog.product ? "Salvar" : "Adicionar"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={!!details} onOpenChange={(open) => !open && setDetails(null)}>
         <DialogContent>
@@ -239,7 +126,7 @@ function ProductsContent() {
             <div className="grid gap-4 py-2">
               <div className="flex items-center gap-3">
                 {details.image_url ? <img src={details.image_url} alt="" className="size-16 rounded-xl object-cover" /> : null}
-                <p className="text-xs text-muted-foreground">Dados vindos da fonte externa. Somente leitura.</p>
+                <p className="text-xs text-muted-foreground">Dados vindos do garimpo. Somente leitura.</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <DetailRow label="Categoria">{details.niche || "—"}</DetailRow>
