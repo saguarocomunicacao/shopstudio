@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -45,6 +45,19 @@ function maskCommission(raw: string): string {
   if (!digits) return "";
   const num = Math.min(100, Math.max(0, Number(digits)));
   return String(num);
+}
+
+const brl = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+/** Produto manual = nao veio de fonte externa (Kalodata). So esses podem ser editados. */
+const isManual = (p: DbProduct) => !p.source;
+
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-1">
+      <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
+      <div className="text-sm font-medium break-words">{children}</div>
+    </div>
+  );
 }
 
 export function ProductsPage() { return <ProfileGate><ProductsContent /></ProfileGate>; }
