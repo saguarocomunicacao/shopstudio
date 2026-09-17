@@ -68,9 +68,11 @@ export function ProfilesPage() {
   const [dialog, setDialog] = useState<{ open: boolean; profile: DbProfile | null }>({ open: false, profile: null });
   const [form, setForm] = useState<FormState>(emptyForm);
   const [confirm, setConfirm] = useState<DbProfile | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarItems, setAvatarItems] = useState<AvatarItem[]>([]);
+  const [avatarSource, setAvatarSource] = useState<"ia" | "upload">("ia");
   const [avatarDescription, setAvatarDescription] = useState("");
   const generateAvatar = useServerFn(generateAvatarReference);
+  const saveAvatars = useServerFn(saveAvatarReferences);
 
   useEffect(() => {
     if (!dialog.open) return;
