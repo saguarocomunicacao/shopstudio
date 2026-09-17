@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/custo";
 import {
@@ -182,6 +182,7 @@ export function CostsPage() {
   const consumidoMes = gasto ? (gasto.tetoPerfil ? gasto.perfilBrl : gasto.globalBrl) : 0;
 
   return (
+    <TooltipProvider delayDuration={200}>
     <div className="grid gap-6">
       {/* Filtros */}
       <div className="panel flex flex-wrap items-end gap-3">
@@ -490,5 +491,6 @@ export function CostsPage() {
         onOpenChange={(open) => !open && setDetalhe(null)}
       />
     </div>
+    </TooltipProvider>
   );
 }
