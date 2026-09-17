@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ModuleKey } from "@/lib/access";
 import { OPEN_PROFILE_PICKER_EVENT } from "./profile-gate";
 import { StudioProvider, useStudio } from "./studio-context";
+import { UpdateGate } from "./update-gate";
 import logoLightAsset from "@/assets/logo-light.png.asset.json";
 import logoDarkAsset from "@/assets/logo-dark.png.asset.json";
 import logoMarkLightAsset from "@/assets/logo-mark-light.png.asset.json";
@@ -124,4 +125,4 @@ function ShellContent({ children }: { children: ReactNode }) {
   </div>;
 }
 
-export function StudioShell({ children }: { children: ReactNode }) { return <StudioProvider><ShellContent>{children}</ShellContent></StudioProvider>; }
+export function StudioShell({ children }: { children: ReactNode }) { return <StudioProvider><ShellContent>{children}</ShellContent><UpdateGate/></StudioProvider>; }
