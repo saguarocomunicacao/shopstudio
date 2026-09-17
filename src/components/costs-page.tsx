@@ -223,7 +223,7 @@ export function CostsPage() {
     );
   }
 
-  const semSelecao = !todosPerfis && !activeProfileId;
+  const semSelecao = !todosPerfis && perfisEfetivos.length === 0;
   const teto = gasto?.tetoPerfil ?? gasto?.tetoGlobal ?? null;
   const consumidoMes = gasto ? (gasto.tetoPerfil ? gasto.perfilBrl : gasto.globalBrl) : 0;
 
