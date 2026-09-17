@@ -6,10 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppTransition } from "@/components/app-transition";
 import { supabase } from "@/integrations/supabase/client";
+import { resetSessionExpired } from "@/lib/session-guard";
 import logoLightAsset from "@/assets/logo-light.png.asset.json";
 
 export const Route = createFileRoute("/entrar")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => {
+    const value = search["redirect"];
+    return typeof value === "string" && value.startsWith("/") ? { redirect: value } : {};
+  },
   head: () => ({
     meta: [
       { title: "Entrar — Shop Studio" },
@@ -25,6 +30,8 @@ export const Route = createFileRoute("/entrar")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
+  const goToApp = () => navigate({ to: redirect ?? "/app", replace: true });
   const { active: transitioning, runTransition } = useAppTransition();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [name, setName] = useState("");
@@ -37,9 +44,10 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/app", replace: true });
+      if (data.session) goToApp();
     });
-  }, [navigate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, redirect]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -58,8 +66,9 @@ function AuthPage() {
         if (signInError) throw signInError;
       }
       await supabase.rpc("ensure_app_user");
+      resetSessionExpired();
       await runTransition("entering");
-      navigate({ to: "/app", replace: true });
+      goToApp();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Não foi possível continuar.";
       setError(message.includes("Invalid login credentials") ? "Email ou senha incorretos." : message);
