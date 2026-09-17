@@ -604,9 +604,13 @@ export const saveAvatarReferences = createServerFn({ method: "POST" })
     const pipeline = await import("./video-pipeline.server");
     const urls: string[] = [];
     for (const [i, image] of data.images.entries()) {
+      if ("url" in image) {
+        urls.push(image.url);
+        continue;
+      }
       const ext = image.mimeType === "image/png" ? "png" : image.mimeType === "image/webp" ? "webp" : "jpg";
       const stored = await pipeline.storeMedia(
-        `avatars/${data.profileId}/${i + 1}.${ext}`,
+        `avatars/${data.profileId}/${Date.now()}-${i + 1}.${ext}`,
         Uint8Array.from(atob(image.base64), (c) => c.charCodeAt(0)),
         image.mimeType,
       );
