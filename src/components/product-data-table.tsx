@@ -10,6 +10,8 @@ export type ProductTableItem = {
   imageUrl?: string | null;
   niche?: string | null;
   category?: string | null;
+  sellerName?: string | null;
+  skuCount?: number | null;
   price: number;
   commission: number;
   hype: number;
