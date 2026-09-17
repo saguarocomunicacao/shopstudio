@@ -398,6 +398,16 @@ async function runStep(
           scenes[index] = { ...rest, attempts };
           // Nova tentativa já começou: não deixa o erro antigo na tela.
           await supabase.from("jobs").update({ scenes, render_error: null }).eq("id", job.id);
+          // O take descartado já foi gerado (e cobrado): registra o consumo.
+          await consumo.recordConsumo({
+            jobId: job.id,
+            profileId: job.profile_id,
+            etapa: "animacao_veo",
+            modelo: settings.veo_model,
+            quantidade: settings.take_duration,
+            unidade: "segundo_video",
+            metadados: { cena: index + 1, tentativa: attempts, descartado: true, duracao_estimada: true },
+          });
           return { stage: "takes", done: false, progress: { done: index, total: scenes.length } };
         }
         throw e;
@@ -412,6 +422,20 @@ async function runStep(
         .from("jobs")
         .update({ scenes, veo_takes_count: (job.veo_takes_count ?? 0) + 1, render_error: null })
         .eq("id", job.id);
+      const realDuration = status.durationSeconds ?? null;
+      await consumo.recordConsumo({
+        jobId: job.id,
+        profileId: job.profile_id,
+        etapa: "animacao_veo",
+        modelo: settings.veo_model,
+        quantidade: realDuration ?? settings.take_duration,
+        unidade: "segundo_video",
+        metadados: {
+          cena: index + 1,
+          duracao_estimada: realDuration === null,
+          ...(realDuration === null ? { duracao_configurada: settings.take_duration } : {}),
+        },
+      });
       return { stage: "takes", done: false, progress: { done: index + 1, total: scenes.length } };
     }
     await supabase.from("jobs").update({ render_stage: "montagem" }).eq("id", job.id);
