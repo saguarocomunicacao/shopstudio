@@ -37,6 +37,12 @@ export const discoverProducts = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => schema.parse(input))
   .handler(async ({ data, context }) => {
     await assertCanViewProducts(context.supabase, context.userId);
+    // Etapa barata: só trava se o admin optar por bloquear tudo ao estourar o teto.
+    if (data.profileId) {
+      const { assertOrcamento } = await import("./orcamento.server");
+      await assertOrcamento(data.profileId, { barata: true });
+    }
+
     const { activeProductSource } = await import("./product-source.server");
     const source = activeProductSource();
     const result = await source.search({

@@ -79,6 +79,10 @@ export const generateJobScenes = createServerFn({ method: "POST" })
       throw new Error("A geração de cenas ainda não está configurada. Falta a chave do Google (Gemini/Veo).");
     }
 
+    // Etapa barata: só trava se o admin optar por bloquear tudo ao estourar o teto.
+    const { assertOrcamento: assertOrcamentoCenas } = await import("./orcamento.server");
+    await assertOrcamentoCenas(job.profile_id, { barata: true });
+
     const { error } = await supabase
       .from("jobs")
       .update({
@@ -116,6 +120,10 @@ export const approveJobScenes = createServerFn({ method: "POST" })
     if (!process.env["JSON2VIDEO_API_KEY"]) {
       throw new Error("A montagem do vídeo ainda não está configurada. Falta a chave do JSON2Video.");
     }
+
+    // Etapa cara: respeita o teto de orçamento do mês.
+    const { assertOrcamento } = await import("./orcamento.server");
+    await assertOrcamento(job.profile_id);
 
     const { error } = await supabase
       .from("jobs")

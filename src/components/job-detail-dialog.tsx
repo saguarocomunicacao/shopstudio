@@ -4,6 +4,7 @@ import { Clapperboard, Images, Loader2, RefreshCw, Sparkles, Trash2, Undo2 } fro
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,8 @@ import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/
 import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
 import { JobCostSummary } from "./job-cost";
+import { brl } from "@/lib/custo";
+import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
@@ -42,6 +45,12 @@ export function JobDetailDialog({
   const generate = useServerFn(generateJobScript);
   const generateScenes = useServerFn(generateJobScenes);
   const approveScenes = useServerFn(approveJobScenes);
+
+  const [confirmVeo, setConfirmVeo] = useState(false);
+  const cenas = Array.isArray(job?.scenes) ? (job!.scenes as unknown[]).length : 0;
+  const estimativa = useEstimativaVeo(job?.profile_id ?? null, cenas);
+  const gasto = useGastoMes(job?.profile_id ?? null);
+  const orcamentoEstourado = !!gasto?.bloqueado;
 
   const [script, setScript] = useState("");
   const [caption, setCaption] = useState("");
@@ -76,7 +85,7 @@ export function JobDetailDialog({
 
   const runApprove = useMutation({
     mutationFn: async (jobId: string) => approveScenes({ data: { jobId } }),
-    onSuccess: () => { toast.success("Cenas aprovadas. Gerando o vídeo."); refresh(); },
+    onSuccess: () => { toast.success("Cenas aprovadas. Gerando o vídeo."); setConfirmVeo(false); refresh(); },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -182,7 +191,11 @@ export function JobDetailDialog({
                 </Button>
               )}
               {job?.status === "cenas_geradas" && (
-                <Button disabled={runApprove.isPending} onClick={() => runApprove.mutate(job.id)}>
+                <Button
+                  disabled={runApprove.isPending || orcamentoEstourado}
+                  title={orcamentoEstourado ? "O orçamento do mês foi atingido." : undefined}
+                  onClick={() => setConfirmVeo(true)}
+                >
                   {runApprove.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Clapperboard />Aprovar e gerar vídeo</>}
                 </Button>
               )}
@@ -195,6 +208,34 @@ export function JobDetailDialog({
           </div>
         </DialogFooter>
       </DialogContent>
+      <AlertDialog open={confirmVeo} onOpenChange={setConfirmVeo}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar a geração do vídeo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {estimativa ? (
+                <>
+                  Esta geração vai custar aproximadamente <strong>{brl(estimativa.totalBrl)}</strong> (animação{" "}
+                  {brl(estimativa.veoBrl)} + montagem {brl(estimativa.montagemBrl)}), com {estimativa.cenas}{" "}
+                  {estimativa.cenas === 1 ? "cena" : "cenas"} e {estimativa.segundos} segundos de vídeo.
+                  {estimativa.semTarifa && " Falta tarifa cadastrada para parte do cálculo, então o valor pode estar incompleto."}
+                </>
+              ) : (
+                "Não foi possível estimar o custo desta geração."
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={runApprove.isPending || orcamentoEstourado}
+              onClick={(e) => { e.preventDefault(); if (job) runApprove.mutate(job.id); }}
+            >
+              {runApprove.isPending ? "Enviando..." : "Confirmar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
