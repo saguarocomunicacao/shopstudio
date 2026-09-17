@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "../components/ui/sonner";
 import { AppTransitionProvider } from "../components/app-transition";
+import { RouteLoader } from "../components/route-loader";
 import { supabase } from "../integrations/supabase/client";
 import { installSessionGuard } from "../lib/session-guard";
 
@@ -150,6 +151,7 @@ function RootComponent() {
       <AppTransitionProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <RouteLoader />
         <Toaster />
       </AppTransitionProvider>
     </QueryClientProvider>
