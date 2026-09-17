@@ -45,7 +45,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
     mutationFn: async ({ nextPage, id }: { nextPage: number; id: number }) => ({
       page: nextPage,
       id,
-      ...((await search({ data: { keyword, dateRange, sortField, page: nextPage } })) as { items: Found[]; hasMore: boolean }),
+      ...((await search({ data: { keyword, dateRange, sortField, page: nextPage, profileId: activeProfileId } })) as { items: Found[]; hasMore: boolean }),
     }),
     onSuccess: (data) => {
       if (data.id !== searchId.current) return; // resposta atrasada de busca anterior
