@@ -232,6 +232,38 @@ function ProductsContent() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!details} onOpenChange={(open) => !open && setDetails(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="pr-6 text-left">{details?.name}</DialogTitle></DialogHeader>
+          {details && (
+            <div className="grid gap-4 py-2">
+              <div className="flex items-center gap-3">
+                {details.image_url ? <img src={details.image_url} alt="" className="size-16 rounded-xl object-cover" /> : null}
+                <p className="text-xs text-muted-foreground">Dados vindos da fonte externa. Somente leitura.</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailRow label="Categoria">{details.niche || "—"}</DetailRow>
+                <DetailRow label="Hype score">{details.hype}</DetailRow>
+                <DetailRow label="Preço">{brl(details.price)}</DetailRow>
+                <DetailRow label="Comissão">
+                  {details.commission}%
+                  <span className="ml-2 font-bold text-primary">{brl(details.price * (details.commission / 100))} por venda</span>
+                </DetailRow>
+                <DetailRow label="Vendas">{details.sales_volume?.toLocaleString("pt-BR") ?? "—"}</DetailRow>
+                <DetailRow label="Crescimento">{details.growth_rate ? `${details.growth_rate}%` : "—"}</DetailRow>
+              </div>
+              <DetailRow label="Link do produto">
+                {details.url ? <a href={details.url} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">{details.url}</a> : "—"}
+              </DetailRow>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setDetails(null)}>Fechar</Button>
+            {canCreateJob && <Button onClick={() => { const p = details; setDetails(null); setUseTarget(p); }}><Sparkles />Usar</Button>}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!useTarget} onOpenChange={(open) => !open && setUseTarget(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Usar “{useTarget?.name}”</DialogTitle></DialogHeader>
