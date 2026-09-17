@@ -50,6 +50,13 @@
       "when": 1789675040520,
       "tag": "0006_investimento_fornecedores",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789686513581,
+      "tag": "0007_add_avatar_reference_urls",
+      "breakpoints": true
     }
   ]
 }
