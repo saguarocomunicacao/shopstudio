@@ -477,6 +477,20 @@ async function runStep(
       .from("jobs")
       .update({ render_id: payload.project, render_stage: "render", render_error: null })
       .eq("id", job.id);
+
+    // Créditos da montagem: alguns retornos já trazem aqui; senão fica com o webhook.
+    const credits = consumo.findCredits(payload);
+    if (credits !== null) {
+      await consumo.recordConsumo({
+        jobId: job.id,
+        profileId: job.profile_id,
+        etapa: "montagem_json2video",
+        modelo: "json2video",
+        quantidade: credits,
+        unidade: "credito_montagem",
+        metadados: { origem: "resposta_envio", project: payload.project },
+      });
+    }
     return { stage: "render", done: true, progress: { done: scenes.length, total: scenes.length } };
   }
 
