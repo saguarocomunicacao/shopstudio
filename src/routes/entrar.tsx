@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/auth")({
+export const Route = createFileRoute("/entrar")({
   ssr: false,
   head: () => ({
     meta: [
@@ -34,7 +34,7 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/", replace: true });
+      if (data.session) navigate({ to: "/app", replace: true });
     });
   }, [navigate]);
 
@@ -46,7 +46,7 @@ function AuthPage() {
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin, data: { name } },
+          options: { emailRedirectTo: `${window.location.origin}/entrar`, data: { name } },
         });
         if (signUpError) throw signUpError;
         if (!data.session) { setInfo("Cadastro recebido. Confirme seu email e aguarde: seu acesso passará por avaliação do administrador."); return; }
@@ -55,7 +55,7 @@ function AuthPage() {
         if (signInError) throw signInError;
       }
       await supabase.rpc("ensure_app_user");
-      navigate({ to: "/", replace: true });
+      navigate({ to: "/app", replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Não foi possível continuar.";
       setError(message.includes("Invalid login credentials") ? "Email ou senha incorretos." : message);
