@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  ArrowDown, ArrowRight, BarChart3, Check, ChevronRight, CircleCheck,
-  Clock3, Film, LockKeyhole, PackageSearch, Play, ShoppingCart, Sparkles,
-  Users, WandSparkles, X,
+  ArrowDown, ArrowRight, BarChart3, Bookmark, Check, ChevronRight, CircleCheck,
+  Clock3, Film, Heart, LockKeyhole, MessageCircle, PackageSearch, Play, Share2,
+  ShoppingBag, Sparkles, Users, WandSparkles, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoDark from "@/assets/logo-dark.png.asset.json";
@@ -49,43 +49,54 @@ function LandingPage() {
       </header>
 
       <main>
-        <section id="inicio" className="relative mx-auto grid min-h-[900px] max-w-7xl scroll-mt-24 items-center gap-14 px-5 pb-20 pt-30 lg:min-h-[820px] lg:grid-cols-[1.08fr_.92fr] lg:px-8 lg:pt-24">
-          <div className="order-2 max-w-2xl lg:order-1">
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-landing-line bg-landing-surface px-4 py-2 text-sm text-landing-text">
-              <Sparkles className="size-4 text-landing-mint" aria-hidden="true" /> Produção de vídeo no piloto automático
+        <section id="inicio" className="relative mx-auto grid min-h-[900px] max-w-7xl scroll-mt-24 items-center gap-12 px-5 pb-20 pt-28 lg:min-h-[820px] lg:grid-cols-[1.08fr_.92fr] lg:gap-8 lg:px-8 lg:pt-24">
+          <div className="max-w-2xl text-center lg:text-left">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-landing-mint/25 bg-landing-mint/5 px-3 py-1.5 text-xs font-medium text-landing-muted">
+              <Sparkles className="size-3.5 text-landing-mint" aria-hidden="true" /> Produção de vídeo no piloto automático
             </div>
-            <h1 className="landing-display text-5xl font-bold leading-[1.04] sm:text-6xl lg:text-7xl">
+            <h1 className="landing-display text-[2.8rem] font-bold leading-[1.05] sm:text-6xl lg:text-7xl">
               Do produto que vende ao <span className="landing-glitch" data-text="vídeo pronto">vídeo pronto</span> pra postar
             </h1>
-            <p className="mt-7 max-w-xl text-lg leading-8 text-landing-muted">
+            <p className="mx-auto mt-7 max-w-xl text-lg leading-8 text-landing-muted lg:mx-0">
               Garimpa o produto em alta, escreve o roteiro no tom do canal e gera o vídeo com uma pessoa usando o produto. Você só revisa e posta.
             </p>
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="landing-focus landing-magenta h-13 rounded-xl border-0 px-6 text-base text-landing-text hover:opacity-90"><Link to="/entrar">Criar minha conta <ArrowRight aria-hidden="true" /></Link></Button>
-              <Button asChild size="lg" variant="outline" className="landing-focus h-13 rounded-xl border border-landing-line bg-landing-surface px-6 text-base text-landing-text hover:bg-landing-surface-raised hover:text-landing-text"><a href="#como-funciona">Ver como funciona <ArrowDown aria-hidden="true" /></a></Button>
+            <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+              <Button asChild size="lg" className="landing-focus landing-magenta h-13 rounded-xl border-0 px-6 text-base text-landing-text"><Link to="/entrar">Criar minha conta <ArrowRight aria-hidden="true" /></Link></Button>
+              <Button asChild size="lg" variant="outline" className="landing-focus landing-outline h-13 rounded-xl px-6 text-base"><a href="#como-funciona">Ver como funciona <ArrowDown aria-hidden="true" /></a></Button>
             </div>
           </div>
 
-          <div className="order-1 flex min-h-[560px] items-center justify-center lg:order-2 lg:min-h-0">
-            <div className="relative w-full max-w-[500px]">
-              <div className="landing-aura landing-phone-scene relative mx-auto aspect-[9/16] w-[260px] overflow-hidden rounded-[42px] border-[8px] border-landing-surface-raised shadow-2xl sm:w-[300px]">
-                <div className="absolute left-1/2 top-3 h-6 w-24 -translate-x-1/2 rounded-full bg-landing-bg" />
-                <div className="absolute inset-x-5 top-12 flex items-center justify-between text-xs font-semibold"><span>9:41</span><span className="grid size-10 place-items-center rounded-full bg-landing-bg/55"><ShoppingCart className="size-5" /></span></div>
-                <div className="absolute inset-x-8 top-[24%] flex justify-center">
-                  <div className="relative h-48 w-36 rotate-[-8deg] rounded-[28px] border border-landing-line bg-landing-text/90 shadow-2xl">
-                    <div className="absolute inset-3 rounded-[20px] bg-landing-surface" />
-                    <div className="landing-plasma-bg absolute left-1/2 top-10 h-20 w-16 -translate-x-1/2 rounded-xl opacity-90" />
-                    <div className="absolute -bottom-10 -right-12 h-36 w-16 rotate-[32deg] rounded-full bg-landing-text/70" />
+          <div className="flex min-h-[600px] items-center justify-center lg:min-h-0">
+            <div className="landing-phone-stage relative w-full max-w-[540px]">
+              <div className="landing-phone-glow" aria-hidden="true" />
+              <div className="landing-phone-frame relative mx-auto aspect-[9/16] w-[270px] overflow-hidden rounded-[44px] p-[7px] sm:w-[310px]">
+                <div className="landing-phone-screen relative h-full overflow-hidden rounded-[37px]">
+                  <div className="landing-video-scene absolute inset-0" aria-hidden="true">
+                    <div className="landing-person-silhouette" />
+                    <div className="landing-product-prop"><span /><span /></div>
+                  </div>
+                  <div className="landing-video-vignette absolute inset-0" />
+                  <div className="absolute left-1/2 top-2.5 z-20 h-[25px] w-[92px] -translate-x-1/2 rounded-full bg-landing-bg shadow-sm">
+                    <span className="absolute right-3 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-landing-surface-raised" />
+                  </div>
+                  <div className="absolute right-3.5 top-[31%] z-10 flex flex-col items-center gap-4" aria-label="Ações do vídeo">
+                    <div className="relative mb-1"><div className="landing-avatar grid size-11 place-items-center rounded-full border-2 border-landing-text"><span className="landing-display text-xs font-bold">SS</span></div><span className="absolute -bottom-1 left-1/2 grid size-4 -translate-x-1/2 place-items-center rounded-full bg-landing-plasma-c text-[12px] font-bold leading-none">+</span></div>
+                    <PhoneAction icon={<Heart />} label="18,4K" />
+                    <PhoneAction icon={<MessageCircle />} label="326" />
+                    <PhoneAction icon={<Bookmark />} label="1.2K" />
+                    <PhoneAction icon={<Share2 />} label="Enviar" />
+                  </div>
+                  <div className="absolute inset-x-4 bottom-5 z-10 pr-12 text-left">
+                    <p className="text-[13px] font-bold text-landing-text">@achadinhosdalu</p>
+                    <p className="mt-1.5 text-[15px] font-bold leading-5 text-landing-text">Bateria no fim na hora de sair?</p>
+                    <p className="mt-1 text-[11px] leading-4 text-landing-text/65">#tiktokshop #achadinhos #bateriaportatil</p>
+                    <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-landing-text px-3 py-2 text-[11px] font-bold text-landing-bg shadow-lg"><ShoppingBag className="size-3.5" /> Toque no carrinho <ChevronRight className="size-3.5" /></div>
                   </div>
                 </div>
-                <div className="absolute inset-x-5 bottom-7">
-                  <p className="landing-display max-w-[230px] text-[26px] font-bold leading-tight text-landing-text">Bateria no fim na hora de sair?</p>
-                  <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-landing-text px-4 py-2 text-xs font-bold text-landing-bg"><ShoppingCart className="size-4" /> Toque no carrinho</div>
-                </div>
               </div>
-              <FloatChip className="left-0 top-14" icon={<PackageSearch />} text="Produto em alta detectado" />
-              <FloatChip className="right-0 top-1/2 landing-float-delay" icon={<WandSparkles />} text="Roteiro escrito por IA" />
-              <FloatChip className="bottom-12 left-0 landing-float-delay" icon={<Film />} text="Vídeo com pessoa real" />
+              <FloatChip className="left-0 top-12" icon={<PackageSearch />} text="Produto em alta detectado" accent="cyan" delay="one" />
+              <FloatChip className="right-0 top-[43%]" icon={<WandSparkles />} text="Roteiro escrito por IA" accent="cyan" delay="two" />
+              <FloatChip className="bottom-14 left-0" icon={<Film />} text="Vídeo com pessoa real" accent="magenta" delay="three" />
             </div>
           </div>
         </section>
@@ -175,7 +186,9 @@ function LandingPage() {
 
 function SectionTitle({ title, text }: { title: string; text: string }) { return <div className="max-w-2xl"><h2 className="landing-display text-3xl font-bold sm:text-5xl">{title}</h2><p className="mt-5 text-lg leading-8 text-landing-muted">{text}</p></div>; }
 
-function FloatChip({ icon, text, className }: { icon: React.ReactNode; text: string; className: string }) { return <div className={`landing-float absolute hidden items-center gap-2 rounded-xl border border-landing-line bg-landing-surface/90 px-3 py-2 text-xs font-semibold shadow-xl backdrop-blur sm:flex ${className}`}><span className="text-landing-mint [&_svg]:size-4">{icon}</span>{text}</div>; }
+function PhoneAction({ icon, label }: { icon: React.ReactNode; label: string }) { return <div className="flex w-12 flex-col items-center gap-0.5 text-landing-text"><span className="drop-shadow-md [&_svg]:size-[23px] [&_svg]:stroke-[2]">{icon}</span><span className="text-[9px] font-semibold drop-shadow-md">{label}</span></div>; }
+
+function FloatChip({ icon, text, className, accent, delay }: { icon: React.ReactNode; text: string; className: string; accent: "cyan" | "magenta"; delay: "one" | "two" | "three" }) { return <div className={`landing-float landing-float-${delay} absolute hidden items-center gap-2.5 rounded-xl border border-landing-line bg-landing-surface/80 px-3.5 py-2.5 text-xs font-semibold text-landing-text shadow-xl backdrop-blur-xl sm:flex ${className}`}><span className={`${accent === "magenta" ? "text-landing-plasma-c" : "text-landing-mint"} [&_svg]:size-4`}>{icon}</span>{text}</div>; }
 
 function CompareColumn({ title, items, negative = false }: { title: string; items: string[]; negative?: boolean }) { return <article className={`rounded-[22px] border p-7 sm:p-10 ${negative ? "border-landing-line bg-landing-bg/30" : "landing-feature-glow border-landing-line"}`}><h2 className="landing-display text-2xl font-semibold">{title}</h2><ul className="mt-8 space-y-5">{items.map(item => <li key={item} className="flex items-center gap-3 text-landing-muted">{negative ? <X className="size-5 shrink-0 opacity-60" /> : <Check className="size-5 shrink-0 text-landing-mint" />}<span>{item}</span></li>)}</ul></article>; }
 
