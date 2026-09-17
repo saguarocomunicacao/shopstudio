@@ -21,6 +21,9 @@ export type Database = {
           email: string
           id: string
           name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
         }
         Insert: {
           avatar_url?: string | null
@@ -28,6 +31,9 @@ export type Database = {
           email: string
           id: string
           name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
         }
         Update: {
           avatar_url?: string | null
@@ -35,6 +41,9 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -611,6 +620,7 @@ export type Database = {
     Functions: {
       can_edit_pipeline: { Args: { _profile_id: string }; Returns: boolean }
       ensure_app_user: { Args: never; Returns: undefined }
+      is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       job_status:
