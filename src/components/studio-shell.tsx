@@ -1,13 +1,14 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Settings, ShieldAlert, ShieldCheck, Sun, Users, UserSquare2, Wand2, X } from "lucide-react";
+import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, ShieldCheck, Sun, Users, UserSquare2, Wand2, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AppTransition, useAppTransition } from "@/components/app-transition";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import type { ModuleKey } from "@/lib/access";
+import { OPEN_PROFILE_PICKER_EVENT } from "./profile-gate";
 import { StudioProvider, useStudio } from "./studio-context";
 import logoLightAsset from "@/assets/logo-light.png.asset.json";
 import logoDarkAsset from "@/assets/logo-dark.png.asset.json";
