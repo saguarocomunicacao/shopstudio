@@ -334,9 +334,9 @@ export async function loadPersonReferences(urls: (string | null | undefined)[]) 
   return refs;
 }
 
-/** Sufixo que força a mesma pessoa em todas as cenas. */
+/** Bloco prioritário que preserva a identidade exata da pessoa de referência. */
 export const SAME_PERSON_SUFFIX =
-  " Use the same person shown in the reference portrait(s), keeping face, hair and body consistent.";
+  "CRITICAL IDENTITY REQUIREMENT: The person in every scene must be the EXACT SAME individual shown in the person reference photos (the first input images). Preserve identity precisely: same facial structure, face shape, eyes, nose, mouth, skin tone, hair color and hairstyle. This is the same real person across all scenes, not a similar-looking person. Do not stylize, beautify, or alter their features. Match the person reference photos as closely as possible.";
 
 /** Guarda um arquivo no bucket privado e devolve caminho + URL assinada. */
 export async function storeMedia(path: string, bytes: Uint8Array, contentType: string) {
