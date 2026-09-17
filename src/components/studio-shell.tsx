@@ -24,7 +24,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 function useVisibleItems() {
-  const { isAdmin, can, activeProfileId } = useStudio();
+  const { isAdmin, isSuperAdmin, can, activeProfileId } = useStudio();
   return items.filter(([, to, , module]) => {
     if (!module) return true;
     if (to === "/prompts") return isAdmin;
@@ -63,9 +63,17 @@ function UserMenu() {
 }
 
 function PendingAccess() {
-  const { access } = useStudio();
+  const { access, approvalStatus } = useStudio();
   const signOut = useSignOut();
-  return <div className="grid min-h-screen place-items-center bg-background px-4 text-foreground"><div className="panel max-w-md text-center"><span className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-full bg-secondary"><ShieldAlert className="h-5 w-5 text-primary"/></span><h1 className="text-xl font-black">Aguardando liberação de acesso</h1><p className="mt-2 text-sm text-muted-foreground">Sua conta ({access?.me?.email}) foi criada, mas ainda não recebeu nenhum perfil. Peça ao administrador para liberar seu acesso na tela de Equipe.</p><Button variant="secondary" className="mt-6" onClick={signOut}>Sair</Button></div></div>;
+  const refused = approvalStatus === "recusado";
+  const waiting = approvalStatus === "pendente";
+  const title = refused ? "Acesso não liberado" : waiting ? "Aguardando aprovação" : "Aguardando liberação de acesso";
+  const text = refused
+    ? `O cadastro de ${access?.me?.email ?? "sua conta"} não foi liberado pelo administrador.`
+    : waiting
+      ? `Seu cadastro (${access?.me?.email ?? ""}) foi recebido e passará por avaliação. Você poderá acessar assim que for liberado pelo administrador.`
+      : `Sua conta (${access?.me?.email ?? ""}) foi liberada, mas ainda não recebeu nenhum perfil. Peça ao administrador para configurar seu acesso na tela de Equipe.`;
+  return <div className="grid min-h-screen place-items-center bg-background px-4 text-foreground"><div className="panel max-w-md text-center"><span className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-full bg-secondary"><ShieldAlert className="h-5 w-5 text-primary"/></span><h1 className="text-xl font-black">{title}</h1><p className="mt-2 text-sm text-muted-foreground">{text}</p><Button variant="secondary" className="mt-6" onClick={signOut}>Sair</Button></div></div>;
 }
 
 function ShellContent({ children }: { children: ReactNode }) {
