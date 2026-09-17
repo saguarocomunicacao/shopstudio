@@ -261,15 +261,31 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
   const selectedItems = (results ?? []).filter((r) => selected[r.externalId]);
   const filtrosAtivos = (Object.keys(EMPTY) as (keyof Filters)[]).some((k) => filters[k] !== EMPTY[k]);
 
+  const repetir = (termo: string) => {
+    searchId.current += 1;
+    setFilters((current) => ({ ...current, keyword: termo }));
+    setResults(null);
+    setPage(1);
+    setHasMore(false);
+    setSelected({});
+    const range = dateRange();
+    if (range === "excede") { toast.error("O intervalo personalizado pode ter no máximo 30 dias."); return; }
+    if (!range) { toast.error("Informe as datas de início e fim do período."); return; }
+    run.mutate({ nextPage: 1, id: searchId.current, range });
+  };
+
   return (
     <TooltipProvider delayDuration={200}>
       <div className="space-y-4">
         <div className="panel space-y-4">
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-            <Input value={filters.keyword} onChange={(e) => set("keyword", e.target.value)} placeholder="Buscar por palavra-chave (opcional)" onKeyDown={(e) => e.key === "Enter" && startSearch()} />
-            <Button disabled={run.isPending && page === 1} onClick={startSearch}>
-              {run.isPending && page === 1 ? <Loader2 className="animate-spin" /> : <Search />}Buscar
-            </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="grid min-w-0 flex-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+              <Input value={filters.keyword} onChange={(e) => set("keyword", e.target.value)} placeholder="Buscar por palavra-chave (opcional)" onKeyDown={(e) => e.key === "Enter" && startSearch()} />
+              <Button disabled={run.isPending && page === 1} onClick={startSearch}>
+                {run.isPending && page === 1 ? <Loader2 className="animate-spin" /> : <Search />}Buscar
+              </Button>
+            </div>
+            <SearchCostHistory onRepeat={repetir} />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -409,7 +425,6 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
           </div>
         )}
 
-        <SearchCostHistory />
       </div>
     </TooltipProvider>
   );
