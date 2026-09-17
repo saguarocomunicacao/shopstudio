@@ -63,6 +63,14 @@
   --color-overlay: var(--overlay);
   --color-video: var(--video-text);
   --color-brand-cyan: var(--brand-cyan);
+  --color-landing-bg: var(--landing-bg);
+  --color-landing-surface: var(--landing-surface);
+  --color-landing-surface-raised: var(--landing-surface-raised);
+  --color-landing-text: var(--landing-text);
+  --color-landing-muted: var(--landing-muted);
+  --color-landing-line: var(--landing-line);
+  --color-landing-mint: var(--landing-mint);
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
@@ -103,6 +111,16 @@
   --brand-cyan: oklch(0.88 0.15 190);
   --overlay: oklch(0.08 0 0 / 82%);
   --video-text: oklch(1 0 0);
+  --landing-bg: oklch(0.1625 0.0143 258.36);
+  --landing-surface: oklch(0.216 0.0266 258.31);
+  --landing-surface-raised: oklch(0.2488 0.0287 255.23);
+  --landing-text: oklch(0.97 0.006 255);
+  --landing-muted: oklch(0.72 0.025 255);
+  --landing-line: oklch(1 0 0 / 8%);
+  --landing-mint: oklch(0.8549 0.1251 181.07);
+  --landing-plasma-a: oklch(0.6123 0.2294 291.39);
+  --landing-plasma-b: oklch(0.6689 0.2382 309.97);
+  --landing-plasma-c: oklch(0.7096 0.2092 354.95);
 }
 
 .dark {
@@ -200,3 +218,17 @@
 .thumb-blue { background:oklch(0.23 0.08 255); }.thumb-blue::before{background:oklch(0.58 0.19 255)}
 .thumb-orange { background:oklch(0.25 0.07 65); }.thumb-orange::before{background:oklch(0.75 0.17 65)}
 @media (prefers-reduced-motion:no-preference){*{scroll-behavior:smooth}.panel,.job-card{transition:border-color .16s ease,background-color .16s ease}.panel:hover{border-color:color-mix(in oklab,var(--foreground) 14%,var(--border))}}
+
+.landing-page { background:var(--landing-bg); color:var(--landing-text); font-family:var(--font-sans); }
+.landing-display { font-family:var(--font-display); letter-spacing:0; }
+.landing-plasma-text { color:transparent; background:linear-gradient(105deg,var(--landing-plasma-a),var(--landing-plasma-b),var(--landing-plasma-c)); background-clip:text; -webkit-background-clip:text; }
+.landing-plasma-bg { background:linear-gradient(105deg,var(--landing-plasma-a),var(--landing-plasma-b),var(--landing-plasma-c)); }
+.landing-plasma-border { border:1px solid transparent; background:linear-gradient(var(--landing-surface),var(--landing-surface)) padding-box,linear-gradient(105deg,var(--landing-plasma-a),var(--landing-plasma-b),var(--landing-plasma-c)) border-box; }
+.landing-aura { box-shadow:0 18px 70px color-mix(in oklab,var(--landing-plasma-b) 20%,transparent); }
+.landing-phone-scene { background:radial-gradient(circle at 65% 25%,color-mix(in oklab,var(--landing-plasma-c) 55%,transparent),transparent 34%),linear-gradient(155deg,var(--landing-plasma-a),var(--landing-surface) 58%,var(--landing-bg)); }
+.landing-feature-glow { background:linear-gradient(145deg,color-mix(in oklab,var(--landing-plasma-a) 18%,var(--landing-surface)),color-mix(in oklab,var(--landing-plasma-c) 9%,var(--landing-surface))); }
+.landing-focus:focus-visible { outline:2px solid var(--landing-mint); outline-offset:3px; }
+.landing-float { animation:landing-float 6s ease-in-out infinite; }
+.landing-float-delay { animation-delay:-2s; }
+@keyframes landing-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@media (prefers-reduced-motion:reduce) { .landing-float { animation:none; } }
