@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ModuleKey } from "@/lib/access";
 import { StudioProvider, useStudio } from "./studio-context";
 import logoLightAsset from "@/assets/logo-light.png.asset.json";
+import logoDarkAsset from "@/assets/logo-dark.png.asset.json";
 import logoMarkLightAsset from "@/assets/logo-mark-light.png.asset.json";
 import logoMarkDarkAsset from "@/assets/logo-mark-dark.png.asset.json";
 
@@ -33,10 +34,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
       ) : (
         <>
           <img src={logoLightAsset.url} alt="Shop Studio" className="h-7 w-auto shrink-0 dark:hidden" />
-          <span className="hidden items-center gap-3 dark:flex">
-            <span className="logo-mark grid h-9 w-9 shrink-0 place-items-center rounded-full bg-foreground text-sm font-black text-background">SS</span>
-            <span className="glitch-logo text-base font-black" data-text="Shop Studio">Shop Studio</span>
-          </span>
+          <img src={logoDarkAsset.url} alt="Shop Studio" className="hidden h-7 w-auto shrink-0 dark:block" />
         </>
       )}
     </div>
