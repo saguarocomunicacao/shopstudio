@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { JOB_STATUS_LABELS, relativeTime, useJobs } from "@/lib/content";
 import { SyncCategoriesButton } from "./category-select";
+import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
 
 const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-lime", "Rascunho enviado": "status-orange", "Publicado": "status-pink", "Ativo": "status-lime", "Pausado": "status-neutral" };
@@ -10,10 +11,11 @@ function Badge({ children }: { children: string }) { return <span className={`in
 function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) { return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>; }
 function Empty({ children = "Nenhum item por aqui ainda." }: { children?: string }) { return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{children}</div>; }
 
-export function DashboardPage() {
+export function DashboardPage() { return <ProfileGate><DashboardContent /></ProfileGate>; }
+
+function DashboardContent() {
   const { activeProfile, activeProfileId, profiles } = useStudio();
-  const { data: jobs = [] } = useJobs();
-  const scoped = activeProfileId === "all" ? jobs : jobs.filter((j) => j.profile_id === activeProfileId);
+  const { data: scoped = [] } = useJobs(activeProfileId);
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
   const stats = [
     { icon: Video, value: scoped.filter((j) => j.status === "video_pronto").length, label: "Vídeos prontos" },
@@ -22,7 +24,7 @@ export function DashboardPage() {
     { icon: CircleDollarSign, value: scoped.length, label: "Jobs no pipeline" },
   ];
   return <>
-    <Heading eyebrow={activeProfile?.name ?? "Visão consolidada"} title="Painel geral" />
+    <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Painel geral" />
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{stats.map(({ icon: Icon, value, label }) => <div className="panel metric-card" key={label}><div className="mb-8 flex items-start justify-between"><span className="icon-box"><Icon /></span></div><strong className="text-2xl font-black">{value}</strong><p className="mt-1 text-sm text-muted-foreground">{label}</p></div>)}</div>
     <section className="mt-6 panel">
       <div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="icon"><MoreHorizontal /></Button></div>
@@ -31,10 +33,11 @@ export function DashboardPage() {
   </>;
 }
 
-export function VideosPage() {
+export function VideosPage() { return <ProfileGate><VideosContent /></ProfileGate>; }
+
+function VideosContent() {
   const { activeProfileId, profiles } = useStudio();
-  const { data: jobs = [] } = useJobs();
-  const scoped = activeProfileId === "all" ? jobs : jobs.filter((j) => j.profile_id === activeProfileId);
+  const { data: scoped = [] } = useJobs(activeProfileId);
   const videos = scoped.filter((j) => !!j.video_url);
   const rendering = scoped.filter((j) => j.status === "gerando_video");
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
@@ -58,16 +61,18 @@ export function VideosPage() {
 }
 
 export function DraftsPage() {
-  return <>
+  return <ProfileGate>
     <Heading eyebrow="Prontos para decisão" title="Fila de revisão" />
     <Empty>Nenhum rascunho aguardando revisão.</Empty>
-  </>;
+  </ProfileGate>;
 }
 
-export function MetricsPage() {
+export function MetricsPage() { return <ProfileGate><MetricsContent /></ProfileGate>; }
+
+function MetricsContent() {
   const { activeProfile } = useStudio();
   return <>
-    <Heading eyebrow={activeProfile?.name ?? "Todos os perfis"} title="Performance" />
+    <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Performance" />
     <Empty>Ainda não há dados de desempenho. Publique conteúdo para começar a medir.</Empty>
   </>;
 }

@@ -11,6 +11,7 @@ import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
 import { useVideoDriver } from "@/lib/video-driver";
 import { JobDetailDialog } from "./job-detail-dialog";
+import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
 import { useDragScroll } from "./use-drag-scroll";
 
@@ -28,12 +29,14 @@ const statusClass: Record<string, string> = {
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
-export function PipelinePage() {
+export function PipelinePage() { return <ProfileGate><PipelineContent /></ProfileGate>; }
+
+function PipelineContent() {
   const { activeProfileId, profiles, can } = useStudio();
   const kanbanRef = useDragScroll<HTMLDivElement>();
   const qc = useQueryClient();
-  const { data: jobs = [], isLoading } = useJobs(can("pipeline", "visualizar"));
-  const { data: products = [] } = useProducts(can("produtos", "visualizar"));
+  const { data: jobs = [], isLoading } = useJobs(activeProfileId, can("pipeline", "visualizar"));
+  const { data: products = [] } = useProducts(activeProfileId, can("produtos", "visualizar"));
   const [detail, setDetail] = useState<DbJob | null>(null);
   const generate = useServerFn(generateJobScript);
   const generateScenes = useServerFn(generateJobScenes);
@@ -102,7 +105,7 @@ export function PipelinePage() {
     onSettled: () => setRenderingId(null),
   });
 
-  const filtered = activeProfileId === "all" ? jobs : jobs.filter((j) => j.profile_id === activeProfileId);
+  const filtered = jobs;
   const current = detail ? jobs.find((j) => j.id === detail.id) ?? detail : null;
 
   return (

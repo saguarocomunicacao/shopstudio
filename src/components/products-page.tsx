@@ -14,6 +14,7 @@ import { useProducts, type DbProduct } from "@/lib/content";
 import { CategorySelect } from "./category-select";
 import { DiscoverPanel } from "./discover-panel";
 import { ProductDataTable } from "./product-data-table";
+import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
@@ -25,7 +26,6 @@ function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; a
 type FormState = { name: string; niche: string; categoryId: string; price: string; commission: string; url: string; hype: string; status: string };
 const emptyForm: FormState = { name: "", niche: "", categoryId: "", price: "", commission: "", url: "", hype: "50", status: "Ativo" };
 
-const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 // Mascara o valor digitado no formato BRL (R$ 1.234,56) enquanto o usuario digita.
 function maskPrice(raw: string): string {
@@ -47,10 +47,12 @@ function maskCommission(raw: string): string {
   return String(num);
 }
 
-export function ProductsPage() {
-  const { can, profiles, userId } = useStudio();
+export function ProductsPage() { return <ProfileGate><ProductsContent /></ProfileGate>; }
+
+function ProductsContent() {
+  const { can, userId, activeProfileId, activeProfile } = useStudio();
   const qc = useQueryClient();
-  const { data: products = [], isLoading } = useProducts(can("produtos", "visualizar"));
+  const { data: products = [], isLoading } = useProducts(activeProfileId, can("produtos", "visualizar"));
 
   const canCreate = can("produtos", "criar");
   const canEdit = can("produtos", "editar");
@@ -61,21 +63,14 @@ export function ProductsPage() {
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
   const [tab, setTab] = useState<"catalogo" | "descobrir">("catalogo");
   const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
-  const [targetProfile, setTargetProfile] = useState<string>("");
 
-  const jobProfiles = profiles.filter((p) => can("pipeline", "criar", p.id));
+  const canCreateJob = can("pipeline", "criar", activeProfileId);
 
   useEffect(() => {
     if (!dialog.open) return;
     const p = dialog.product;
     setForm(p ? { name: p.name, niche: p.niche, categoryId: p.category_id ?? "", price: maskPrice(String(p.price * 100)), commission: String(Math.min(100, Math.max(0, Math.round(p.commission)))), url: p.url, hype: String(p.hype), status: p.status } : emptyForm);
   }, [dialog]);
-
-  useEffect(() => {
-    if (!useTarget) return;
-    const match = jobProfiles.find((p) => normalize(p.niche).includes(normalize(useTarget.niche)) || normalize(useTarget.niche).includes(normalize(p.name)));
-    setTargetProfile(match?.id ?? jobProfiles[0]?.id ?? "");
-  }, [useTarget]);
 
   const save = useMutation({
     mutationFn: async ({ product, values }: { product: DbProduct | null; values: FormState }) => {
@@ -95,13 +90,13 @@ export function ProductsPage() {
         if (error) throw new Error(error.message);
         return;
       }
-      const { error } = await supabase.from("products").insert({ ...payload, created_by: userId });
+      const { error } = await supabase.from("products").insert({ ...payload, created_by: userId, profile_id: activeProfileId });
       if (error) throw new Error(error.message);
     },
     onSuccess: (_d, vars) => {
       toast.success(vars.product ? "Produto atualizado." : "Produto adicionado.");
       setDialog({ open: false, product: null });
-      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
     },
     onError: (e) => toast.error(errMessage(e)),
   });
@@ -111,13 +106,13 @@ export function ProductsPage() {
       const { error } = await supabase.from("products").delete().eq("id", product.id);
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { toast.success("Produto removido."); setConfirm(null); qc.invalidateQueries({ queryKey: ["products"] }); },
+    onSuccess: () => { toast.success("Produto removido."); setConfirm(null); qc.invalidateQueries({ queryKey: ["products", activeProfileId] }); },
     onError: (e) => toast.error(errMessage(e)),
   });
 
   const createJob = useMutation({
-    mutationFn: async ({ product, profileId }: { product: DbProduct; profileId: string }) => {
-      if (!profileId) throw new Error("Escolha um perfil de destino.");
+    mutationFn: async ({ product, profileId }: { product: DbProduct; profileId: string | null }) => {
+      if (!profileId) throw new Error("Selecione um perfil no seletor acima.");
       const { error } = await supabase.from("jobs").insert({
         product_id: product.id,
         profile_id: profileId,
@@ -127,7 +122,7 @@ export function ProductsPage() {
       });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { toast.success("Job criado no pipeline."); setUseTarget(null); qc.invalidateQueries({ queryKey: ["jobs"] }); },
+    onSuccess: () => { toast.success("Job criado no pipeline."); setUseTarget(null); qc.invalidateQueries({ queryKey: ["jobs", activeProfileId] }); },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -158,7 +153,7 @@ export function ProductsPage() {
           items={products.map((p) => ({ ...p, imageUrl: p.image_url, productUrl: p.url }))}
           renderActions={(p) => (
             <>
-              {jobProfiles.length > 0 && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
+              {canCreateJob && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
                {canEdit && (
                  <Tooltip>
                    <TooltipTrigger asChild>
@@ -218,18 +213,11 @@ export function ProductsPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>Usar “{useTarget?.name}”</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
-            <p className="text-sm text-muted-foreground">Escolha o perfil onde este conteúdo será produzido. O job nasce na etapa “Produto escolhido”.</p>
-            <div className="grid gap-2">
-              <Label htmlFor="pr-profile">Perfil de destino</Label>
-              <Select value={targetProfile} onValueChange={setTargetProfile}>
-                <SelectTrigger id="pr-profile"><SelectValue placeholder="Selecione um perfil" /></SelectTrigger>
-                <SelectContent>{jobProfiles.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            <p className="text-sm text-muted-foreground">O job nasce na etapa “Produto escolhido” dentro do perfil <strong className="text-foreground">{activeProfile?.name}</strong>.</p>
           </div>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setUseTarget(null)}>Cancelar</Button>
-            <Button disabled={createJob.isPending} onClick={() => useTarget && createJob.mutate({ product: useTarget, profileId: targetProfile })}>Criar job</Button>
+            <Button disabled={createJob.isPending} onClick={() => useTarget && createJob.mutate({ product: useTarget, profileId: activeProfileId })}>Criar job</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

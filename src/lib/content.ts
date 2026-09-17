@@ -180,11 +180,16 @@ export function useProfileIdentity(profileId: string | null) {
   });
 }
 
-export function useProducts(enabled = true) {
+/** Catalogo do perfil ativo: sempre filtrado por profile_id no banco. */
+export function useProducts(profileId: string | null, enabled = true) {
   return useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", profileId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("*").order("hype", { ascending: false });
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("profile_id", profileId!)
+        .order("hype", { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []).map((p) => ({
         ...p,
@@ -192,24 +197,26 @@ export function useProducts(enabled = true) {
         commission: Number(p.commission),
       })) as DbProduct[];
     },
-    enabled,
+    enabled: enabled && !!profileId,
   });
 }
 
-export function useJobs(enabled = true) {
+/** Jobs do perfil ativo: sempre filtrados por profile_id no banco. */
+export function useJobs(profileId: string | null, enabled = true) {
   return useQuery({
-    queryKey: ["jobs"],
+    queryKey: ["jobs", profileId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
         .select(
           "id, product_id, profile_id, status, title, created_at, script, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count",
         )
+        .eq("profile_id", profileId!)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []) as DbJob[];
     },
-    enabled,
+    enabled: enabled && !!profileId,
     // Enquanto houver etapa em andamento (cenas ou vídeo), reconsulta para o card avançar sozinho.
     refetchInterval: (query) =>
       (query.state.data ?? []).some((j: DbJob) => j.status === "gerando_video" || !!j.render_stage) ? 6000 : false,
