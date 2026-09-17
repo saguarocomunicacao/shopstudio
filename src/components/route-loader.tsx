@@ -11,11 +11,16 @@ const FADE_OUT_MS = 260;
  * sem timeout fixo para esconder.
  */
 export function RouteLoader() {
+  // Apenas navegacao real entre rotas: "pending" dispara so em transicao de
+  // rota; revalidacoes/refetches em background (foco de aba, sessao) usam
+  // isLoading e ficam de fora.
   const isNavigating = useRouterState({
-    select: (s) => s.status === "pending" || s.isLoading,
+    select: (s) => s.status === "pending",
   });
   const isAppRoute = useRouterState({
-    select: (s) => s.location.pathname.startsWith("/app"),
+    select: (s) =>
+      s.location.pathname.startsWith("/app") &&
+      (s.resolvedLocation?.pathname ?? s.location.pathname) !== s.location.pathname,
   });
 
   const [visible, setVisible] = useState(false);
