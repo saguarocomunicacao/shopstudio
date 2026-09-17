@@ -18,6 +18,7 @@ import { TONE_OPTIONS } from "@/lib/content";
 import { generateAvatarReference } from "@/lib/video.functions";
 import { formatFollowers } from "@/lib/studio-data";
 import { CategorySelect } from "./category-select";
+import { ProfilePrompts } from "./profile-prompts";
 import { useStudio } from "./studio-context";
 
 const statusClass: Record<string, string> = { Ativo: "status-lime", Pausado: "status-neutral" };
@@ -351,6 +352,16 @@ export function ProfilesPage() {
                 </div>
               </div>
             )}
+
+            <div className="border-t pt-4">
+              <p className="text-sm font-bold">Prompts deste perfil</p>
+              <p className="text-xs text-muted-foreground">
+                {dialog.profile
+                  ? "Cada prompt segue o padrão do sistema até você criar uma versão só deste perfil."
+                  : "Salve o perfil primeiro para personalizar os prompts."}
+              </p>
+            </div>
+            {dialog.profile && <ProfilePrompts profileId={dialog.profile.id} />}
           </div>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDialog({ open: false, profile: null })}>Cancelar</Button>

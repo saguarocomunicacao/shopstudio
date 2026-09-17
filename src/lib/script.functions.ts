@@ -134,21 +134,21 @@ export const generateJobScript = createServerFn({ method: "POST" })
     const language = identity?.language || "pt-BR";
     const styleNotes = identity?.style_notes?.trim();
 
-    const prompt = [
-      `Você é roteirista de vídeos curtos para TikTok Shop no Brasil.`,
-      `Escreva o roteiro no idioma ${language}, com tom ${tone}.`,
-      profile ? `Perfil: ${profile.name} (categoria: ${profile.niche || "geral"}).` : "",
-      product
-        ? `Produto: ${product.name}. Preço: R$ ${Number(product.price).toFixed(2)}. Categoria: ${product.niche || "geral"}. Vendas recentes: ${product.sales_volume ?? 0}.`
-        : `Produto: não definido, use o título do job "${job.title || "conteúdo"}".`,
-      styleNotes ? `Observações de estilo do perfil: ${styleNotes}` : "",
-      `Entregue JSON com: hook (gancho falado nos primeiros 3 segundos, 1-2 frases de impacto), body (corpo com benefícios e demonstração, 60 a 110 palavras, em falas curtas), cta (chamada de venda direta apontando para o produto marcado/carrinho do TikTok, 1-2 frases), caption (legenda do post com até 150 caracteres) e hashtags (6 a 10 hashtags relevantes, sem o símbolo #).`,
-      `REGRA ABSOLUTA: jamais mencione "afiliado", "link de afiliado", "comissão", "ganhar comissão" ou termos similares, em nenhuma parte do roteiro, legenda ou hashtags. O criador nunca revela que é afiliado nem fala sobre comissão.`,
-      `O CTA deve ser no estilo que criadores do TikTok Shop usam, apontando para o produto marcado/carrinho do vídeo — varie entre formas como: "Clica no carrinhinho pra garantir o seu", "Tá na sacolinha aqui embaixo", "Corre que o link tá no carrinho", "Toca no produto marcado no vídeo". Nunca fale em afiliado nem comissão.`,
-      `Não use emojis em excesso e evite promessas irreais.`,
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const { resolvePrompt, renderPrompt } = await import("./prompts.server");
+    const template = await resolvePrompt(supabase, job.profile_id, "roteiro");
+    const prompt = renderPrompt(template, {
+      idioma: language,
+      tom_de_voz: tone,
+      perfil: profile?.name ?? "",
+      categoria: profile?.niche || "geral",
+      produto: product?.name ?? job.title ?? "",
+      preco: product ? Number(product.price).toFixed(2) : "",
+      comissao: product ? `${Number(product.commission)}%` : "",
+      categoria_produto: product?.niche || "",
+      vendas: product?.sales_volume ?? "",
+      titulo: job.title ?? "",
+      observacoes_estilo: styleNotes ?? "",
+    });
 
     const generated = await callLovableAi(prompt);
 

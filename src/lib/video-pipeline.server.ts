@@ -300,16 +300,16 @@ export function buildMovie(opts: {
   voice: string;
   subtitleLanguage: string;
   webhookUrl: string;
-  priceLabel: string | null;
-  ctaText: string | null;
+  settings: import("./prompts.server").MovieSettings;
 }) {
+  const s = opts.settings;
   const scenes = opts.scenes.map((scene) => {
     const elements: Record<string, unknown>[] = [
       {
         type: "video",
         src: scene.video_url,
         duration: -2,
-        resize: "cover",
+        resize: s.resize,
         width: "100%",
         height: "100%",
         position: "center-center",
@@ -318,7 +318,7 @@ export function buildMovie(opts: {
       },
       { type: "voice", text: scene.narration, voice: opts.voice, model: "azure" },
     ];
-    return { transition: { style: "fade", duration: 0.4 }, elements };
+    return { transition: { style: "fade", duration: s.transition }, elements };
   });
 
   return {
@@ -326,28 +326,30 @@ export function buildMovie(opts: {
     quality: "high",
     "client-data": { job_id: opts.jobId },
     scenes,
-    elements: [
-      {
-        type: "subtitles",
-        language: opts.subtitleLanguage,
-        model: "default",
-        settings: {
-          style: "classic-progressive",
-          position: "custom",
-          x: 540,
-          y: 1510,
-          "font-family": "NotoSans Bold",
-          "font-size": 90,
-          "max-words-per-line": 4,
-          "word-color": "#FFFFFF",
-          "line-color": "#FFFFFF",
-          "outline-color": "#000000",
-          "outline-width": 6,
-          "shadow-color": "#000000",
-          "shadow-offset": 4,
-        },
-      },
-    ],
+    elements: s.subtitles
+      ? [
+          {
+            type: "subtitles",
+            language: opts.subtitleLanguage,
+            model: "default",
+            settings: {
+              style: s.style,
+              position: "custom",
+              x: 540,
+              y: s.positionY,
+              "font-family": s.fontFamily,
+              "font-size": s.fontSize,
+              "max-words-per-line": s.wordsPerLine,
+              "word-color": s.textColor,
+              "line-color": s.textColor,
+              "outline-color": s.outlineColor,
+              "outline-width": s.outlineWidth,
+              "shadow-color": s.shadowColor,
+              "shadow-offset": s.shadowOffset,
+            },
+          },
+        ]
+      : [],
     exports: [
       {
         destinations: [{ type: "webhook", endpoint: opts.webhookUrl, "content-type": "application/json" }],

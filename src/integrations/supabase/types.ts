@@ -324,6 +324,42 @@ export type Database = {
           },
         ]
       }
+      profile_prompt_overrides: {
+        Row: {
+          body: string
+          key: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          key: string
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          key?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_prompt_overrides_key_fkey"
+            columns: ["key"]
+            isOneToOne: false
+            referencedRelation: "prompt_templates"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "profile_prompt_overrides_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_video_settings: {
         Row: {
           avatar_mode: string
@@ -417,6 +453,39 @@ export type Database = {
             referencedColumns: ["category_id"]
           },
         ]
+      }
+      prompt_templates: {
+        Row: {
+          body: string
+          description: string
+          key: string
+          placeholders: string[]
+          sort_order: number
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body?: string
+          description?: string
+          key: string
+          placeholders?: string[]
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body?: string
+          description?: string
+          key?: string
+          placeholders?: string[]
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       role_permissions: {
         Row: {
