@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,11 +28,13 @@ function useSaveConfig() {
 function NumberField({
   label,
   hint,
+  placeholder = "sem limite",
   value,
   onSave,
 }: {
   label: string;
   hint?: string;
+  placeholder?: string;
   value: number | null;
   onSave: (v: number | null) => void;
 }) {
@@ -44,7 +45,7 @@ function NumberField({
       <p className="mb-1 text-xs font-semibold">{label}</p>
       <Input
         inputMode="decimal"
-        placeholder="sem limite"
+        placeholder={placeholder}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => {
@@ -148,11 +149,13 @@ export function BudgetCard() {
             <div className="mt-3 flex gap-3">
               <NumberField
                 label="Saldo atual"
+                placeholder="anote aqui"
                 value={numOf(CONFIG_KEYS.saldoJson2video)}
                 onSave={(v) => save.mutate({ key: CONFIG_KEYS.saldoJson2video, value: v })}
               />
               <NumberField
                 label="Avisar abaixo de"
+                placeholder="opcional"
                 value={numOf(CONFIG_KEYS.saldoJson2videoMin)}
                 onSave={(v) => save.mutate({ key: CONFIG_KEYS.saldoJson2videoMin, value: v })}
               />
@@ -167,11 +170,13 @@ export function BudgetCard() {
             <div className="mt-3 flex gap-3">
               <NumberField
                 label="Saldo atual"
+                placeholder="anote aqui"
                 value={numOf(CONFIG_KEYS.saldoKalodata)}
                 onSave={(v) => save.mutate({ key: CONFIG_KEYS.saldoKalodata, value: v })}
               />
               <NumberField
                 label="Avisar abaixo de"
+                placeholder="opcional"
                 value={numOf(CONFIG_KEYS.saldoKalodataMin)}
                 onSave={(v) => save.mutate({ key: CONFIG_KEYS.saldoKalodataMin, value: v })}
               />
@@ -182,9 +187,7 @@ export function BudgetCard() {
           </div>
         </div>
 
-        <Button variant="secondary" className="mt-4" disabled={save.isPending} onClick={() => toast.info("Os valores são salvos ao sair do campo.")}>
-          Como funciona
-        </Button>
+        <p className="mt-4 text-xs text-muted-foreground">Os valores são salvos ao sair do campo.</p>
       </section>
     </>
   );
