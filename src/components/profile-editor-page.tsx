@@ -109,7 +109,6 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const [avatarItems, setAvatarItems] = useState<AvatarItem[]>([]);
   const [avatarSource, setAvatarSource] = useState<"ia" | "upload">("ia");
   const [avatarDescription, setAvatarDescription] = useState("");
-  const [leaveTo, setLeaveTo] = useState<null | (() => void)>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const generateAvatar = useServerFn(generateAvatarReference);
   const saveAvatars = useServerFn(saveAvatarReferences);
@@ -174,7 +173,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const dadosIncompleto = !form.name.trim() || !form.categoryId;
   const dirty = dirtyTabs.size > 0;
 
-  useBlocker({ shouldBlockFn: () => dirty, enableBeforeUnload: () => dirty, withResolver: false });
+  const blocker = useBlocker({ shouldBlockFn: () => dirty, enableBeforeUnload: () => dirty, withResolver: true });
 
   const save = useMutation({
     mutationFn: async (values: FormState) => {
@@ -276,11 +275,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
     uploadAvatars.mutate([...avatarItems, ...read]);
   };
 
-  const goBack = () => {
-    const run = () => void navigate({ to: "/app/perfis" });
-    if (dirty) setLeaveTo(() => run);
-    else run();
-  };
+  const goBack = () => void navigate({ to: "/app/perfis" });
 
   if (loading && !profile && !isNew) {
     return <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Carregando perfil...</p>;
@@ -540,27 +535,17 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
         </section>
       </div>
 
-      <AlertDialog open={!!leaveTo} onOpenChange={(open) => !open && setLeaveTo(null)}>
+      <AlertDialog open={blocker.status === "blocked"} onOpenChange={(open) => { if (!open) blocker.reset?.(); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Sair sem salvar?</AlertDialogTitle>
             <AlertDialogDescription>Há alterações não salvas neste perfil. Elas serão perdidas.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Continuar editando</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                const run = leaveTo;
-                setSaved(form);
-                setLeaveTo(null);
-                run?.();
-              }}
-            >
-              Sair sem salvar
-            </AlertDialogAction>
+            <AlertDialogCancel onClick={() => blocker.reset?.()}>Continuar editando</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); blocker.proceed?.(); }}>Sair sem salvar</AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
     </>
   );
