@@ -580,10 +580,13 @@ export const saveAvatarReferences = createServerFn({ method: "POST" })
         profileId: z.string().uuid(),
         images: z
           .array(
-            z.object({
-              base64: z.string().min(16).max(9_000_000),
-              mimeType: z.enum(["image/jpeg", "image/png", "image/jpg", "image/webp"]),
-            }),
+            z.union([
+              z.object({
+                base64: z.string().min(16).max(9_000_000),
+                mimeType: z.enum(["image/jpeg", "image/png", "image/jpg", "image/webp"]),
+              }),
+              z.object({ url: z.string().url() }),
+            ]),
           )
           .max(3),
       })
