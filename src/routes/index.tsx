@@ -189,7 +189,8 @@ function AssemblyLine() {
       <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
       <div className="relative mt-16 md:mt-20">
         <div className="absolute bottom-8 left-7 top-7 w-0.5 overflow-hidden rounded-full bg-landing-line md:bottom-auto md:left-[10%] md:right-[10%] md:top-8 md:h-0.5 md:w-auto">
-          <motion.div className="landing-assembly-line h-full w-full origin-top md:origin-left" style={reduceMotion ? undefined : { scaleY: lineProgress, scaleX: lineProgress }} />
+          <motion.div className="landing-assembly-line h-full w-full origin-top md:hidden" style={reduceMotion ? undefined : { scaleY: lineProgress }} />
+          <motion.div className="landing-assembly-line hidden h-full w-full origin-left md:block" style={reduceMotion ? undefined : { scaleX: lineProgress }} />
         </div>
         <div className="relative grid gap-12 md:grid-cols-5 md:gap-5">
           {assemblySteps.map((step, index) => <AssemblyStep key={step.title} step={step} index={index} progress={scrollYProgress} reduceMotion={Boolean(reduceMotion)} />)}
