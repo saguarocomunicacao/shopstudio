@@ -5,6 +5,7 @@ import {
   Users, WandSparkles, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoDark from "@/assets/logo-dark.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,7 +34,7 @@ function LandingPage() {
     <div className="landing-page min-h-screen overflow-x-hidden selection:bg-landing-mint selection:text-landing-bg">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-landing-line bg-landing-bg/80 backdrop-blur-xl">
         <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <a href="#inicio" className="landing-focus landing-display landing-plasma-text text-xl font-bold">Shop Studio</a>
+          <a href="#inicio" className="landing-focus flex items-center"><img src={logoDark.url} alt="Shop Studio" className="h-8 w-auto sm:h-9" /></a>
           <nav aria-label="Navegação principal" className="hidden items-center gap-7 text-sm text-landing-muted lg:flex">
             <a className="landing-focus transition-colors hover:text-landing-text" href="#como-funciona">Como funciona</a>
             <a className="landing-focus transition-colors hover:text-landing-text" href="#recursos">Recursos</a>
@@ -42,7 +43,7 @@ function LandingPage() {
           </nav>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" className="landing-focus text-landing-text hover:bg-landing-surface-raised hover:text-landing-text"><Link to="/entrar">Entrar</Link></Button>
-            <Button asChild className="landing-focus landing-plasma-bg h-10 rounded-xl border-0 px-4 text-landing-text shadow-none hover:opacity-90"><Link to="/entrar">Começar agora</Link></Button>
+            <Button asChild className="landing-focus landing-magenta h-10 rounded-xl border-0 px-4 text-landing-text shadow-none hover:opacity-90"><Link to="/entrar">Começar agora</Link></Button>
           </div>
         </div>
       </header>
@@ -54,13 +55,13 @@ function LandingPage() {
               <Sparkles className="size-4 text-landing-mint" aria-hidden="true" /> Produção de vídeo no piloto automático
             </div>
             <h1 className="landing-display text-5xl font-bold leading-[1.04] sm:text-6xl lg:text-7xl">
-              Do produto que vende ao <span className="landing-plasma-text">vídeo pronto</span> pra postar
+              Do produto que vende ao <span className="landing-glitch" data-text="vídeo pronto">vídeo pronto</span> pra postar
             </h1>
             <p className="mt-7 max-w-xl text-lg leading-8 text-landing-muted">
               Garimpa o produto em alta, escreve o roteiro no tom do canal e gera o vídeo com uma pessoa usando o produto. Você só revisa e posta.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="landing-focus landing-plasma-bg h-13 rounded-xl border-0 px-6 text-base text-landing-text hover:opacity-90"><Link to="/entrar">Criar minha conta <ArrowRight aria-hidden="true" /></Link></Button>
+              <Button asChild size="lg" className="landing-focus landing-magenta h-13 rounded-xl border-0 px-6 text-base text-landing-text hover:opacity-90"><Link to="/entrar">Criar minha conta <ArrowRight aria-hidden="true" /></Link></Button>
               <Button asChild size="lg" variant="outline" className="landing-focus h-13 rounded-xl border border-landing-line bg-landing-surface px-6 text-base text-landing-text hover:bg-landing-surface-raised hover:text-landing-text"><a href="#como-funciona">Ver como funciona <ArrowDown aria-hidden="true" /></a></Button>
             </div>
           </div>
@@ -153,7 +154,7 @@ function LandingPage() {
             <h2 className="landing-display text-4xl font-bold sm:text-5xl">Coloque sua produção no automático</h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-landing-muted">Transforme sinais de venda em vídeos prontos, com revisão humana no ponto certo.</p>
             <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-              <Button asChild size="lg" className="landing-focus landing-plasma-bg h-13 rounded-xl px-6 text-base text-landing-text hover:opacity-90"><Link to="/entrar">Criar minha conta <ArrowRight /></Link></Button>
+              <Button asChild size="lg" className="landing-focus landing-magenta h-13 rounded-xl px-6 text-base text-landing-text hover:opacity-90"><Link to="/entrar">Criar minha conta <ArrowRight /></Link></Button>
               <Button asChild size="lg" variant="ghost" className="landing-focus h-13 rounded-xl px-6 text-base text-landing-text hover:bg-landing-surface-raised hover:text-landing-text"><a href="#como-funciona">Rever como funciona</a></Button>
             </div>
           </div>
@@ -162,7 +163,7 @@ function LandingPage() {
 
       <footer className="border-t border-landing-line px-5 py-12 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-10 sm:grid-cols-[1fr_auto_auto]">
-          <div><div className="landing-display landing-plasma-text text-xl font-bold">Shop Studio</div><p className="mt-3 max-w-xs text-sm leading-6 text-landing-muted">A esteira de vídeo do TikTok Shop, do produto ao post.</p></div>
+          <div><img src={logoDark.url} alt="Shop Studio" className="h-9 w-auto" /><p className="mt-3 max-w-xs text-sm leading-6 text-landing-muted">A esteira de vídeo do TikTok Shop, do produto ao post.</p></div>
           <FooterLinks title="Produto" links={[["Como funciona","#como-funciona"],["Recursos","#recursos"],["O estúdio de IA","#estudio"],["Controle","#controle"]]} />
           <FooterLinks title="Conta" links={[["Entrar","/entrar"],["Criar conta","/entrar"]]} />
         </div>
