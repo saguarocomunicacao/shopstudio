@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
@@ -33,6 +34,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntrarRoute = EntrarRouteImport.update({
@@ -115,6 +121,7 @@ const ApiPublicJson2videoWebhookTokenRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
   '/_authenticated/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/entrar'
     | '/login'
     | '/app/aprovacoes'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/entrar'
     | '/login'
     | '/app/aprovacoes'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/auth'
     | '/entrar'
     | '/login'
     | '/_authenticated/app/aprovacoes'
@@ -224,6 +236,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
   EntrarRoute: typeof EntrarRoute
   LoginRoute: typeof LoginRoute
   ApiPublicJson2videoWebhookTokenRoute: typeof ApiPublicJson2videoWebhookTokenRoute
@@ -243,6 +256,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entrar': {
@@ -380,6 +400,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
   EntrarRoute: EntrarRoute,
   LoginRoute: LoginRoute,
   ApiPublicJson2videoWebhookTokenRoute: ApiPublicJson2videoWebhookTokenRoute,
