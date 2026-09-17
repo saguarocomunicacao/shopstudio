@@ -19,6 +19,7 @@ import { Route as AuthenticatedAppAprovacoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
 import { Route as AuthenticatedAppCustosRouteImport } from './routes/_authenticated/app/custos'
 import { Route as AuthenticatedAppEquipeRouteImport } from './routes/_authenticated/app/equipe'
+import { Route as AuthenticatedAppInvestimentoRouteImport } from './routes/_authenticated/app/investimento'
 import { Route as AuthenticatedAppMetricasRouteImport } from './routes/_authenticated/app/metricas'
 import { Route as AuthenticatedAppPerfisRouteImport } from './routes/_authenticated/app/perfis'
 import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenticated/app/pipeline'
@@ -79,6 +80,12 @@ const AuthenticatedAppEquipeRoute = AuthenticatedAppEquipeRouteImport.update({
   path: '/app/equipe',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAppInvestimentoRoute =
+  AuthenticatedAppInvestimentoRouteImport.update({
+    id: '/app/investimento',
+    path: '/app/investimento',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAppMetricasRoute =
   AuthenticatedAppMetricasRouteImport.update({
     id: '/app/metricas',
@@ -134,6 +141,7 @@ export interface FileRoutesByFullPath {
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/custos': typeof AuthenticatedAppCustosRoute
   '/app/equipe': typeof AuthenticatedAppEquipeRoute
+  '/app/investimento': typeof AuthenticatedAppInvestimentoRoute
   '/app/metricas': typeof AuthenticatedAppMetricasRoute
   '/app/perfis': typeof AuthenticatedAppPerfisRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
@@ -153,6 +161,7 @@ export interface FileRoutesByTo {
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/custos': typeof AuthenticatedAppCustosRoute
   '/app/equipe': typeof AuthenticatedAppEquipeRoute
+  '/app/investimento': typeof AuthenticatedAppInvestimentoRoute
   '/app/metricas': typeof AuthenticatedAppMetricasRoute
   '/app/perfis': typeof AuthenticatedAppPerfisRoute
   '/app/pipeline': typeof AuthenticatedAppPipelineRoute
@@ -174,6 +183,7 @@ export interface FileRoutesById {
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/_authenticated/app/custos': typeof AuthenticatedAppCustosRoute
   '/_authenticated/app/equipe': typeof AuthenticatedAppEquipeRoute
+  '/_authenticated/app/investimento': typeof AuthenticatedAppInvestimentoRoute
   '/_authenticated/app/metricas': typeof AuthenticatedAppMetricasRoute
   '/_authenticated/app/perfis': typeof AuthenticatedAppPerfisRoute
   '/_authenticated/app/pipeline': typeof AuthenticatedAppPipelineRoute
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/app/configuracoes'
     | '/app/custos'
     | '/app/equipe'
+    | '/app/investimento'
     | '/app/metricas'
     | '/app/perfis'
     | '/app/pipeline'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/app/configuracoes'
     | '/app/custos'
     | '/app/equipe'
+    | '/app/investimento'
     | '/app/metricas'
     | '/app/perfis'
     | '/app/pipeline'
@@ -234,6 +246,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/configuracoes'
     | '/_authenticated/app/custos'
     | '/_authenticated/app/equipe'
+    | '/_authenticated/app/investimento'
     | '/_authenticated/app/metricas'
     | '/_authenticated/app/perfis'
     | '/_authenticated/app/pipeline'
@@ -326,6 +339,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppEquipeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/app/investimento': {
+      id: '/_authenticated/app/investimento'
+      path: '/app/investimento'
+      fullPath: '/app/investimento'
+      preLoaderRoute: typeof AuthenticatedAppInvestimentoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/app/metricas': {
       id: '/_authenticated/app/metricas'
       path: '/app/metricas'
@@ -390,6 +410,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
   AuthenticatedAppCustosRoute: typeof AuthenticatedAppCustosRoute
   AuthenticatedAppEquipeRoute: typeof AuthenticatedAppEquipeRoute
+  AuthenticatedAppInvestimentoRoute: typeof AuthenticatedAppInvestimentoRoute
   AuthenticatedAppMetricasRoute: typeof AuthenticatedAppMetricasRoute
   AuthenticatedAppPerfisRoute: typeof AuthenticatedAppPerfisRoute
   AuthenticatedAppPipelineRoute: typeof AuthenticatedAppPipelineRoute
@@ -405,6 +426,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
   AuthenticatedAppCustosRoute: AuthenticatedAppCustosRoute,
   AuthenticatedAppEquipeRoute: AuthenticatedAppEquipeRoute,
+  AuthenticatedAppInvestimentoRoute: AuthenticatedAppInvestimentoRoute,
   AuthenticatedAppMetricasRoute: AuthenticatedAppMetricasRoute,
   AuthenticatedAppPerfisRoute: AuthenticatedAppPerfisRoute,
   AuthenticatedAppPipelineRoute: AuthenticatedAppPipelineRoute,

@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export const MODULES = ["perfis", "produtos", "pipeline", "videos", "rascunhos", "metricas", "custos", "equipe", "configuracoes"] as const;
+export const MODULES = ["perfis", "produtos", "pipeline", "videos", "rascunhos", "metricas", "custos", "investimento", "equipe", "configuracoes"] as const;
 export const ACTIONS = ["visualizar", "criar", "editar", "remover", "publicar", "aprovar", "ver_global"] as const;
 export type ModuleKey = (typeof MODULES)[number];
 export type ActionKey = (typeof ACTIONS)[number];
 
 export const MODULE_LABELS: Record<ModuleKey, string> = {
   perfis: "Perfis", produtos: "Produtos", pipeline: "Pipeline", videos: "Vídeos",
-  rascunhos: "Rascunhos", metricas: "Métricas", custos: "Custos", equipe: "Equipe", configuracoes: "Configurações",
+  rascunhos: "Rascunhos", metricas: "Métricas", custos: "Custos", investimento: "Investimento", equipe: "Equipe", configuracoes: "Configurações",
 };
 export const ACTION_LABELS: Record<ActionKey, string> = {
   visualizar: "Visualizar", criar: "Criar", editar: "Editar", remover: "Remover", publicar: "Publicar", aprovar: "Aprovar", ver_global: "Ver global",
