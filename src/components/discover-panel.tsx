@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Loader2, Search } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,15 +37,18 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const searchId = useRef(0);
 
   const saved = new Set(products.filter((p) => p.external_id).map((p) => `${p.source}:${p.external_id}`));
 
   const run = useMutation({
-    mutationFn: async (nextPage: number) => ({
+    mutationFn: async ({ nextPage, id }: { nextPage: number; id: number }) => ({
       page: nextPage,
+      id,
       ...((await search({ data: { keyword, dateRange, sortField, page: nextPage } })) as { items: Found[]; hasMore: boolean }),
     }),
     onSuccess: (data) => {
+      if (data.id !== searchId.current) return; // resposta atrasada de busca anterior
       setPage(data.page);
       setHasMore(data.hasMore);
       setResults((prev) => (data.page > 1 && prev ? [...prev, ...data.items] : data.items));
@@ -54,6 +57,15 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
     },
     onError: (e) => toast.error(errMessage(e)),
   });
+
+  const startSearch = () => {
+    searchId.current += 1;
+    setResults(null);
+    setPage(1);
+    setHasMore(false);
+    setSelected({});
+    run.mutate({ nextPage: 1, id: searchId.current });
+  };
 
   const save = useMutation({
     mutationFn: async (items: Found[]) => {
@@ -104,7 +116,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
   return (
     <div className="space-y-4">
       <div className="panel grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
-        <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Buscar por palavra-chave (opcional)" onKeyDown={(e) => e.key === "Enter" && run.mutate(1)} />
+        <Input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Buscar por palavra-chave (opcional)" onKeyDown={(e) => e.key === "Enter" && startSearch()} />
         <Select value={dateRange} onValueChange={(v) => setDateRange(v as typeof dateRange)}>
           <SelectTrigger className="md:w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -121,8 +133,8 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
             <SelectItem value="revenue_growth_rate">Maior crescimento</SelectItem>
           </SelectContent>
         </Select>
-        <Button disabled={run.isPending} onClick={() => run.mutate(1)}>
-          {run.isPending ? <Loader2 className="animate-spin" /> : <Search />}Buscar
+        <Button disabled={run.isPending && page === 1} onClick={startSearch}>
+          {run.isPending && page === 1 ? <Loader2 className="animate-spin" /> : <Search />}Buscar
         </Button>
       </div>
 
@@ -158,7 +170,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
 
       {results !== null && hasMore && (
         <div className="flex justify-center">
-          <Button variant="secondary" disabled={run.isPending} onClick={() => run.mutate(page + 1)}>Carregar mais</Button>
+          <Button variant="secondary" disabled={run.isPending} onClick={() => run.mutate({ nextPage: page + 1, id: searchId.current })}>Carregar mais</Button>
         </div>
       )}
 
