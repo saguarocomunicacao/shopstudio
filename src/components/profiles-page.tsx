@@ -390,9 +390,40 @@ export function ProfilesPage() {
                 <p className="mb-3 mt-1 text-xs text-muted-foreground">
                   {dialog.profile ? "Uma imagem de referência reutilizada em todos os vídeos." : "Salve o perfil primeiro para criar a pessoa fixa."}
                 </p>
-                <div className="flex items-start gap-4">
-                  {avatarUrl && <img src={avatarUrl} alt="" className="size-24 rounded-xl object-cover" />}
-                  <div className="grid flex-1 gap-2">
+                <div className="mb-3 inline-flex rounded-lg bg-background p-1">
+                  {([["ia", "Gerar por IA"], ["upload", "Enviar fotos"]] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setAvatarSource(value)}
+                      className={`rounded-md px-3 py-1.5 text-xs font-bold transition ${avatarSource === value ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {avatarItems.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-3">
+                    {avatarItems.map((item, i) => (
+                      <div className="relative" key={item.url ?? i}>
+                        <img src={item.preview} alt="" className="size-24 rounded-xl object-cover" />
+                        <button
+                          type="button"
+                          aria-label="Remover foto"
+                          className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow"
+                          disabled={uploadAvatars.isPending}
+                          onClick={() => uploadAvatars.mutate(avatarItems.filter((_, idx) => idx !== i))}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {avatarSource === "ia" ? (
+                  <div className="grid gap-2">
                     <Input
                       value={avatarDescription}
                       onChange={(e) => setAvatarDescription(e.target.value)}
@@ -408,7 +439,29 @@ export function ProfilesPage() {
                       {avatar.isPending ? <><Loader2 className="animate-spin" />Criando...</> : <><Sparkles />Criar pessoa</>}
                     </Button>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      Envie de 1 a 3 fotos da mesma pessoa (ângulos e expressões diferentes deixam os vídeos mais consistentes). JPG ou PNG, até 5 MB cada.
+                    </p>
+                    <input
+                      ref={fileInput}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => { void pickAvatarFiles(e.target.files); e.target.value = ""; }}
+                    />
+                    <Button
+                      variant="secondary"
+                      className="justify-self-start"
+                      disabled={!dialog.profile || uploadAvatars.isPending || avatarItems.length >= MAX_AVATARS}
+                      onClick={() => fileInput.current?.click()}
+                    >
+                      {uploadAvatars.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Upload />Enviar fotos ({avatarItems.length}/{MAX_AVATARS})</>}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
