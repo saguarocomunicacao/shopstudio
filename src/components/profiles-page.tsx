@@ -88,7 +88,6 @@ export function ProfilesPage() {
   const [avatarSource, setAvatarSource] = useState<"ia" | "upload">("ia");
   const fileInput = useRef<HTMLInputElement>(null);
   const [avatarDescription, setAvatarDescription] = useState("");
-  const fileInput = useRef<HTMLInputElement>(null);
   const generateAvatar = useServerFn(generateAvatarReference);
   const saveAvatars = useServerFn(saveAvatarReferences);
 
