@@ -57,9 +57,14 @@ export function SearchCostHistory({ onRepeat }: { onRepeat?: (termo: string) => 
             </TableBody>
           </Table>
         </div>
-        {podeRepetir && (
-          <p className="text-xs text-muted-foreground">Clique numa linha para repetir a busca.</p>
-        )}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <p className="text-sm font-semibold">
+            {buscas.length} {buscas.length === 1 ? "busca" : "buscas"} · {brl(total)}
+          </p>
+          {podeRepetir && (
+            <p className="text-xs text-muted-foreground">Clique numa linha para repetir a busca.</p>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
