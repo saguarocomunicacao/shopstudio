@@ -25,6 +25,13 @@ export type Scene = ScenePlan & {
   attempts?: number;
   video_path?: string;
   video_url?: string;
+  /** Narração em mp3 gerada na ElevenLabs (só quando o perfil usa voz ElevenLabs). */
+  audio_path?: string;
+  audio_url?: string;
+  audio_duration?: number;
+  /** Texto e voz usados no mp3: mudou o roteiro/voz, a cena é regerada. */
+  audio_text?: string;
+  audio_voice?: string;
 };
 
 /**
@@ -352,6 +359,69 @@ export async function storeMedia(path: string, bytes: Uint8Array, contentType: s
   return { path, url: data.signedUrl };
 }
 
+/** Modelo de narração da ElevenLabs e o nome do modelo usado na tarifa. */
+export const ELEVENLABS_MODEL = "eleven_flash_v2_5";
+export const ELEVENLABS_TARIFA_MODELO = "elevenlabs-flash-v2-5";
+/** Folga em segundos para a troca de cena nunca cortar o fim da narração. */
+export const NARRATION_PADDING = 0.3;
+
+/**
+ * Gera o mp3 da narração de uma cena na ElevenLabs. Usa o endpoint
+ * with-timestamps, que devolve o alinhamento por caractere: assim a duração
+ * real do áudio é lida da própria resposta, sem depender do arquivo.
+ * https://elevenlabs.io/docs/api-reference/text-to-speech/convert-with-timestamps
+ */
+export async function synthesizeNarration(opts: {
+  voiceId: string;
+  text: string;
+  model?: string;
+  language?: string;
+}): Promise<{ bytes: Uint8Array; durationSeconds: number | null }> {
+  const key = process.env["ELEVENLABS_API_KEY"];
+  if (!key) throw new Error("A narração não está configurada. Falta a chave da ElevenLabs.");
+
+  const body: Record<string, unknown> = { text: opts.text, model_id: opts.model || ELEVENLABS_MODEL };
+  const lang = opts.language?.split("-")[0];
+  if (lang) body["language_code"] = lang;
+
+  const url = `https://api.elevenlabs.io/v1/text-to-speech/${opts.voiceId}/with-timestamps?output_format=mp3_44100_128`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "xi-api-key": key, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (res.ok) {
+    const json = (await res.json()) as {
+      audio_base64?: string;
+      alignment?: { character_end_times_seconds?: number[] };
+    };
+    if (json.audio_base64) {
+      const ends = json.alignment?.character_end_times_seconds ?? [];
+      const last = ends.length ? ends[ends.length - 1]! : null;
+      return {
+        bytes: base64ToBytes(json.audio_base64),
+        durationSeconds: typeof last === "number" && last > 0 ? last : null,
+      };
+    }
+  }
+
+  // Fallback: endpoint simples (mp3 puro) com duração estimada pelo bitrate.
+  const plain = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${opts.voiceId}?output_format=mp3_44100_128`, {
+    method: "POST",
+    headers: { "xi-api-key": key, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!plain.ok) {
+    const detail = await plain.text();
+    throw new Error(`A ElevenLabs recusou a narração (${plain.status}). ${detail.slice(0, 200)}`);
+  }
+  const bytes = new Uint8Array(await plain.arrayBuffer());
+  // mp3 128 kbps = 16.000 bytes por segundo.
+  const estimated = bytes.length / 16000;
+  return { bytes, durationSeconds: estimated > 0 ? estimated : null };
+}
+
 /** Monta o Movie do JSON2Video costurando os takes com narração, legenda e textos. */
 export function buildMovie(opts: {
   jobId: string;
@@ -359,6 +429,7 @@ export function buildMovie(opts: {
   voice: string;
   subtitleLanguage: string;
   webhookUrl: string;
+  sceneDuration?: number;
   settings: import("./prompts.server").MovieSettings;
 }) {
   const s = opts.settings;
@@ -375,8 +446,23 @@ export function buildMovie(opts: {
         muted: true,
         loop: -1,
       },
-      { type: "voice", text: scene.narration, voice: opts.voice, model: "azure" },
     ];
+
+    if (scene.audio_url) {
+      // Narração ElevenLabs: áudio externo com duração intrínseca do mp3.
+      elements.push({ type: "audio", src: scene.audio_url, start: 0, duration: -1 });
+      const audio = (scene.audio_duration ?? 0) + NARRATION_PADDING;
+      // A cena precisa comportar o mp3 inteiro, senão a narração é cortada na
+      // troca de cena. O vídeo (duration -2, loop -1) acompanha a cena.
+      const duration = Math.max(opts.sceneDuration ?? 0, audio);
+      return {
+        transition: { style: "fade", duration: s.transition },
+        ...(duration > 0 ? { duration: Number(duration.toFixed(2)) } : {}),
+        elements,
+      };
+    }
+
+    elements.push({ type: "voice", text: scene.narration, voice: opts.voice, model: "azure" });
     return { transition: { style: "fade", duration: s.transition }, elements };
   });
 
