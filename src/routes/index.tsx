@@ -190,7 +190,7 @@ function AssemblyLine() {
         <div className="mx-auto w-full max-w-7xl px-5 py-10 lg:px-8">
           <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
           <div className="relative mt-14 py-8 md:mt-20">
-            <div className="absolute bottom-8 left-7 top-7 w-0.5 overflow-hidden rounded-full bg-landing-line md:bottom-auto md:left-[10%] md:right-[10%] md:top-8 md:h-0.5 md:w-auto">
+            <div className="absolute bottom-17 left-9 top-17 w-0.5 overflow-hidden rounded-full bg-landing-line md:bottom-auto md:left-[10%] md:right-[10%] md:top-20 md:h-0.5 md:w-auto">
               <motion.div className="landing-assembly-line h-full w-full origin-top md:hidden" style={{ scaleY: reduceMotion ? 1 : lineProgress }} />
               <motion.div className="landing-assembly-line hidden h-full w-full origin-left md:block" style={{ scaleX: reduceMotion ? 1 : lineProgress }} />
             </div>
