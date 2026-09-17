@@ -27,12 +27,7 @@ export function SearchCostHistory({ onRepeat }: { onRepeat?: (termo: string) => 
       </DialogTrigger>
       <DialogContent className="max-w-2xl rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-baseline justify-between gap-3">
-            <span>Buscas recentes</span>
-            <span className="text-sm font-semibold text-muted-foreground">
-              {buscas.length} {buscas.length === 1 ? "busca" : "buscas"} · {brl(total)}
-            </span>
-          </DialogTitle>
+          <DialogTitle>Buscas recentes</DialogTitle>
         </DialogHeader>
         <div className="overflow-hidden rounded-xl border border-border/60">
           <Table>
