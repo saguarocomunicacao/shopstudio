@@ -27,7 +27,7 @@ export const Route = createFileRoute("/")({
 
 function LandingPage() {
   return (
-    <div className="landing-page min-h-screen overflow-x-hidden selection:bg-landing-mint selection:text-landing-bg">
+    <div className="landing-page min-h-screen overflow-x-clip selection:bg-landing-mint selection:text-landing-bg">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-landing-line bg-landing-bg/80 backdrop-blur-xl">
         <div className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5 lg:px-8">
           <a href="#inicio" className="landing-focus flex items-center"><img src={logoDark.url} alt="Shop Studio" className="h-8 w-auto sm:h-9" /></a>
@@ -185,7 +185,7 @@ function AssemblyLine() {
   const lineProgress = useTransform(scrollYProgress, [0.08, 0.92], [0, 1]);
 
   return (
-    <section ref={sectionRef} id="como-funciona" className="relative scroll-mt-0 h-[300vh] md:h-[340vh]">
+    <section ref={sectionRef} id="como-funciona" className="relative scroll-mt-0 h-[260vh]">
       <div className="sticky top-0 flex h-screen items-center overflow-hidden">
         <div className="mx-auto w-full max-w-7xl px-5 py-10 lg:px-8">
           <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
