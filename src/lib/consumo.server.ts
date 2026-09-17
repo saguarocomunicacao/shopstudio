@@ -25,7 +25,7 @@ export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
       modelo: evento.modelo,
       quantidade: evento.quantidade,
       unidade: evento.unidade,
-      metadados: evento.metadados ?? {},
+      metadados: (evento.metadados ?? {}) as never,
     });
     if (error) console.error("[consumo] falha ao registrar evento", error.message);
   } catch (e) {

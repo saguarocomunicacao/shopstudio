@@ -132,7 +132,10 @@ export function TarifasCard() {
           disabled={saveCotacao.isPending}
           onClick={() => {
             const value = Number(cotacaoInput.replace(",", "."));
-            if (!Number.isFinite(value) || value <= 0) return toast.error("Informe uma cotação válida.");
+            if (!Number.isFinite(value) || value <= 0) {
+              toast.error("Informe uma cotação válida.");
+              return;
+            }
             saveCotacao.mutate(value);
           }}
         >
