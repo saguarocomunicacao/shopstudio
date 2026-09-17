@@ -63,8 +63,15 @@ export const discoverProducts = createServerFn({ method: "POST" })
     const result = await source.search({
       dateRange: data.dateRange,
       sortField: data.sortField,
+      sortType: data.sortType,
+      needAll: data.needAll,
       page: data.page,
       ...(data.keyword ? { keyword: data.keyword } : {}),
+      ...(data.unitPriceRange ? { unitPriceRange: data.unitPriceRange } : {}),
+      ...(data.commissionRate ? { commissionRate: data.commissionRate } : {}),
+      ...(data.revenueRange ? { revenueRange: data.revenueRange } : {}),
+      ...(data.launchDate ? { launchDate: data.launchDate } : {}),
+      ...(data.deliveryType ? { deliveryType: data.deliveryType } : {}),
     });
     // Consumo real da busca: uma linha por evento, com o termo buscado.
     if (data.profileId) {
