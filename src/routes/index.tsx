@@ -1,8 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useRef } from "react";
+import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
 import {
   ArrowDown, ArrowRight, BarChart3, Bookmark, Check, ChevronRight, CircleCheck,
-  Clock3, Film, Heart, LockKeyhole, MessageCircle, PackageSearch, Play, Share2,
-  ShoppingBag, Sparkles, Users, WandSparkles, X,
+  Clapperboard, Clock3, Film, Heart, Image, LockKeyhole, MessageCircle, PackageSearch,
+  PenLine, Play, Radar, Send, Share2, ShoppingBag, Sparkles, Users, WandSparkles, X,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoDark from "@/assets/logo-dark.png.asset.json";
@@ -23,14 +26,6 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
-  const steps = [
-    ["Garimpa", "Produtos em alta do TikTok Shop BR, só afiliáveis, com hype score."],
-    ["Roteiriza", "Gancho, corpo e chamada para o carrinho no tom de cada perfil."],
-    ["Cria as cenas", "Pessoa ou mão usando o produto real. Você revisa antes de animar."],
-    ["Anima e monta", "Vídeo real com narração em português, legenda e tela cheia vertical."],
-    ["Você posta", "Revise, marque o produto no TikTok e publique."],
-  ];
-
   return (
     <div className="landing-page min-h-screen overflow-x-hidden selection:bg-landing-mint selection:text-landing-bg">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-landing-line bg-landing-bg/80 backdrop-blur-xl">
@@ -103,16 +98,7 @@ function LandingPage() {
           Feito para afiliados e criadores que vendem no TikTok Shop Brasil e querem escalar sem virar máquina de gravar vídeo.
         </div>
 
-        <section id="como-funciona" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-24 lg:px-8 lg:py-32">
-          <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
-          <div className="relative mt-16 grid gap-8 md:grid-cols-5 md:gap-4">
-            <div className="absolute bottom-auto left-5 top-6 h-[calc(100%-3rem)] w-px bg-landing-line md:left-[10%] md:right-[10%] md:top-5 md:h-px md:w-auto" />
-            {steps.map(([title, text], index) => <div key={title} className="relative pl-14 md:pl-0 md:pt-12">
-              <span className="landing-plasma-bg landing-display absolute left-0 top-0 grid size-11 place-items-center rounded-full text-sm font-bold text-landing-text md:left-1/2 md:-translate-x-1/2">{index + 1}</span>
-              <h3 className="landing-display text-lg font-semibold md:text-center">{title}</h3><p className="mt-2 text-sm leading-6 text-landing-muted md:text-center">{text}</p>
-            </div>)}
-          </div>
-        </section>
+        <AssemblyLine />
 
         <section className="border-y border-landing-line bg-landing-surface/40">
           <div className="mx-auto grid max-w-7xl gap-8 px-5 py-24 lg:grid-cols-2 lg:px-8 lg:py-28">
@@ -183,6 +169,57 @@ function LandingPage() {
 }
 
 function SectionTitle({ title, text }: { title: string; text: string }) { return <div className="max-w-2xl"><h2 className="landing-display text-3xl font-bold sm:text-5xl">{title}</h2><p className="mt-5 text-lg leading-8 text-landing-muted">{text}</p></div>; }
+
+const assemblySteps: readonly { title: string; text: string; icon: LucideIcon }[] = [
+  { title: "Garimpa", text: "Produtos em alta do TikTok Shop BR, só afiliáveis, com hype score.", icon: Radar },
+  { title: "Roteiriza", text: "Gancho, corpo e chamada para o carrinho no tom de cada perfil.", icon: PenLine },
+  { title: "Cria as cenas", text: "Pessoa ou mão usando o produto real. Você revisa antes de animar.", icon: Image },
+  { title: "Anima e monta", text: "Vídeo real com narração em português, legenda e tela cheia vertical.", icon: Clapperboard },
+  { title: "Você posta", text: "Revise, marque o produto no TikTok e publique.", icon: Send },
+];
+
+function AssemblyLine() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start end", "end start"] });
+  const lineProgress = useTransform(scrollYProgress, [0.16, 0.78], [0, 1]);
+
+  return (
+    <section ref={sectionRef} id="como-funciona" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-24 lg:px-8 lg:py-32">
+      <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
+      <div className="relative mt-16 md:mt-20">
+        <div className="absolute bottom-8 left-7 top-7 w-0.5 overflow-hidden rounded-full bg-landing-line md:bottom-auto md:left-[10%] md:right-[10%] md:top-8 md:h-0.5 md:w-auto">
+          <motion.div className="landing-assembly-line h-full w-full origin-top md:origin-left" style={reduceMotion ? undefined : { scaleY: lineProgress, scaleX: lineProgress }} />
+        </div>
+        <div className="relative grid gap-12 md:grid-cols-5 md:gap-5">
+          {assemblySteps.map((step, index) => <AssemblyStep key={step.title} step={step} index={index} progress={scrollYProgress} reduceMotion={Boolean(reduceMotion)} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AssemblyStep({ step, index, progress, reduceMotion }: { step: (typeof assemblySteps)[number]; index: number; progress: MotionValue<number>; reduceMotion: boolean }) {
+  const threshold = 0.2 + index * 0.12;
+  const nodeOpacity = useTransform(progress, [threshold - 0.035, threshold], [0.35, 1]);
+  const nodeScale = useTransform(progress, [threshold - 0.035, threshold], [0.9, 1]);
+  const textOpacity = useTransform(progress, [threshold, threshold + 0.055], [0, 1]);
+  const textY = useTransform(progress, [threshold, threshold + 0.055], [10, 0]);
+  const Icon = step.icon;
+
+  return (
+    <article className="relative grid grid-cols-[56px_1fr] gap-5 md:block md:text-center">
+      <motion.div className="landing-assembly-node relative z-10 grid size-14 place-items-center rounded-full md:mx-auto md:size-16" style={reduceMotion ? undefined : { opacity: nodeOpacity, scale: nodeScale }}>
+        <Icon className="size-6 text-landing-text md:size-7" strokeWidth={1.9} aria-hidden="true" />
+        <span className="landing-display absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-landing-line bg-landing-bg text-[10px] font-bold text-landing-text">{index + 1}</span>
+      </motion.div>
+      <motion.div className="pt-0.5 md:pt-6" style={reduceMotion ? undefined : { opacity: textOpacity, y: textY }}>
+        <h3 className="landing-display text-lg font-bold">{step.title}</h3>
+        <p className="mt-2 text-sm leading-6 text-landing-muted">{step.text}</p>
+      </motion.div>
+    </article>
+  );
+}
 
 function PhoneAction({ icon, label }: { icon: React.ReactNode; label: string }) { return <div className="flex w-12 flex-col items-center gap-0.5 text-landing-text"><span className="drop-shadow-md [&_svg]:size-[23px] [&_svg]:stroke-[2]">{icon}</span><span className="text-[9px] font-semibold drop-shadow-md">{label}</span></div>; }
 
