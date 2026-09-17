@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUS_LABELS, type JobStatusKey } from "@/lib/content";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type StageEvent = {
   id: string;
@@ -57,25 +58,35 @@ export function JobTimeline({ jobId }: { jobId: string }) {
   return (
     <div className="grid gap-2">
       <p className="text-sm font-semibold">Histórico</p>
-      <ul className="grid gap-1.5 rounded-xl bg-secondary px-4 py-3 text-sm">
-        {events.map((e) => {
-          const start = new Date(e.entered_at).getTime();
-          const end = e.exited_at ? new Date(e.exited_at).getTime() : now;
-          const live = !e.exited_at;
-          return (
-            <li key={e.id} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-              <span className="font-semibold text-foreground">{JOB_STATUS_LABELS[e.status]}</span>
-              <span className="text-xs text-muted-foreground">
-                {clock(e.entered_at)}
-                {e.exited_at ? ` → ${clock(e.exited_at)}` : ""}
-              </span>
-              <span className={live ? "text-xs font-semibold text-primary" : "text-xs font-semibold text-foreground"}>
-                {live ? `rodando há ${formatDuration(end - start)}` : formatDuration(end - start)}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="overflow-hidden rounded-xl border bg-background">
+        <Table className="min-w-[620px]">
+          <TableHeader className="bg-secondary/60">
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="px-4 text-xs font-semibold">Etapa</TableHead>
+              <TableHead className="px-4 text-xs font-semibold">Início</TableHead>
+              <TableHead className="px-4 text-xs font-semibold">Fim</TableHead>
+              <TableHead className="px-4 text-right text-xs font-semibold">Duração</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {events.map((e) => {
+              const start = new Date(e.entered_at).getTime();
+              const end = e.exited_at ? new Date(e.exited_at).getTime() : now;
+              const live = !e.exited_at;
+              return (
+                <TableRow key={e.id}>
+                  <TableCell className="px-4 py-3 font-semibold text-foreground">{JOB_STATUS_LABELS[e.status]}</TableCell>
+                  <TableCell className="whitespace-nowrap px-4 py-3 text-muted-foreground">{clock(e.entered_at)}</TableCell>
+                  <TableCell className="whitespace-nowrap px-4 py-3 text-muted-foreground">{e.exited_at ? clock(e.exited_at) : "—"}</TableCell>
+                  <TableCell className={live ? "whitespace-nowrap px-4 py-3 text-right font-semibold text-primary" : "whitespace-nowrap px-4 py-3 text-right font-medium text-foreground"}>
+                    {live ? `rodando há ${formatDuration(end - start)}` : formatDuration(end - start)}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
