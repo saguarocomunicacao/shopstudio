@@ -65,13 +65,19 @@ export function StudioProvider({ children }: { children: ReactNode }) {
 
   // Mantem ?perfil=id na URL ao navegar entre telas e no refresh.
   useEffect(() => {
-    const url = new URL(window.location.href);
-    const current = url.searchParams.get("perfil");
-    if (activeProfileId) url.searchParams.set("perfil", activeProfileId);
-    else url.searchParams.delete("perfil");
-    if (current !== (activeProfileId ?? null)) {
-      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
-    }
+    const sync = () => {
+      const url = new URL(window.location.href);
+      const current = url.searchParams.get("perfil");
+      if (activeProfileId) url.searchParams.set("perfil", activeProfileId);
+      else url.searchParams.delete("perfil");
+      if (current !== (activeProfileId ?? null)) {
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+      }
+    };
+    sync();
+    // O router reescreve a URL logo apos navegar; reaplica o parametro no tick seguinte.
+    const timer = window.setTimeout(sync, 50);
+    return () => window.clearTimeout(timer);
   }, [activeProfileId, pathname]);
 
   const setActiveProfileId = (id: string) => {
