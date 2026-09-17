@@ -79,10 +79,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Creator Studio" },
+      { title: "Shop Studio" },
       { name: "description", content: "Gestão interna de conteúdo afiliado." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Creator Studio" },
+      { property: "og:title", content: "Shop Studio" },
       { property: "og:description", content: "Gestão interna de conteúdo afiliado." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
