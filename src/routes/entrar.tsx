@@ -4,6 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAppTransition } from "@/components/app-transition";
 import { supabase } from "@/integrations/supabase/client";
 import logoLightAsset from "@/assets/logo-light.png.asset.json";
 
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/entrar")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { active: transitioning, runTransition } = useAppTransition();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -56,6 +58,7 @@ function AuthPage() {
         if (signInError) throw signInError;
       }
       await supabase.rpc("ensure_app_user");
+      await runTransition("entering");
       navigate({ to: "/app", replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Não foi possível continuar.";
@@ -110,8 +113,8 @@ function AuthPage() {
           {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">{error}</p>}
           {info && <p className="rounded-lg bg-secondary px-3 py-2 text-sm font-medium">{info}</p>}
 
-          <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "Aguarde..." : mode === "login" ? "Entrar" : "Criar conta"}
+          <Button type="submit" className="w-full" disabled={busy || transitioning}>
+            {busy || transitioning ? "Aguarde..." : mode === "login" ? "Entrar" : "Criar conta"}
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
