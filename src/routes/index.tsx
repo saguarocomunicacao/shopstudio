@@ -187,14 +187,16 @@ function AssemblyLine() {
   return (
     <section ref={sectionRef} id="como-funciona" className="relative scroll-mt-0 h-[170vh]">
       <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
-        <div className="mx-auto w-full max-w-7xl px-5 py-10 lg:px-8">
-          <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
-          <div className="relative mt-14 py-8 md:mt-20">
-            <div className="landing-assembly-track absolute bottom-17 left-9 top-17 w-0.5 overflow-hidden rounded-full md:bottom-auto md:left-[10%] md:right-[10%] md:top-20 md:h-0.5 md:w-auto">
+        <div className="mx-auto w-full max-w-7xl px-5 py-6 lg:px-8">
+          <div className="[&_h2]:text-2xl [&_h2]:leading-tight [&_p]:mt-3 [&_p]:text-base [&_p]:leading-7 md:[&_h2]:text-5xl md:[&_p]:mt-5 md:[&_p]:text-lg md:[&_p]:leading-8">
+            <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
+          </div>
+          <div className="relative mt-8 py-4 md:mt-20 md:py-8">
+            <div className="landing-assembly-track absolute bottom-11 left-7 top-11 w-0.5 overflow-hidden rounded-full md:bottom-auto md:left-[10%] md:right-[10%] md:top-20 md:h-0.5 md:w-auto">
               <motion.div className="landing-assembly-line h-full w-full origin-top md:hidden" style={{ scaleY: reduceMotion ? 1 : lineProgress }} />
               <motion.div className="landing-assembly-line hidden h-full w-full origin-left md:block" style={{ scaleX: reduceMotion ? 1 : lineProgress }} />
             </div>
-            <div className="relative grid gap-6 md:grid-cols-5 md:gap-5">
+            <div className="relative grid gap-4 md:grid-cols-5 md:gap-5">
               {assemblySteps.map((step, index) => <AssemblyStep key={step.title} step={step} index={index} progress={scrollYProgress} reduceMotion={Boolean(reduceMotion)} />)}
             </div>
           </div>
@@ -215,14 +217,14 @@ function AssemblyStep({ step, index, progress, reduceMotion }: { step: (typeof a
   const Icon = step.icon;
 
   return (
-    <article className="relative grid grid-cols-[72px_1fr] gap-5 md:block md:text-center">
-      <motion.div className={`landing-assembly-node ${done ? "is-done" : ""} relative z-10 grid size-18 place-items-center rounded-full md:mx-auto md:size-24`} style={{ scale: reduceMotion ? 1 : nodeScale }}>
-        <Icon className={`size-8 md:size-10 ${done ? "text-landing-bg" : "text-landing-text"}`} strokeWidth={1.9} aria-hidden="true" />
-        <span className={`landing-display absolute -right-1 -top-1 grid size-6 place-items-center rounded-full border border-landing-line ${done ? "bg-landing-bg text-landing-done" : "bg-landing-bg text-landing-text"} text-[11px] font-bold`}>{index + 1}</span>
+    <article className="relative grid grid-cols-[56px_1fr] gap-4 md:block md:text-center">
+      <motion.div className={`landing-assembly-node ${done ? "is-done" : ""} relative z-10 grid size-14 place-items-center rounded-full md:mx-auto md:size-24`} style={{ scale: reduceMotion ? 1 : nodeScale }}>
+        <Icon className={`size-6 md:size-10 ${done ? "text-landing-bg" : "text-landing-text"}`} strokeWidth={1.9} aria-hidden="true" />
+        <span className={`landing-display absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-landing-line md:size-6 ${done ? "bg-landing-bg text-landing-done" : "bg-landing-bg text-landing-text"} text-[10px] font-bold md:text-[11px]`}>{index + 1}</span>
       </motion.div>
-      <motion.div className="pt-1.5 md:pt-10" style={{ opacity: reduceMotion ? 1 : textOpacity, y: reduceMotion ? 0 : textY }}>
-        <h3 className="landing-display text-lg font-bold md:text-2xl">{step.title}</h3>
-        <p className="mt-2.5 text-sm leading-7 text-landing-muted md:text-base md:leading-8">{step.text}</p>
+      <motion.div className="pt-1 md:pt-10" style={{ opacity: reduceMotion ? 1 : textOpacity, y: reduceMotion ? 0 : textY }}>
+        <h3 className="landing-display text-base font-bold md:text-2xl">{step.title}</h3>
+        <p className="mt-1.5 text-[13px] leading-6 text-landing-muted md:mt-2.5 md:text-base md:leading-8">{step.text}</p>
       </motion.div>
     </article>
   );
