@@ -105,9 +105,11 @@ export function agregarPeriodo(
   eventos: ConsumoEventoRow[],
   tarifas: TarifaRow[],
   cotacao: number,
-  filtroEtapa: EtapaVisual | "todas" = "todas",
+  filtroEtapas: EtapaVisual[] = [],
 ): CustoPeriodo {
-  const filtrados = filtroEtapa === "todas" ? eventos : eventos.filter((e) => etapaVisualDe(e) === filtroEtapa);
+  const filtrados = filtroEtapas.length
+    ? eventos.filter((e) => filtroEtapas.includes(etapaVisualDe(e)))
+    : eventos;
 
   // Segundos por job, para estimar créditos de montagem quando não vêm do fornecedor.
   const segundosPorJob = new Map<string, number>();
