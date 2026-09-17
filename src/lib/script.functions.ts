@@ -76,9 +76,21 @@ async function callLovableAi(prompt: string): Promise<{ script: GeneratedScript;
       const payload = line.slice(5).trim();
       if (!payload || payload === "[DONE]") continue;
       try {
-        const event = JSON.parse(payload) as { type?: string; delta?: string; response?: { output_text?: string } };
+        const event = JSON.parse(payload) as {
+          type?: string;
+          delta?: string;
+          response?: {
+            output_text?: string;
+            usage?: { input_tokens?: number; output_tokens?: number };
+          };
+        };
         if (event.type === "response.output_text.delta" && typeof event.delta === "string") text += event.delta;
         else if (event.type === "response.completed" && event.response?.output_text) text = event.response.output_text;
+        const u = event.response?.usage;
+        if (u) {
+          if (typeof u.input_tokens === "number") usage.input = u.input_tokens;
+          if (typeof u.output_tokens === "number") usage.output = u.output_tokens;
+        }
       } catch {
         // ignore keep-alive / partial frames
       }
@@ -95,11 +107,14 @@ async function callLovableAi(prompt: string): Promise<{ script: GeneratedScript;
   }
   const result = parsed as Partial<GeneratedScript>;
   return {
-    hook: String(result.hook ?? ""),
-    body: String(result.body ?? ""),
-    cta: String(result.cta ?? ""),
-    caption: String(result.caption ?? ""),
-    hashtags: (Array.isArray(result.hashtags) ? result.hashtags : []).map((h) => String(h).replace(/^#/, "")).slice(0, 12),
+    script: {
+      hook: String(result.hook ?? ""),
+      body: String(result.body ?? ""),
+      cta: String(result.cta ?? ""),
+      caption: String(result.caption ?? ""),
+      hashtags: (Array.isArray(result.hashtags) ? result.hashtags : []).map((h) => String(h).replace(/^#/, "")).slice(0, 12),
+    },
+    usage,
   };
 }
 
@@ -153,7 +168,33 @@ export const generateJobScript = createServerFn({ method: "POST" })
       observacoes_estilo: styleNotes ?? "",
     });
 
-    const generated = await callLovableAi(prompt);
+    const { script: generated, usage } = await callLovableAi(prompt);
+
+    // Consumo de tokens do roteiro (inclusive regenerações).
+    const { recordConsumo } = await import("./consumo.server");
+    const modeloTexto = "gpt-6-astra";
+    if (usage.input > 0) {
+      await recordConsumo({
+        jobId: job.id,
+        profileId: job.profile_id,
+        etapa: "roteiro_texto",
+        modelo: modeloTexto,
+        unidade: "token_input",
+        quantidade: usage.input,
+        metadados: { prompt_chars: prompt.length },
+      });
+    }
+    if (usage.output > 0) {
+      await recordConsumo({
+        jobId: job.id,
+        profileId: job.profile_id,
+        etapa: "roteiro_texto",
+        modelo: modeloTexto,
+        unidade: "token_output",
+        quantidade: usage.output,
+        metadados: {},
+      });
+    }
 
     const nextStatus = job.status === "produto_escolhido" ? ("roteiro_pronto" as const) : job.status;
 
