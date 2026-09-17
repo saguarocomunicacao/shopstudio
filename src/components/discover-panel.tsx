@@ -37,15 +37,18 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const searchId = useRef(0);
 
   const saved = new Set(products.filter((p) => p.external_id).map((p) => `${p.source}:${p.external_id}`));
 
   const run = useMutation({
-    mutationFn: async (nextPage: number) => ({
+    mutationFn: async ({ nextPage, id }: { nextPage: number; id: number }) => ({
       page: nextPage,
+      id,
       ...((await search({ data: { keyword, dateRange, sortField, page: nextPage } })) as { items: Found[]; hasMore: boolean }),
     }),
     onSuccess: (data) => {
+      if (data.id !== searchId.current) return; // resposta atrasada de busca anterior
       setPage(data.page);
       setHasMore(data.hasMore);
       setResults((prev) => (data.page > 1 && prev ? [...prev, ...data.items] : data.items));
@@ -54,6 +57,15 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
     },
     onError: (e) => toast.error(errMessage(e)),
   });
+
+  const startSearch = () => {
+    searchId.current += 1;
+    setResults(null);
+    setPage(1);
+    setHasMore(false);
+    setSelected({});
+    run.mutate({ nextPage: 1, id: searchId.current });
+  };
 
   const save = useMutation({
     mutationFn: async (items: Found[]) => {
