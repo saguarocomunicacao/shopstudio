@@ -94,9 +94,9 @@ function LandingPage() {
                   </div>
                 </div>
               </div>
-              <FloatChip className="left-0 top-12" icon={<PackageSearch />} text="Produto em alta detectado" accent="cyan" delay="one" />
-              <FloatChip className="right-0 top-[43%]" icon={<WandSparkles />} text="Roteiro escrito por IA" accent="cyan" delay="two" />
-              <FloatChip className="bottom-14 left-0" icon={<Film />} text="Vídeo com pessoa real" accent="magenta" delay="three" />
+              <FloatChip className="-left-20 top-12" icon={<PackageSearch />} text="Produto em alta detectado" accent="cyan" delay="one" />
+              <FloatChip className="-right-16 top-[43%]" icon={<WandSparkles />} text="Roteiro escrito por IA" accent="cyan" delay="two" />
+              <FloatChip className="-left-20 bottom-14" icon={<Film />} text="Vídeo com pessoa real" accent="magenta" delay="three" />
             </div>
           </div>
         </section>
@@ -188,7 +188,7 @@ function SectionTitle({ title, text }: { title: string; text: string }) { return
 
 function PhoneAction({ icon, label }: { icon: React.ReactNode; label: string }) { return <div className="flex w-12 flex-col items-center gap-0.5 text-landing-text"><span className="drop-shadow-md [&_svg]:size-[23px] [&_svg]:stroke-[2]">{icon}</span><span className="text-[9px] font-semibold drop-shadow-md">{label}</span></div>; }
 
-function FloatChip({ icon, text, className, accent, delay }: { icon: React.ReactNode; text: string; className: string; accent: "cyan" | "magenta"; delay: "one" | "two" | "three" }) { return <div className={`landing-float landing-float-${delay} absolute hidden items-center gap-2.5 rounded-xl border border-landing-line bg-landing-surface/80 px-3.5 py-2.5 text-xs font-semibold text-landing-text shadow-xl backdrop-blur-xl sm:flex ${className}`}><span className={`${accent === "magenta" ? "text-landing-plasma-c" : "text-landing-mint"} [&_svg]:size-4`}>{icon}</span>{text}</div>; }
+function FloatChip({ icon, text, className, accent, delay }: { icon: React.ReactNode; text: string; className: string; accent: "cyan" | "magenta"; delay: "one" | "two" | "three" }) { return <div className={`landing-float landing-float-${delay} absolute hidden items-center gap-2.5 rounded-xl border border-landing-line bg-landing-surface/80 px-3.5 py-2.5 text-xs font-semibold text-landing-text shadow-xl backdrop-blur-xl lg:flex ${className}`}><span className={`${accent === "magenta" ? "text-landing-plasma-c" : "text-landing-mint"} [&_svg]:size-4`}>{icon}</span>{text}</div>; }
 
 function CompareColumn({ title, items, negative = false }: { title: string; items: string[]; negative?: boolean }) { return <article className={`rounded-[22px] border p-7 sm:p-10 ${negative ? "border-landing-line bg-landing-bg/30" : "landing-feature-glow border-landing-line"}`}><h2 className="landing-display text-2xl font-semibold">{title}</h2><ul className="mt-8 space-y-5">{items.map(item => <li key={item} className="flex items-center gap-3 text-landing-muted">{negative ? <X className="size-5 shrink-0 opacity-60" /> : <Check className="size-5 shrink-0 text-landing-mint" />}<span>{item}</span></li>)}</ul></article>; }
 
