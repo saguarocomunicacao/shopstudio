@@ -343,15 +343,15 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
             </Field>
 
             <Field label="Preço (R$)">
-              <RangeInputs min={filters.precoMin} max={filters.precoMax} onMin={(v) => set("precoMin", v)} onMax={(v) => set("precoMax", v)} placeholderMin="mín" placeholderMax="máx" />
+              <RangeInputs money min={filters.precoMin} max={filters.precoMax} onMin={(v) => set("precoMin", v)} onMax={(v) => set("precoMax", v)} placeholderMin="mín" placeholderMax="máx" />
             </Field>
 
             <Field label="Comissão (%)">
-              <RangeInputs min={filters.comMin} max={filters.comMax} onMin={(v) => set("comMin", v)} onMax={(v) => set("comMax", v)} placeholderMin="mín" placeholderMax="máx" />
+              <RangeInputs percent min={filters.comMin} max={filters.comMax} onMin={(v) => set("comMin", v)} onMax={(v) => set("comMax", v)} placeholderMin="mín" placeholderMax="máx" />
             </Field>
 
             <Field label="Receita (R$)">
-              <RangeInputs min={filters.recMin} max={filters.recMax} onMin={(v) => set("recMin", v)} onMax={(v) => set("recMax", v)} placeholderMin="mín" placeholderMax="máx" />
+              <RangeInputs money min={filters.recMin} max={filters.recMax} onMin={(v) => set("recMin", v)} onMax={(v) => set("recMax", v)} placeholderMin="mín" placeholderMax="máx" />
             </Field>
 
             <Field label="Lançamento">
