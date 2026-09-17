@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useProducts, type DbProduct } from "@/lib/content";
 import { CategorySelect } from "./category-select";
@@ -159,15 +159,26 @@ export function ProductsPage() {
           renderActions={(p) => (
             <>
               {jobProfiles.length > 0 && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
-              {(canEdit || canRemove) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {canEdit && <DropdownMenuItem onSelect={() => setDialog({ open: true, product: p })}><Pencil />Editar</DropdownMenuItem>}
-                    {canRemove && <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setConfirm(p)}><Trash2 />Remover</DropdownMenuItem>}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+               {canEdit && (
+                 <Tooltip>
+                   <TooltipTrigger asChild>
+                     <Button variant="ghost" size="icon" className="size-8" onClick={() => setDialog({ open: true, product: p })} aria-label={`Editar ${p.name}`}>
+                       <Pencil className="size-4" />
+                     </Button>
+                   </TooltipTrigger>
+                   <TooltipContent>Editar</TooltipContent>
+                 </Tooltip>
+               )}
+               {canRemove && (
+                 <Tooltip>
+                   <TooltipTrigger asChild>
+                     <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive" onClick={() => setConfirm(p)} aria-label={`Remover ${p.name}`}>
+                       <Trash2 className="size-4" />
+                     </Button>
+                   </TooltipTrigger>
+                   <TooltipContent>Remover</TooltipContent>
+                 </Tooltip>
+               )}
             </>
           )}
         />
