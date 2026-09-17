@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef } from "react";
-import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
+import { useRef, useState } from "react";
+import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
 import {
   ArrowDown, ArrowRight, BarChart3, Bookmark, Check, ChevronRight, CircleCheck,
   Clapperboard, Clock3, Film, Heart, Image, LockKeyhole, MessageCircle, PackageSearch,
@@ -185,11 +185,11 @@ function AssemblyLine() {
   const lineProgress = useTransform(scrollYProgress, [0.08, 0.92], [0, 1]);
 
   return (
-    <section ref={sectionRef} id="como-funciona" className="relative scroll-mt-0 h-[260vh]">
-      <div className="sticky top-0 flex h-screen items-center overflow-hidden">
+    <section ref={sectionRef} id="como-funciona" className="relative scroll-mt-0 h-[170vh]">
+      <div className="sticky top-0 flex h-screen items-center justify-center overflow-hidden">
         <div className="mx-auto w-full max-w-7xl px-5 py-10 lg:px-8">
           <SectionTitle title="Cinco etapas. Uma linha de montagem." text="Do sinal de venda à publicação, cada etapa fica visível e sob seu controle." />
-          <div className="relative mt-10 md:mt-20">
+          <div className="relative mt-14 py-8 md:mt-20">
             <div className="absolute bottom-8 left-7 top-7 w-0.5 overflow-hidden rounded-full bg-landing-line md:bottom-auto md:left-[10%] md:right-[10%] md:top-8 md:h-0.5 md:w-auto">
               <motion.div className="landing-assembly-line h-full w-full origin-top md:hidden" style={{ scaleY: reduceMotion ? 1 : lineProgress }} />
               <motion.div className="landing-assembly-line hidden h-full w-full origin-left md:block" style={{ scaleX: reduceMotion ? 1 : lineProgress }} />
@@ -207,21 +207,22 @@ function AssemblyLine() {
 
 function AssemblyStep({ step, index, progress, reduceMotion }: { step: (typeof assemblySteps)[number]; index: number; progress: MotionValue<number>; reduceMotion: boolean }) {
   const threshold = 0.16 + index * 0.16;
-  const nodeOpacity = useTransform(progress, [threshold - 0.07, threshold], [0.35, 1]);
+  const [done, setDone] = useState(() => progress.get() >= threshold);
+  useMotionValueEvent(progress, "change", (v) => setDone(v >= threshold));
   const nodeScale = useTransform(progress, [threshold - 0.07, threshold], [0.9, 1]);
-  const textOpacity = useTransform(progress, [threshold, threshold + 0.08], [0, 1]);
-  const textY = useTransform(progress, [threshold, threshold + 0.08], [10, 0]);
+  const textOpacity = useTransform(progress, [threshold - 0.07, threshold], [0.4, 1]);
+  const textY = useTransform(progress, [threshold - 0.07, threshold + 0.04], [10, 0]);
   const Icon = step.icon;
 
   return (
-    <article className="relative grid grid-cols-[56px_1fr] gap-5 md:block md:text-center">
-      <motion.div className="landing-assembly-node relative z-10 grid size-14 place-items-center rounded-full md:mx-auto md:size-16" style={{ opacity: reduceMotion ? 1 : nodeOpacity, scale: reduceMotion ? 1 : nodeScale }}>
-        <Icon className="size-6 text-landing-text md:size-7" strokeWidth={1.9} aria-hidden="true" />
-        <span className="landing-display absolute -right-1 -top-1 grid size-5 place-items-center rounded-full border border-landing-line bg-landing-bg text-[10px] font-bold text-landing-text">{index + 1}</span>
+    <article className="relative grid grid-cols-[72px_1fr] gap-5 md:block md:text-center">
+      <motion.div className={`landing-assembly-node ${done ? "is-done" : ""} relative z-10 grid size-18 place-items-center rounded-full md:mx-auto md:size-24`} style={{ scale: reduceMotion ? 1 : nodeScale }}>
+        <Icon className="size-8 text-landing-text md:size-10" strokeWidth={1.9} aria-hidden="true" />
+        <span className="landing-display absolute -right-1 -top-1 grid size-6 place-items-center rounded-full border border-landing-line bg-landing-bg text-[11px] font-bold text-landing-text">{index + 1}</span>
       </motion.div>
-      <motion.div className="pt-0.5 md:pt-6" style={{ opacity: reduceMotion ? 1 : textOpacity, y: reduceMotion ? 0 : textY }}>
-        <h3 className="landing-display text-lg font-bold">{step.title}</h3>
-        <p className="mt-2 text-sm leading-6 text-landing-muted">{step.text}</p>
+      <motion.div className="pt-1.5 md:pt-10" style={{ opacity: reduceMotion ? 1 : textOpacity, y: reduceMotion ? 0 : textY }}>
+        <h3 className="landing-display text-lg font-bold md:text-2xl">{step.title}</h3>
+        <p className="mt-2.5 text-sm leading-7 text-landing-muted md:text-base md:leading-8">{step.text}</p>
       </motion.div>
     </article>
   );
