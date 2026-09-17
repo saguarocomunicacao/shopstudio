@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import type { ModuleKey } from "@/lib/access";
 import { StudioProvider, useStudio } from "./studio-context";
+import logoLightAsset from "@/assets/logo-light.png.asset.json";
 
 const items: readonly (readonly [string, string, typeof CircleGauge, ModuleKey | null])[] = [
   ["Dashboard", "/app", CircleGauge, null], ["Perfis", "/app/perfis", UserSquare2, "perfis"], ["Produtos", "/app/produtos", Package, "produtos"],
@@ -20,7 +21,21 @@ const titles: Record<string, string> = { "/app": "Visão geral", "/app/perfis": 
 const initialsOf = (value: string) => value.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("") || "US";
 
 function Brand({ compact = false }: { compact?: boolean }) {
-  return <div className="flex h-16 items-center gap-3 px-4"><span className="logo-mark grid h-9 w-9 shrink-0 place-items-center rounded-full bg-foreground text-sm font-black text-background">SS</span>{!compact && <span className="glitch-logo text-base font-black" data-text="Shop Studio">Shop Studio</span>}</div>;
+  return (
+    <div className="flex h-16 items-center gap-3 px-4">
+      {compact ? (
+        <span className="logo-mark grid h-9 w-9 shrink-0 place-items-center rounded-full bg-foreground text-sm font-black text-background">SS</span>
+      ) : (
+        <>
+          <img src={logoLightAsset.url} alt="Shop Studio" className="h-7 w-auto shrink-0 dark:hidden" />
+          <span className="hidden items-center gap-3 dark:flex">
+            <span className="logo-mark grid h-9 w-9 shrink-0 place-items-center rounded-full bg-foreground text-sm font-black text-background">SS</span>
+            <span className="glitch-logo text-base font-black" data-text="Shop Studio">Shop Studio</span>
+          </span>
+        </>
+      )}
+    </div>
+  );
 }
 
 function useVisibleItems() {
