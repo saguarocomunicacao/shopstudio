@@ -132,10 +132,10 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
   return (
     <TooltipProvider delayDuration={250}>
       <div className="hidden overflow-x-auto lg:block">
-        <table className="w-full min-w-[1040px] table-fixed text-left text-sm">
+        <table className="w-full min-w-[900px] table-fixed text-left text-sm">
           <colgroup>
-            <col className="w-11" /><col className="w-16" /><col /><col className="w-[15%]" />
-            <col className="w-28" /><col className="w-44" /><col className="w-36" /><col className="w-44" />
+            <col className="w-10" /><col className="w-16" /><col /><col className="w-32" />
+            <col className="w-24" /><col className="w-40" /><col className="w-32" /><col className="w-36" />
           </colgroup>
           <thead>
             <tr className="border-b text-xs text-muted-foreground">
