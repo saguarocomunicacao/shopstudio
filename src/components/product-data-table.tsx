@@ -192,10 +192,10 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
                 </div>
                 <div className="flex shrink-0 items-center justify-end gap-1">{renderActions(item)}</div>
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-3 border-t pt-3 text-xs">
+              <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-xs sm:grid-cols-3">
                 <div><p className="text-muted-foreground">Preço</p><p className="mt-1 font-semibold tabular-nums">{formatPrice(item.price)}</p></div>
                 <div><p className="text-muted-foreground">Comissão</p><div className="mt-1"><Commission item={item} /></div></div>
-                <div><p className="text-muted-foreground">Hype score</p><div className="mt-2"><HypeScore value={item.hype} /></div></div>
+                <div className="col-span-2 sm:col-span-1"><p className="text-muted-foreground">Hype score</p><div className="mt-2"><HypeScore value={item.hype} /></div></div>
               </div>
               {isExpanded && <div className="mt-3 border-t pt-3"><Details item={item} /></div>}
             </article>
