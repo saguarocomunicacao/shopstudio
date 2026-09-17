@@ -170,7 +170,12 @@ function PlanoForm({ carteira }: { carteira: CarteiraFornecedor }) {
         </div>
         <div className="grid min-w-32 flex-1 gap-1">
           <label className="text-xs font-semibold text-muted-foreground">Valor mensal (R$)</label>
-          <Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} />
+          <Input
+            inputMode="numeric"
+            placeholder="R$ 0,00"
+            value={valor}
+            onChange={(e) => setValor(mascaraBrl(e.target.value))}
+          />
         </div>
         <div className="grid min-w-28 flex-1 gap-1">
           <label className="text-xs font-semibold text-muted-foreground">Dia de renovação</label>
