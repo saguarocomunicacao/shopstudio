@@ -100,6 +100,13 @@ function Details({ item }: { item: ProductTableItem }) {
         <p className="mt-1 text-sm">{productCategory(item)}</p>
       </div>
       <div>
+        <p className="text-[11px] font-semibold uppercase text-muted-foreground">Vendedor</p>
+        <p className="mt-1 text-sm">
+          {item.sellerName?.trim() || "Não informado"}
+          {item.skuCount ? <span className="ml-2 text-muted-foreground">{item.skuCount} SKU(s)</span> : null}
+        </p>
+      </div>
+      <div>
         <p className="text-[11px] font-semibold uppercase text-muted-foreground">Desempenho</p>
         <p className="mt-1 flex items-center gap-3 text-sm tabular-nums">
           <span>{compactNumber(item.salesVolume ?? 0)} vendas</span>
