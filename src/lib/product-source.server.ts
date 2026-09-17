@@ -13,16 +13,36 @@ export type DiscoveredProduct = {
   revenue: number;
   imageUrl: string;
   sellerName: string;
+  skuCount: number;
   category: string;
   productUrl: string;
   hype: number;
 };
 
+export type SortField =
+  | "revenue"
+  | "commission_rate"
+  | "revenue_growth_rate"
+  | "sales_volumn"
+  | "unit_price"
+  | "video_revenue";
+
 export type DiscoverQuery = {
   keyword?: string;
-  dateRange: "lastDay" | "last7Day" | "last30Day";
-  sortField: "revenue" | "sales_volumn" | "revenue_growth_rate";
+  /** "lastDay" | "last7Day" | "last30Day" ou intervalo "yyyy-MM-dd~yyyy-MM-dd". */
+  dateRange: string;
+  sortField: SortField;
+  sortType?: "ASC" | "DESC";
   categoryIds?: string[];
+  /** Faixas no formato aceito pela API: "1-1000", ">1", "<1000". */
+  unitPriceRange?: string;
+  commissionRate?: string;
+  revenueRange?: string;
+  /** "<3" | "<7" | "<30" | ">30" */
+  launchDate?: string;
+  /** "local" | "global" */
+  deliveryType?: string;
+  needAll?: boolean;
   page: number;
 };
 
