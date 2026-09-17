@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { JOB_STATUS_LABELS, relativeTime, useJobs } from "@/lib/content";
 import { SyncCategoriesButton } from "./category-select";
+import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
 
 const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-lime", "Rascunho enviado": "status-orange", "Publicado": "status-pink", "Ativo": "status-lime", "Pausado": "status-neutral" };
