@@ -50,6 +50,17 @@ const URL_KEYS: Record<keyof Filters, string> = {
 };
 
 const numeric = (value: string) => value.replace(/[^\d.]/g, "");
+const limit100 = (value: string) => {
+  const n = numeric(value);
+  return n && Number(n) > 100 ? "100" : n;
+};
+// Valor monetário guardado como número puro ("1234.56"); exibido com máscara BRL ("1.234,56").
+const formatMoney = (v: string) =>
+  v ? Number(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
+const parseMoney = (input: string) => {
+  const digits = input.replace(/\D/g, "");
+  return digits ? String(Number(digits) / 100) : "";
+};
 
 /** Monta a faixa aceita pela API: "1-1000", ">1" ou "<1000". */
 function faixa(min: string, max: string): string | undefined {
@@ -107,14 +118,17 @@ function Field({ label, children, hint }: { label: string; children: React.React
   );
 }
 
-function RangeInputs({ min, max, onMin, onMax, placeholderMin, placeholderMax }: {
+function RangeInputs({ min, max, onMin, onMax, placeholderMin, placeholderMax, money, percent }: {
   min: string; max: string; onMin: (v: string) => void; onMax: (v: string) => void;
   placeholderMin: string; placeholderMax: string;
+  money?: boolean; percent?: boolean;
 }) {
+  const display = (v: string) => (money ? formatMoney(v) : v);
+  const parse = (v: string) => (money ? parseMoney(v) : percent ? limit100(v) : numeric(v));
   return (
     <div className="grid grid-cols-2 gap-2">
-      <Input inputMode="decimal" value={min} onChange={(e) => onMin(numeric(e.target.value))} placeholder={placeholderMin} />
-      <Input inputMode="decimal" value={max} onChange={(e) => onMax(numeric(e.target.value))} placeholder={placeholderMax} />
+      <Input inputMode="numeric" value={display(min)} onChange={(e) => onMin(parse(e.target.value))} placeholder={placeholderMin} />
+      <Input inputMode="numeric" value={display(max)} onChange={(e) => onMax(parse(e.target.value))} placeholder={placeholderMax} />
     </div>
   );
 }
