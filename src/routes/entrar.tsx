@@ -11,9 +11,10 @@ import logoLightAsset from "@/assets/logo-light.png.asset.json";
 
 export const Route = createFileRoute("/entrar")({
   ssr: false,
-  validateSearch: (search: Record<string, unknown>) => ({
-    redirect: typeof search["redirect"] === "string" && search["redirect"].startsWith("/") ? search["redirect"] : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => {
+    const value = search["redirect"];
+    return typeof value === "string" && value.startsWith("/") ? { redirect: value } : {};
+  },
   head: () => ({
     meta: [
       { title: "Entrar — Shop Studio" },
