@@ -284,7 +284,7 @@ function ProductsContent() {
         {!products.length && <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{isLoading ? "Carregando produtos..." : "Nenhum produto no catálogo."}</div>}
       </div>
 
-      <Dialog open={!!details} onOpenChange={(open) => !open && setDetails(null)}>
+      <Dialog open={!!details} onOpenChange={(open) => { if (!open) { setDetails(null); setEditing(false); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle className="pr-6 text-left">{details?.name}</DialogTitle></DialogHeader>
           {details && (
