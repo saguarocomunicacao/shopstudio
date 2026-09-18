@@ -201,14 +201,20 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const job = await loadJob(supabase, data.jobId);
-    if (job.status !== "cenas_geradas") throw new Error("Só é possível regerar cenas nesta etapa.");
+    const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as import("./video-pipeline.server").Scene[];
+    const scene = scenes[data.index];
+    if (!scene) throw new Error("Cena não encontrada.");
+
+    // Cenas prontas podem ser regeradas na revisão; uma cena que FALHOU (ficou
+    // sem imagem) também pode ser refeita sozinha, sem descartar as que deram certo.
+    const retryFailed = job.status === "roteiro_pronto" && !job.render_stage && !scene.image_url;
+    if (job.status !== "cenas_geradas" && !retryFailed) {
+      throw new Error("Só é possível regerar cenas nesta etapa.");
+    }
 
     // Nova tentativa começando: limpa o erro anterior antes de gerar.
     await supabase.from("jobs").update({ render_error: null }).eq("id", job.id);
 
-    const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as import("./video-pipeline.server").Scene[];
-    const scene = scenes[data.index];
-    if (!scene) throw new Error("Cena não encontrada.");
 
     const pipeline = await import("./video-pipeline.server");
     const [{ data: product }, { data: settingsRow }] = await Promise.all([
