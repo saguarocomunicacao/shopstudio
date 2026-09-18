@@ -149,11 +149,11 @@ export async function getChampionVideos(
       .maybeSingle();
 
     if (cached && Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS) {
-      return (cached.videos as unknown as ChampionVideo[]) ?? [];
+      return ((cached.videos as unknown as ChampionVideo[]) ?? []).filter((v) => v?.videoId && v?.title);
     }
 
     const videos = await fetchFromKalodata(categoryId);
-    if (!videos.length) return (cached?.videos as unknown as ChampionVideo[]) ?? [];
+    if (!videos.length) return ((cached?.videos as unknown as ChampionVideo[]) ?? []).filter((v) => v?.videoId && v?.title);
 
     await supabaseAdmin
       .from("kalodata_video_refs")
