@@ -543,10 +543,32 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                       </Button>
                     </div>
                   ) : (
-                    <div className="grid gap-2">
+                    <div className="grid gap-3">
                       <p className="text-xs text-muted-foreground">
-                        Envie de 1 a 3 fotos da mesma pessoa (ângulos e expressões diferentes deixam os vídeos mais consistentes). JPG ou PNG, até 5 MB cada.
+                        Envie de 1 a {MAX_AVATARS} fotos da mesma pessoa. JPG ou PNG, até 5 MB cada.{" "}
+                        <span className="font-semibold text-foreground">3 boas fotos já bastam</span> — acima disso o ganho é pequeno.
                       </p>
+
+                      <div className="rounded-xl border bg-muted/40 p-3">
+                        <p className="mb-2 text-xs font-bold">Como devem ser as fotos</p>
+                        <ul className="grid gap-1.5">
+                          {AVATAR_TIPS.map((tip) => (
+                            <li key={tip.text} className="flex gap-2 text-xs text-muted-foreground">
+                              {tip.good ? (
+                                <Check className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                              ) : (
+                                <X className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                              )}
+                              <span>{tip.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <p className="text-xs font-semibold">
+                        {avatarItems.length} de {MAX_AVATARS} fotos enviadas
+                      </p>
+
                       <input
                         ref={fileInput}
                         type="file"
