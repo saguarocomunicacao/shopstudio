@@ -100,3 +100,58 @@ export const discoverProducts = createServerFn({ method: "POST" })
 
     return { source: source.id, sourceLabel: source.label, ...result };
   });
+
+/**
+ * Busca no Kalodata a descrição real e as imagens extras dos produtos
+ * recém-importados e guarda no catálogo. Falhas são silenciosas: o produto
+ * segue utilizável apenas com nome e foto principal.
+ */
+export const enrichProductDetails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ productIds: z.array(z.string().uuid()).min(1).max(20) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: rows } = await supabase
+      .from("products")
+      .select("id, external_id, image_url, description, profile_id")
+      .in("id", data.productIds);
+
+    const pending = (rows ?? []).filter(
+      (r: { external_id: string | null; description: string | null }) => r.external_id && !r.description,
+    );
+    if (!pending.length) return { enriched: 0 };
+
+    const { fetchProductDetail } = await import("./product-source.server");
+    const { recordConsumo } = await import("./consumo.server");
+    let enriched = 0;
+
+    for (const row of pending as {
+      id: string;
+      external_id: string;
+      image_url: string | null;
+      profile_id: string | null;
+    }[]) {
+      const detail = await fetchProductDetail(row.external_id);
+      await recordConsumo({
+        jobId: null,
+        profileId: row.profile_id,
+        etapa: "busca_kalodata",
+        modelo: "kalodata-product-detail",
+        quantidade: 0.1,
+        unidade: "bloco_linhas_kalodata",
+        metadados: { tipo: "detalhe_produto", produto: row.id, encontrado: !!detail },
+      });
+      if (!detail) continue;
+
+      const images = [...new Set([row.image_url ?? "", ...detail.images].filter(Boolean))].slice(0, 4);
+      const { error } = await supabase
+        .from("products")
+        .update({ description: detail.description || null, extra_image_urls: images })
+        .eq("id", row.id);
+      if (!error) enriched += 1;
+    }
+
+    return { enriched };
+  });
