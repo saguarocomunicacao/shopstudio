@@ -197,6 +197,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           geminiModel: data.gemini_model,
           veoModel: data.veo_model,
           voiceRef: data.voice_ref ?? null,
+          requireReview: data.require_review ?? true,
         };
         setForm((f) => ({ ...f, ...patch }));
         setSaved((f) => ({ ...f, ...patch }));
