@@ -147,7 +147,23 @@ function ProductsContent() {
 
   return (
     <>
-      <Heading eyebrow="Descoberta" title="Produtos em alta" />
+      <Heading
+        eyebrow="Descoberta"
+        title="Produtos em alta"
+        action={
+          canUpdate && tab === "catalogo" && products.length ? (
+            <Button variant="secondary" disabled={refreshAll.isPending} onClick={() => refreshAll.mutate()}>
+              <RefreshCw className={refreshAll.isPending ? "animate-spin" : ""} />
+              {bulk ? `Atualizando ${bulk.done}/${bulk.total}` : "Atualizar todos"}
+            </Button>
+          ) : undefined
+        }
+      />
+      {bulk ? (
+        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.round((bulk.done / Math.max(1, bulk.total)) * 100)}%` }} />
+        </div>
+      ) : null}
       <div className="mb-4 inline-flex gap-1 rounded-xl bg-secondary p-1">
         {([["catalogo", "Catálogo"], ["descobrir", "Descobrir"]] as const).map(([key, label]) => (
           <button
@@ -165,7 +181,15 @@ function ProductsContent() {
 
       <div className={`panel ${tab === "catalogo" ? "" : "hidden"}`}>
         <ProductDataTable
-          items={products.map((p) => ({ ...p, imageUrl: p.image_url, productUrl: p.url, sellerName: p.seller_name }))}
+          items={products.map((p) => ({
+            ...p,
+            imageUrl: p.image_url,
+            productUrl: p.url,
+            sellerName: p.seller_name,
+            salesVolume: p.sales_volume,
+            growthRate: p.growth_rate,
+            updatedLabel: atualizadoHa(p.updated_at),
+          }))}
           renderActions={(p) => (
             <>
               {canCreateJob && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
@@ -177,6 +201,23 @@ function ProductsContent() {
                 </TooltipTrigger>
                 <TooltipContent>Ver detalhes</TooltipContent>
               </Tooltip>
+              {canUpdate && p.external_id && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      disabled={refreshingId === p.id || refreshAll.isPending}
+                      onClick={() => refreshOne.mutate(p)}
+                      aria-label={`Atualizar dados de ${p.name}`}
+                    >
+                      <RefreshCw className={`size-4 ${refreshingId === p.id ? "animate-spin" : ""}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Atualizar dados</TooltipContent>
+                </Tooltip>
+              )}
               {canRemove && (
                 <Tooltip>
                   <TooltipTrigger asChild>
