@@ -152,6 +152,20 @@ function ProductsContent() {
                 <DetailRow label="Vendas">{details.sales_volume?.toLocaleString("pt-BR") ?? "—"}</DetailRow>
                 <DetailRow label="Crescimento">{details.growth_rate ? `${details.growth_rate}%` : "—"}</DetailRow>
               </div>
+              <DetailRow label="Descrição usada pela IA">
+                {details.description
+                  ? <p className="max-h-40 overflow-y-auto whitespace-pre-line text-sm font-normal text-muted-foreground">{details.description}</p>
+                  : <span className="text-muted-foreground">Sem descrição. A IA só conhece o nome e a foto principal deste produto.</span>}
+              </DetailRow>
+              {details.extra_image_urls?.length ? (
+                <DetailRow label="Fotos enviadas à IA">
+                  <div className="flex flex-wrap gap-2">
+                    {details.extra_image_urls.map((src) => (
+                      <img key={src} src={src} alt="" className="size-16 rounded-xl object-cover" />
+                    ))}
+                  </div>
+                </DetailRow>
+              ) : null}
               <DetailRow label="Link do produto">
                 {details.url ? <a href={details.url} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">{details.url}</a> : "—"}
               </DetailRow>
