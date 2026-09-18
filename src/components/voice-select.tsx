@@ -1,13 +1,19 @@
 import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Mic, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { VoicePlayButton } from "@/components/voice-play-button";
+import { CatalogDialog, CloneDialog } from "@/components/voice-dialogs";
 import { FONTE_LABELS, GENERO_LABELS, useVoices, type VoiceGenero } from "@/lib/voices";
 
 type Props = {
   profileId?: string | null;
   value: string | null;
   onChange: (voiceRef: string | null) => void;
+  /** Permite cadastrar vozes novas (catálogo e clonagem) direto daqui. */
+  canManage?: boolean;
 };
 
 const FILTROS: { value: VoiceGenero | "todos"; label: string }[] = [
@@ -18,9 +24,13 @@ const FILTROS: { value: VoiceGenero | "todos"; label: string }[] = [
 ];
 
 /** Seletor da voz de narração do perfil, com filtro por gênero e preview. */
-export function VoiceSelect({ profileId, value, onChange }: Props) {
+export function VoiceSelect({ profileId, value, onChange, canManage = false }: Props) {
   const { data: voices = [] } = useVoices(profileId ?? null);
   const [genero, setGenero] = useState<VoiceGenero | "todos">("todos");
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [cloneOpen, setCloneOpen] = useState(false);
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["voices"] });
 
   const lista = useMemo(
     () => voices.filter((v) => genero === "todos" || v.genero === genero),
@@ -64,6 +74,28 @@ export function VoiceSelect({ profileId, value, onChange }: Props) {
       <p className="text-xs text-muted-foreground">
         Sem escolha, o vídeo continua usando a voz padrão do idioma na montagem.
       </p>
+
+      {canManage && (
+        <div className="flex flex-wrap gap-2 pt-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => setCatalogOpen(true)}>
+            <Plus className="mr-1.5 h-4 w-4" /> Catálogo ElevenLabs
+          </Button>
+          <Button type="button" size="sm" onClick={() => setCloneOpen(true)}>
+            <Mic className="mr-1.5 h-4 w-4" /> Clonar nova voz
+          </Button>
+          <p className="w-full text-xs text-muted-foreground">
+            Vozes adicionadas aqui ficam disponíveis para todos os perfis. A clonagem gera um preview e tem custo de
+            narração.
+          </p>
+        </div>
+      )}
+
+      {canManage && (
+        <>
+          <CatalogDialog open={catalogOpen} onOpenChange={setCatalogOpen} existing={voices} onSaved={invalidate} />
+          <CloneDialog open={cloneOpen} onOpenChange={setCloneOpen} onSaved={invalidate} />
+        </>
+      )}
     </div>
   );
 }
