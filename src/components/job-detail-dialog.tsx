@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUS_LABELS, type DbJob } from "@/lib/content";
+import { extractCtaFromScript, extractHookFromScript } from "@/lib/script-parser";
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/video.functions";
 import { approveDraft, saveDraftPostTexts } from "@/lib/drafts.functions";
@@ -68,8 +69,8 @@ export function JobDetailDialog({
   useEffect(() => {
     if (!job) return;
     setScript(job.script ?? "");
-    setHook(job.hook ?? "");
-    setPostCta(job.post_cta ?? "");
+    setHook(job.hook ?? extractHookFromScript(job.script) ?? "");
+    setPostCta(job.post_cta ?? extractCtaFromScript(job.script) ?? "");
     setCaption(job.caption ?? "");
     setHashtags((job.hashtags ?? []).join(" "));
   }, [job]);
@@ -219,19 +220,19 @@ export function JobDetailDialog({
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="j-hook">Título / gancho</Label>
-                  <Input id="j-hook" value={hook} onChange={(e) => setHook(e.target.value)} disabled={!canEditPostTexts} placeholder="Frase de abertura da publicação" />
+                  <Input id="j-hook" value={hook} onChange={(e) => setHook(e.target.value)} disabled={!canEditPostTexts} placeholder="Frase de abertura da publicação" className="border-border bg-background" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="j-post-cta">CTA final</Label>
-                  <Input id="j-post-cta" value={postCta} onChange={(e) => setPostCta(e.target.value)} disabled={!canEditPostTexts} placeholder="Chamada curta para a publicação" />
+                  <Input id="j-post-cta" value={postCta} onChange={(e) => setPostCta(e.target.value)} disabled={!canEditPostTexts} placeholder="Chamada curta para a publicação" className="border-border bg-background" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="j-caption">Legenda sugerida</Label>
-                  <Textarea id="j-caption" rows={4} value={caption} onChange={(e) => setCaption(e.target.value)} disabled={!canEditPostTexts} />
+                  <Textarea id="j-caption" rows={4} value={caption} onChange={(e) => setCaption(e.target.value)} disabled={!canEditPostTexts} className="border-border bg-background" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="j-tags">Hashtags</Label>
-                  <Input id="j-tags" value={hashtags} onChange={(e) => setHashtags(e.target.value)} disabled={!canEditPostTexts} placeholder="tiktokshop achadinhos" />
+                  <Input id="j-tags" value={hashtags} onChange={(e) => setHashtags(e.target.value)} disabled={!canEditPostTexts} placeholder="tiktokshop achadinhos" className="border-border bg-background" />
                 </div>
               </section>
               <section className="grid gap-3 rounded-xl border bg-secondary/50 p-4">
