@@ -181,7 +181,7 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
                     <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatPrice(item.price)}</td>
                     <td className="px-3 py-2"><Commission item={item} /></td>
                     <td className="px-3 py-2"><HypeScore value={item.hype} /></td>
-                    <td className="px-1 py-2"><div className="flex items-center justify-end gap-1">{renderActions(item)}</div></td>
+                    <td className="px-1 py-2"><div className="flex items-center justify-end gap-2">{renderActions(item)}</div></td>
                   </tr>
                   {isExpanded && <tr className="border-b"><td colSpan={8} className="px-3 py-3"><Details item={item} /></td></tr>}
                 </Fragment>
@@ -205,7 +205,7 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
                   <ProductName item={item} />
                   <p className="mt-1 truncate text-xs text-muted-foreground">{productCategory(item)}</p>
                 </div>
-                <div className="flex shrink-0 items-center justify-end gap-1">{renderActions(item)}</div>
+                <div className="flex shrink-0 items-center justify-end gap-2">{renderActions(item)}</div>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-xs sm:grid-cols-3">
                 <div><p className="text-muted-foreground">Preço</p><p className="mt-1 font-semibold tabular-nums">{formatPrice(item.price)}</p></div>
