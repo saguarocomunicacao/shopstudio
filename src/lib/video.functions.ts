@@ -306,7 +306,15 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
     try {
       return await runStep(supabase, job, pipeline);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "A geração do vídeo falhou.";
+      const base = e instanceof Error ? e.message : "A geração do vídeo falhou.";
+      const feitas = (Array.isArray(job.scenes) ? job.scenes : []).filter(
+        (s) => !!(s as { image_url?: string })?.image_url,
+      ).length;
+      // Falha nas imagens não descarta o que já ficou pronto.
+      const message =
+        job.render_stage === "cenas" && feitas > 0
+          ? `${base} As ${feitas} cena(s) já geradas foram mantidas: refaça apenas as que ficaram sem imagem.`
+          : base;
       // Falha na fase de imagens volta ao roteiro; depois da aprovação volta às cenas aprovadas.
       const backTo = job.render_stage === "planejando" || job.render_stage === "cenas" ? "roteiro_pronto" : "cenas_geradas";
       await supabase
@@ -314,6 +322,7 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
         .update({ status: backTo, render_stage: null, render_error: message })
         .eq("id", job.id);
       throw new Error(message);
+
     }
   });
 
