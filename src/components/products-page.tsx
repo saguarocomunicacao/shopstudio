@@ -12,6 +12,7 @@ import { useProducts, type DbProduct } from "@/lib/content";
 import { enrichProductDetails } from "@/lib/discover.functions";
 import { generateProductDescription } from "@/lib/product-description.functions";
 import { DiscoverPanel } from "./discover-panel";
+import { RisingRadarPanel } from "./rising-radar-panel";
 import { ProductDataTable } from "./product-data-table";
 import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
@@ -73,7 +74,7 @@ function ProductsContent() {
   const canUpdate = can("produtos", "editar");
 
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
-  const [tab, setTab] = useState<"catalogo" | "descobrir">("catalogo");
+  const [tab, setTab] = useState<"catalogo" | "descobrir" | "ascensao">("catalogo");
   const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
   const [details, setDetails] = useState<DbProduct | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
@@ -215,7 +216,7 @@ function ProductsContent() {
         </div>
       ) : null}
       <div className="mb-4 inline-flex gap-1 rounded-xl bg-secondary p-1">
-        {([["catalogo", "Catálogo"], ["descobrir", "Descobrir"]] as const).map(([key, label]) => (
+        {([["catalogo", "Catálogo"], ["descobrir", "Descobrir"], ["ascensao", "Em ascensão"]] as const).map(([key, label]) => (
           <button
             key={key}
             type="button"
@@ -228,6 +229,7 @@ function ProductsContent() {
       </div>
 
       {tab === "descobrir" && <DiscoverPanel products={products} />}
+      {tab === "ascensao" && <RisingRadarPanel products={products} />}
 
       <div className={`panel ${tab === "catalogo" ? "" : "hidden"}`}>
         <ProductDataTable
