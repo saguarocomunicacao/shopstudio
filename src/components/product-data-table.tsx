@@ -18,6 +18,8 @@ export type ProductTableItem = {
   salesVolume?: number | null;
   growthRate?: number | null;
   productUrl?: string | null;
+  /** Texto pronto tipo "há 3 h" com a última atualização dos dados. */
+  updatedLabel?: string | null;
 };
 
 type ProductDataTableProps<T extends ProductTableItem> = {
