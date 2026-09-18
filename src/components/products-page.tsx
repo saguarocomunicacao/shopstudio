@@ -48,7 +48,7 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 }
 
 /** Mostra de onde veio o texto da descrição, para indicar a confiabilidade. */
-function OriginBadge({ origem, temDescricao }: { origem?: string | null; temDescricao: boolean }) {
+function OriginBadge({ origem, temDescricao }: { origem?: string | null | undefined; temDescricao: boolean }) {
   if (!temDescricao) return <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Sem descrição</span>;
   const map: Record<string, { label: string; className: string }> = {
     manual: { label: "Editada manualmente", className: "bg-primary/10 text-primary" },
