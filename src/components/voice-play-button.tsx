@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play } from "lucide-react";
+import { Loader2, Pause, Play } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { refreshVoicePreview } from "@/lib/voices.functions";
+import { generateVoicePreview, refreshVoicePreview } from "@/lib/voices.functions";
 
 type Props = {
   /** Id da voz no catálogo interno (para renovar o link quando expira). */
