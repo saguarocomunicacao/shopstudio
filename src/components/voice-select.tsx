@@ -84,8 +84,8 @@ export function VoiceSelect({ profileId, value, onChange, canManage = false }: P
             <Mic className="mr-1.5 h-4 w-4" /> Clonar nova voz
           </Button>
           <p className="w-full text-xs text-muted-foreground">
-            Vozes adicionadas aqui ficam disponíveis para todos os perfis. A clonagem gera um preview e tem custo de
-            narração.
+            Vozes adicionadas aqui são suas: ficam disponíveis em todos os seus perfis e invisíveis para outros usuários. A
+            clonagem gera um preview e tem custo de narração.
           </p>
         </div>
       )}

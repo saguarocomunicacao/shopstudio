@@ -522,7 +522,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
 
           {tab === "voz" && (
             <div className="grid gap-4">
-              <SectionTitle title="Voz da narração" description="Escolha a voz usada nos vídeos deste perfil. Vozes clonadas ou importadas aqui ficam disponíveis para todos os perfis." />
+              <SectionTitle title="Voz da narração" description="Escolha a voz usada nos vídeos deste perfil. Vozes clonadas ou importadas aqui são suas e ficam disponíveis em todos os seus perfis." />
               <VoiceSelect profileId={profile?.id ?? null} value={form.voiceRef} canManage={allowed} onChange={(voiceRef) => setForm({ ...form, voiceRef })} />
 
             </div>
