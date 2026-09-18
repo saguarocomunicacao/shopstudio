@@ -241,44 +241,47 @@ function ProductsContent() {
             updatedLabel: atualizadoHa(p.updated_at),
           }))}
           renderActions={(p) => (
-            <>
+            <div className="flex items-center justify-end gap-1.5">
               {canCreateJob && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-8" onClick={() => setDetails(p)} aria-label={`Ver detalhes de ${p.name}`}>
-                    <Eye className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Ver detalhes</TooltipContent>
-              </Tooltip>
-              {canUpdate && p.external_id && (
+              {canCreateJob && <span className="mx-1 h-5 w-px shrink-0 bg-border" />}
+              <div className="flex items-center gap-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8"
-                      disabled={refreshingId === p.id || refreshAll.isPending}
-                      onClick={() => refreshOne.mutate(p)}
-                      aria-label={`Atualizar dados de ${p.name}`}
-                    >
-                      <RefreshCw className={`size-4 ${refreshingId === p.id ? "animate-spin" : ""}`} />
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => setDetails(p)} aria-label={`Ver detalhes de ${p.name}`}>
+                      <Eye className="size-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Atualizar dados</TooltipContent>
+                  <TooltipContent>Ver detalhes</TooltipContent>
                 </Tooltip>
-              )}
-              {canRemove && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive" onClick={() => setConfirm(p)} aria-label={`Remover ${p.name}`}>
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Remover</TooltipContent>
-                </Tooltip>
-              )}
-            </>
+                {canUpdate && p.external_id && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        disabled={refreshingId === p.id || refreshAll.isPending}
+                        onClick={() => refreshOne.mutate(p)}
+                        aria-label={`Atualizar dados de ${p.name}`}
+                      >
+                        <RefreshCw className={`size-4 ${refreshingId === p.id ? "animate-spin" : ""}`} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Atualizar dados</TooltipContent>
+                  </Tooltip>
+                )}
+                {canRemove && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive" onClick={() => setConfirm(p)} aria-label={`Remover ${p.name}`}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remover</TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </div>
           )}
         />
         {!products.length && <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{isLoading ? "Carregando produtos..." : "Nenhum produto no catálogo."}</div>}
