@@ -602,6 +602,47 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={lightboxIndex !== null} onOpenChange={(open) => { if (!open) closeLightbox(); }}>
+        <DialogContent className="h-dvh w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden rounded-none border-0 bg-foreground/95 p-3 text-background sm:p-6">
+          <DialogTitle className="pr-12 text-sm font-semibold text-background">
+            {lightboxIndex === null ? "Fotos" : `Foto ${lightboxIndex + 1} de ${avatarItems.length}`}
+          </DialogTitle>
+          {lightboxIndex !== null && avatarItems[lightboxIndex] && (
+            <div className="relative flex min-h-0 items-center justify-center px-11">
+              {avatarItems.length > 1 && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  className="absolute left-0 z-10 rounded-full"
+                  onClick={prevLightbox}
+                  aria-label="Foto anterior"
+                >
+                  <ChevronLeft />
+                </Button>
+              )}
+              <img
+                src={avatarItems[lightboxIndex].preview}
+                alt={`Foto ${lightboxIndex + 1}`}
+                className="max-h-[80vh] w-auto max-w-full rounded-xl object-contain"
+              />
+              {avatarItems.length > 1 && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  className="absolute right-0 z-10 rounded-full"
+                  onClick={nextLightbox}
+                  aria-label="Próxima foto"
+                >
+                  <ChevronRight />
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
