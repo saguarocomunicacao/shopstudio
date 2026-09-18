@@ -98,6 +98,11 @@ export type DbJob = {
   gemini_images_count: number;
   veo_takes_count: number;
   voice_ref: string | null;
+  video_path?: string | null;
+  published_url?: string | null;
+  approved_at?: string | null;
+  published_at?: string | null;
+  rejection_reason?: string | null;
 };
 
 export type VideoScene = {
