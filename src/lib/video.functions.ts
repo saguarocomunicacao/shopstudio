@@ -257,11 +257,21 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
       image_url: stored.url,
     };
 
+    // Refazendo uma cena que falhou: quando todas ficam com imagem, o job
+    // volta sozinho para a revisão das cenas.
+    const completed = retryFailed && scenes.every((s) => s.image_url);
+
     const { error } = await supabase
       .from("jobs")
-      .update({ scenes, gemini_images_count: (job.gemini_images_count ?? 0) + 1, render_error: null })
+      .update({
+        scenes,
+        gemini_images_count: (job.gemini_images_count ?? 0) + 1,
+        render_error: null,
+        ...(completed ? { status: "cenas_geradas", render_stage: null } : {}),
+      })
       .eq("id", job.id);
     if (error) throw new Error(error.message);
+
 
     const { recordConsumo } = await import("./consumo.server");
     await recordConsumo({
