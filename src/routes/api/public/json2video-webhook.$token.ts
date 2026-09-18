@@ -79,6 +79,14 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
               render_error: null,
             })
             .eq("id", job.id);
+
+          // O JSON2Video apaga o arquivo em 7 dias: guardamos uma cópia nossa.
+          try {
+            const drafts = await import("@/lib/drafts.functions");
+            await drafts.storeJobVideo(job.id, url, thumbnail);
+          } catch {
+            // Falha na cópia não pode derrubar o job; a fila tenta de novo.
+          }
         } else {
           await supabaseAdmin
             .from("jobs")
