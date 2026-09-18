@@ -342,7 +342,8 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto">
+      <DialogContent className="max-h-[92vh] max-w-lg overflow-hidden p-0">
+        <div className="max-h-[92vh] overflow-y-auto p-6 [scrollbar-gutter:stable]">
         <DialogHeader>
           <DialogTitle>Kit de postagem</DialogTitle>
           <DialogDescription>Baixe o vídeo, copie os textos e publique no TikTok.</DialogDescription>
@@ -493,6 +494,7 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
             )}
           </div>
         )}
+        </div>
       </DialogContent>
 
       <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
