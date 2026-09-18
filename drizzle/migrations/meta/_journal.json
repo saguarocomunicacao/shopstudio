@@ -141,6 +141,13 @@
       "when": 1789742362440,
       "tag": "0019_job_video_storage_status",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789743153902,
+      "tag": "0020_add_job_post_cta",
+      "breakpoints": true
     }
   ]
 }
