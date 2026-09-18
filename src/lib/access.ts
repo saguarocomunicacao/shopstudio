@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export const MODULES = ["perfis", "produtos", "pipeline", "videos", "rascunhos", "metricas", "custos", "investimento", "equipe", "configuracoes"] as const;
+export const MODULES = ["perfis", "produtos", "pipeline", "videos", "rascunhos", "metricas", "custos", "investimento", "equipe", "configuracoes", "backoffice"] as const;
 export const ACTIONS = ["visualizar", "criar", "editar", "remover", "publicar", "aprovar", "ver_global"] as const;
 export type ModuleKey = (typeof MODULES)[number];
 export type ActionKey = (typeof ACTIONS)[number];
