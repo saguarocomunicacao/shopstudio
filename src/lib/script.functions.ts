@@ -171,10 +171,11 @@ export const generateJobScript = createServerFn({ method: "POST" })
 
     // Referência opcional: ganchos dos vídeos que mais venderam na categoria.
     // Qualquer falha aqui não trava a geração do roteiro.
-    const { championPromptBlock, championRefsEnabled, getChampionVideos } = await import("./champion-videos.server");
-    const campeoes = (await championRefsEnabled())
-      ? await getChampionVideos(product?.category_id ?? profile?.category_id ?? null, job.profile_id)
-      : [];
+    const { championPromptBlock, championRefsEnabled, getChampionVideos, productCategoryId } = await import("./champion-videos.server");
+    const categoriaCampeoes = (await championRefsEnabled())
+      ? await productCategoryId(supabase as never, job.product_id ?? null)
+      : null;
+    const campeoes = categoriaCampeoes ? await getChampionVideos(categoriaCampeoes, job.profile_id) : [];
     const prompt = `${basePrompt}${championPromptBlock(campeoes)}`;
 
 

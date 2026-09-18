@@ -182,6 +182,9 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
         ...(detail.description && !manual ? { description: detail.description, description_origem: "kalodata" } : {}),
         ...(detail.price !== null && detail.price > 0 ? { price: detail.price } : {}),
         ...(detail.commission !== null && detail.commission > 0 ? { commission: detail.commission } : {}),
+        ...(detail.priCateId ? { pri_cate_id: detail.priCateId } : {}),
+        ...(detail.secCateId ? { sec_cate_id: detail.secCateId } : {}),
+        ...(detail.terCateId ? { ter_cate_id: detail.terCateId } : {}),
       };
 
       const { error } = await supabase.from("products").update(update).eq("id", row.id);
