@@ -135,7 +135,18 @@ export function JobDetailDialog({
               {job ? JOB_STATUS_LABELS[job.status] : ""}
             </span>
             <span>{productName}</span>
+            {job?.status === "video_pronto" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">
+                <BadgeCheck className="size-3" />
+                Na fila de revisão
+              </span>
+            )}
           </div>
+          {job?.status === "video_pronto" && (
+            <p className="rounded-xl bg-secondary px-4 py-3 text-xs text-muted-foreground">
+              Este vídeo já está na Fila de Rascunhos aguardando revisão. Você não precisa enviá-lo para lugar nenhum: revise aqui e aprove para postagem quando estiver bom.
+            </p>
+          )}
 
           {job?.video_url && (
             <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[300px] rounded-xl bg-black" />
