@@ -10,6 +10,7 @@ import { JOB_STATUSES, JOB_STATUS_LABELS, PREVIOUS_STATUS, relativeTime, useJobs
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
 import { useVideoDriver } from "@/lib/video-driver";
+import { sweepProfileVideos } from "@/lib/drafts.functions";
 import { JobDetailDialog } from "./job-detail-dialog";
 import { JobCostBadge } from "./job-cost";
 import { SupplierBalanceBanner } from "./supplier-balance-banner";
