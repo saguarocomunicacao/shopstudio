@@ -75,18 +75,16 @@ export const getDraftKit = createServerFn({ method: "POST" })
     const row = job as KitRow;
 
     let videoPath = row.video_path;
-    let thumbPath = row.video_thumbnail_path;
-    let storageError: string | null = null;
+    const thumbPath = row.video_thumbnail_path;
+    let storageStatus = (row.video_storage_status ?? "pendente") as string;
+    let storageError: string | null = row.video_storage_error ?? null;
 
     // Se o vídeo ainda não foi copiado, tenta agora (o link do render expira).
     if (!videoPath && row.video_url) {
-      try {
-        const stored = await storeJobVideo(row.id, row.video_url, null);
-        videoPath = stored.videoPath;
-        thumbPath = stored.thumbPath ?? thumbPath;
-      } catch (e) {
-        storageError = e instanceof Error ? e.message : "Falha ao salvar o vídeo.";
-      }
+      const stored = await storeJobVideo(row.id);
+      videoPath = stored.videoPath;
+      storageStatus = stored.status;
+      storageError = stored.error ?? null;
     }
 
     const [settings, product] = await Promise.all([
@@ -110,6 +108,7 @@ export const getDraftKit = createServerFn({ method: "POST" })
       videoUrl: (await sign(videoPath)) ?? null,
       thumbnailUrl: await sign(thumbPath),
       stored: !!videoPath,
+      storageStatus,
       storageError,
       publishedUrl: row.published_url,
       rejectionReason: row.rejection_reason,
@@ -120,6 +119,36 @@ export const getDraftKit = createServerFn({ method: "POST" })
     };
   });
 
+/** Estado da cópia local do vídeo, para a UI mostrar progresso/falha real. */
+export const getVideoStorageState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(jobInput)
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, video_url, video_path, video_storage_status, video_storage_error, video_storage_attempts, video_storage_updated_at")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Job não encontrado.");
+    const row = job as {
+      video_url: string | null;
+      video_path: string | null;
+      video_storage_status: string | null;
+      video_storage_error: string | null;
+      video_storage_attempts: number | null;
+      video_storage_updated_at: string | null;
+    };
+    return {
+      stored: !!row.video_path,
+      hasRender: !!row.video_url,
+      status: (row.video_path ? "salvo" : (row.video_storage_status ?? "pendente")) as string,
+      error: row.video_storage_error,
+      attempts: row.video_storage_attempts ?? 0,
+      updatedAt: row.video_storage_updated_at,
+    };
+  });
+
 /** Nova tentativa de salvar o vídeo no nosso storage. */
 export const retryDraftVideoStorage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -127,12 +156,13 @@ export const retryDraftVideoStorage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("jobs")
-      .select("id, video_url, video_thumbnail_url")
+      .select("id, video_url")
       .eq("id", data.jobId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!job?.video_url) throw new Error("Este job não tem vídeo renderizado para salvar.");
-    await storeJobVideo(job.id, job.video_url, job.video_thumbnail_url);
+    const r = await storeJobVideo(job.id, { force: true });
+    if (r.status !== "salvo") throw new Error(r.error ?? "Não foi possível salvar o vídeo.");
     return { ok: true };
   });
 
