@@ -85,11 +85,13 @@ type FormState = {
   name: string; handle: string; niche: string; categoryId: string; followers: string; status: string;
   tone: string; language: string; notes: string;
   avatarMode: string; takes: string; duration: string; geminiModel: string; veoModel: string; voiceRef: string | null;
+  requireReview: boolean;
 };
 const emptyForm: FormState = {
   name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo",
   tone: "descontraido", language: "pt-BR", notes: "",
   avatarMode: "livre", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value, voiceRef: null,
+  requireReview: true,
 };
 
 type TabKey = "dados" | "identidade" | "video" | "pessoa" | "voz" | "publicacao" | "prompts";
