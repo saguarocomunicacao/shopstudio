@@ -22,6 +22,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { TONE_OPTIONS } from "@/lib/content";
 import { generateAvatarReference, saveAvatarReferences } from "@/lib/video.functions";
+import { seedProfilePrompts } from "@/lib/prompts.functions";
 import { CategorySelect } from "./category-select";
 import { LanguageSelect } from "./language-select";
 import { ProfilePrompts } from "./profile-prompts";
