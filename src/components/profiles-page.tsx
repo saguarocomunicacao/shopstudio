@@ -333,14 +333,14 @@ export function ProfilesPage() {
       <AlertDialog open={!!confirm} onOpenChange={(open) => !open && setConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover “{confirm?.name}”?</AlertDialogTitle>
+            <AlertDialogTitle>Remover perfil</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação é permanente. O perfil e os acessos da equipe a ele serão apagados.
+              Esta ação é permanente. O perfil “{confirm?.name}” será apagado junto dos acessos da equipe a ele. Jobs e vídeos relacionados a este perfil podem deixar de ser acessíveis. Isso não pode ser desfeito.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); if (confirm) remove.mutate(confirm); }}>Remover</AlertDialogAction>
+            <AlertDialogAction className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.preventDefault(); if (confirm) remove.mutate(confirm); }}>Remover</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
