@@ -149,13 +149,13 @@ function ActiveProfilePrompts() {
   );
 }
 
-function GlobalPrompts() {
+export function GlobalPromptsSettings() {
   const { data: templates = [], isLoading } = usePromptTemplates();
   if (isLoading) return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Carregando prompts...</div>;
   return (
     <>
       <p className="mb-4 max-w-2xl text-sm text-muted-foreground">
-        O que estiver entre chaves é trocado pelos dados reais na hora de gerar. Alterar aqui muda todos os perfis que não têm override.
+        Valem como base ao criar novos perfis. Perfis existentes só recebem mudanças ao restaurar ou atualizar sua própria cópia.
       </p>
       <div className="grid gap-4 xl:grid-cols-2">
         {templates.map((t) => <TemplateCard key={t.key} template={t} />)}
@@ -197,7 +197,7 @@ export function PromptsPage() {
           <ProfileGate><ActiveProfilePrompts /></ProfileGate>
         </TabsContent>
         <TabsContent value="global">
-          <GlobalPrompts />
+          <GlobalPromptsSettings />
         </TabsContent>
       </Tabs>
     </>
