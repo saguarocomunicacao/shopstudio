@@ -128,24 +128,28 @@ export const generateJobScenes = createServerFn({ method: "POST" })
     const { assertOrcamento: assertOrcamentoCenas } = await import("./orcamento.server");
     await assertOrcamentoCenas(job.profile_id, { barata: true });
 
+    // Retentativa: se já existem cenas com imagem, elas são preservadas e só
+    // as que ficaram sem imagem são refeitas. Nada do que deu certo é perdido.
+    const existing = (Array.isArray(job.scenes) ? job.scenes : []) as { image_url?: string }[];
+    const resume = existing.length > 0 && existing.some((scene) => scene.image_url);
+
     const { error } = await supabase
       .from("jobs")
       .update({
-        render_stage: "planejando",
+        render_stage: resume ? "cenas" : "planejando",
         render_started_at: new Date().toISOString(),
         render_error: null,
         render_id: null,
-        scenes: [],
-        gemini_images_count: 0,
-        veo_takes_count: 0,
+        ...(resume ? {} : { scenes: [], gemini_images_count: 0, veo_takes_count: 0 }),
         video_url: null,
         video_thumbnail_url: null,
       })
       .eq("id", job.id);
     if (error) throw new Error(error.message);
 
-    return { stage: "planejando" as const };
+    return { stage: (resume ? "cenas" : "planejando") as "cenas" | "planejando" };
   });
+
 
 /** Passo 2: aprovação humana das cenas -> anima no Veo e monta no JSON2Video. */
 export const approveJobScenes = createServerFn({ method: "POST" })
