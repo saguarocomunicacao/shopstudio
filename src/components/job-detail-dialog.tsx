@@ -32,7 +32,9 @@ function publicationTitleFromScript(script: string | null) {
   const lines = script.replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean);
   const hookIndex = lines.findIndex((line) => /^gancho/i.test(line));
   if (hookIndex < 0) return lines[0] ?? "";
-  const inline = lines[hookIndex].replace(/^gancho(?:\s*\([^)]*\))?\s*[:\-–]?\s*/i, "").trim();
+  const hookLine = lines[hookIndex];
+  if (!hookLine) return "";
+  const inline = hookLine.replace(/^gancho(?:\s*\([^)]*\))?\s*[:\-–]?\s*/i, "").trim();
   return inline || lines[hookIndex + 1] || "";
 }
 
