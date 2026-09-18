@@ -99,6 +99,13 @@
       "when": 1789734296905,
       "tag": "0013_voices_manage_by_profile_editors",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789734409219,
+      "tag": "0014_voices_owner_scope",
+      "breakpoints": true
     }
   ]
 }
