@@ -33,6 +33,24 @@ const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi p
 
 export function PipelinePage() { return <ProfileGate><PipelineContent /></ProfileGate>; }
 
+/** Rede de segurança: ao abrir o Pipeline, salva vídeos que ficaram sem cópia local. */
+function usePendingVideoSweep(profileId: string | null) {
+  const sweep = useServerFn(sweepProfileVideos);
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!profileId) return;
+    let cancel = false;
+    sweep({ data: { profileId } })
+      .then((r) => {
+        if (!cancel && r.processados > 0) qc.invalidateQueries({ queryKey: ["jobs"] });
+      })
+      .catch((e) => console.error("[video-storage] varredura do perfil falhou:", e));
+    return () => {
+      cancel = true;
+    };
+  }, [profileId, sweep, qc]);
+}
+
 function PipelineContent() {
   const { activeProfileId, profiles, can } = useStudio();
   const kanbanRef = useDragScroll<HTMLDivElement>();
