@@ -210,7 +210,7 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
                         ? <GrowthBadge value={item.growthRate ?? 0} />
                         : <span className="block truncate text-muted-foreground" title={productCategory(item)}>{productCategory(item)}</span>}
                     </td>
-                    <td className="px-3 py-2 text-right font-semibold tabular-nums">
+                    <td className="px-3 py-2 text-right font-semibold tabular-nums whitespace-nowrap">
                       {rising ? compactNumber(item.salesVolume ?? 0) : formatPrice(item.price)}
                     </td>
                     <td className="px-3 py-2"><Commission item={item} /></td>
