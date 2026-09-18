@@ -121,6 +121,29 @@ export const getDraftKit = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Rede de segurança: ao abrir o Pipeline, salva um lote pequeno de vídeos do perfil
+ * que ainda não têm cópia local (respeita o limite de tentativas).
+ */
+export const sweepProfileVideos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ profileId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("jobs")
+      .select("id")
+      .eq("profile_id", data.profileId)
+      .in("status", ["video_pronto", "rascunho_enviado", "publicado"])
+      .is("video_path", null)
+      .not("video_url", "is", null)
+      .lt("video_storage_attempts", 6)
+      .limit(2);
+    if (error) throw new Error(error.message);
+    const ids = (rows ?? []).map((r) => (r as { id: string }).id);
+    for (const id of ids) await storeJobVideo(id);
+    return { processados: ids.length };
+  });
+
 /** Estado da cópia local do vídeo, para a UI mostrar progresso/falha real. */
 export const getVideoStorageState = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
