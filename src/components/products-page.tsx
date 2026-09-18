@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Eye, Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useProducts, type DbProduct } from "@/lib/content";
+import { enrichProductDetails } from "@/lib/discover.functions";
 import { DiscoverPanel } from "./discover-panel";
 import { ProductDataTable } from "./product-data-table";
 import { ProfileGate } from "./profile-gate";
@@ -36,6 +38,8 @@ function ProductsContent() {
   const { can, userId, activeProfileId, activeProfile } = useStudio();
   const qc = useQueryClient();
   const { data: products = [], isLoading } = useProducts(activeProfileId, can("produtos", "visualizar"));
+
+  const enrichDetails = useServerFn(enrichProductDetails);
 
   const canRemove = can("produtos", "remover");
 
