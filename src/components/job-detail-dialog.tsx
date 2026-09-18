@@ -18,7 +18,7 @@ import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
 import { JobCostSummary } from "./job-cost";
 import { JobVoiceSelect } from "./job-voice-select";
-import { SharePanel } from "./share-panel";
+import { JobVideoStorage } from "./job-video-storage";
 import { brl } from "@/lib/custo";
 import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
 
@@ -152,14 +152,7 @@ export function JobDetailDialog({
             <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[300px] rounded-xl bg-black" />
           )}
           {job && SHAREABLE_STATUS.includes(job.status) && (
-            job.video_path ? (
-              <SharePanel jobId={job.id} />
-            ) : (
-              <p className="flex items-center gap-2 rounded-xl border border-dashed px-4 py-3 text-xs text-muted-foreground">
-                <Loader2 className="size-3 animate-spin" />
-                Preparando o vídeo para compartilhar, aguarde alguns instantes.
-              </p>
-            )
+            <JobVideoStorage jobId={job.id} renderedAt={job.render_started_at ?? job.created_at} />
           )}
           {(job?.status === "gerando_video" || (job?.status === "roteiro_pronto" && job.render_stage)) && (
             <div className="flex items-center gap-3 rounded-xl bg-secondary px-4 py-6 text-sm">

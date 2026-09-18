@@ -294,8 +294,17 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
             ) : (
               <section className="rounded-xl border border-dashed p-4">
                 <p className="flex items-center gap-2 text-sm font-bold">
-                  <AlertTriangle className="size-4 text-primary" />
-                  Vídeo ainda não salvo localmente
+                  {data.storageStatus === "baixando" ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin text-primary" />
+                      Salvando vídeo...
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="size-4 text-primary" />
+                      Falha ao salvar o vídeo
+                    </>
+                  )}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {data.storageError ?? "A cópia do vídeo para o nosso armazenamento ainda não foi concluída."}

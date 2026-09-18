@@ -29,6 +29,7 @@ import { Route as AuthenticatedAppRascunhosRouteImport } from './routes/_authent
 import { Route as AuthenticatedAppVideosRouteImport } from './routes/_authenticated/app/videos'
 import { Route as AuthenticatedAppPerfisIndexRouteImport } from './routes/_authenticated/app/perfis.index'
 import { Route as AuthenticatedAppPerfisNovoRouteImport } from './routes/_authenticated/app/perfis.novo'
+import { Route as ApiPublicCronStoreVideosRouteImport } from './routes/api/public/cron/store-videos'
 import { Route as ApiPublicJson2videoWebhookTokenRouteImport } from './routes/api/public/json2video-webhook.$token'
 import { Route as AuthenticatedAppPerfisIdEditarRouteImport } from './routes/_authenticated/app/perfis.$id.editar'
 
@@ -140,6 +141,12 @@ const AuthenticatedAppPerfisNovoRoute =
     path: '/app/perfis/novo',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicCronStoreVideosRoute =
+  ApiPublicCronStoreVideosRouteImport.update({
+    id: '/api/public/cron/store-videos',
+    path: '/api/public/cron/store-videos',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicJson2videoWebhookTokenRoute =
   ApiPublicJson2videoWebhookTokenRouteImport.update({
     id: '/api/public/json2video-webhook/$token',
@@ -172,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/app/videos': typeof AuthenticatedAppVideosRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
+  '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
   '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
@@ -195,6 +203,7 @@ export interface FileRoutesByTo {
   '/app/videos': typeof AuthenticatedAppVideosRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
+  '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/app/perfis': typeof AuthenticatedAppPerfisIndexRoute
   '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
@@ -220,6 +229,7 @@ export interface FileRoutesById {
   '/_authenticated/app/videos': typeof AuthenticatedAppVideosRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
+  '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/_authenticated/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
   '/_authenticated/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/app/videos'
     | '/app/'
     | '/app/perfis/novo'
+    | '/api/public/cron/store-videos'
     | '/api/public/json2video-webhook/$token'
     | '/app/perfis/'
     | '/app/perfis/$id/editar'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/app/videos'
     | '/app'
     | '/app/perfis/novo'
+    | '/api/public/cron/store-videos'
     | '/api/public/json2video-webhook/$token'
     | '/app/perfis'
     | '/app/perfis/$id/editar'
@@ -292,6 +304,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/videos'
     | '/_authenticated/app/'
     | '/_authenticated/app/perfis/novo'
+    | '/api/public/cron/store-videos'
     | '/api/public/json2video-webhook/$token'
     | '/_authenticated/app/perfis/'
     | '/_authenticated/app/perfis/$id/editar'
@@ -304,6 +317,7 @@ export interface RootRouteChildren {
   EntrarRoute: typeof EntrarRoute
   LoginRoute: typeof LoginRoute
   VTokenRoute: typeof VTokenRoute
+  ApiPublicCronStoreVideosRoute: typeof ApiPublicCronStoreVideosRoute
   ApiPublicJson2videoWebhookTokenRoute: typeof ApiPublicJson2videoWebhookTokenRoute
 }
 
@@ -449,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppPerfisNovoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/cron/store-videos': {
+      id: '/api/public/cron/store-videos'
+      path: '/api/public/cron/store-videos'
+      fullPath: '/api/public/cron/store-videos'
+      preLoaderRoute: typeof ApiPublicCronStoreVideosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/json2video-webhook/$token': {
       id: '/api/public/json2video-webhook/$token'
       path: '/api/public/json2video-webhook/$token'
@@ -512,6 +533,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntrarRoute: EntrarRoute,
   LoginRoute: LoginRoute,
   VTokenRoute: VTokenRoute,
+  ApiPublicCronStoreVideosRoute: ApiPublicCronStoreVideosRoute,
   ApiPublicJson2videoWebhookTokenRoute: ApiPublicJson2videoWebhookTokenRoute,
 }
 export const routeTree = rootRouteImport

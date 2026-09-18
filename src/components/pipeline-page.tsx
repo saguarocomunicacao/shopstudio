@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BadgeCheck, Clapperboard, Images, Loader2, Plus, Sparkles, Trash2, Undo2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { JOB_STATUSES, JOB_STATUS_LABELS, PREVIOUS_STATUS, relativeTime, useJobs
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
 import { useVideoDriver } from "@/lib/video-driver";
+import { sweepProfileVideos } from "@/lib/drafts.functions";
 import { JobDetailDialog } from "./job-detail-dialog";
 import { JobCostBadge } from "./job-cost";
 import { SupplierBalanceBanner } from "./supplier-balance-banner";
@@ -33,6 +34,24 @@ const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi p
 
 export function PipelinePage() { return <ProfileGate><PipelineContent /></ProfileGate>; }
 
+/** Rede de segurança: ao abrir o Pipeline, salva vídeos que ficaram sem cópia local. */
+function usePendingVideoSweep(profileId: string | null) {
+  const sweep = useServerFn(sweepProfileVideos);
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!profileId) return;
+    let cancel = false;
+    sweep({ data: { profileId } })
+      .then((r) => {
+        if (!cancel && r.processados > 0) qc.invalidateQueries({ queryKey: ["jobs"] });
+      })
+      .catch((e) => console.error("[video-storage] varredura do perfil falhou:", e));
+    return () => {
+      cancel = true;
+    };
+  }, [profileId, sweep, qc]);
+}
+
 function PipelineContent() {
   const { activeProfileId, profiles, can } = useStudio();
   const kanbanRef = useDragScroll<HTMLDivElement>();
@@ -43,6 +62,7 @@ function PipelineContent() {
   const generate = useServerFn(generateJobScript);
   const generateScenes = useServerFn(generateJobScenes);
   useVideoDriver(jobs);
+  usePendingVideoSweep(activeProfileId);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [renderingId, setRenderingId] = useState<string | null>(null);
 

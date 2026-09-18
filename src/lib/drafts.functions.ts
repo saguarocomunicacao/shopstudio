@@ -18,39 +18,13 @@ async function sign(path: string | null | undefined) {
   return data?.signedUrl ?? null;
 }
 
-/** Baixa um arquivo remoto e guarda no bucket privado. Devolve o caminho. */
-async function copyToStorage(url: string, path: string, contentType: string) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Não foi possível baixar o arquivo (${res.status}).`);
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { error } = await supabaseAdmin.storage
-    .from("job-media")
-    .upload(path, bytes, { contentType, upsert: true });
-  if (error) throw new Error(error.message);
-  return path;
-}
-
 /**
  * Garante que o mp4 (e a miniatura) do job estejam no nosso storage.
- * Usado pelo webhook e como nova tentativa quando a cópia falhou.
+ * A cópia em si vive em video-storage.server (com status, log e retry).
  */
-export async function storeJobVideo(jobId: string, videoUrl: string, thumbnailUrl?: string | null) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const videoPath = await copyToStorage(videoUrl, `videos/${jobId}.mp4`, "video/mp4");
-  let thumbPath: string | null = null;
-  if (thumbnailUrl) {
-    try {
-      thumbPath = await copyToStorage(thumbnailUrl, `thumbs/${jobId}.jpg`, "image/jpeg");
-    } catch {
-      // A miniatura é opcional: sem ela o card mostra o player.
-    }
-  }
-  await supabaseAdmin
-    .from("jobs")
-    .update({ video_path: videoPath, ...(thumbPath ? { video_thumbnail_path: thumbPath } : {}) })
-    .eq("id", jobId);
-  return { videoPath, thumbPath };
+export async function storeJobVideo(jobId: string, opts: { force?: boolean } = {}) {
+  const { ensureJobVideoStored } = await import("./video-storage.server");
+  return ensureJobVideoStored(jobId, opts);
 }
 
 type KitRow = {
@@ -64,13 +38,15 @@ type KitRow = {
   video_url: string | null;
   video_path: string | null;
   video_thumbnail_path: string | null;
+  video_storage_status: string | null;
+  video_storage_error: string | null;
   published_url: string | null;
   rejection_reason: string | null;
   product_id: string | null;
 };
 
 const KIT_COLUMNS =
-  "id, profile_id, status, title, caption, hashtags, script, video_url, video_path, video_thumbnail_path, published_url, rejection_reason, product_id";
+  "id, profile_id, status, title, caption, hashtags, script, video_url, video_path, video_thumbnail_path, video_storage_status, video_storage_error, published_url, rejection_reason, product_id";
 
 /** Primeira linha do roteiro: serve de gancho/título sugerido. */
 function hookFromScript(script: string | null) {
@@ -101,18 +77,16 @@ export const getDraftKit = createServerFn({ method: "POST" })
     const row = job as KitRow;
 
     let videoPath = row.video_path;
-    let thumbPath = row.video_thumbnail_path;
-    let storageError: string | null = null;
+    const thumbPath = row.video_thumbnail_path;
+    let storageStatus = (row.video_storage_status ?? "pendente") as string;
+    let storageError: string | null = row.video_storage_error ?? null;
 
     // Se o vídeo ainda não foi copiado, tenta agora (o link do render expira).
     if (!videoPath && row.video_url) {
-      try {
-        const stored = await storeJobVideo(row.id, row.video_url, null);
-        videoPath = stored.videoPath;
-        thumbPath = stored.thumbPath ?? thumbPath;
-      } catch (e) {
-        storageError = e instanceof Error ? e.message : "Falha ao salvar o vídeo.";
-      }
+      const stored = await storeJobVideo(row.id);
+      videoPath = stored.videoPath;
+      storageStatus = stored.status;
+      storageError = stored.error ?? null;
     }
 
     const [settings, product] = await Promise.all([
@@ -136,6 +110,7 @@ export const getDraftKit = createServerFn({ method: "POST" })
       videoUrl: (await sign(videoPath)) ?? null,
       thumbnailUrl: await sign(thumbPath),
       stored: !!videoPath,
+      storageStatus,
       storageError,
       publishedUrl: row.published_url,
       rejectionReason: row.rejection_reason,
@@ -146,6 +121,59 @@ export const getDraftKit = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Rede de segurança: ao abrir o Pipeline, salva um lote pequeno de vídeos do perfil
+ * que ainda não têm cópia local (respeita o limite de tentativas).
+ */
+export const sweepProfileVideos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ profileId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("jobs")
+      .select("id")
+      .eq("profile_id", data.profileId)
+      .in("status", ["video_pronto", "rascunho_enviado", "publicado"])
+      .is("video_path", null)
+      .not("video_url", "is", null)
+      .lt("video_storage_attempts", 6)
+      .limit(2);
+    if (error) throw new Error(error.message);
+    const ids = (rows ?? []).map((r) => (r as { id: string }).id);
+    for (const id of ids) await storeJobVideo(id);
+    return { processados: ids.length };
+  });
+
+/** Estado da cópia local do vídeo, para a UI mostrar progresso/falha real. */
+export const getVideoStorageState = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(jobInput)
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, video_url, video_path, video_storage_status, video_storage_error, video_storage_attempts, video_storage_updated_at")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Job não encontrado.");
+    const row = job as {
+      video_url: string | null;
+      video_path: string | null;
+      video_storage_status: string | null;
+      video_storage_error: string | null;
+      video_storage_attempts: number | null;
+      video_storage_updated_at: string | null;
+    };
+    return {
+      stored: !!row.video_path,
+      hasRender: !!row.video_url,
+      status: (row.video_path ? "salvo" : (row.video_storage_status ?? "pendente")) as string,
+      error: row.video_storage_error,
+      attempts: row.video_storage_attempts ?? 0,
+      updatedAt: row.video_storage_updated_at,
+    };
+  });
+
 /** Nova tentativa de salvar o vídeo no nosso storage. */
 export const retryDraftVideoStorage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -153,12 +181,13 @@ export const retryDraftVideoStorage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("jobs")
-      .select("id, video_url, video_thumbnail_url")
+      .select("id, video_url")
       .eq("id", data.jobId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!job?.video_url) throw new Error("Este job não tem vídeo renderizado para salvar.");
-    await storeJobVideo(job.id, job.video_url, job.video_thumbnail_url);
+    const r = await storeJobVideo(job.id, { force: true });
+    if (r.status !== "salvo") throw new Error(r.error ?? "Não foi possível salvar o vídeo.");
     return { ok: true };
   });
 
