@@ -66,6 +66,7 @@ function ProductsContent() {
   const { data: products = [], isLoading } = useProducts(activeProfileId, can("produtos", "visualizar"));
 
   const enrichDetails = useServerFn(enrichProductDetails);
+  const generateDescription = useServerFn(generateProductDescription);
 
   const canRemove = can("produtos", "remover");
   const canUpdate = can("produtos", "editar");
@@ -76,6 +77,8 @@ function ProductsContent() {
   const [details, setDetails] = useState<DbProduct | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
 
   const canCreateJob = can("pipeline", "criar", activeProfileId);
 
@@ -160,6 +163,35 @@ function ProductsContent() {
     onSettled: () => setBulk(null),
   });
 
+  /** Gera (ou regera) a descrição do produto com IA de visão a partir das fotos. */
+  const generateDesc = useMutation({
+    mutationFn: async (product: DbProduct) => {
+      await generateDescription({ data: { productId: product.id } });
+    },
+    onSuccess: () => {
+      toast.success("Descrição gerada por IA.");
+      qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  /** Descrição escrita à mão: vira origem "manual" e não é sobrescrita pelo refresh. */
+  const saveDesc = useMutation({
+    mutationFn: async ({ product, texto }: { product: DbProduct; texto: string }) => {
+      const limpo = texto.trim();
+      const { error } = await supabase
+        .from("products")
+        .update({ description: limpo || null, description_origem: limpo ? "manual" : null })
+        .eq("id", product.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Descrição salva.");
+      setEditing(false);
+      qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
 
 
   return (
