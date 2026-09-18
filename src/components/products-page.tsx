@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Eye, Sparkles, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Eye, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,20 @@ function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; a
 
 const brl = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+/** "atualizado há 3 h" a partir de um timestamp ISO. */
+function atualizadoHa(iso?: string | null) {
+  if (!iso) return null;
+  const diff = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(diff) || diff < 0) return null;
+  const min = Math.round(diff / 60000);
+  if (min < 1) return "agora mesmo";
+  if (min < 60) return `há ${min} min`;
+  const horas = Math.round(min / 60);
+  if (horas < 24) return `há ${horas} h`;
+  const dias = Math.round(horas / 24);
+  return `há ${dias} d`;
+}
+
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid gap-1">
@@ -42,13 +56,21 @@ function ProductsContent() {
   const enrichDetails = useServerFn(enrichProductDetails);
 
   const canRemove = can("produtos", "remover");
+  const canUpdate = can("produtos", "editar");
 
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
   const [tab, setTab] = useState<"catalogo" | "descobrir">("catalogo");
   const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
   const [details, setDetails] = useState<DbProduct | null>(null);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
+  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
 
   const canCreateJob = can("pipeline", "criar", activeProfileId);
+
+  // Mantém o modal aberto em sincronia com os dados recarregados do catálogo.
+  useEffect(() => {
+    setDetails((current) => (current ? products.find((p) => p.id === current.id) ?? current : current));
+  }, [products]);
 
   const remove = useMutation({
     mutationFn: async (product: DbProduct) => {
@@ -84,9 +106,69 @@ function ProductsContent() {
     onError: (e) => toast.error(errMessage(e)),
   });
 
+  /** Rebusca o detalhe do produto no Kalodata e atualiza os dados no catálogo. */
+  const refreshOne = useMutation({
+    mutationFn: async (product: DbProduct) => {
+      setRefreshingId(product.id);
+      const result = (await enrichDetails({ data: { productIds: [product.id], force: true } })) as {
+        enriched: number;
+      };
+      if (!result?.enriched) throw new Error("A fonte não devolveu dados para este produto.");
+    },
+    onSuccess: () => {
+      toast.success("Dados do produto atualizados.");
+      qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+    onSettled: () => setRefreshingId(null),
+  });
+
+  /** Reprocessa o catálogo inteiro em lotes, com folga no limite da fonte. */
+  const refreshAll = useMutation({
+    mutationFn: async () => {
+      const ids = products.filter((p) => p.external_id).map((p) => p.id);
+      if (!ids.length) throw new Error("Nenhum produto do garimpo para atualizar.");
+      let enriched = 0;
+      setBulk({ done: 0, total: ids.length });
+      for (let i = 0; i < ids.length; i += 5) {
+        const lote = ids.slice(i, i + 5);
+        try {
+          const result = (await enrichDetails({ data: { productIds: lote, force: true } })) as { enriched: number };
+          enriched += result?.enriched ?? 0;
+        } catch {
+          // Um lote sem resposta não interrompe os demais.
+        }
+        setBulk({ done: Math.min(i + lote.length, ids.length), total: ids.length });
+        qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+      }
+      return { enriched, total: ids.length };
+    },
+    onSuccess: ({ enriched, total }) => toast.success(`${enriched} de ${total} produto(s) atualizado(s).`),
+    onError: (e) => toast.error(errMessage(e)),
+    onSettled: () => setBulk(null),
+  });
+
+
+
   return (
     <>
-      <Heading eyebrow="Descoberta" title="Produtos em alta" />
+      <Heading
+        eyebrow="Descoberta"
+        title="Produtos em alta"
+        action={
+          canUpdate && tab === "catalogo" && products.length ? (
+            <Button variant="secondary" disabled={refreshAll.isPending} onClick={() => refreshAll.mutate()}>
+              <RefreshCw className={refreshAll.isPending ? "animate-spin" : ""} />
+              {bulk ? `Atualizando ${bulk.done}/${bulk.total}` : "Atualizar todos"}
+            </Button>
+          ) : undefined
+        }
+      />
+      {bulk ? (
+        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.round((bulk.done / Math.max(1, bulk.total)) * 100)}%` }} />
+        </div>
+      ) : null}
       <div className="mb-4 inline-flex gap-1 rounded-xl bg-secondary p-1">
         {([["catalogo", "Catálogo"], ["descobrir", "Descobrir"]] as const).map(([key, label]) => (
           <button
@@ -104,7 +186,15 @@ function ProductsContent() {
 
       <div className={`panel ${tab === "catalogo" ? "" : "hidden"}`}>
         <ProductDataTable
-          items={products.map((p) => ({ ...p, imageUrl: p.image_url, productUrl: p.url, sellerName: p.seller_name }))}
+          items={products.map((p) => ({
+            ...p,
+            imageUrl: p.image_url,
+            productUrl: p.url,
+            sellerName: p.seller_name,
+            salesVolume: p.sales_volume,
+            growthRate: p.growth_rate,
+            updatedLabel: atualizadoHa(p.updated_at),
+          }))}
           renderActions={(p) => (
             <>
               {canCreateJob && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
@@ -116,6 +206,23 @@ function ProductsContent() {
                 </TooltipTrigger>
                 <TooltipContent>Ver detalhes</TooltipContent>
               </Tooltip>
+              {canUpdate && p.external_id && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      disabled={refreshingId === p.id || refreshAll.isPending}
+                      onClick={() => refreshOne.mutate(p)}
+                      aria-label={`Atualizar dados de ${p.name}`}
+                    >
+                      <RefreshCw className={`size-4 ${refreshingId === p.id ? "animate-spin" : ""}`} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Atualizar dados</TooltipContent>
+                </Tooltip>
+              )}
               {canRemove && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -139,7 +246,10 @@ function ProductsContent() {
             <div className="grid gap-4 py-2">
               <div className="flex items-center gap-3">
                 {details.image_url ? <img src={details.image_url} alt="" className="size-16 rounded-xl object-cover" /> : null}
-                <p className="text-xs text-muted-foreground">Dados vindos do garimpo. Somente leitura.</p>
+                <p className="text-xs text-muted-foreground">
+                  Dados vindos do garimpo. Somente leitura.
+                  {atualizadoHa(details.updated_at) ? <span className="block">Atualizado {atualizadoHa(details.updated_at)}.</span> : null}
+                </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <DetailRow label="Categoria">{details.niche || "—"}</DetailRow>
@@ -173,6 +283,16 @@ function ProductsContent() {
           )}
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDetails(null)}>Fechar</Button>
+            {canUpdate && details?.external_id && (
+              <Button
+                variant="secondary"
+                disabled={refreshingId === details.id}
+                onClick={() => details && refreshOne.mutate(details)}
+              >
+                <RefreshCw className={refreshingId === details.id ? "animate-spin" : ""} />
+                Atualizar
+              </Button>
+            )}
             {canCreateJob && <Button onClick={() => { const p = details; setDetails(null); setUseTarget(p); }}><Sparkles />Usar</Button>}
           </DialogFooter>
         </DialogContent>

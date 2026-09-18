@@ -221,7 +221,16 @@ export const activeProductSource = (): ProductSource => PRODUCT_SOURCES[ACTIVE_S
 
 const KALODATA_DETAIL_ENDPOINT = "https://www.kalodata.com/openapi/v1/tiktok/product/detail";
 
-export type ProductDetail = { description: string; images: string[] };
+export type ProductDetail = {
+  description: string;
+  images: string[];
+  /** Métricas atuais do produto; null quando a origem não devolve o campo. */
+  price: number | null;
+  commission: number | null;
+  salesVolume: number | null;
+  growthRate: number | null;
+  revenue: number | null;
+};
 
 /** Coleta recursivamente textos e imagens dos blocos de product_description. */
 function collectBlocks(node: unknown, texts: string[], images: string[], depth = 0): void {
@@ -252,7 +261,7 @@ function collectBlocks(node: unknown, texts: string[], images: string[], depth =
  * Detalhe de um produto no Kalodata: descrição real (blocos de texto) e
  * imagens adicionais. Nunca lança — devolve null quando a origem falha.
  */
-export function fetchProductDetail(productId: string): Promise<ProductDetail | null> {
+export function fetchProductDetail(productId: string, dateRange = "last30Day"): Promise<ProductDetail | null> {
   return serialize(async () => {
     const apiKey = process.env["KALODATA_API_KEY"];
     if (!apiKey) return null;
@@ -260,7 +269,15 @@ export function fetchProductDetail(productId: string): Promise<ProductDetail | n
       const response = await fetch(KALODATA_DETAIL_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json", "secret-key": apiKey },
-        body: JSON.stringify({ product_id: productId, region: "BR", language: "pt-BR", currency: "BRL", need_image: 1 }),
+        body: JSON.stringify({
+          product_id: productId,
+          region: "BR",
+          language: "pt-BR",
+          currency: "BRL",
+          // Obrigatório pela API: sem date_range a chamada volta com erro de validação.
+          date_range: dateRange,
+          need_image: 1,
+        }),
       });
       if (!response.ok) return null;
       const payload = (await response.json()) as { success?: boolean; data?: unknown };
@@ -279,8 +296,20 @@ export function fetchProductDetail(productId: string): Promise<ProductDetail | n
 
       const master = typeof data["master_image_url"] === "string" ? (data["master_image_url"] as string) : "";
       const unique = [...new Set([master, ...images].filter(Boolean))].slice(0, 4);
-      if (!description && !unique.length) return null;
-      return { description, images: unique };
+      const maybe = (key: string) => (data[key] === undefined || data[key] === null ? null : num(data[key]));
+      const price = maybe("unit_price") ?? maybe("min_price");
+      const salesVolume = maybe("sales_volumn") ?? maybe("sales_volume");
+
+      if (!description && !unique.length && price === null && salesVolume === null) return null;
+      return {
+        description,
+        images: unique,
+        price,
+        commission: maybe("commission_rate"),
+        salesVolume: salesVolume === null ? null : Math.round(salesVolume),
+        growthRate: maybe("revenue_growth_rate"),
+        revenue: maybe("revenue"),
+      };
     } catch {
       return null;
     }

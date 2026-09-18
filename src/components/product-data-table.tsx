@@ -18,6 +18,8 @@ export type ProductTableItem = {
   salesVolume?: number | null;
   growthRate?: number | null;
   productUrl?: string | null;
+  /** Texto pronto tipo "há 3 h" com a última atualização dos dados. */
+  updatedLabel?: string | null;
 };
 
 type ProductDataTableProps<T extends ProductTableItem> = {
@@ -112,6 +114,7 @@ function Details({ item }: { item: ProductTableItem }) {
           <span>{compactNumber(item.salesVolume ?? 0)} vendas</span>
           <span className="inline-flex items-center gap-1"><TrendingUp className="size-3.5 text-primary" />{Math.round(item.growthRate ?? 0)}%</span>
         </p>
+        {item.updatedLabel ? <p className="mt-1 text-[11px] text-muted-foreground">Atualizado {item.updatedLabel}</p> : null}
       </div>
       <div className="sm:col-span-2">
         <p className="text-[11px] font-semibold uppercase text-muted-foreground">Comissão por unidade</p>
