@@ -63,12 +63,6 @@ function VideosContent() {
   </>;
 }
 
-export function DraftsPage() {
-  return <ProfileGate>
-    <Heading eyebrow="Prontos para decisão" title="Fila de revisão" />
-    <Empty>Nenhum rascunho aguardando revisão.</Empty>
-  </ProfileGate>;
-}
 
 export function MetricsPage() { return <ProfileGate><MetricsContent /></ProfileGate>; }
 
