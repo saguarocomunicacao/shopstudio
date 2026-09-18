@@ -209,6 +209,47 @@ export type Database = {
         }
         Relationships: []
       }
+      job_shares: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          job_id: string
+          token: string
+          views: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          job_id: string
+          token: string
+          views?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          job_id?: string
+          token?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_shares_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_stage_events: {
         Row: {
           entered_at: string
