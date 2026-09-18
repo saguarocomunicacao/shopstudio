@@ -101,6 +101,50 @@ function ProductsContent() {
     onError: (e) => toast.error(errMessage(e)),
   });
 
+  /** Rebusca o detalhe do produto no Kalodata e atualiza os dados no catálogo. */
+  const refreshOne = useMutation({
+    mutationFn: async (product: DbProduct) => {
+      setRefreshingId(product.id);
+      const result = (await enrichDetails({ data: { productIds: [product.id], force: true } })) as {
+        enriched: number;
+      };
+      if (!result?.enriched) throw new Error("A fonte não devolveu dados para este produto.");
+    },
+    onSuccess: () => {
+      toast.success("Dados do produto atualizados.");
+      qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+    onSettled: () => setRefreshingId(null),
+  });
+
+  /** Reprocessa o catálogo inteiro em lotes, com folga no limite da fonte. */
+  const refreshAll = useMutation({
+    mutationFn: async () => {
+      const ids = products.filter((p) => p.external_id).map((p) => p.id);
+      if (!ids.length) throw new Error("Nenhum produto do garimpo para atualizar.");
+      let enriched = 0;
+      setBulk({ done: 0, total: ids.length });
+      for (let i = 0; i < ids.length; i += 5) {
+        const lote = ids.slice(i, i + 5);
+        try {
+          const result = (await enrichDetails({ data: { productIds: lote, force: true } })) as { enriched: number };
+          enriched += result?.enriched ?? 0;
+        } catch {
+          // Um lote sem resposta não interrompe os demais.
+        }
+        setBulk({ done: Math.min(i + lote.length, ids.length), total: ids.length });
+        qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+      }
+      return { enriched, total: ids.length };
+    },
+    onSuccess: ({ enriched, total }) => toast.success(`${enriched} de ${total} produto(s) atualizado(s).`),
+    onError: (e) => toast.error(errMessage(e)),
+    onSettled: () => setBulk(null),
+  });
+
+
+
   return (
     <>
       <Heading eyebrow="Descoberta" title="Produtos em alta" />
