@@ -553,6 +553,7 @@ export function buildMovie(opts: {
   scenes: Scene[];
   voice: string;
   subtitleLanguage: string;
+  subtitleVocabulary?: { keywords: string; replace: string };
   webhookUrl: string;
   sceneDuration?: number;
   settings: import("./prompts.server").MovieSettings;
@@ -616,6 +617,8 @@ export function buildMovie(opts: {
               "outline-width": s.outlineWidth,
               "shadow-color": s.shadowColor,
               "shadow-offset": s.shadowOffset,
+              ...(opts.subtitleVocabulary?.keywords ? { keywords: opts.subtitleVocabulary.keywords } : {}),
+              ...(opts.subtitleVocabulary?.replace ? { replace: opts.subtitleVocabulary.replace } : {}),
             },
           },
         ]

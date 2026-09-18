@@ -336,7 +336,7 @@ async function runStep(
 
   const [{ data: product }, { data: identity }, { data: profile }, { data: settingsRow }] = await Promise.all([
     job.product_id
-      ? supabase.from("products").select("name, price, commission, image_url, niche, description, extra_image_urls").eq("id", job.product_id).maybeSingle()
+      ? supabase.from("products").select("name, seller_name, price, commission, image_url, niche, description, extra_image_urls").eq("id", job.product_id).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("profile_identities").select("tone, language, style_notes").eq("profile_id", job.profile_id).maybeSingle(),
     supabase.from("profiles").select("name, niche").eq("id", job.profile_id).maybeSingle(),
@@ -598,12 +598,19 @@ async function runStep(
 
     const assemblyTemplate = await prompts.resolvePrompt(supabase, job.profile_id, "montagem");
     const movieSettings = prompts.parseMovieSettings(prompts.renderPrompt(assemblyTemplate, promptVars));
+    const { buildSubtitleVocabulary } = await import("./subtitle-vocabulary");
+    const subtitleVocabulary = buildSubtitleVocabulary({
+      productName: product?.name,
+      sellerName: product?.seller_name,
+      narrations: scenes.map((scene) => scene.narration),
+    });
 
     const movie = pipeline.buildMovie({
       jobId: job.id,
       scenes,
       voice: pipeline.VOICE_BY_LANGUAGE[language] ?? pipeline.VOICE_BY_LANGUAGE["pt-BR"]!,
       subtitleLanguage: pipeline.SUBTITLE_LANGUAGES.has(language) ? language : "auto",
+      subtitleVocabulary,
       webhookUrl: `${PUBLIC_BASE}/api/public/json2video-webhook/${token}`,
       sceneDuration: settings.take_duration,
       settings: movieSettings,
