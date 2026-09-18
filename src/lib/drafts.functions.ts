@@ -32,6 +32,7 @@ type KitRow = {
   profile_id: string;
   status: string;
   title: string;
+  post_cta: string | null;
   caption: string | null;
   hashtags: string[] | null;
   script: string | null;
@@ -46,7 +47,7 @@ type KitRow = {
 };
 
 const KIT_COLUMNS =
-  "id, profile_id, status, title, caption, hashtags, script, video_url, video_path, video_thumbnail_path, video_storage_status, video_storage_error, published_url, rejection_reason, product_id";
+  "id, profile_id, status, title, post_cta, caption, hashtags, script, video_url, video_path, video_thumbnail_path, video_storage_status, video_storage_error, published_url, rejection_reason, product_id";
 
 /** Primeira linha do roteiro: serve de gancho/título sugerido. */
 function hookFromScript(script: string | null) {
@@ -104,9 +105,10 @@ export const getDraftKit = createServerFn({ method: "POST" })
       id: row.id,
       status: row.status,
       title: row.title,
-      hook: hookFromScript(row.script),
+      postCta: row.post_cta ?? hookFromScript(row.script) ?? "",
       caption: row.caption ?? "",
       hashtags: row.hashtags ?? [],
+      script: row.script ?? "",
       videoUrl: (await sign(videoPath)) ?? null,
       thumbnailUrl: await sign(thumbPath),
       stored: !!videoPath,
@@ -119,6 +121,41 @@ export const getDraftKit = createServerFn({ method: "POST" })
         ? { name: product.data.name as string, url: product.data.url as string }
         : null,
     };
+  });
+
+/** Salva somente os textos usados na publicação, sem alterar roteiro, cenas ou vídeo. */
+export const saveDraftPostTexts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      jobId: z.string().uuid(),
+      postCta: z.string().trim().max(500),
+      caption: z.string().trim().max(5000),
+      hashtags: z.array(z.string().trim().min(1).max(100)).max(30),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: job, error: readError } = await context.supabase
+      .from("jobs")
+      .select("id, status")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!job) throw new Error("Job não encontrado.");
+    if (job.status !== "video_pronto" && job.status !== "rascunho_enviado") {
+      throw new Error(job.status === "publicado" ? "Este vídeo já foi publicado." : "Os textos de postagem ainda não estão disponíveis nesta etapa.");
+    }
+
+    const { error } = await context.supabase
+      .from("jobs")
+      .update({
+        post_cta: data.postCta,
+        caption: data.caption || null,
+        hashtags: data.hashtags,
+      })
+      .eq("id", data.jobId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 /**

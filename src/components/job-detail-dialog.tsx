@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BadgeCheck, Clapperboard, Images, Loader2, RefreshCw, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { BadgeCheck, Clapperboard, Images, Loader2, LockKeyhole, RefreshCw, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUS_LABELS, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/video.functions";
-import { approveDraft } from "@/lib/drafts.functions";
+import { approveDraft, saveDraftPostTexts } from "@/lib/drafts.functions";
 import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
 import { JobCostSummary } from "./job-cost";
@@ -27,6 +27,16 @@ const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi p
 /** A partir de "vídeo pronto" o job já pode ser compartilhado por link público. */
 const SHAREABLE_STATUS: DbJob["status"][] = ["video_pronto", "rascunho_enviado", "publicado"];
 
+function publicationTitleFromScript(script: string | null) {
+  if (!script) return "";
+  const lines = script.replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean);
+  const hookIndex = lines.findIndex((line) => /^gancho/i.test(line));
+  if (hookIndex < 0) return lines[0] ?? "";
+  const hookLine = lines[hookIndex];
+  if (!hookLine) return "";
+  const inline = hookLine.replace(/^gancho(?:\s*\([^)]*\))?\s*[:\-–]?\s*/i, "").trim();
+  return inline || lines[hookIndex + 1] || "";
+}
 
 export function JobDetailDialog({
   job,
@@ -52,6 +62,7 @@ export function JobDetailDialog({
   const generateScenes = useServerFn(generateJobScenes);
   const approveScenes = useServerFn(approveJobScenes);
   const approveRascunho = useServerFn(approveDraft);
+  const savePostTexts = useServerFn(saveDraftPostTexts);
 
   const [confirmVeo, setConfirmVeo] = useState(false);
   const cenas = Array.isArray(job?.scenes) ? (job!.scenes as unknown[]).length : 0;
@@ -60,17 +71,21 @@ export function JobDetailDialog({
   const orcamentoEstourado = !!gasto?.bloqueado;
 
   const [script, setScript] = useState("");
+  const [postCta, setPostCta] = useState("");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
 
   useEffect(() => {
     if (!job) return;
     setScript(job.script ?? "");
+    setPostCta(job.post_cta ?? publicationTitleFromScript(job.script));
     setCaption(job.caption ?? "");
     setHashtags((job.hashtags ?? []).join(" "));
   }, [job]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["jobs"] });
+  const isPostStage = !!job && SHAREABLE_STATUS.includes(job.status);
+  const canEditPostTexts = canEdit && (job?.status === "video_pronto" || job?.status === "rascunho_enviado");
 
   const runGenerate = useMutation({
     mutationFn: async (jobId: string) => generate({ data: { jobId } }),
@@ -107,6 +122,15 @@ export function JobDetailDialog({
       if (error) throw new Error(error.message);
     },
     onSuccess: () => { toast.success("Roteiro salvo."); refresh(); onOpenChange(false); },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const savePost = useMutation({
+    mutationFn: async (jobId: string) => {
+      const tags = hashtags.split(/[\s,]+/).map((tag) => tag.replace(/^#/, "").trim()).filter(Boolean);
+      return savePostTexts({ data: { jobId, postCta, caption, hashtags: tags } });
+    },
+    onSuccess: () => { toast.success("Textos de publicação salvos."); refresh(); },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -148,6 +172,16 @@ export function JobDetailDialog({
             </p>
           )}
 
+          {isPostStage && (
+            <div className="flex items-start gap-2 rounded-xl border bg-secondary/50 px-4 py-3">
+              <LockKeyhole className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-black">Conteúdo gerado (referência)</p>
+                <p className="mt-1 text-xs text-muted-foreground">O vídeo e as cenas estão travados nesta etapa. Para mudá-los, volte a etapa e regenere — essa ação tem custo.</p>
+              </div>
+            </div>
+          )}
+
           {job?.video_url && (
             <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[300px] rounded-xl bg-black" />
           )}
@@ -167,13 +201,13 @@ export function JobDetailDialog({
             <JobScenesReview
               job={job}
               canEdit={
-                canEdit &&
+                canEdit && !isPostStage &&
                 (job.status === "cenas_geradas" || (job.status === "roteiro_pronto" && !job.render_stage))
               }
             />
           )}
 
-          {job && <JobVoiceSelect job={job} canEdit={canEdit} />}
+          {job && <JobVoiceSelect job={job} canEdit={canEdit && !isPostStage} />}
           {job && <JobCostSummary jobId={job.id} />}
           {job && <JobTimeline jobId={job.id} />}
 
@@ -183,6 +217,37 @@ export function JobDetailDialog({
               <Loader2 className="size-4 animate-spin" />
               Gerando roteiro com inteligência artificial...
             </div>
+          ) : isPostStage ? (
+            <>
+              <section className="grid gap-4 rounded-xl border border-primary/25 bg-primary/5 p-4">
+                <div>
+                  <p className="text-sm font-black text-primary">Textos para postar</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Você pode editar e salvar estes textos sem custo até publicar.</p>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="j-post-cta">CTA / título</Label>
+                  <Input id="j-post-cta" value={postCta} onChange={(e) => setPostCta(e.target.value)} disabled={!canEditPostTexts} placeholder="Chamada curta para a publicação" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="j-caption">Legenda sugerida</Label>
+                  <Textarea id="j-caption" rows={4} value={caption} onChange={(e) => setCaption(e.target.value)} disabled={!canEditPostTexts} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="j-tags">Hashtags</Label>
+                  <Input id="j-tags" value={hashtags} onChange={(e) => setHashtags(e.target.value)} disabled={!canEditPostTexts} placeholder="tiktokshop achadinhos" />
+                </div>
+              </section>
+              <section className="grid gap-3 rounded-xl border bg-secondary/50 p-4">
+                <div className="flex items-start gap-2">
+                  <LockKeyhole className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-black">Conteúdo gerado (referência)</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Roteiro usado na narração (somente leitura). Para mudar a fala, volte a etapa e regenere — essa ação tem custo.</p>
+                  </div>
+                </div>
+                <Textarea aria-label="Roteiro usado na narração" rows={10} value={script} readOnly className="bg-background text-muted-foreground" />
+              </section>
+            </>
           ) : hasScript ? (
             <>
               <div className="grid gap-2">
@@ -221,9 +286,11 @@ export function JobDetailDialog({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>Fechar</Button>
           {canEdit && (
             <>
-              <Button variant="outline" disabled={busy || !job} onClick={() => job && runGenerate.mutate(job.id)}>
-                {hasScript ? <><RefreshCw />Regenerar</> : <><Sparkles />Gerar roteiro</>}
-              </Button>
+              {!isPostStage && (
+                <Button variant="outline" disabled={busy || !job} onClick={() => job && runGenerate.mutate(job.id)}>
+                  {hasScript ? <><RefreshCw />Regenerar</> : <><Sparkles />Gerar roteiro</>}
+                </Button>
+              )}
               {job?.status === "roteiro_pronto" && !job.render_stage && (
                 <Button variant="outline" disabled={runScenes.isPending} onClick={() => runScenes.mutate(job.id)}>
                   {runScenes.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Images />{job.render_error ? ((job.scenes ?? []).some((s) => s.image_url) ? "Gerar as cenas que faltam" : "Tentar de novo") : "Gerar cenas"}</>}
@@ -239,14 +306,16 @@ export function JobDetailDialog({
                 </Button>
               )}
 
-              {hasScript && job?.status !== "video_pronto" && (
+              {hasScript && !isPostStage && (
                 <Button disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
+              )}
+              {canEditPostTexts && (
+                <Button variant="secondary" disabled={savePost.isPending} onClick={() => job && savePost.mutate(job.id)}>
+                  {savePost.isPending ? <><Loader2 className="animate-spin" />Salvando...</> : "Salvar textos"}
+                </Button>
               )}
               {job?.status === "video_pronto" && (
                 <>
-                  {hasScript && (
-                    <Button variant="secondary" disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
-                  )}
                   <Button
                     disabled={runApproveDraft.isPending}
                     title="Aprova este vídeo para postagem. Depois é só postar no TikTok e marcar como publicado na tela Rascunhos."

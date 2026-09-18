@@ -302,6 +302,7 @@ export type Database = {
           hashtags: string[] | null
           id: string
           notes: string | null
+          post_cta: string | null
           product_id: string | null
           profile_id: string
           published_at: string | null
@@ -336,6 +337,7 @@ export type Database = {
           hashtags?: string[] | null
           id?: string
           notes?: string | null
+          post_cta?: string | null
           product_id?: string | null
           profile_id: string
           published_at?: string | null
@@ -370,6 +372,7 @@ export type Database = {
           hashtags?: string[] | null
           id?: string
           notes?: string | null
+          post_cta?: string | null
           product_id?: string | null
           profile_id?: string
           published_at?: string | null

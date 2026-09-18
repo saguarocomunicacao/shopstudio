@@ -7,11 +7,13 @@ import {
   Copy,
   Download,
   Loader2,
+  LockKeyhole,
   RefreshCw,
+  Save,
   Send,
   Undo2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +35,7 @@ import {
   markDraftPublished,
   rejectDraft,
   retryDraftVideoStorage,
+  saveDraftPostTexts,
 } from "@/lib/drafts.functions";
 import { ProfileGate } from "./profile-gate";
 import { SharePanel } from "./share-panel";
@@ -188,6 +191,64 @@ function CopyBlock({
   );
 }
 
+function PostTextField({
+  id,
+  title,
+  value,
+  onChange,
+  readOnly,
+  multiline,
+}: {
+  id: string;
+  title: string;
+  value: string;
+  onChange: (value: string) => void;
+  readOnly: boolean;
+  multiline?: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      toast.success(`${title} copiado.`);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Não foi possível copiar. Selecione o texto manualmente.");
+    }
+  };
+
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <Label htmlFor={id}>{title}</Label>
+        <Button type="button" variant="ghost" size="sm" onClick={copy} disabled={!value.trim()}>
+          {copied ? <Check /> : <Copy />}
+          {copied ? "Copiado" : "Copiar"}
+        </Button>
+      </div>
+      {multiline ? (
+        <Textarea
+          id={id}
+          rows={title === "Legenda sugerida" ? 4 : 3}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          readOnly={readOnly}
+          className={readOnly ? "bg-secondary/60 text-muted-foreground" : "bg-background"}
+        />
+      ) : (
+        <Input
+          id={id}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          readOnly={readOnly}
+          className={readOnly ? "text-muted-foreground" : undefined}
+        />
+      )}
+    </div>
+  );
+}
+
 function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const fetchKit = useServerFn(getDraftKit);
@@ -195,16 +256,27 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
   const approve = useServerFn(approveDraft);
   const publish = useServerFn(markDraftPublished);
   const reject = useServerFn(rejectDraft);
+  const savePostTexts = useServerFn(saveDraftPostTexts);
 
   const [publishOpen, setPublishOpen] = useState(false);
   const [postUrl, setPostUrl] = useState("");
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
+  const [postCta, setPostCta] = useState("");
+  const [caption, setCaption] = useState("");
+  const [hashtags, setHashtags] = useState("");
 
   const kit = useQuery({
     queryKey: ["draft-kit", jobId],
     queryFn: () => fetchKit({ data: { jobId } }),
   });
+
+  useEffect(() => {
+    if (!kit.data) return;
+    setPostCta(kit.data.postCta);
+    setCaption(kit.data.caption);
+    setHashtags(kit.data.hashtags.join(" "));
+  }, [kit.data]);
 
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ["draft-kit", jobId] });
@@ -215,6 +287,18 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
     mutationFn: () => retryStorage({ data: { jobId } }),
     onSuccess: () => {
       toast.success("Vídeo salvo no nosso armazenamento.");
+      refresh();
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const saveTexts = useMutation({
+    mutationFn: () => {
+      const tags = hashtags.split(/[\s,]+/).map((tag) => tag.replace(/^#/, "").trim()).filter(Boolean);
+      return savePostTexts({ data: { jobId, postCta, caption, hashtags: tags } });
+    },
+    onSuccess: () => {
+      toast.success("Textos de publicação salvos.");
       refresh();
     },
     onError: (e) => toast.error(errMessage(e)),
@@ -324,9 +408,38 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
 
             {data.stored && <SharePanel jobId={jobId} />}
 
-            {data.hook && <CopyBlock title="Título / gancho" value={data.hook} multiline />}
-            <CopyBlock title="Legenda" value={data.caption} multiline />
-            <CopyBlock title="Hashtags" value={data.hashtags.join(" ")} multiline />
+            <section className="grid gap-4 rounded-xl border border-primary/25 bg-primary/5 p-4">
+              <div>
+                <p className="text-sm font-black text-primary">Textos para postar</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {data.status === "publicado"
+                    ? "Textos usados na publicação."
+                    : "Edite, salve e copie estes textos sem custo antes de publicar."}
+                </p>
+              </div>
+              <PostTextField id="draft-post-cta" title="CTA / título" value={postCta} onChange={setPostCta} readOnly={data.status === "publicado"} />
+              <PostTextField id="draft-caption" title="Legenda sugerida" value={caption} onChange={setCaption} readOnly={data.status === "publicado"} multiline />
+              <PostTextField id="draft-hashtags" title="Hashtags" value={hashtags} onChange={setHashtags} readOnly={data.status === "publicado"} multiline />
+              {data.status !== "publicado" && (
+                <Button onClick={() => saveTexts.mutate()} disabled={saveTexts.isPending}>
+                  {saveTexts.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+                  {saveTexts.isPending ? "Salvando..." : "Salvar textos"}
+                </Button>
+              )}
+            </section>
+
+            <section className="grid gap-3 rounded-xl border bg-secondary/50 p-4">
+              <div className="flex items-start gap-2">
+                <LockKeyhole className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-black">Conteúdo gerado (referência)</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Roteiro usado na narração (somente leitura). Para mudar a fala, volte a etapa e regenere — essa ação tem custo.
+                  </p>
+                </div>
+              </div>
+              <Textarea aria-label="Roteiro usado na narração" rows={9} value={data.script} readOnly className="bg-background text-muted-foreground" />
+            </section>
             {data.product?.url && (
               <CopyBlock
                 title="Link do produto"
