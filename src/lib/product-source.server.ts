@@ -230,6 +230,10 @@ export type ProductDetail = {
   salesVolume: number | null;
   growthRate: number | null;
   revenue: number | null;
+  /** Categorias oficiais do produto no TikTok Shop (nível 1, 2 e 3). */
+  priCateId: string | null;
+  secCateId: string | null;
+  terCateId: string | null;
 };
 
 /** Coleta recursivamente textos e imagens dos blocos de product_description. */
@@ -300,8 +304,17 @@ export function fetchProductDetail(productId: string, dateRange = "last30Day"): 
       const price = maybe("unit_price") ?? maybe("min_price");
       const salesVolume = maybe("sales_volumn") ?? maybe("sales_volume");
 
+      const cate = (key: string) => {
+        const raw = data[key];
+        const value = raw === undefined || raw === null ? "" : String(raw).trim();
+        return value && value !== "0" ? value : null;
+      };
+
       if (!description && !unique.length && price === null && salesVolume === null) return null;
       return {
+        priCateId: cate("pri_cate_id"),
+        secCateId: cate("sec_cate_id"),
+        terCateId: cate("ter_cate_id"),
         description,
         images: unique,
         price,
