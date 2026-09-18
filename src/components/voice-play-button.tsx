@@ -80,13 +80,19 @@ export function VoicePlayButton({ voiceRowId, previewUrl, label = "Ouvir voz" }:
       className="h-8 w-8 rounded-full text-primary hover:bg-primary/10"
       title={label}
       aria-label={label}
-      disabled={!previewUrl}
+      disabled={!previewUrl && !voiceRowId}
       onClick={(e) => {
         e.stopPropagation();
         void onClick();
       }}
     >
-      {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : playing ? (
+        <Pause className="h-4 w-4" />
+      ) : (
+        <Play className="h-4 w-4" />
+      )}
     </Button>
   );
 }
