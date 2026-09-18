@@ -202,7 +202,7 @@ export function JobDetailDialog({
             />
           )}
 
-          {job && <JobChampionRefs refs={job.script_refs} />}
+          {job && <JobChampionRefs refs={job.script_refs ?? null} />}
           {job && <JobVoiceSelect job={job} canEdit={canEdit && !isPostStage} />}
           {job && <JobCostSummary jobId={job.id} />}
           {job && <JobTimeline jobId={job.id} />}
