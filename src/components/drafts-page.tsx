@@ -35,6 +35,7 @@ import {
   retryDraftVideoStorage,
 } from "@/lib/drafts.functions";
 import { ProfileGate } from "./profile-gate";
+import { SharePanel } from "./share-panel";
 import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
