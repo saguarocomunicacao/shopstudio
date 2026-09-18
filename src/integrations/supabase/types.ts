@@ -481,13 +481,16 @@ export type Database = {
           name: string
           niche: string
           origin: string
+          pri_cate_id: string | null
           price: number
           profile_id: string | null
           revenue: number
           sales_volume: number
+          sec_cate_id: string | null
           seller_name: string
           source: string | null
           status: string
+          ter_cate_id: string | null
           updated_at: string
           url: string
         }
@@ -507,13 +510,16 @@ export type Database = {
           name: string
           niche?: string
           origin?: string
+          pri_cate_id?: string | null
           price?: number
           profile_id?: string | null
           revenue?: number
           sales_volume?: number
+          sec_cate_id?: string | null
           seller_name?: string
           source?: string | null
           status?: string
+          ter_cate_id?: string | null
           updated_at?: string
           url?: string
         }
@@ -533,13 +539,16 @@ export type Database = {
           name?: string
           niche?: string
           origin?: string
+          pri_cate_id?: string | null
           price?: number
           profile_id?: string | null
           revenue?: number
           sales_volume?: number
+          sec_cate_id?: string | null
           seller_name?: string
           source?: string | null
           status?: string
+          ter_cate_id?: string | null
           updated_at?: string
           url?: string
         }

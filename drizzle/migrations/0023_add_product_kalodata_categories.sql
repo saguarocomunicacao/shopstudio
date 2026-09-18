@@ -1,0 +1,4 @@
+ALTER TABLE public.products
+  ADD COLUMN IF NOT EXISTS pri_cate_id TEXT,
+  ADD COLUMN IF NOT EXISTS sec_cate_id TEXT,
+  ADD COLUMN IF NOT EXISTS ter_cate_id TEXT;
