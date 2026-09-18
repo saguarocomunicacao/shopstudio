@@ -21,7 +21,6 @@ import { JobVoiceSelect } from "./job-voice-select";
 import { JobVideoStorage } from "./job-video-storage";
 import { brl } from "@/lib/custo";
 import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
-import { extractHookFromScript } from "@/lib/script-parser";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
@@ -61,6 +60,7 @@ export function JobDetailDialog({
   const orcamentoEstourado = !!gasto?.bloqueado;
 
   const [script, setScript] = useState("");
+  const [hook, setHook] = useState("");
   const [postCta, setPostCta] = useState("");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
@@ -68,6 +68,7 @@ export function JobDetailDialog({
   useEffect(() => {
     if (!job) return;
     setScript(job.script ?? "");
+    setHook(job.hook ?? "");
     setPostCta(job.post_cta ?? "");
     setCaption(job.caption ?? "");
     setHashtags((job.hashtags ?? []).join(" "));
@@ -81,6 +82,8 @@ export function JobDetailDialog({
     mutationFn: async (jobId: string) => generate({ data: { jobId } }),
     onSuccess: (result) => {
       setScript(`GANCHO (0-3s)\n${result.hook}\n\nCORPO\n${result.body}\n\nCTA\n${result.cta}`);
+      setHook(result.hook);
+      setPostCta(result.cta);
       setCaption(result.caption);
       setHashtags(result.hashtags.join(" "));
       toast.success("Roteiro gerado.");
@@ -118,7 +121,7 @@ export function JobDetailDialog({
   const savePost = useMutation({
     mutationFn: async (jobId: string) => {
       const tags = hashtags.split(/[\s,]+/).map((tag) => tag.replace(/^#/, "").trim()).filter(Boolean);
-      return savePostTexts({ data: { jobId, postCta, caption, hashtags: tags } });
+      return savePostTexts({ data: { jobId, hook, postCta, caption, hashtags: tags } });
     },
     onSuccess: () => { toast.success("Textos de publicação salvos."); refresh(); },
     onError: (e) => toast.error(errMessage(e)),
@@ -215,7 +218,11 @@ export function JobDetailDialog({
                   <p className="mt-1 text-xs text-muted-foreground">Você pode editar e salvar estes textos sem custo até publicar.</p>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="j-post-cta">CTA / título</Label>
+                  <Label htmlFor="j-hook">Título / gancho</Label>
+                  <Input id="j-hook" value={hook} onChange={(e) => setHook(e.target.value)} disabled={!canEditPostTexts} placeholder="Frase de abertura da publicação" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="j-post-cta">CTA final</Label>
                   <Input id="j-post-cta" value={postCta} onChange={(e) => setPostCta(e.target.value)} disabled={!canEditPostTexts} placeholder="Chamada curta para a publicação" />
                 </div>
                 <div className="grid gap-2">

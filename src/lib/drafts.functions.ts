@@ -118,6 +118,7 @@ export const saveDraftPostTexts = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
     z.object({
       jobId: z.string().uuid(),
+      hook: z.string().trim().max(500),
       postCta: z.string().trim().max(500),
       caption: z.string().trim().max(5000),
       hashtags: z.array(z.string().trim().min(1).max(100)).max(30),
@@ -138,6 +139,7 @@ export const saveDraftPostTexts = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("jobs")
       .update({
+        hook: data.hook || null,
         post_cta: data.postCta,
         caption: data.caption || null,
         hashtags: data.hashtags,

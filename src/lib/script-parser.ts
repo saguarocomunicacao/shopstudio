@@ -10,13 +10,8 @@ export function extractHookFromScript(script: string | null | undefined) {
   const inline = hookLine
     .replace(/^gancho(?:\s*\([^)]*\))?\s*[:\-–]?\s*/i, "")
     .trim();
-  const following = lines
-    .slice(hookIndex + 1)
-    .filter((line) => line.length > 0)
-    .takeWhile?.(() => true);
-
   const parts = inline ? [inline] : [];
-  for (const line of following ?? lines.slice(hookIndex + 1)) {
+  for (const line of lines.slice(hookIndex + 1)) {
     if (/^(corpo|cta)\b/i.test(line)) break;
     if (line) parts.push(line);
   }
