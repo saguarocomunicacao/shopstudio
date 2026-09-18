@@ -140,24 +140,34 @@ export async function fetchAsBase64(url: string, headers?: Record<string, string
 
 const base64ToBytes = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
-/** Gera uma imagem 9:16 com o Gemini, usando a foto real do produto como referência. */
-export async function generateSceneImage(opts: {
+/** Espera entre as tentativas automáticas (2s, 4s, 8s). */
+const RETRY_BACKOFF_MS = [2000, 4000, 8000];
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Uma tentativa de geração da imagem da cena no Gemini. */
+async function requestSceneImage(opts: {
   model: string;
   prompt: string;
   references: { base64: string; mimeType: string }[];
 }): Promise<{ base64: string; mimeType: string }> {
-  const res = await fetch(`${GEMINI_BASE}/interactions`, {
-    method: "POST",
-    headers: { "x-goog-api-key": geminiKey(), "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: opts.model,
-      input: [
-        { type: "text", text: opts.prompt },
-        ...opts.references.map((r) => ({ type: "image", data: r.base64, mime_type: r.mimeType })),
-      ],
-      response_format: { type: "image", mime_type: "image/jpeg", aspect_ratio: "9:16" },
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${GEMINI_BASE}/interactions`, {
+      method: "POST",
+      headers: { "x-goog-api-key": geminiKey(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: opts.model,
+        input: [
+          { type: "text", text: opts.prompt },
+          ...opts.references.map((r) => ({ type: "image", data: r.base64, mime_type: r.mimeType })),
+        ],
+        response_format: { type: "image", mime_type: "image/jpeg", aspect_ratio: "9:16" },
+      }),
+    });
+  } catch {
+    // Falha de rede ao falar com o Google: vale tentar de novo.
+    throw new GoogleApiError("Não foi possível falar com o Google agora. Tente de novo em instantes.", true);
+  }
 
   const text = await res.text();
   if (!res.ok) throw googleError(res.status, text);
@@ -166,13 +176,45 @@ export async function generateSceneImage(opts: {
   try {
     json = JSON.parse(text);
   } catch {
-    throw new Error("O Gemini devolveu uma resposta inesperada ao gerar a cena.");
+    throw new GoogleApiError("O Gemini devolveu uma resposta inesperada ao gerar a cena.", true);
   }
 
   const image = findImagePart(json);
-  if (!image) throw new Error("O Gemini não devolveu imagem para esta cena. Tente novamente.");
+  if (!image) throw new GoogleApiError("O Gemini não devolveu imagem para esta cena.", true);
   return image;
 }
+
+/**
+ * Gera uma imagem 9:16 com o Gemini, usando a foto real do produto como referência.
+ * Erros temporários (504, 503, 429, rede) são tentados de novo automaticamente,
+ * com espera crescente. Só falha de verdade quando todas as tentativas falham.
+ */
+export async function generateSceneImage(opts: {
+  model: string;
+  prompt: string;
+  references: { base64: string; mimeType: string }[];
+}): Promise<{ base64: string; mimeType: string }> {
+  const total = RETRY_BACKOFF_MS.length;
+  for (let attempt = 0; attempt < total; attempt += 1) {
+    try {
+      return await requestSceneImage(opts);
+    } catch (error) {
+      const last = attempt === total - 1;
+      if (!isTransientError(error) || last) {
+        if (last && isTransientError(error) && error instanceof Error) {
+          throw new GoogleApiError(
+            `${error.message} Tentamos ${total} vezes automaticamente e o Google seguiu instável.`,
+            true,
+          );
+        }
+        throw error;
+      }
+      await sleep(RETRY_BACKOFF_MS[attempt]!);
+    }
+  }
+  throw new GoogleApiError("Não foi possível gerar a imagem desta cena.", true);
+}
+
 
 /** Procura o payload de imagem na resposta (output_image, outputs[], candidates[]...). */
 function findImagePart(value: unknown): { base64: string; mimeType: string } | null {
