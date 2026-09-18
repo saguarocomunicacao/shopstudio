@@ -11,6 +11,7 @@ export type ActionKey = (typeof ACTIONS)[number];
 export const MODULE_LABELS: Record<ModuleKey, string> = {
   perfis: "Perfis", produtos: "Produtos", pipeline: "Pipeline", videos: "Vídeos",
   rascunhos: "Rascunhos", metricas: "Métricas", custos: "Custos", investimento: "Investimento", equipe: "Equipe", configuracoes: "Configurações",
+  backoffice: "Backoffice (dados internos da operação)",
 };
 export const ACTION_LABELS: Record<ActionKey, string> = {
   visualizar: "Visualizar", criar: "Criar", editar: "Editar", remover: "Remover", publicar: "Publicar", aprovar: "Aprovar", ver_global: "Ver global",
