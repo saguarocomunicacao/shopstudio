@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as VTokenRouteImport } from './routes/v.$token'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
 import { Route as AuthenticatedAppAprovacoesRouteImport } from './routes/_authenticated/app/aprovacoes'
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
@@ -53,6 +54,11 @@ const EntrarRoute = EntrarRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VTokenRoute = VTokenRouteImport.update({
+  id: '/v/$token',
+  path: '/v/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
+  '/v/$token': typeof VTokenRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/custos': typeof AuthenticatedAppCustosRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
+  '/v/$token': typeof VTokenRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/custos': typeof AuthenticatedAppCustosRoute
@@ -198,6 +206,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
+  '/v/$token': typeof VTokenRoute
   '/_authenticated/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/_authenticated/app/custos': typeof AuthenticatedAppCustosRoute
@@ -222,6 +231,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/entrar'
     | '/login'
+    | '/v/$token'
     | '/app/aprovacoes'
     | '/app/configuracoes'
     | '/app/custos'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/entrar'
     | '/login'
+    | '/v/$token'
     | '/app/aprovacoes'
     | '/app/configuracoes'
     | '/app/custos'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/entrar'
     | '/login'
+    | '/v/$token'
     | '/_authenticated/app/aprovacoes'
     | '/_authenticated/app/configuracoes'
     | '/_authenticated/app/custos'
@@ -291,6 +303,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   EntrarRoute: typeof EntrarRoute
   LoginRoute: typeof LoginRoute
+  VTokenRoute: typeof VTokenRoute
   ApiPublicJson2videoWebhookTokenRoute: typeof ApiPublicJson2videoWebhookTokenRoute
 }
 
@@ -329,6 +342,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/v/$token': {
+      id: '/v/$token'
+      path: '/v/$token'
+      fullPath: '/v/$token'
+      preLoaderRoute: typeof VTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/app/': {
@@ -491,6 +511,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   EntrarRoute: EntrarRoute,
   LoginRoute: LoginRoute,
+  VTokenRoute: VTokenRoute,
   ApiPublicJson2videoWebhookTokenRoute: ApiPublicJson2videoWebhookTokenRoute,
 }
 export const routeTree = rootRouteImport

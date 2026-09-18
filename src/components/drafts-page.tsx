@@ -35,6 +35,7 @@ import {
   retryDraftVideoStorage,
 } from "@/lib/drafts.functions";
 import { ProfileGate } from "./profile-gate";
+import { SharePanel } from "./share-panel";
 import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
@@ -311,6 +312,8 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
                 </Button>
               </section>
             )}
+
+            {data.stored && <SharePanel jobId={jobId} />}
 
             {data.hook && <CopyBlock title="Título / gancho" value={data.hook} multiline />}
             <CopyBlock title="Legenda" value={data.caption} multiline />
