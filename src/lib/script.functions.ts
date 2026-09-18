@@ -203,6 +203,7 @@ export const generateJobScript = createServerFn({ method: "POST" })
       .from("jobs")
       .update({
         script: composeScript(generated),
+        hook: generated.hook,
         post_cta: generated.cta,
         caption: generated.caption,
         hashtags: generated.hashtags,

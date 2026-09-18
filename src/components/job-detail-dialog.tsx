@@ -21,22 +21,12 @@ import { JobVoiceSelect } from "./job-voice-select";
 import { JobVideoStorage } from "./job-video-storage";
 import { brl } from "@/lib/custo";
 import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
+import { extractHookFromScript } from "@/lib/script-parser";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
 /** A partir de "vídeo pronto" o job já pode ser compartilhado por link público. */
 const SHAREABLE_STATUS: DbJob["status"][] = ["video_pronto", "rascunho_enviado", "publicado"];
-
-function publicationTitleFromScript(script: string | null) {
-  if (!script) return "";
-  const lines = script.replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean);
-  const hookIndex = lines.findIndex((line) => /^gancho/i.test(line));
-  if (hookIndex < 0) return lines[0] ?? "";
-  const hookLine = lines[hookIndex];
-  if (!hookLine) return "";
-  const inline = hookLine.replace(/^gancho(?:\s*\([^)]*\))?\s*[:\-–]?\s*/i, "").trim();
-  return inline || lines[hookIndex + 1] || "";
-}
 
 export function JobDetailDialog({
   job,
@@ -78,7 +68,7 @@ export function JobDetailDialog({
   useEffect(() => {
     if (!job) return;
     setScript(job.script ?? "");
-    setPostCta(job.post_cta ?? publicationTitleFromScript(job.script));
+    setPostCta(job.post_cta ?? "");
     setCaption(job.caption ?? "");
     setHashtags((job.hashtags ?? []).join(" "));
   }, [job]);
