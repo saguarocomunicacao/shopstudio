@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Eye, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { Eye, Pencil, RefreshCw, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -44,6 +44,18 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
       <div className="text-sm font-medium break-words">{children}</div>
     </div>
   );
+}
+
+/** Mostra de onde veio o texto da descrição, para indicar a confiabilidade. */
+function OriginBadge({ origem, temDescricao }: { origem?: string | null; temDescricao: boolean }) {
+  if (!temDescricao) return <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Sem descrição</span>;
+  const map: Record<string, { label: string; className: string }> = {
+    manual: { label: "Editada manualmente", className: "bg-primary/10 text-primary" },
+    gerada_por_ia: { label: "Gerada por IA", className: "bg-secondary text-foreground" },
+    kalodata: { label: "Da Kalodata", className: "bg-secondary text-muted-foreground" },
+  };
+  const item = map[origem ?? "kalodata"] ?? map["kalodata"]!;
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.className}`}>{item.label}</span>;
 }
 
 export function ProductsPage() { return <ProfileGate><ProductsContent /></ProfileGate>; }
