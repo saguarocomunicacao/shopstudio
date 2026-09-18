@@ -42,6 +42,8 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
   const { can, userId, activeProfileId } = useStudio();
   const qc = useQueryClient();
   const canCreate = can("produtos", "criar");
+  const canCreateJob = can("pipeline", "criar", activeProfileId);
+
   const { data: categories = [] } = useCategories();
   const normalize = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
   const categoryIdFor = (name: string) =>
