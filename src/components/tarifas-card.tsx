@@ -134,7 +134,7 @@ export function TarifasCard() {
             inputMode="decimal"
             value={cotacaoInput}
             onChange={(e) => setCotacaoInput(e.target.value)}
-            className="bg-background"
+            className="bg-input"
           />
         </div>
         <Button

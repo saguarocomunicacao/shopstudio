@@ -57,7 +57,7 @@ function NumberField({
           }
           if ((n ?? null) !== value) onSave(n ?? null);
         }}
-        className="bg-background"
+        className="bg-input"
       />
       {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
     </div>
