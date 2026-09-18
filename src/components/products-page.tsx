@@ -241,7 +241,10 @@ function ProductsContent() {
             <div className="grid gap-4 py-2">
               <div className="flex items-center gap-3">
                 {details.image_url ? <img src={details.image_url} alt="" className="size-16 rounded-xl object-cover" /> : null}
-                <p className="text-xs text-muted-foreground">Dados vindos do garimpo. Somente leitura.</p>
+                <p className="text-xs text-muted-foreground">
+                  Dados vindos do garimpo. Somente leitura.
+                  {atualizadoHa(details.updated_at) ? <span className="block">Atualizado {atualizadoHa(details.updated_at)}.</span> : null}
+                </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <DetailRow label="Categoria">{details.niche || "—"}</DetailRow>
