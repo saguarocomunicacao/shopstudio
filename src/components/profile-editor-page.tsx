@@ -476,8 +476,18 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                   {avatarItems.length > 0 && (
                     <div className="mb-3 flex flex-wrap gap-3">
                       {avatarItems.map((item, i) => (
-                        <div className="relative" key={item.url ?? i}>
-                          <img src={item.preview} alt="" className="size-24 rounded-xl object-cover" />
+                        <div className="group relative" key={item.url ?? i}>
+                          <button
+                            type="button"
+                            onClick={() => setLightboxIndex(i)}
+                            aria-label={`Ver foto ${i + 1} em tela cheia`}
+                            className="relative block size-24 overflow-hidden rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          >
+                            <img src={item.preview} alt="" className="size-24 rounded-xl object-cover transition-transform group-hover:scale-[1.04]" />
+                            <span className="absolute inset-x-0 bottom-0 bg-foreground/70 px-1 py-1 text-center text-[10px] font-semibold text-background opacity-0 transition-opacity group-hover:opacity-100">
+                              Ver em tela cheia
+                            </span>
+                          </button>
                           <button
                             type="button"
                             aria-label="Remover foto"
