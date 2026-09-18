@@ -205,10 +205,18 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
                     </td>
                     <td className="px-2 py-2"><ProductImage item={item} /></td>
                     <td className="min-w-0 px-3 py-2"><ProductName item={item} /></td>
-                    <td className="px-3 py-2"><span className="block truncate text-muted-foreground" title={productCategory(item)}>{productCategory(item)}</span></td>
-                    <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatPrice(item.price)}</td>
+                    <td className="px-3 py-2">
+                      {rising
+                        ? <GrowthBadge value={item.growthRate ?? 0} />
+                        : <span className="block truncate text-muted-foreground" title={productCategory(item)}>{productCategory(item)}</span>}
+                    </td>
+                    <td className="px-3 py-2 text-right font-semibold tabular-nums">
+                      {rising ? compactNumber(item.salesVolume ?? 0) : formatPrice(item.price)}
+                    </td>
                     <td className="px-3 py-2"><Commission item={item} /></td>
-                    <td className="px-3 py-2"><HypeScore value={item.hype} /></td>
+                    <td className="px-3 py-2">
+                      {rising ? <RisingScore value={item.risingScore ?? 0} /> : <HypeScore value={item.hype} />}
+                    </td>
                     <td className="px-1 py-2"><div className="flex items-center justify-end gap-2.5">{renderActions(item)}</div></td>
                   </tr>
                   {isExpanded && <tr className="border-b"><td colSpan={8} className="px-3 py-3"><Details item={item} /></td></tr>}
