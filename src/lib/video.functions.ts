@@ -689,7 +689,7 @@ export const generateAvatarReference = createServerFn({ method: "POST" })
     return { url: stored.url };
   });
 
-/** Salva até 3 fotos enviadas pelo usuário como referência da pessoa fixa. */
+/** Salva até 5 fotos enviadas pelo usuário como referência da pessoa fixa. */
 export const saveAvatarReferences = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
@@ -706,7 +706,7 @@ export const saveAvatarReferences = createServerFn({ method: "POST" })
               z.object({ url: z.string().url() }),
             ]),
           )
-          .max(3),
+          .max(5),
       })
       .parse(data),
   )
