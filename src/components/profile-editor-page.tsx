@@ -51,9 +51,20 @@ const VEO_MODELS = [
 ];
 
 /** Foto de referência da pessoa: já salva (url) ou recém-escolhida (base64). */
-type AvatarItem = { preview: string; url?: string; base64?: string; mimeType?: string };
+type AvatarItem = { preview: string; url?: string; base64?: string; mimeType?: string; width?: number; height?: number };
 
-const MAX_AVATARS = 3;
+const MAX_AVATARS = 5;
+/** Abaixo disso o rosto costuma sair sem detalhe suficiente para o Gemini. */
+const MIN_AVATAR_SIDE = 512;
+
+const AVATAR_TIPS: { good: boolean; text: string }[] = [
+  { good: true, text: "A mesma pessoa em todas as fotos." },
+  { good: true, text: "Rosto bem visível, nítido e bem iluminado (luz natural de dia é ideal)." },
+  { good: true, text: "Ângulos diferentes: uma de frente, uma de leve perfil e uma de meio corpo." },
+  { good: true, text: "Fundo neutro e limpo, sem bagunça atrás." },
+  { good: true, text: "Expressões naturais, sem óculos escuros, boné ou nada cobrindo o rosto." },
+  { good: false, text: "Evite: foto borrada, escura, muito de longe, com várias pessoas ou com filtro pesado." },
+];
 
 const readFile = (file: File) =>
   new Promise<AvatarItem>((resolve, reject) => {
@@ -61,7 +72,11 @@ const readFile = (file: File) =>
     reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
     reader.onload = () => {
       const result = String(reader.result);
-      resolve({ preview: result, base64: result.split(",")[1] ?? "", mimeType: file.type });
+      const item: AvatarItem = { preview: result, base64: result.split(",")[1] ?? "", mimeType: file.type };
+      const probe = new Image();
+      probe.onload = () => resolve({ ...item, width: probe.naturalWidth, height: probe.naturalHeight });
+      probe.onerror = () => resolve(item);
+      probe.src = result;
     };
     reader.readAsDataURL(file);
   });
