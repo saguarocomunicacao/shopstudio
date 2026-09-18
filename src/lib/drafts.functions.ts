@@ -18,39 +18,13 @@ async function sign(path: string | null | undefined) {
   return data?.signedUrl ?? null;
 }
 
-/** Baixa um arquivo remoto e guarda no bucket privado. Devolve o caminho. */
-async function copyToStorage(url: string, path: string, contentType: string) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Não foi possível baixar o arquivo (${res.status}).`);
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { error } = await supabaseAdmin.storage
-    .from("job-media")
-    .upload(path, bytes, { contentType, upsert: true });
-  if (error) throw new Error(error.message);
-  return path;
-}
-
 /**
  * Garante que o mp4 (e a miniatura) do job estejam no nosso storage.
- * Usado pelo webhook e como nova tentativa quando a cópia falhou.
+ * A cópia em si vive em video-storage.server (com status, log e retry).
  */
-export async function storeJobVideo(jobId: string, videoUrl: string, thumbnailUrl?: string | null) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const videoPath = await copyToStorage(videoUrl, `videos/${jobId}.mp4`, "video/mp4");
-  let thumbPath: string | null = null;
-  if (thumbnailUrl) {
-    try {
-      thumbPath = await copyToStorage(thumbnailUrl, `thumbs/${jobId}.jpg`, "image/jpeg");
-    } catch {
-      // A miniatura é opcional: sem ela o card mostra o player.
-    }
-  }
-  await supabaseAdmin
-    .from("jobs")
-    .update({ video_path: videoPath, ...(thumbPath ? { video_thumbnail_path: thumbPath } : {}) })
-    .eq("id", jobId);
-  return { videoPath, thumbPath };
+export async function storeJobVideo(jobId: string, opts: { force?: boolean } = {}) {
+  const { ensureJobVideoStored } = await import("./video-storage.server");
+  return ensureJobVideoStored(jobId, opts);
 }
 
 type KitRow = {
