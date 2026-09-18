@@ -373,6 +373,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          description_origem: string | null
           external_id: string | null
           extra_image_urls: Json
           growth_rate: number
@@ -398,6 +399,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          description_origem?: string | null
           external_id?: string | null
           extra_image_urls?: Json
           growth_rate?: number
@@ -423,6 +425,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          description_origem?: string | null
           external_id?: string | null
           extra_image_urls?: Json
           growth_rate?: number

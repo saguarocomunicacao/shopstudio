@@ -1,0 +1,2 @@
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS description_origem text;
+UPDATE public.products SET description_origem = 'kalodata' WHERE description IS NOT NULL AND btrim(description) <> '' AND description_origem IS NULL;
