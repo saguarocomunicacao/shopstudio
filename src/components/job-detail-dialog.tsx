@@ -27,6 +27,14 @@ const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi p
 /** A partir de "vídeo pronto" o job já pode ser compartilhado por link público. */
 const SHAREABLE_STATUS: DbJob["status"][] = ["video_pronto", "rascunho_enviado", "publicado"];
 
+function publicationTitleFromScript(script: string | null) {
+  if (!script) return "";
+  const lines = script.replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean);
+  const hookIndex = lines.findIndex((line) => /^gancho/i.test(line));
+  if (hookIndex < 0) return lines[0] ?? "";
+  const inline = lines[hookIndex].replace(/^gancho(?:\s*\([^)]*\))?\s*[:\-–]?\s*/i, "").trim();
+  return inline || lines[hookIndex + 1] || "";
+}
 
 export function JobDetailDialog({
   job,
@@ -68,7 +76,7 @@ export function JobDetailDialog({
   useEffect(() => {
     if (!job) return;
     setScript(job.script ?? "");
-    setPostCta(job.post_cta ?? "");
+    setPostCta(job.post_cta ?? publicationTitleFromScript(job.script));
     setCaption(job.caption ?? "");
     setHashtags((job.hashtags ?? []).join(" "));
   }, [job]);
@@ -160,6 +168,16 @@ export function JobDetailDialog({
             <p className="rounded-xl bg-secondary px-4 py-3 text-xs text-muted-foreground">
               Este vídeo já está na Fila de Rascunhos aguardando revisão. Você não precisa enviá-lo para lugar nenhum: revise aqui e aprove para postagem quando estiver bom.
             </p>
+          )}
+
+          {isPostStage && (
+            <div className="flex items-start gap-2 rounded-xl border bg-secondary/50 px-4 py-3">
+              <LockKeyhole className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-black">Conteúdo gerado (referência)</p>
+                <p className="mt-1 text-xs text-muted-foreground">O vídeo e as cenas estão travados nesta etapa. Para mudá-los, volte a etapa e regenere — essa ação tem custo.</p>
+              </div>
+            </div>
           )}
 
           {job?.video_url && (
@@ -266,9 +284,11 @@ export function JobDetailDialog({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>Fechar</Button>
           {canEdit && (
             <>
-              <Button variant="outline" disabled={busy || !job} onClick={() => job && runGenerate.mutate(job.id)}>
-                {hasScript ? <><RefreshCw />Regenerar</> : <><Sparkles />Gerar roteiro</>}
-              </Button>
+              {!isPostStage && (
+                <Button variant="outline" disabled={busy || !job} onClick={() => job && runGenerate.mutate(job.id)}>
+                  {hasScript ? <><RefreshCw />Regenerar</> : <><Sparkles />Gerar roteiro</>}
+                </Button>
+              )}
               {job?.status === "roteiro_pronto" && !job.render_stage && (
                 <Button variant="outline" disabled={runScenes.isPending} onClick={() => runScenes.mutate(job.id)}>
                   {runScenes.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Images />{job.render_error ? ((job.scenes ?? []).some((s) => s.image_url) ? "Gerar as cenas que faltam" : "Tentar de novo") : "Gerar cenas"}</>}
@@ -284,14 +304,16 @@ export function JobDetailDialog({
                 </Button>
               )}
 
-              {hasScript && job?.status !== "video_pronto" && (
+              {hasScript && !isPostStage && (
                 <Button disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
+              )}
+              {canEditPostTexts && (
+                <Button variant="secondary" disabled={savePost.isPending} onClick={() => job && savePost.mutate(job.id)}>
+                  {savePost.isPending ? <><Loader2 className="animate-spin" />Salvando...</> : "Salvar textos"}
+                </Button>
               )}
               {job?.status === "video_pronto" && (
                 <>
-                  {hasScript && (
-                    <Button variant="secondary" disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
-                  )}
                   <Button
                     disabled={runApproveDraft.isPending}
                     title="Aprova este vídeo para postagem. Depois é só postar no TikTok e marcar como publicado na tela Rascunhos."
