@@ -130,6 +130,9 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const [avatarDescription, setAvatarDescription] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [pendingAvatars, setPendingAvatars] = useState<AvatarItem[]>([]);
+  const [rejectedAvatars, setRejectedAvatars] = useState<{ id: string; name: string; reason: string }[]>([]);
+  const [dragOver, setDragOver] = useState(false);
 
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
   const prevLightbox = useCallback(() => setLightboxIndex((i) => (i === null ? null : (i - 1 + avatarItems.length) % avatarItems.length)), [avatarItems.length]);
@@ -289,27 +292,37 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
       qc.invalidateQueries({ queryKey: ["video-settings"] });
     },
     onError: (e) => toast.error(errMessage(e)),
+    onSettled: () => setPendingAvatars([]),
   });
 
-  const pickAvatarFiles = async (files: FileList | null) => {
-    if (!files?.length) return;
+  const pickAvatarFiles = async (files: FileList | File[] | null) => {
+    const list = files ? Array.from(files) : [];
+    if (!list.length) return;
     const free = MAX_AVATARS - avatarItems.length;
     if (free <= 0) {
       toast.error(`Máximo de ${MAX_AVATARS} fotos. Remova uma para enviar outra.`);
       return;
     }
-    const chosen = Array.from(files)
-      .filter((f) => ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(f.type))
-      .slice(0, free);
-    if (!chosen.length) {
-      toast.error("Envie imagens JPG ou PNG.");
-      return;
+
+    const rejects: { id: string; name: string; reason: string }[] = [];
+    const accepted: File[] = [];
+    for (const file of list) {
+      const id = `${file.name}-${file.size}-${Math.random().toString(36).slice(2, 8)}`;
+      if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)) {
+        rejects.push({ id, name: file.name, reason: "Formato inválido (use JPG ou PNG)" });
+      } else if (file.size > 5 * 1024 * 1024) {
+        rejects.push({ id, name: file.name, reason: "Maior que 5 MB" });
+      } else if (accepted.length >= free) {
+        rejects.push({ id, name: file.name, reason: `Limite de ${MAX_AVATARS} fotos` });
+      } else {
+        accepted.push(file);
+      }
     }
-    if (chosen.some((f) => f.size > 5 * 1024 * 1024)) {
-      toast.error("Cada foto precisa ter até 5 MB.");
-      return;
-    }
-    const read = await Promise.all(chosen.map(readFile));
+    setRejectedAvatars(rejects);
+    if (!accepted.length) return;
+
+    const read = await Promise.all(accepted.map(readFile));
+    setPendingAvatars(read);
     const small = read.filter((r) => r.width && r.height && Math.min(r.width, r.height) < MIN_AVATAR_SIDE);
     if (small.length) {
       toast.warning(
@@ -320,6 +333,14 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
     }
     uploadAvatars.mutate([...avatarItems, ...read]);
   };
+
+  const onAvatarDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (!profile || uploadAvatars.isPending || avatarItems.length >= MAX_AVATARS) return;
+    void pickAvatarFiles(e.dataTransfer.files);
+  };
+
 
   const goBack = () => void navigate({ to: "/app/perfis" });
 
@@ -496,7 +517,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                     ))}
                   </div>
 
-                  {avatarItems.length > 0 && (
+                  {(avatarItems.length > 0 || pendingAvatars.length > 0 || rejectedAvatars.length > 0) && (
                     <div className="mb-3 flex flex-wrap gap-3">
                       {avatarItems.map((item, i) => (
                         <div className="group relative" key={item.url ?? i}>
@@ -517,6 +538,35 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                             className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow"
                             disabled={uploadAvatars.isPending}
                             onClick={() => uploadAvatars.mutate(avatarItems.filter((_, idx) => idx !== i))}
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                      ))}
+
+                      {pendingAvatars.map((item, i) => (
+                        <div className="relative size-24 overflow-hidden rounded-xl" key={`pending-${i}`}>
+                          <img src={item.preview} alt="" className="size-24 rounded-xl object-cover opacity-50" />
+                          <span className="absolute inset-0 grid place-items-center bg-foreground/30">
+                            <Loader2 className="size-5 animate-spin text-background" />
+                          </span>
+                        </div>
+                      ))}
+
+                      {rejectedAvatars.map((item) => (
+                        <div
+                          key={item.id}
+                          className="relative grid size-24 place-items-center rounded-xl border border-dashed border-destructive/60 bg-destructive/5 p-2 text-center"
+                        >
+                          <div>
+                            <AlertTriangle className="mx-auto mb-1 size-4 text-destructive" />
+                            <p className="line-clamp-2 text-[10px] font-semibold text-destructive">{item.reason}</p>
+                          </div>
+                          <button
+                            type="button"
+                            aria-label="Descartar arquivo"
+                            className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-muted text-foreground shadow"
+                            onClick={() => setRejectedAvatars((prev) => prev.filter((r) => r.id !== item.id))}
                           >
                             <X className="size-3.5" />
                           </button>
@@ -565,10 +615,6 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                         </ul>
                       </div>
 
-                      <p className="text-xs font-semibold">
-                        {avatarItems.length} de {MAX_AVATARS} fotos enviadas
-                      </p>
-
                       <input
                         ref={fileInput}
                         type="file"
@@ -577,14 +623,36 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                         className="hidden"
                         onChange={(e) => { void pickAvatarFiles(e.target.files); e.target.value = ""; }}
                       />
-                      <Button
-                        variant="secondary"
-                        className="justify-self-start"
-                        disabled={!profile || uploadAvatars.isPending || avatarItems.length >= MAX_AVATARS}
-                        onClick={() => fileInput.current?.click()}
-                      >
-                        {uploadAvatars.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Upload />Enviar fotos ({avatarItems.length}/{MAX_AVATARS})</>}
-                      </Button>
+
+                      {avatarItems.length >= MAX_AVATARS ? (
+                        <div className="rounded-xl border border-dashed bg-muted/40 px-4 py-6 text-center text-xs font-semibold text-muted-foreground">
+                          Limite de {MAX_AVATARS} fotos atingido. Remova uma para enviar outra.
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={!profile || uploadAvatars.isPending}
+                          onClick={() => fileInput.current?.click()}
+                          onDragOver={(e) => { e.preventDefault(); if (profile && !uploadAvatars.isPending) setDragOver(true); }}
+                          onDragLeave={() => setDragOver(false)}
+                          onDrop={onAvatarDrop}
+                          className={`flex w-full flex-col items-center gap-1 rounded-xl border-2 border-dashed px-4 py-8 text-center transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                            dragOver ? "border-primary bg-primary/10" : "border-border bg-muted/30 hover:border-primary hover:bg-primary/5"
+                          }`}
+                        >
+                          {uploadAvatars.isPending ? (
+                            <Loader2 className="size-6 animate-spin text-primary" />
+                          ) : (
+                            <Upload className={`size-6 ${dragOver ? "text-primary" : "text-muted-foreground"}`} />
+                          )}
+                          <span className="text-sm font-bold">
+                            {uploadAvatars.isPending ? "Enviando fotos..." : "Arraste fotos aqui ou clique para enviar"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {avatarItems.length} de {MAX_AVATARS} · JPG ou PNG, até 5 MB cada
+                          </span>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
