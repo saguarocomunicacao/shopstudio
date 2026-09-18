@@ -3,6 +3,7 @@ import { Fragment, type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatPrice } from "@/lib/content";
+import { RISING_BADGE_THRESHOLD } from "@/lib/radar";
 
 export type ProductTableItem = {
   id: string;
