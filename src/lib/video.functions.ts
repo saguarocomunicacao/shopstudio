@@ -209,7 +209,7 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     const pipeline = await import("./video-pipeline.server");
     const [{ data: product }, { data: settingsRow }] = await Promise.all([
       job.product_id
-        ? supabase.from("products").select("image_url").eq("id", job.product_id).maybeSingle()
+        ? supabase.from("products").select("image_url, extra_image_urls").eq("id", job.product_id).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase
         .from("profile_video_settings")
@@ -314,7 +314,7 @@ async function runStep(
 
   const [{ data: product }, { data: identity }, { data: profile }, { data: settingsRow }] = await Promise.all([
     job.product_id
-      ? supabase.from("products").select("name, price, commission, image_url, niche").eq("id", job.product_id).maybeSingle()
+      ? supabase.from("products").select("name, price, commission, image_url, niche, description, extra_image_urls").eq("id", job.product_id).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("profile_identities").select("tone, language, style_notes").eq("profile_id", job.profile_id).maybeSingle(),
     supabase.from("profiles").select("name, niche").eq("id", job.profile_id).maybeSingle(),
@@ -348,6 +348,7 @@ async function runStep(
     preco: product ? Number(product.price).toFixed(2) : "",
     comissao: product ? `${Number(product.commission)}%` : "",
     categoria_produto: product?.niche || "",
+    descricao_produto: (product?.description ?? "").slice(0, 2000),
     idioma: language,
     tom_de_voz: identity?.tone ?? "",
     observacoes_estilo: identity?.style_notes ?? "",
