@@ -23,6 +23,9 @@ import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
+/** A partir de "vídeo pronto" o job já pode ser compartilhado por link público. */
+const SHAREABLE_STATUS: DbJob["status"][] = ["video_pronto", "rascunho_enviado", "publicado"];
+
 
 export function JobDetailDialog({
   job,
