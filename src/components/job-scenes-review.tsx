@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ImageOff, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
         next.delete(index);
         return next;
       });
-      toast.success("Cena regerada.");
+      toast.success("Cena gerada.");
       qc.invalidateQueries({ queryKey: ["jobs"] });
     },
     onError: (e) => toast.error(errMessage(e)),
@@ -83,13 +83,24 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
 
   if (!scenes.length) return null;
 
+  const faltando = scenes.filter((scene) => !scene.image_url).length;
+
   return (
     <div className="grid gap-4">
       <p className="text-sm text-muted-foreground">
         Revise as cenas antes de animar. Regerar uma imagem é barato; a animação é a parte cara.
       </p>
+      {faltando > 0 && (
+        <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {faltando === 1 ? "1 cena ficou sem imagem" : `${faltando} cenas ficaram sem imagem`}. As demais já estão
+          prontas e serão mantidas — refaça só as que faltam pelo botão “Gerar esta cena”.
+        </p>
+      )}
       {scenes.map((scene, index) => (
-        <div className="grid gap-3 rounded-2xl border p-3 sm:grid-cols-[120px_minmax(0,1fr)]" key={index}>
+        <div
+          className={`grid gap-3 rounded-2xl border p-3 sm:grid-cols-[120px_minmax(0,1fr)] ${scene.image_url ? "" : "border-destructive/40 bg-destructive/5"}`}
+          key={index}
+        >
           {scene.image_url ? (
             <Button
               type="button"
@@ -104,7 +115,8 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
               </span>
             </Button>
           ) : (
-            <div className="flex aspect-[9/16] items-center justify-center rounded-xl bg-secondary text-xs text-muted-foreground">
+            <div className="flex aspect-[9/16] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-destructive/40 bg-secondary px-2 text-center text-xs font-semibold text-destructive">
+              <ImageOff className="size-5" />
               sem imagem
             </div>
           )}
@@ -121,27 +133,32 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
             />
             {canEdit && (
               <div className="flex flex-wrap gap-2">
+                {scene.image_url && (
+                  <Button
+                    size="sm"
+                    variant={approved.has(index) ? "secondary" : "default"}
+                    disabled={busyIndex !== null || approve.isPending || approved.has(index)}
+                    onClick={() => approve.mutate(index)}
+                  >
+                    <Check />{approved.has(index) ? "Cena aprovada" : "Aprovar cena"}
+                  </Button>
+                )}
                 <Button
                   size="sm"
-                  variant={approved.has(index) ? "secondary" : "default"}
-                  disabled={busyIndex !== null || approve.isPending || approved.has(index)}
-                  onClick={() => approve.mutate(index)}
-                >
-                  <Check />{approved.has(index) ? "Cena aprovada" : "Aprovar cena"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
+                  variant={scene.image_url ? "outline" : "default"}
                   disabled={busyIndex !== null || approve.isPending}
                   onClick={() => run.mutate(index)}
                 >
-                  {busyIndex === index ? <><Loader2 className="animate-spin" />Regerando...</> : <><RefreshCw />Regerar esta cena</>}
+                  {busyIndex === index
+                    ? <><Loader2 className="animate-spin" />Gerando...</>
+                    : <><RefreshCw />{scene.image_url ? "Regerar esta cena" : "Gerar esta cena"}</>}
                 </Button>
               </div>
             )}
           </div>
         </div>
       ))}
+
       <Dialog open={lightboxIndex !== null} onOpenChange={(open) => !open && setLightboxIndex(null)}>
         <DialogContent className="h-dvh w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden rounded-none border-0 bg-foreground/95 p-3 text-background sm:p-6">
           <DialogTitle className="pr-12 text-sm font-semibold text-background">

@@ -128,24 +128,28 @@ export const generateJobScenes = createServerFn({ method: "POST" })
     const { assertOrcamento: assertOrcamentoCenas } = await import("./orcamento.server");
     await assertOrcamentoCenas(job.profile_id, { barata: true });
 
+    // Retentativa: se já existem cenas com imagem, elas são preservadas e só
+    // as que ficaram sem imagem são refeitas. Nada do que deu certo é perdido.
+    const existing = (Array.isArray(job.scenes) ? job.scenes : []) as { image_url?: string }[];
+    const resume = existing.length > 0 && existing.some((scene) => scene.image_url);
+
     const { error } = await supabase
       .from("jobs")
       .update({
-        render_stage: "planejando",
+        render_stage: resume ? "cenas" : "planejando",
         render_started_at: new Date().toISOString(),
         render_error: null,
         render_id: null,
-        scenes: [],
-        gemini_images_count: 0,
-        veo_takes_count: 0,
+        ...(resume ? {} : { scenes: [], gemini_images_count: 0, veo_takes_count: 0 }),
         video_url: null,
         video_thumbnail_url: null,
       })
       .eq("id", job.id);
     if (error) throw new Error(error.message);
 
-    return { stage: "planejando" as const };
+    return { stage: (resume ? "cenas" : "planejando") as "cenas" | "planejando" };
   });
+
 
 /** Passo 2: aprovação humana das cenas -> anima no Veo e monta no JSON2Video. */
 export const approveJobScenes = createServerFn({ method: "POST" })
@@ -197,14 +201,20 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const job = await loadJob(supabase, data.jobId);
-    if (job.status !== "cenas_geradas") throw new Error("Só é possível regerar cenas nesta etapa.");
+    const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as import("./video-pipeline.server").Scene[];
+    const scene = scenes[data.index];
+    if (!scene) throw new Error("Cena não encontrada.");
+
+    // Cenas prontas podem ser regeradas na revisão; uma cena que FALHOU (ficou
+    // sem imagem) também pode ser refeita sozinha, sem descartar as que deram certo.
+    const retryFailed = job.status === "roteiro_pronto" && !job.render_stage && !scene.image_url;
+    if (job.status !== "cenas_geradas" && !retryFailed) {
+      throw new Error("Só é possível regerar cenas nesta etapa.");
+    }
 
     // Nova tentativa começando: limpa o erro anterior antes de gerar.
     await supabase.from("jobs").update({ render_error: null }).eq("id", job.id);
 
-    const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as import("./video-pipeline.server").Scene[];
-    const scene = scenes[data.index];
-    if (!scene) throw new Error("Cena não encontrada.");
 
     const pipeline = await import("./video-pipeline.server");
     const [{ data: product }, { data: settingsRow }] = await Promise.all([
@@ -247,11 +257,21 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
       image_url: stored.url,
     };
 
+    // Refazendo uma cena que falhou: quando todas ficam com imagem, o job
+    // volta sozinho para a revisão das cenas.
+    const completed = retryFailed && scenes.every((s) => s.image_url);
+
     const { error } = await supabase
       .from("jobs")
-      .update({ scenes, gemini_images_count: (job.gemini_images_count ?? 0) + 1, render_error: null })
+      .update({
+        scenes,
+        gemini_images_count: (job.gemini_images_count ?? 0) + 1,
+        render_error: null,
+        ...(completed ? { status: "cenas_geradas", render_stage: null } : {}),
+      })
       .eq("id", job.id);
     if (error) throw new Error(error.message);
+
 
     const { recordConsumo } = await import("./consumo.server");
     await recordConsumo({
@@ -286,7 +306,15 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
     try {
       return await runStep(supabase, job, pipeline);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "A geração do vídeo falhou.";
+      const base = e instanceof Error ? e.message : "A geração do vídeo falhou.";
+      const feitas = (Array.isArray(job.scenes) ? job.scenes : []).filter(
+        (s) => !!(s as { image_url?: string })?.image_url,
+      ).length;
+      // Falha nas imagens não descarta o que já ficou pronto.
+      const message =
+        job.render_stage === "cenas" && feitas > 0
+          ? `${base} As ${feitas} cena(s) já geradas foram mantidas: refaça apenas as que ficaram sem imagem.`
+          : base;
       // Falha na fase de imagens volta ao roteiro; depois da aprovação volta às cenas aprovadas.
       const backTo = job.render_stage === "planejando" || job.render_stage === "cenas" ? "roteiro_pronto" : "cenas_geradas";
       await supabase
@@ -294,6 +322,7 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
         .update({ status: backTo, render_stage: null, render_error: message })
         .eq("id", job.id);
       throw new Error(message);
+
     }
   });
 

@@ -181,7 +181,7 @@ function PipelineContent() {
                       >
                         {renderingId === job.id
                           ? <><Loader2 className="animate-spin" />Enviando...</>
-                          : <><Images />{job.render_error ? "Tentar de novo" : "Gerar cenas"}</>}
+                          : <><Images />{job.render_error ? ((job.scenes ?? []).some((s) => s.image_url) ? "Gerar as cenas que faltam" : "Tentar de novo") : "Gerar cenas"}</>}
                       </Button>
                     )}
                     {job.status === "cenas_geradas" && (

@@ -134,8 +134,15 @@ export function JobDetailDialog({
             <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-destructive">{job.render_error}</p>
           )}
           {job && (job.scenes?.length ?? 0) > 0 && (
-            <JobScenesReview job={job} canEdit={canEdit && job.status === "cenas_geradas"} />
+            <JobScenesReview
+              job={job}
+              canEdit={
+                canEdit &&
+                (job.status === "cenas_geradas" || (job.status === "roteiro_pronto" && !job.render_stage))
+              }
+            />
           )}
+
           {job && <JobVoiceSelect job={job} canEdit={canEdit} />}
           {job && <JobCostSummary jobId={job.id} />}
           {job && <JobTimeline jobId={job.id} />}
@@ -189,7 +196,7 @@ export function JobDetailDialog({
               </Button>
               {job?.status === "roteiro_pronto" && !job.render_stage && (
                 <Button variant="outline" disabled={runScenes.isPending} onClick={() => runScenes.mutate(job.id)}>
-                  {runScenes.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Images />{job.render_error ? "Tentar de novo" : "Gerar cenas"}</>}
+                  {runScenes.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Images />{job.render_error ? ((job.scenes ?? []).some((s) => s.image_url) ? "Gerar as cenas que faltam" : "Tentar de novo") : "Gerar cenas"}</>}
                 </Button>
               )}
               {job?.status === "cenas_geradas" && (
