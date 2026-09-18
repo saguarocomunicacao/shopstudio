@@ -178,17 +178,17 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
         <table className="w-full min-w-[860px] table-fixed text-left text-sm">
           <colgroup>
             <col className="w-10" /><col className="w-16" /><col /><col className="w-28" />
-            <col className="w-20" /><col className="w-36" /><col className="w-36" /><col className="w-52" />
+            <col className="w-20" /><col className="w-36" /><col className="w-40" /><col className="w-52" />
           </colgroup>
           <thead>
             <tr className="border-b text-xs text-muted-foreground">
               <th className="px-1 pb-3"><span className="sr-only">Expandir</span></th>
               <th className="px-2 pb-3 font-medium">Foto</th>
               <th className="px-3 pb-3 font-medium">Produto</th>
-              <th className="px-3 pb-3 font-medium">Nicho</th>
-              <th className="px-3 pb-3 text-right font-medium">Preço</th>
+              <th className="px-3 pb-3 font-medium">{rising ? "Crescimento" : "Nicho"}</th>
+              <th className="px-3 pb-3 text-right font-medium">{rising ? "Vendas" : "Preço"}</th>
               <th className="px-3 pb-3 font-medium">Comissão</th>
-              <th className="px-3 pb-3 font-medium">Hype score</th>
+              <th className="px-3 pb-3 font-medium">{rising ? "Score de ascensão" : "Hype score"}</th>
               <th className="px-1 pb-3 text-right font-medium">Ação</th>
             </tr>
           </thead>
