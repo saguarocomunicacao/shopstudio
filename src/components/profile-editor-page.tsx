@@ -130,6 +130,9 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const [avatarDescription, setAvatarDescription] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [pendingAvatars, setPendingAvatars] = useState<AvatarItem[]>([]);
+  const [rejectedAvatars, setRejectedAvatars] = useState<{ id: string; name: string; reason: string }[]>([]);
+  const [dragOver, setDragOver] = useState(false);
 
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
   const prevLightbox = useCallback(() => setLightboxIndex((i) => (i === null ? null : (i - 1 + avatarItems.length) % avatarItems.length)), [avatarItems.length]);
