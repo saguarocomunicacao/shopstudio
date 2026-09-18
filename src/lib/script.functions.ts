@@ -216,7 +216,9 @@ export const generateJobScript = createServerFn({ method: "POST" })
         post_cta: generated.cta,
         caption: generated.caption,
         hashtags: generated.hashtags,
+        script_refs: campeoes as never,
         status: nextStatus,
+
       })
       .eq("id", job.id);
     if (updateError) throw new Error(updateError.message);
