@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Eye, RefreshCw, Sparkles, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -66,6 +66,11 @@ function ProductsContent() {
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
 
   const canCreateJob = can("pipeline", "criar", activeProfileId);
+
+  // Mantém o modal aberto em sincronia com os dados recarregados do catálogo.
+  useEffect(() => {
+    setDetails((current) => (current ? products.find((p) => p.id === current.id) ?? current : current));
+  }, [products]);
 
   const remove = useMutation({
     mutationFn: async (product: DbProduct) => {
