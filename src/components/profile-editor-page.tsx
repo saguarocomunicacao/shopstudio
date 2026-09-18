@@ -677,8 +677,19 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
             <div className="grid gap-4">
               <SectionTitle title="Fluxo de publicação" description="Comportamento de publicação deste perfil." />
               <div>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-t py-4">
+                  <div>
+                    <p className="text-sm font-semibold">Revisão obrigatória</p>
+                    <p className="text-xs text-muted-foreground">Exigir aprovação do rascunho antes de marcar como publicado</p>
+                  </div>
+                  <Switch
+                    checked={form.requireReview}
+                    onCheckedChange={(checked) => setForm({ ...form, requireReview: checked })}
+                    disabled={!allowed}
+                    aria-label="Revisão obrigatória"
+                  />
+                </div>
                 {[
-                  ["Revisão obrigatória", "Exigir aprovação antes de publicar"],
                   ["Alertas de tendência", "Sinalizar produtos com hype alto"],
                   ["Resumo semanal", "Receber um resumo de desempenho"],
                 ].map(([title, description], index) => (
@@ -687,7 +698,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                       <p className="text-sm font-semibold">{title}</p>
                       <p className="text-xs text-muted-foreground">{description}</p>
                     </div>
-                    <Switch defaultChecked={index < 2} aria-label={title} />
+                    <Switch defaultChecked={index < 1} aria-label={title} />
                   </div>
                 ))}
               </div>
