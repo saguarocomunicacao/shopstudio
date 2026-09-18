@@ -16,7 +16,9 @@ type Props = {
 export function VoicePlayButton({ voiceRowId, previewUrl, label = "Ouvir voz" }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
   const refresh = useServerFn(refreshVoicePreview);
+  const generate = useServerFn(generateVoicePreview);
 
   useEffect(() => () => audioRef.current?.pause(), []);
 
@@ -36,20 +38,34 @@ export function VoicePlayButton({ voiceRowId, previewUrl, label = "Ouvir voz" }:
       setPlaying(false);
       return;
     }
-    if (!previewUrl) {
+    let url = previewUrl;
+    // Sem preview salvo (ex.: voz padrão Azure): gera um na hora e guarda.
+    if (!url && voiceRowId) {
+      setLoading(true);
+      try {
+        const created = await generate({ data: { id: voiceRowId } });
+        url = created.url;
+      } catch (e) {
+        setLoading(false);
+        toast.error(e instanceof Error ? e.message : "Não foi possível gerar o preview.");
+        return;
+      }
+      setLoading(false);
+    }
+    if (!url) {
       toast.error("Esta voz ainda não tem preview.");
       return;
     }
     try {
-      await play(previewUrl);
+      await play(url);
     } catch {
       if (!voiceRowId) {
         toast.error("Não foi possível tocar o preview.");
         return;
       }
       try {
-        const { url } = await refresh({ data: { id: voiceRowId } });
-        await play(url);
+        const renewed = await refresh({ data: { id: voiceRowId } });
+        await play(renewed.url);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Não foi possível tocar o preview.");
       }
