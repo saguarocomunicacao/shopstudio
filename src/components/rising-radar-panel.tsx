@@ -247,6 +247,11 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
             <Input inputMode="numeric" value={crescimentoMin} onChange={(e) => setCrescimentoMin(numeric(e.target.value))} placeholder="ex.: 50" />
           </Field>
 
+          <Field label="Comissão mínima (%)">
+            <Input inputMode="numeric" value={comissaoMin} onChange={(e) => setComissaoMin(numeric(e.target.value))} placeholder="ex.: 5" />
+          </Field>
+
+
           <Field label="Teto de vendas (unidades)">
             <Input inputMode="numeric" value={vendasMax} onChange={(e) => setVendasMax(numeric(e.target.value))} placeholder="ex.: 3000" />
           </Field>
