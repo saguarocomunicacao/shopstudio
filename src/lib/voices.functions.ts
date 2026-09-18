@@ -76,6 +76,34 @@ export const listElevenLabsVoices = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Gera o preview de uma voz padrão (Azure) usando o endpoint gratuito de
+ * síntese da Microsoft — a mesma voz neural usada na montagem, sem custo.
+ */
+async function buildAzurePreview(azureVoice: string, texto: string) {
+  const ssml = `<speak version="1.0" xml:lang="pt-BR"><voice name="${azureVoice}">${texto}</voice></speak>`;
+  const res = await fetch(
+    "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/ssml+xml",
+        "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+      body: ssml,
+    },
+  );
+  if (!res.ok) throw new Error(`Síntese da voz padrão respondeu ${res.status}.`);
+  const audio = new Uint8Array(await res.arrayBuffer());
+  if (audio.length < 200) throw new Error("Síntese da voz padrão retornou áudio vazio.");
+
+  const pipeline = await import("./video-pipeline.server");
+  const stored = await pipeline.storeMedia(`voices/azure-${azureVoice}.mp3`, audio, "audio/mpeg");
+  return stored.url;
+}
+
 /** Clona uma voz a partir de amostras de áudio e salva no catálogo interno. */
 export const cloneVoice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
