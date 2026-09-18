@@ -127,6 +127,7 @@ export const cloneVoice = createServerFn({ method: "POST" })
       voice_id: voiceId,
       genero: data.genero,
       profile_id: data.profileId,
+      owner_id: context.userId,
       preview_url: previewUrl,
       created_by: context.userId,
     });
