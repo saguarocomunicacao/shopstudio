@@ -221,7 +221,16 @@ export const activeProductSource = (): ProductSource => PRODUCT_SOURCES[ACTIVE_S
 
 const KALODATA_DETAIL_ENDPOINT = "https://www.kalodata.com/openapi/v1/tiktok/product/detail";
 
-export type ProductDetail = { description: string; images: string[] };
+export type ProductDetail = {
+  description: string;
+  images: string[];
+  /** Métricas atuais do produto; null quando a origem não devolve o campo. */
+  price: number | null;
+  commission: number | null;
+  salesVolume: number | null;
+  growthRate: number | null;
+  revenue: number | null;
+};
 
 /** Coleta recursivamente textos e imagens dos blocos de product_description. */
 function collectBlocks(node: unknown, texts: string[], images: string[], depth = 0): void {
