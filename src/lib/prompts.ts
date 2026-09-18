@@ -18,7 +18,8 @@ export function usePromptTemplates() {
     queryKey: ["prompt-templates"],
     queryFn: async (): Promise<PromptTemplate[]> => {
       const { data, error } = await supabase
-        .from("prompt_templates")
+        // View: o texto padrão só vem preenchido para o backoffice; os demais recebem body vazio.
+        .from("prompt_templates_visible")
         .select("key, title, description, body, placeholders, sort_order")
         .order("sort_order");
       if (error) throw new Error(error.message);
