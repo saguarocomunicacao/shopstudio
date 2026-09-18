@@ -318,6 +318,10 @@ export type Database = {
           updated_at: string
           veo_takes_count: number
           video_path: string | null
+          video_storage_attempts: number
+          video_storage_error: string | null
+          video_storage_status: string
+          video_storage_updated_at: string | null
           video_thumbnail_path: string | null
           video_thumbnail_url: string | null
           video_url: string | null
@@ -348,6 +352,10 @@ export type Database = {
           updated_at?: string
           veo_takes_count?: number
           video_path?: string | null
+          video_storage_attempts?: number
+          video_storage_error?: string | null
+          video_storage_status?: string
+          video_storage_updated_at?: string | null
           video_thumbnail_path?: string | null
           video_thumbnail_url?: string | null
           video_url?: string | null
@@ -378,6 +386,10 @@ export type Database = {
           updated_at?: string
           veo_takes_count?: number
           video_path?: string | null
+          video_storage_attempts?: number
+          video_storage_error?: string | null
+          video_storage_status?: string
+          video_storage_updated_at?: string | null
           video_thumbnail_path?: string | null
           video_thumbnail_url?: string | null
           video_url?: string | null
