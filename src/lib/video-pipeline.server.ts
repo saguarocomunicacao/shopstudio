@@ -389,6 +389,10 @@ export function buildReferenceGuide(personCount: number, productCount: number): 
 export const SAME_PERSON_SUFFIX =
   "CRITICAL IDENTITY REQUIREMENT: The person in every scene must be the EXACT SAME individual shown in the person reference photos (the first input images). Preserve identity precisely: same facial structure, face shape, eyes, nose, mouth, skin tone, hair color and hairstyle. This is the same real person across all scenes, not a similar-looking person. Do not stylize, beautify, or alter their features. Match the person reference photos as closely as possible.";
 
+/** Exigência de fidelidade ao produto real anexada a cada prompt de cena. */
+export const PRODUCT_FIDELITY_SUFFIX =
+  "The product must match the reference photos and the product facts exactly: same material, same shape, same finish, same colour and same label. Never substitute it with a similar product from another category or material.";
+
 /** Guarda um arquivo no bucket privado e devolve caminho + URL assinada. */
 export async function storeMedia(path: string, bytes: Uint8Array, contentType: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
