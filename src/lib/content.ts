@@ -215,7 +215,7 @@ export function useJobs(profileId: string | null, enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref",
+          "id, product_id, profile_id, status, title, created_at, script, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, published_url, approved_at, published_at, rejection_reason",
         )
         .eq("profile_id", profileId!)
         .order("created_at", { ascending: false });
