@@ -127,16 +127,13 @@ export function TarifasCard() {
         Preços pagos a cada fornecedor. Vale a tarifa vigente na data em que o consumo aconteceu.
       </p>
 
-      <div className="mt-5 flex flex-wrap items-end gap-3 rounded-xl bg-secondary px-4 py-3">
-        <div className="min-w-40">
-          <p className="mb-1 text-xs font-semibold">Cotação do dólar (R$ por US$)</p>
-          <Input
-            inputMode="decimal"
-            value={cotacaoInput}
-            onChange={(e) => setCotacaoInput(e.target.value)}
-            className="bg-input"
-          />
-        </div>
+      <div className="mt-5 grid gap-2 rounded-xl border p-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+        <Input
+          inputMode="decimal"
+          value={cotacaoInput}
+          onChange={(e) => setCotacaoInput(e.target.value)}
+          placeholder="Cotação do dólar (R$ por US$)"
+        />
         <Button
           variant="secondary"
           disabled={saveCotacao.isPending}
