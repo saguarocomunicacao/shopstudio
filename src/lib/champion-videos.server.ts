@@ -7,7 +7,7 @@
 
 const VIDEO_RANK_ENDPOINT = "https://www.kalodata.com/openapi/v1/tiktok/video/rank";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const MAX_REFS = 12;
+const MAX_REFS = 8;
 
 export type ChampionVideo = {
   videoId: string;
@@ -39,7 +39,52 @@ export async function championRefsEnabled(): Promise<boolean> {
   }
 }
 
-async function fetchFromKalodata(categoryId: string | null): Promise<ChampionVideo[]> {
+/**
+ * Categoria REAL do produto no TikTok Shop, da mais específica para a mais
+ * ampla. Quando o catálogo ainda não tem os ids, busca no detalhe do Kalodata
+ * e guarda. Sem categoria confiável devolve null — melhor nenhuma referência
+ * do que referência de categoria errada.
+ */
+export async function productCategoryId(
+  supabase: { from: (t: string) => any },
+  productId: string | null,
+): Promise<string | null> {
+  if (!productId) return null;
+  try {
+    const { data: row } = await supabase
+      .from("products")
+      .select("external_id, pri_cate_id, sec_cate_id, ter_cate_id")
+      .eq("id", productId)
+      .maybeSingle();
+    if (!row) return null;
+
+    const pick = (r: Record<string, unknown>) =>
+      [r["ter_cate_id"], r["sec_cate_id"], r["pri_cate_id"]]
+        .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+        .find((v) => v && v !== "0") ?? null;
+
+    const known = pick(row as Record<string, unknown>);
+    if (known) return known;
+
+    if (!row.external_id) return null;
+    const { fetchProductDetail } = await import("./product-source.server");
+    const detail = await fetchProductDetail(String(row.external_id));
+    if (!detail) return null;
+    const update = {
+      pri_cate_id: detail.priCateId,
+      sec_cate_id: detail.secCateId,
+      ter_cate_id: detail.terCateId,
+    };
+    if (!update.pri_cate_id && !update.sec_cate_id && !update.ter_cate_id) return null;
+    await supabase.from("products").update(update).eq("id", productId);
+    return detail.terCateId ?? detail.secCateId ?? detail.priCateId ?? null;
+  } catch (e) {
+    console.error("[campeoes] falha ao resolver categoria do produto", e);
+    return null;
+  }
+}
+
+async function fetchFromKalodata(categoryId: string): Promise<ChampionVideo[]> {
   const apiKey = process.env["KALODATA_API_KEY"];
   if (!apiKey) return [];
 
@@ -53,7 +98,7 @@ async function fetchFromKalodata(categoryId: string | null): Promise<ChampionVid
       date_range: "last30Day",
       sort_field: { field: "revenue", type: "DESC" },
       page: 1,
-      ...(categoryId ? { category_ids: [categoryId] } : {}),
+      category_ids: [categoryId],
     }),
   });
   if (!response.ok) throw new Error(`video/rank respondeu ${response.status}`);
@@ -79,7 +124,7 @@ async function fetchFromKalodata(categoryId: string | null): Promise<ChampionVid
         url: creator && videoId ? `https://www.tiktok.com/@${creator}/video/${videoId}` : "",
       };
     })
-    .filter((v) => v.videoId)
+    .filter((v) => v.videoId && v.title)
     .slice(0, MAX_REFS);
 }
 
@@ -91,7 +136,10 @@ export async function getChampionVideos(
   categoryId: string | null,
   profileId: string | null,
 ): Promise<ChampionVideo[]> {
-  const cacheKey = categoryId || "geral";
+  // Sem categoria específica do produto não buscamos nada: referência de
+  // categoria errada atrapalha mais o roteirista do que a ausência dela.
+  if (!categoryId) return [];
+  const cacheKey = categoryId;
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: cached } = await supabaseAdmin
