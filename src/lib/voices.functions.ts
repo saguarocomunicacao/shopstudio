@@ -176,12 +176,12 @@ export const generateVoicePreview = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!voice) throw new Error("Voz não encontrada.");
-    if (voice.fonte === "azure_padrao") {
-      throw new Error("As vozes padrão são sintetizadas na montagem e não têm preview da ElevenLabs.");
-    }
 
     const { PREVIEW_PHRASE } = await import("./voices");
-    const url = await buildPreview(voice.voice_id, PREVIEW_PHRASE, voice.profile_id);
+    const url =
+      voice.fonte === "azure_padrao"
+        ? await buildAzurePreview(voice.voice_id, PREVIEW_PHRASE)
+        : await buildPreview(voice.voice_id, PREVIEW_PHRASE, voice.profile_id);
 
     const { error: upError } = await context.supabase.from("voices").update({ preview_url: url }).eq("id", voice.id);
     if (upError) throw new Error(upError.message);
