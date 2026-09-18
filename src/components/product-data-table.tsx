@@ -81,6 +81,27 @@ function HypeScore({ value }: { value: number }) {
   );
 }
 
+function GrowthBadge({ value }: { value: number }) {
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-1 text-sm font-bold tabular-nums text-primary">
+      <TrendingUp className="size-3.5" aria-hidden="true" />
+      {Math.round(value)}%
+    </span>
+  );
+}
+
+function RisingScore({ value }: { value: number }) {
+  const safeValue = Math.min(100, Math.max(0, value));
+  return (
+    <div className="grid gap-1">
+      <HypeScore value={safeValue} />
+      {safeValue >= RISING_BADGE_THRESHOLD ? (
+        <span className="w-fit rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-primary-foreground">Em ascensão</span>
+      ) : null}
+    </div>
+  );
+}
+
 function Commission({ item, detailed = false }: { item: ProductTableItem; detailed?: boolean }) {
   const earned = commissionValue(item);
   return detailed ? (
