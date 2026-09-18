@@ -28,9 +28,9 @@ function useAppUsers(enabled: boolean) {
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }) + " · " + new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
 export function ApprovalsPage() {
-  const { isSuperAdmin } = useStudio();
+  const { isBackoffice } = useStudio();
   const qc = useQueryClient();
-  const { data: users = [], isLoading } = useAppUsers(isSuperAdmin);
+  const { data: users = [], isLoading } = useAppUsers(isBackoffice);
 
   const review = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "aprovado" | "recusado" }) => {
