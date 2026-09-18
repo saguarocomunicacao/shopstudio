@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Clapperboard, Images, Loader2, RefreshCw, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { BadgeCheck, Clapperboard, Images, Loader2, RefreshCw, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUS_LABELS, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/video.functions";
+import { approveDraft } from "@/lib/drafts.functions";
 import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
 import { JobCostSummary } from "./job-cost";
@@ -50,6 +51,7 @@ export function JobDetailDialog({
   const generate = useServerFn(generateJobScript);
   const generateScenes = useServerFn(generateJobScenes);
   const approveScenes = useServerFn(approveJobScenes);
+  const approveRascunho = useServerFn(approveDraft);
 
   const [confirmVeo, setConfirmVeo] = useState(false);
   const cenas = Array.isArray(job?.scenes) ? (job!.scenes as unknown[]).length : 0;
@@ -108,6 +110,16 @@ export function JobDetailDialog({
     onError: (e) => toast.error(errMessage(e)),
   });
 
+  const runApproveDraft = useMutation({
+    mutationFn: async (jobId: string) => approveRascunho({ data: { jobId } }),
+    onSuccess: () => {
+      toast.success("Vídeo aprovado para postagem. Ele continua na fila de Rascunhos, na aba Aprovados.");
+      refresh();
+      onOpenChange(false);
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
   const busy = runGenerate.isPending;
   const hasScript = !!(job?.script || script.trim());
 
@@ -123,7 +135,18 @@ export function JobDetailDialog({
               {job ? JOB_STATUS_LABELS[job.status] : ""}
             </span>
             <span>{productName}</span>
+            {job?.status === "video_pronto" && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">
+                <BadgeCheck className="size-3" />
+                Na fila de revisão
+              </span>
+            )}
           </div>
+          {job?.status === "video_pronto" && (
+            <p className="rounded-xl bg-secondary px-4 py-3 text-xs text-muted-foreground">
+              Este vídeo já está na Fila de Rascunhos aguardando revisão. Você não precisa enviá-lo para lugar nenhum: revise aqui e aprove para postagem quando estiver bom.
+            </p>
+          )}
 
           {job?.video_url && (
             <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[300px] rounded-xl bg-black" />
@@ -223,8 +246,22 @@ export function JobDetailDialog({
                 </Button>
               )}
 
-              {hasScript && (
+              {hasScript && job?.status !== "video_pronto" && (
                 <Button disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
+              )}
+              {job?.status === "video_pronto" && (
+                <>
+                  {hasScript && (
+                    <Button variant="secondary" disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
+                  )}
+                  <Button
+                    disabled={runApproveDraft.isPending}
+                    title="Aprova este vídeo para postagem. Depois é só postar no TikTok e marcar como publicado na tela Rascunhos."
+                    onClick={() => job && runApproveDraft.mutate(job.id)}
+                  >
+                    {runApproveDraft.isPending ? <><Loader2 className="animate-spin" />Aprovando...</> : <><BadgeCheck />Aprovar para postagem</>}
+                  </Button>
+                </>
               )}
             </>
           )}
