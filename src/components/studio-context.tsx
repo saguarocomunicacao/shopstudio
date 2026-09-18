@@ -20,6 +20,8 @@ type StudioContextValue = {
   userId: string | null;
   pendingAccess: boolean;
   isSuperAdmin: boolean;
+  /** Backoffice: super admin fixo ou quem tem a permissão "backoffice". Dados internos da operação. */
+  isBackoffice: boolean;
   approvalStatus: string;
 };
 
