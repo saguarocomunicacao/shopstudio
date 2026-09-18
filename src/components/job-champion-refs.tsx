@@ -6,7 +6,7 @@ const compact = (value: number) =>
   new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 
 /** Mostra os vídeos campeões que serviram de inspiração para o roteiro. */
-export function JobChampionRefs({ refs }: { refs?: ChampionRef[] | null }) {
+export function JobChampionRefs({ refs }: { refs?: ChampionRef[] | null | undefined }) {
   const list = (refs ?? []).filter((r) => r?.title);
   if (!list.length) return null;
 
