@@ -19,6 +19,7 @@ const schema = z.object({
   commissionRate: faixa,
   revenueRange: faixa,
   launchDate: z.enum(["<3", "<7", "<30", ">30"]).optional(),
+  categoryIds: z.array(z.string().min(1)).max(10).optional(),
   deliveryType: z.enum(["local", "global"]).optional(),
   needAll: z.boolean().default(false),
   page: z.number().int().min(1).max(20).default(1),
