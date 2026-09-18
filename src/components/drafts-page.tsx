@@ -234,7 +234,7 @@ function PostTextField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           readOnly={readOnly}
-          className={readOnly ? "bg-secondary/60 text-muted-foreground" : "bg-background"}
+          className={readOnly ? "border-border bg-background text-muted-foreground" : "border-border bg-background"}
         />
       ) : (
         <Input
@@ -242,7 +242,7 @@ function PostTextField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           readOnly={readOnly}
-          className={readOnly ? "text-muted-foreground" : undefined}
+          className={readOnly ? "border-border bg-background text-muted-foreground" : "border-border bg-background"}
         />
       )}
     </div>

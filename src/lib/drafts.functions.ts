@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { extractHookFromScript } from "@/lib/script-parser";
+import { extractCtaFromScript, extractHookFromScript } from "@/lib/script-parser";
 
 /**
  * Fila de rascunhos: o vídeo renderizado é copiado para o nosso bucket privado
@@ -94,7 +94,7 @@ export const getDraftKit = createServerFn({ method: "POST" })
       status: row.status,
       title: row.title,
       hook: row.hook ?? extractHookFromScript(row.script) ?? "",
-      postCta: row.post_cta ?? "",
+      postCta: row.post_cta ?? extractCtaFromScript(row.script) ?? "",
       caption: row.caption ?? "",
       hashtags: row.hashtags ?? [],
       script: row.script ?? "",
