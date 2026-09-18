@@ -178,7 +178,7 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
         <table className="w-full min-w-[860px] table-fixed text-left text-sm">
           <colgroup>
             <col className="w-10" /><col className="w-16" /><col /><col className="w-28" />
-            <col className="w-20" /><col className="w-36" /><col className="w-40" /><col className="w-52" />
+            <col className="w-28" /><col className="w-36" /><col className="w-36" /><col className="w-52" />
           </colgroup>
           <thead>
             <tr className="border-b text-xs text-muted-foreground">
@@ -210,7 +210,7 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
                         ? <GrowthBadge value={item.growthRate ?? 0} />
                         : <span className="block truncate text-muted-foreground" title={productCategory(item)}>{productCategory(item)}</span>}
                     </td>
-                    <td className="px-3 py-2 text-right font-semibold tabular-nums">
+                    <td className="px-3 py-2 text-right font-semibold tabular-nums whitespace-nowrap">
                       {rising ? compactNumber(item.salesVolume ?? 0) : formatPrice(item.price)}
                     </td>
                     <td className="px-3 py-2"><Commission item={item} /></td>
