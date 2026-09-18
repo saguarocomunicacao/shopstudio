@@ -246,8 +246,22 @@ export function JobDetailDialog({
                 </Button>
               )}
 
-              {hasScript && (
+              {hasScript && job?.status !== "video_pronto" && (
                 <Button disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
+              )}
+              {job?.status === "video_pronto" && (
+                <>
+                  {hasScript && (
+                    <Button variant="secondary" disabled={save.isPending || busy} onClick={() => job && save.mutate(job.id)}>Salvar</Button>
+                  )}
+                  <Button
+                    disabled={runApproveDraft.isPending}
+                    title="Aprova este vídeo para postagem. Depois é só postar no TikTok e marcar como publicado na tela Rascunhos."
+                    onClick={() => job && runApproveDraft.mutate(job.id)}
+                  >
+                    {runApproveDraft.isPending ? <><Loader2 className="animate-spin" />Aprovando...</> : <><BadgeCheck />Aprovar para postagem</>}
+                  </Button>
+                </>
               )}
             </>
           )}
