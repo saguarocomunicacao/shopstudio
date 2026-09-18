@@ -218,3 +218,71 @@ export function fetchOfficialCategories(level = 1): Promise<OfficialCategory[]> 
 export const PRODUCT_SOURCES: Record<string, ProductSource> = { kalodata };
 export const ACTIVE_SOURCE_ID = "kalodata";
 export const activeProductSource = (): ProductSource => PRODUCT_SOURCES[ACTIVE_SOURCE_ID]!;
+
+const KALODATA_DETAIL_ENDPOINT = "https://www.kalodata.com/openapi/v1/tiktok/product/detail";
+
+export type ProductDetail = { description: string; images: string[] };
+
+/** Coleta recursivamente textos e imagens dos blocos de product_description. */
+function collectBlocks(node: unknown, texts: string[], images: string[], depth = 0): void {
+  if (!node || depth > 8) return;
+  if (Array.isArray(node)) {
+    for (const item of node) collectBlocks(item, texts, images, depth + 1);
+    return;
+  }
+  if (typeof node !== "object") return;
+  const row = node as Record<string, unknown>;
+  for (const [key, value] of Object.entries(row)) {
+    if (typeof value === "string") {
+      const clean = value.trim();
+      if (!clean) continue;
+      if (/^https?:\/\//i.test(clean) && /\.(jpe?g|png|webp)/i.test(clean)) images.push(clean);
+      else if (/^https?:\/\//i.test(clean) && /img|image|pic/i.test(key)) images.push(clean);
+      else if (/text|desc|content|title/i.test(key)) {
+        const plain = clean.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        if (plain) texts.push(plain);
+      }
+    } else {
+      collectBlocks(value, texts, images, depth + 1);
+    }
+  }
+}
+
+/**
+ * Detalhe de um produto no Kalodata: descrição real (blocos de texto) e
+ * imagens adicionais. Nunca lança — devolve null quando a origem falha.
+ */
+export function fetchProductDetail(productId: string): Promise<ProductDetail | null> {
+  return serialize(async () => {
+    const apiKey = process.env["KALODATA_API_KEY"];
+    if (!apiKey) return null;
+    try {
+      const response = await fetch(KALODATA_DETAIL_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "secret-key": apiKey },
+        body: JSON.stringify({ product_id: productId, region: "BR", language: "pt-BR", currency: "BRL", need_image: 1 }),
+      });
+      if (!response.ok) return null;
+      const payload = (await response.json()) as { success?: boolean; data?: unknown };
+      if (payload.success === false || !payload.data) return null;
+
+      const data = payload.data as Record<string, unknown>;
+      const texts: string[] = [];
+      const images: string[] = [];
+      collectBlocks(data["product_description"] ?? data["description"] ?? data, texts, images);
+
+      const seenText = new Set<string>();
+      const description = texts
+        .filter((t) => t.length > 2 && !seenText.has(t) && seenText.add(t) !== undefined)
+        .join("\n")
+        .slice(0, 4000);
+
+      const master = typeof data["master_image_url"] === "string" ? (data["master_image_url"] as string) : "";
+      const unique = [...new Set([master, ...images].filter(Boolean))].slice(0, 4);
+      if (!description && !unique.length) return null;
+      return { description, images: unique };
+    } catch {
+      return null;
+    }
+  });
+}
