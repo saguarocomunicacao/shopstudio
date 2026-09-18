@@ -274,6 +274,7 @@ export type Database = {
           veo_takes_count: number
           video_thumbnail_url: string | null
           video_url: string | null
+          voice_ref: string | null
         }
         Insert: {
           caption?: string | null
@@ -297,6 +298,7 @@ export type Database = {
           veo_takes_count?: number
           video_thumbnail_url?: string | null
           video_url?: string | null
+          voice_ref?: string | null
         }
         Update: {
           caption?: string | null
@@ -320,6 +322,7 @@ export type Database = {
           veo_takes_count?: number
           video_thumbnail_url?: string | null
           video_url?: string | null
+          voice_ref?: string | null
         }
         Relationships: [
           {
@@ -334,6 +337,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_voice_ref_fkey"
+            columns: ["voice_ref"]
+            isOneToOne: false
+            referencedRelation: "voices"
             referencedColumns: ["id"]
           },
         ]

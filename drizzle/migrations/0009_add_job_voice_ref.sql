@@ -1,0 +1,1 @@
+ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS voice_ref uuid REFERENCES public.voices(id) ON DELETE SET NULL;

@@ -64,6 +64,13 @@
       "when": 1789688437633,
       "tag": "0008_create_voices",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789689738248,
+      "tag": "0009_add_job_voice_ref",
+      "breakpoints": true
     }
   ]
 }

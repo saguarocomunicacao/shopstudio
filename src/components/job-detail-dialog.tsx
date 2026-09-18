@@ -16,6 +16,7 @@ import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/
 import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
 import { JobCostSummary } from "./job-cost";
+import { JobVoiceSelect } from "./job-voice-select";
 import { brl } from "@/lib/custo";
 import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
 
@@ -135,6 +136,7 @@ export function JobDetailDialog({
           {job && (job.scenes?.length ?? 0) > 0 && (
             <JobScenesReview job={job} canEdit={canEdit && job.status === "cenas_geradas"} />
           )}
+          {job && <JobVoiceSelect job={job} canEdit={canEdit} />}
           {job && <JobCostSummary jobId={job.id} />}
           {job && <JobTimeline jobId={job.id} />}
 
