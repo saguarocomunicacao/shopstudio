@@ -615,10 +615,6 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                         </ul>
                       </div>
 
-                      <p className="text-xs font-semibold">
-                        {avatarItems.length} de {MAX_AVATARS} fotos enviadas
-                      </p>
-
                       <input
                         ref={fileInput}
                         type="file"
@@ -627,14 +623,36 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                         className="hidden"
                         onChange={(e) => { void pickAvatarFiles(e.target.files); e.target.value = ""; }}
                       />
-                      <Button
-                        variant="secondary"
-                        className="justify-self-start"
-                        disabled={!profile || uploadAvatars.isPending || avatarItems.length >= MAX_AVATARS}
-                        onClick={() => fileInput.current?.click()}
-                      >
-                        {uploadAvatars.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Upload />Enviar fotos ({avatarItems.length}/{MAX_AVATARS})</>}
-                      </Button>
+
+                      {avatarItems.length >= MAX_AVATARS ? (
+                        <div className="rounded-xl border border-dashed bg-muted/40 px-4 py-6 text-center text-xs font-semibold text-muted-foreground">
+                          Limite de {MAX_AVATARS} fotos atingido. Remova uma para enviar outra.
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={!profile || uploadAvatars.isPending}
+                          onClick={() => fileInput.current?.click()}
+                          onDragOver={(e) => { e.preventDefault(); if (profile && !uploadAvatars.isPending) setDragOver(true); }}
+                          onDragLeave={() => setDragOver(false)}
+                          onDrop={onAvatarDrop}
+                          className={`flex w-full flex-col items-center gap-1 rounded-xl border-2 border-dashed px-4 py-8 text-center transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                            dragOver ? "border-primary bg-primary/10" : "border-border bg-muted/30 hover:border-primary hover:bg-primary/5"
+                          }`}
+                        >
+                          {uploadAvatars.isPending ? (
+                            <Loader2 className="size-6 animate-spin text-primary" />
+                          ) : (
+                            <Upload className={`size-6 ${dragOver ? "text-primary" : "text-muted-foreground"}`} />
+                          )}
+                          <span className="text-sm font-bold">
+                            {uploadAvatars.isPending ? "Enviando fotos..." : "Arraste fotos aqui ou clique para enviar"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {avatarItems.length} de {MAX_AVATARS} · JPG ou PNG, até 5 MB cada
+                          </span>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
