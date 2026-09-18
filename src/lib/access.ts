@@ -64,7 +64,18 @@ async function fetchAccess(userId: string) {
   const assignments = (mineRes.data ?? []) as Assignment[];
   const adminRoleIds = new Set(roles.filter((r) => r.is_admin).map((r) => r.id));
 
+  // Backoffice: super admin fixo ou quem recebeu explicitamente a permissao "backoffice".
+  // Admin comum NAO entra aqui — espelha exatamente a regra do banco.
+  const permissions = (permsRes.data ?? []) as Permission[];
+  const rolePermissions = (rolePermsRes.data ?? []) as RolePermission[];
+  const backofficePermIds = new Set(permissions.filter((p) => p.module === "backoffice").map((p) => p.id));
+  const backofficeRoleIds = new Set(
+    rolePermissions.filter((rp) => backofficePermIds.has(rp.permission_id)).map((rp) => rp.role_id),
+  );
+  const approved = isSuperAdmin || (me?.status ?? "pendente") === "aprovado";
+
   return {
+    isBackoffice: isSuperAdmin || (approved && assignments.some((a) => backofficeRoleIds.has(a.role_id))),
     profiles: (profilesRes.data ?? []) as DbProfile[],
     roles,
     permissions: (permsRes.data ?? []) as Permission[],
