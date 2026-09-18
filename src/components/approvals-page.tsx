@@ -45,10 +45,10 @@ export function ApprovalsPage() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível concluir."),
   });
 
-  if (!isSuperAdmin) {
+  if (!isBackoffice) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-        Só o administrador dono do sistema vê a aprovação de cadastros.
+        Só o backoffice vê a aprovação de cadastros.
       </div>
     );
   }
