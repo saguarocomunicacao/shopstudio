@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Eye, RefreshCw, Sparkles, Trash2 } from "lucide-react";
+import { Eye, Pencil, RefreshCw, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { supabase } from "@/integrations/supabase/client";
 import { useProducts, type DbProduct } from "@/lib/content";
 import { enrichProductDetails } from "@/lib/discover.functions";
+import { generateProductDescription } from "@/lib/product-description.functions";
 import { DiscoverPanel } from "./discover-panel";
 import { ProductDataTable } from "./product-data-table";
 import { ProfileGate } from "./profile-gate";
@@ -46,6 +47,18 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
+/** Mostra de onde veio o texto da descrição, para indicar a confiabilidade. */
+function OriginBadge({ origem, temDescricao }: { origem?: string | null | undefined; temDescricao: boolean }) {
+  if (!temDescricao) return <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Sem descrição</span>;
+  const map: Record<string, { label: string; className: string }> = {
+    manual: { label: "Editada manualmente", className: "bg-primary/10 text-primary" },
+    gerada_por_ia: { label: "Gerada por IA", className: "bg-secondary text-foreground" },
+    kalodata: { label: "Da Kalodata", className: "bg-secondary text-muted-foreground" },
+  };
+  const item = map[origem ?? "kalodata"] ?? map["kalodata"]!;
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.className}`}>{item.label}</span>;
+}
+
 export function ProductsPage() { return <ProfileGate><ProductsContent /></ProfileGate>; }
 
 function ProductsContent() {
@@ -54,6 +67,7 @@ function ProductsContent() {
   const { data: products = [], isLoading } = useProducts(activeProfileId, can("produtos", "visualizar"));
 
   const enrichDetails = useServerFn(enrichProductDetails);
+  const generateDescription = useServerFn(generateProductDescription);
 
   const canRemove = can("produtos", "remover");
   const canUpdate = can("produtos", "editar");
@@ -64,6 +78,8 @@ function ProductsContent() {
   const [details, setDetails] = useState<DbProduct | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
 
   const canCreateJob = can("pipeline", "criar", activeProfileId);
 
@@ -148,6 +164,35 @@ function ProductsContent() {
     onSettled: () => setBulk(null),
   });
 
+  /** Gera (ou regera) a descrição do produto com IA de visão a partir das fotos. */
+  const generateDesc = useMutation({
+    mutationFn: async (product: DbProduct) => {
+      await generateDescription({ data: { productId: product.id } });
+    },
+    onSuccess: () => {
+      toast.success("Descrição gerada por IA.");
+      qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  /** Descrição escrita à mão: vira origem "manual" e não é sobrescrita pelo refresh. */
+  const saveDesc = useMutation({
+    mutationFn: async ({ product, texto }: { product: DbProduct; texto: string }) => {
+      const limpo = texto.trim();
+      const { error } = await supabase
+        .from("products")
+        .update({ description: limpo || null, description_origem: limpo ? "manual" : null })
+        .eq("id", product.id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Descrição salva.");
+      setEditing(false);
+      qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
 
 
   return (
@@ -239,7 +284,7 @@ function ProductsContent() {
         {!products.length && <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{isLoading ? "Carregando produtos..." : "Nenhum produto no catálogo."}</div>}
       </div>
 
-      <Dialog open={!!details} onOpenChange={(open) => !open && setDetails(null)}>
+      <Dialog open={!!details} onOpenChange={(open) => { if (!open) { setDetails(null); setEditing(false); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle className="pr-6 text-left">{details?.name}</DialogTitle></DialogHeader>
           {details && (
@@ -263,9 +308,49 @@ function ProductsContent() {
                 <DetailRow label="Crescimento">{details.growth_rate ? `${details.growth_rate}%` : "—"}</DetailRow>
               </div>
               <DetailRow label="Descrição usada pela IA">
-                {details.description
-                  ? <p className="max-h-40 overflow-y-auto whitespace-pre-line text-sm font-normal text-muted-foreground">{details.description}</p>
-                  : <span className="text-muted-foreground">Sem descrição. A IA só conhece o nome e a foto principal deste produto.</span>}
+                <div className="grid gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <OriginBadge origem={details.description_origem} temDescricao={!!details.description} />
+                    {canUpdate && (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          disabled={generateDesc.isPending || editing}
+                          onClick={() => details && generateDesc.mutate(details)}
+                        >
+                          <Wand2 className={generateDesc.isPending ? "animate-spin" : ""} />
+                          {details.description ? "Regerar por IA" : "Gerar descrição por IA"}
+                        </Button>
+                        {editing ? null : (
+                          <Button type="button" size="sm" variant="ghost" onClick={() => { setDraft(details.description ?? ""); setEditing(true); }}>
+                            <Pencil />Editar
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {editing ? (
+                    <div className="grid gap-2">
+                      <textarea
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        rows={6}
+                        className="w-full rounded-lg border-0 bg-input p-3 text-sm font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        placeholder="Cole aqui a descrição real do TikTok Shop ou ajuste o texto."
+                      />
+                      <div className="flex gap-2">
+                        <Button type="button" size="sm" disabled={saveDesc.isPending} onClick={() => details && saveDesc.mutate({ product: details, texto: draft })}>Salvar descrição</Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button>
+                      </div>
+                    </div>
+                  ) : details.description ? (
+                    <p className="max-h-40 overflow-y-auto whitespace-pre-line text-sm font-normal text-muted-foreground">{details.description}</p>
+                  ) : (
+                    <span className="text-muted-foreground">Sem descrição. A IA só conhece o nome e a foto principal deste produto.</span>
+                  )}
+                </div>
               </DetailRow>
               {details.extra_image_urls?.length ? (
                 <DetailRow label="Fotos enviadas à IA">

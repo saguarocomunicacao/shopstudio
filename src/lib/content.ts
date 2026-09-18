@@ -21,6 +21,7 @@ export type DbProduct = {
   external_id: string | null;
   category_id: string | null;
   description: string | null;
+  description_origem?: string | null;
   extra_image_urls: string[] | null;
   updated_at?: string | null;
 };
