@@ -92,6 +92,13 @@
       "when": 1789730910563,
       "tag": "0012_prompt_copy_on_create",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789734296905,
+      "tag": "0013_voices_manage_by_profile_editors",
+      "breakpoints": true
     }
   ]
 }
