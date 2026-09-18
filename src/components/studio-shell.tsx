@@ -47,13 +47,13 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 function useVisibleItems() {
-  const { isAdmin, isSuperAdmin, can, activeProfileId } = useStudio();
+  const { isAdmin, isBackoffice, can, activeProfileId } = useStudio();
   return items.filter(([, to, , module]) => {
     if (!module) return true;
-    if (to === "/app/prompts") return isAdmin;
-    if (to === "/app/aprovacoes") return isSuperAdmin;
+    if (to === "/app/prompts") return isBackoffice || can("perfis", "visualizar", activeProfileId);
+    if (to === "/app/aprovacoes") return isBackoffice;
     if (module === "equipe") return isAdmin;
-    if (module === "investimento") return isAdmin || can("investimento", "visualizar");
+    if (module === "investimento") return isBackoffice;
     return can(module, "visualizar", activeProfileId);
   });
 }
