@@ -43,6 +43,7 @@ function PipelineContent() {
   const generate = useServerFn(generateJobScript);
   const generateScenes = useServerFn(generateJobScenes);
   useVideoDriver(jobs);
+  usePendingVideoSweep(activeProfileId);
   const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [renderingId, setRenderingId] = useState<string | null>(null);
 
