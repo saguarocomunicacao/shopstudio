@@ -118,7 +118,9 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: rows } = await supabase
       .from("products")
-      .select("id, external_id, image_url, description, profile_id, price, commission, sales_volume, growth_rate, revenue")
+      .select(
+        "id, name, niche, external_id, image_url, description, description_origem, profile_id, price, commission, sales_volume, growth_rate, revenue",
+      )
       .in("id", data.productIds);
 
     const pending = (rows ?? []).filter(
@@ -134,8 +136,12 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
 
     for (const row of pending as {
       id: string;
+      name: string;
+      niche: string | null;
       external_id: string;
       image_url: string | null;
+      description: string | null;
+      description_origem: string | null;
       profile_id: string | null;
       price: number | string;
       commission: number | string;
@@ -162,6 +168,8 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
       const salesVolume = detail.salesVolume ?? Number(row.sales_volume ?? 0);
       const growthRate = detail.growthRate ?? Number(row.growth_rate ?? 0);
       const revenue = detail.revenue ?? Number(row.revenue ?? 0);
+      // Descrição editada à mão nunca é sobrescrita pelo reprocessamento.
+      const manual = row.description_origem === "manual";
       const update = {
         extra_image_urls: images,
         sales_volume: salesVolume,
@@ -169,14 +177,35 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
         revenue,
         hype: hypeScore(salesVolume, growthRate, revenue),
         updated_at: new Date().toISOString(),
-        ...(detail.description ? { description: detail.description } : {}),
+        ...(detail.description && !manual ? { description: detail.description, description_origem: "kalodata" } : {}),
         ...(detail.price !== null && detail.price > 0 ? { price: detail.price } : {}),
         ...(detail.commission !== null && detail.commission > 0 ? { commission: detail.commission } : {}),
       };
 
       const { error } = await supabase.from("products").update(update).eq("id", row.id);
-      if (error) failed += 1;
-      else enriched += 1;
+      if (error) {
+        failed += 1;
+        continue;
+      }
+      enriched += 1;
+
+      // Fonte sem descrição: a IA de visão descreve o produto pelas fotos reais.
+      const temDescricao = !!(detail.description || (!manual ? null : row.description) || (manual ? row.description : null));
+      if (!temDescricao && images.length) {
+        try {
+          const { generateAndSaveDescription } = await import("./product-description.server");
+          await generateAndSaveDescription(supabase as never, {
+            id: row.id,
+            name: row.name,
+            niche: row.niche,
+            profile_id: row.profile_id,
+            image_url: row.image_url,
+            extra_image_urls: images,
+          });
+        } catch {
+          // Produto segue utilizável com nome e fotos.
+        }
+      }
     }
 
     return { enriched, failed };
