@@ -190,9 +190,17 @@ export function championPromptBlock(videos: ChampionVideo[]): string {
   if (!list) return "";
   return [
     "",
-    "GANCHOS QUE ESTÃO VENDENDO nesta categoria agora (use como inspiração de estrutura e ângulo, NÃO copie literalmente):",
+    "GANCHOS QUE ESTÃO VENDENDO nesta categoria agora (referência de PADRÃO, não de tema):",
     list,
     "",
-    "Analise o padrão desses ganchos vencedores (perguntas, promessas, urgência, dor, curiosidade) e escreva um gancho ORIGINAL no mesmo espírito do que converte, mantendo o tom do perfil e a fidelidade ao produto. Nunca reproduza o título de ninguém nem cite esses criadores.",
+    "COMO USAR ESSAS REFERÊNCIAS (obrigatório):",
+    "1. Identifique o GATILHO EMOCIONAL dominante nos ganchos acima: curiosidade (\"me recuso\", \"ninguém te conta\"), choque, provocação, pergunta que prende ou promessa forte. Não analise só o tema — analise o MECANISMO que faz a pessoa parar de rolar o feed.",
+    "2. O gancho dos primeiros 3 segundos decide a retenção: use o MESMO gatilho dos campeões, adaptado ao produto. Se os campeões vencem com curiosidade/provocação, um gancho descritivo de preço está ERRADO.",
+    "3. NUNCA abra o gancho com preço ou descrição do produto (\"Duas fronhas por R$18? Olha esse rosa\"). Preço e detalhes vão no CORPO do roteiro — só entram no gancho se o preço for, ele mesmo, o choque principal.",
+    "4. Exemplos de transformação (descritivo → gatilho dos campeões):",
+    '   - Em vez de "Duas fronhas por R$18? Olha esse rosa" → "Parei de trocar meu lençol inteiro depois que descobri isso" (curiosidade)',
+    '   - Em vez de "Essa fronha de cetim é ótima" → "Sua cama tá básica e a culpa é da fronha errada" (provocação)',
+    "5. Seja OUSADO no gancho, mas mantenha fidelidade total ao produto e ao tom do perfil: prometa apenas o que o produto entrega.",
+    "6. Nunca reproduza o título de ninguém nem cite esses criadores — escreva um gancho ORIGINAL no mesmo espírito.",
   ].join("\n");
 }
