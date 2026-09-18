@@ -372,7 +372,9 @@ export type Database = {
           commission: number
           created_at: string
           created_by: string | null
+          description: string | null
           external_id: string | null
+          extra_image_urls: Json
           growth_rate: number
           hype: number
           id: string
@@ -395,7 +397,9 @@ export type Database = {
           commission?: number
           created_at?: string
           created_by?: string | null
+          description?: string | null
           external_id?: string | null
+          extra_image_urls?: Json
           growth_rate?: number
           hype?: number
           id?: string
@@ -418,7 +422,9 @@ export type Database = {
           commission?: number
           created_at?: string
           created_by?: string | null
+          description?: string | null
           external_id?: string | null
+          extra_image_urls?: Json
           growth_rate?: number
           hype?: number
           id?: string

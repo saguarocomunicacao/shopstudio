@@ -341,9 +341,57 @@ export async function loadPersonReferences(urls: (string | null | undefined)[]) 
   return refs;
 }
 
+/** URLs das fotos reais do produto (principal + extras do Kalodata), até 4. */
+export function productImageUrls(
+  product: { image_url?: string | null; extra_image_urls?: unknown } | null,
+): string[] {
+  const extras = Array.isArray(product?.extra_image_urls)
+    ? product!.extra_image_urls.filter((u): u is string => typeof u === "string" && !!u)
+    : [];
+  return [...new Set([product?.image_url ?? "", ...extras].filter(Boolean))].slice(0, 4);
+}
+
+/** Baixa as fotos do produto como referência visual. Falhas são ignoradas. */
+export async function loadProductReferences(urls: string[]) {
+  const refs: { base64: string; mimeType: string }[] = [];
+  for (const url of urls.slice(0, 4)) {
+    try {
+      const img = await fetchAsBase64(url);
+      refs.push({ base64: img.base64, mimeType: img.mimeType });
+    } catch {
+      // Foto indisponível não pode derrubar a geração da cena.
+    }
+  }
+  return refs;
+}
+
+/** Guia de referências + exigência de fidelidade ao produto real. */
+export function buildReferenceGuide(personCount: number, productCount: number): string {
+  const parts: string[] = [];
+  if (personCount > 0) {
+    parts.push(
+      personCount === 1
+        ? "Image 1 is an identity reference of the person."
+        : `Images 1 through ${personCount} are identity references of the same person.`,
+    );
+  }
+  if (productCount > 0) {
+    const first = personCount + 1;
+    const last = personCount + productCount;
+    parts.push(
+      `Image${productCount > 1 ? `s ${first} to ${last} are` : ` ${first} is`} the real product, shown from different angles. Reproduce the product exactly: identical material, texture, shape, colour, label and proportions. Do not replace it with a similar product from a different category or made of a different material.`,
+    );
+  }
+  return parts.join(" ");
+}
+
 /** Bloco prioritário que preserva a identidade exata da pessoa de referência. */
 export const SAME_PERSON_SUFFIX =
   "CRITICAL IDENTITY REQUIREMENT: The person in every scene must be the EXACT SAME individual shown in the person reference photos (the first input images). Preserve identity precisely: same facial structure, face shape, eyes, nose, mouth, skin tone, hair color and hairstyle. This is the same real person across all scenes, not a similar-looking person. Do not stylize, beautify, or alter their features. Match the person reference photos as closely as possible.";
+
+/** Exigência de fidelidade ao produto real anexada a cada prompt de cena. */
+export const PRODUCT_FIDELITY_SUFFIX =
+  "The product must match the reference photos and the product facts exactly: same material, same shape, same finish, same colour and same label. Never substitute it with a similar product from another category or material.";
 
 /** Guarda um arquivo no bucket privado e devolve caminho + URL assinada. */
 export async function storeMedia(path: string, bytes: Uint8Array, contentType: string) {

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Eye, Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useProducts, type DbProduct } from "@/lib/content";
+import { enrichProductDetails } from "@/lib/discover.functions";
 import { DiscoverPanel } from "./discover-panel";
 import { ProductDataTable } from "./product-data-table";
 import { ProfileGate } from "./profile-gate";
@@ -37,6 +39,8 @@ function ProductsContent() {
   const qc = useQueryClient();
   const { data: products = [], isLoading } = useProducts(activeProfileId, can("produtos", "visualizar"));
 
+  const enrichDetails = useServerFn(enrichProductDetails);
+
   const canRemove = can("produtos", "remover");
 
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
@@ -58,6 +62,15 @@ function ProductsContent() {
   const createJob = useMutation({
     mutationFn: async ({ product, profileId }: { product: DbProduct; profileId: string | null }) => {
       if (!profileId) throw new Error("Selecione um perfil no seletor acima.");
+      // Produtos antigos ainda sem descrição: busca o detalhe antes de virar job.
+      if (!product.description && product.external_id) {
+        try {
+          await enrichDetails({ data: { productIds: [product.id] } });
+          qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+        } catch {
+          // Segue com nome e foto principal.
+        }
+      }
       const { error } = await supabase.from("jobs").insert({
         product_id: product.id,
         profile_id: profileId,
@@ -139,6 +152,20 @@ function ProductsContent() {
                 <DetailRow label="Vendas">{details.sales_volume?.toLocaleString("pt-BR") ?? "—"}</DetailRow>
                 <DetailRow label="Crescimento">{details.growth_rate ? `${details.growth_rate}%` : "—"}</DetailRow>
               </div>
+              <DetailRow label="Descrição usada pela IA">
+                {details.description
+                  ? <p className="max-h-40 overflow-y-auto whitespace-pre-line text-sm font-normal text-muted-foreground">{details.description}</p>
+                  : <span className="text-muted-foreground">Sem descrição. A IA só conhece o nome e a foto principal deste produto.</span>}
+              </DetailRow>
+              {details.extra_image_urls?.length ? (
+                <DetailRow label="Fotos enviadas à IA">
+                  <div className="flex flex-wrap gap-2">
+                    {details.extra_image_urls.map((src) => (
+                      <img key={src} src={src} alt="" className="size-16 rounded-xl object-cover" />
+                    ))}
+                  </div>
+                </DetailRow>
+              ) : null}
               <DetailRow label="Link do produto">
                 {details.url ? <a href={details.url} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">{details.url}</a> : "—"}
               </DetailRow>

@@ -209,7 +209,7 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     const pipeline = await import("./video-pipeline.server");
     const [{ data: product }, { data: settingsRow }] = await Promise.all([
       job.product_id
-        ? supabase.from("products").select("image_url").eq("id", job.product_id).maybeSingle()
+        ? supabase.from("products").select("image_url, extra_image_urls").eq("id", job.product_id).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase
         .from("profile_video_settings")
@@ -221,22 +221,15 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     const imagePrompt = data.prompt?.trim() || scene.image_prompt;
     const personUrls = personReferenceUrls(settingsRow, scenes, data.index);
     const personRefs = await pipeline.loadPersonReferences(personUrls);
-    const references: { base64: string; mimeType: string }[] = [...personRefs];
-    if (product?.image_url) {
-      const img = await pipeline.fetchAsBase64(product.image_url);
-      references.push({ base64: img.base64, mimeType: img.mimeType });
-    }
+    const productRefs = await pipeline.loadProductReferences(pipeline.productImageUrls(product));
+    const references: { base64: string; mimeType: string }[] = [...personRefs, ...productRefs];
 
     const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : "";
-    const referenceGuide = personRefs.length
-      ? `Images 1 through ${personRefs.length} are identity references of the same person. ${product?.image_url ? `Image ${personRefs.length + 1} is the product reference.` : ""}`
-      : product?.image_url
-        ? "Image 1 is the product reference."
-        : "";
+    const referenceGuide = pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
 
     const generated = await pipeline.generateSceneImage({
       model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
-      prompt: `${identityRequirement}${referenceGuide}\n\nSCENE: ${imagePrompt} Vertical 9:16 framing. Keep the product identical to the product reference photo.`,
+      prompt: `${identityRequirement}${referenceGuide}\n\nSCENE: ${imagePrompt} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
       references,
     });
     const stored = await pipeline.storeMedia(
@@ -314,7 +307,7 @@ async function runStep(
 
   const [{ data: product }, { data: identity }, { data: profile }, { data: settingsRow }] = await Promise.all([
     job.product_id
-      ? supabase.from("products").select("name, price, commission, image_url, niche").eq("id", job.product_id).maybeSingle()
+      ? supabase.from("products").select("name, price, commission, image_url, niche, description, extra_image_urls").eq("id", job.product_id).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("profile_identities").select("tone, language, style_notes").eq("profile_id", job.profile_id).maybeSingle(),
     supabase.from("profiles").select("name, niche").eq("id", job.profile_id).maybeSingle(),
@@ -348,6 +341,7 @@ async function runStep(
     preco: product ? Number(product.price).toFixed(2) : "",
     comissao: product ? `${Number(product.commission)}%` : "",
     categoria_produto: product?.niche || "",
+    descricao_produto: (product?.description ?? "").slice(0, 2000),
     idioma: language,
     tom_de_voz: identity?.tone ?? "",
     observacoes_estilo: identity?.style_notes ?? "",
@@ -377,21 +371,17 @@ async function runStep(
       const personRefs = await pipeline.loadPersonReferences(
         personReferenceUrls(settingsRow, scenes, index),
       );
-      const references: { base64: string; mimeType: string }[] = [...personRefs];
-      if (product?.image_url) {
-        const productImage = await pipeline.fetchAsBase64(product.image_url);
-        references.push({ base64: productImage.base64, mimeType: productImage.mimeType });
-      }
+      const productRefs = await pipeline.loadProductReferences(pipeline.productImageUrls(product));
+      const references: { base64: string; mimeType: string }[] = [...personRefs, ...productRefs];
 
       const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : "";
-      const referenceGuide = personRefs.length
-        ? `Images 1 through ${personRefs.length} are identity references of the same person. ${product?.image_url ? `Image ${personRefs.length + 1} is the product reference.` : ""}`
-        : product?.image_url
-          ? "Image 1 is the product reference."
-          : "";
+      const referenceGuide = pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
+      const productFacts = product?.description
+        ? `\n\nPRODUCT FACTS (from the real listing, obey them): ${String(product.description).replace(/\s+/g, " ").slice(0, 700)}`
+        : "";
       const generated = await pipeline.generateSceneImage({
         model: settings.gemini_model,
-        prompt: `${identityRequirement}${referenceGuide}\n\nSCENE: ${scene.image_prompt} Vertical 9:16 framing. Keep the product identical to the product reference photo.`,
+        prompt: `${identityRequirement}${referenceGuide}${productFacts}\n\nSCENE: ${scene.image_prompt} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
         references,
       });
 

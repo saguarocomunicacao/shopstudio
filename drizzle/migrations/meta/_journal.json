@@ -71,6 +71,13 @@
       "when": 1789689738248,
       "tag": "0009_add_job_voice_ref",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789729739854,
+      "tag": "0010_add_product_description",
+      "breakpoints": true
     }
   ]
 }

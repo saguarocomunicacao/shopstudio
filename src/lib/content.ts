@@ -20,6 +20,8 @@ export type DbProduct = {
   source: string | null;
   external_id: string | null;
   category_id: string | null;
+  description: string | null;
+  extra_image_urls: string[] | null;
 };
 
 export type DbCategory = { category_id: string; category_name: string; level: number; parent_id: string | null };
