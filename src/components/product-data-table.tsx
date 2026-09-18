@@ -147,10 +147,10 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
   return (
     <TooltipProvider delayDuration={250}>
       <div className="hidden overflow-x-auto lg:block">
-        <table className="w-full min-w-[900px] table-fixed text-left text-sm">
+        <table className="w-full min-w-[860px] table-fixed text-left text-sm">
           <colgroup>
-            <col className="w-10" /><col className="w-16" /><col /><col className="w-32" />
-            <col className="w-24" /><col className="w-40" /><col className="w-32" /><col className="w-36" />
+            <col className="w-10" /><col className="w-16" /><col /><col className="w-28" />
+            <col className="w-20" /><col className="w-36" /><col className="w-36" /><col className="w-52" />
           </colgroup>
           <thead>
             <tr className="border-b text-xs text-muted-foreground">
@@ -181,7 +181,7 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
                     <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatPrice(item.price)}</td>
                     <td className="px-3 py-2"><Commission item={item} /></td>
                     <td className="px-3 py-2"><HypeScore value={item.hype} /></td>
-                    <td className="px-1 py-2"><div className="flex items-center justify-end gap-2">{renderActions(item)}</div></td>
+                    <td className="px-1 py-2"><div className="flex items-center justify-end gap-2.5">{renderActions(item)}</div></td>
                   </tr>
                   {isExpanded && <tr className="border-b"><td colSpan={8} className="px-3 py-3"><Details item={item} /></td></tr>}
                 </Fragment>
