@@ -51,6 +51,7 @@ export function JobDetailDialog({
   const generate = useServerFn(generateJobScript);
   const generateScenes = useServerFn(generateJobScenes);
   const approveScenes = useServerFn(approveJobScenes);
+  const approveRascunho = useServerFn(approveDraft);
 
   const [confirmVeo, setConfirmVeo] = useState(false);
   const cenas = Array.isArray(job?.scenes) ? (job!.scenes as unknown[]).length : 0;
@@ -106,6 +107,16 @@ export function JobDetailDialog({
       if (error) throw new Error(error.message);
     },
     onSuccess: () => { toast.success("Roteiro salvo."); refresh(); onOpenChange(false); },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const runApproveDraft = useMutation({
+    mutationFn: async (jobId: string) => approveRascunho({ data: { jobId } }),
+    onSuccess: () => {
+      toast.success("Vídeo aprovado para postagem. Ele continua na fila de Rascunhos, na aba Aprovados.");
+      refresh();
+      onOpenChange(false);
+    },
     onError: (e) => toast.error(errMessage(e)),
   });
 
