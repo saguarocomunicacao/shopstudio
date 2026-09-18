@@ -312,6 +312,8 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
               </section>
             )}
 
+            {data.stored && <SharePanel jobId={jobId} />}
+
             {data.hook && <CopyBlock title="Título / gancho" value={data.hook} multiline />}
             <CopyBlock title="Legenda" value={data.caption} multiline />
             <CopyBlock title="Hashtags" value={data.hashtags.join(" ")} multiline />
