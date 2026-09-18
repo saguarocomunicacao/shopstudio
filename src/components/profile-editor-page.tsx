@@ -295,7 +295,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
     if (!files?.length) return;
     const free = MAX_AVATARS - avatarItems.length;
     if (free <= 0) {
-      toast.error("Máximo de 3 fotos. Remova uma para enviar outra.");
+      toast.error(`Máximo de ${MAX_AVATARS} fotos. Remova uma para enviar outra.`);
       return;
     }
     const chosen = Array.from(files)
@@ -310,6 +310,14 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
       return;
     }
     const read = await Promise.all(chosen.map(readFile));
+    const small = read.filter((r) => r.width && r.height && Math.min(r.width, r.height) < MIN_AVATAR_SIDE);
+    if (small.length) {
+      toast.warning(
+        small.length === 1
+          ? "Uma das fotos tem resolução baixa e pode deixar o rosto menos fiel. Se puder, envie uma maior."
+          : `${small.length} fotos têm resolução baixa e podem deixar o rosto menos fiel. Se puder, envie versões maiores.`,
+      );
+    }
     uploadAvatars.mutate([...avatarItems, ...read]);
   };
 
