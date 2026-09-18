@@ -162,17 +162,17 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
       const salesVolume = detail.salesVolume ?? Number(row.sales_volume ?? 0);
       const growthRate = detail.growthRate ?? Number(row.growth_rate ?? 0);
       const revenue = detail.revenue ?? Number(row.revenue ?? 0);
-      const update: Record<string, unknown> = {
+      const update = {
         extra_image_urls: images,
         sales_volume: salesVolume,
         growth_rate: growthRate,
         revenue,
         hype: hypeScore(salesVolume, growthRate, revenue),
         updated_at: new Date().toISOString(),
+        ...(detail.description ? { description: detail.description } : {}),
+        ...(detail.price !== null && detail.price > 0 ? { price: detail.price } : {}),
+        ...(detail.commission !== null && detail.commission > 0 ? { commission: detail.commission } : {}),
       };
-      if (detail.description) update["description"] = detail.description;
-      if (detail.price !== null && detail.price > 0) update["price"] = detail.price;
-      if (detail.commission !== null && detail.commission > 0) update["commission"] = detail.commission;
 
       const { error } = await supabase.from("products").update(update).eq("id", row.id);
       if (error) failed += 1;
