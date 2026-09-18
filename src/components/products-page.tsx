@@ -278,6 +278,16 @@ function ProductsContent() {
           )}
           <DialogFooter>
             <Button variant="secondary" onClick={() => setDetails(null)}>Fechar</Button>
+            {canUpdate && details?.external_id && (
+              <Button
+                variant="secondary"
+                disabled={refreshingId === details.id}
+                onClick={() => details && refreshOne.mutate(details)}
+              >
+                <RefreshCw className={refreshingId === details.id ? "animate-spin" : ""} />
+                Atualizar
+              </Button>
+            )}
             {canCreateJob && <Button onClick={() => { const p = details; setDetails(null); setUseTarget(p); }}><Sparkles />Usar</Button>}
           </DialogFooter>
         </DialogContent>
