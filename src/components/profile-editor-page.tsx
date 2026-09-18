@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, Loader2, Sparkles, Upload, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Loader2, Sparkles, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
@@ -113,6 +114,22 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const [avatarSource, setAvatarSource] = useState<"ia" | "upload">("ia");
   const [avatarDescription, setAvatarDescription] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const closeLightbox = useCallback(() => setLightboxIndex(null), []);
+  const prevLightbox = useCallback(() => setLightboxIndex((i) => (i === null ? null : (i - 1 + avatarItems.length) % avatarItems.length)), [avatarItems.length]);
+  const nextLightbox = useCallback(() => setLightboxIndex((i) => (i === null ? null : (i + 1) % avatarItems.length)), [avatarItems.length]);
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") { e.preventDefault(); prevLightbox(); }
+      if (e.key === "ArrowRight") { e.preventDefault(); nextLightbox(); }
+      if (e.key === "Escape") { e.preventDefault(); closeLightbox(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxIndex, prevLightbox, nextLightbox, closeLightbox]);
   const generateAvatar = useServerFn(generateAvatarReference);
   const saveAvatars = useServerFn(saveAvatarReferences);
   const seedPrompts = useServerFn(seedProfilePrompts);
@@ -459,8 +476,18 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                   {avatarItems.length > 0 && (
                     <div className="mb-3 flex flex-wrap gap-3">
                       {avatarItems.map((item, i) => (
-                        <div className="relative" key={item.url ?? i}>
-                          <img src={item.preview} alt="" className="size-24 rounded-xl object-cover" />
+                        <div className="group relative" key={item.url ?? i}>
+                          <button
+                            type="button"
+                            onClick={() => setLightboxIndex(i)}
+                            aria-label={`Ver foto ${i + 1} em tela cheia`}
+                            className="relative block size-24 overflow-hidden rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          >
+                            <img src={item.preview} alt="" className="size-24 rounded-xl object-cover transition-transform group-hover:scale-[1.04]" />
+                            <span className="absolute inset-x-0 bottom-0 bg-foreground/70 px-1 py-1 text-center text-[10px] font-semibold text-background opacity-0 transition-opacity group-hover:opacity-100">
+                              Ver em tela cheia
+                            </span>
+                          </button>
                           <button
                             type="button"
                             aria-label="Remover foto"
@@ -575,6 +602,47 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={lightboxIndex !== null} onOpenChange={(open) => { if (!open) closeLightbox(); }}>
+        <DialogContent className="h-dvh w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden rounded-none border-0 bg-foreground/95 p-3 text-background sm:p-6">
+          <DialogTitle className="pr-12 text-sm font-semibold text-background">
+            {lightboxIndex === null ? "Fotos" : `Foto ${lightboxIndex + 1} de ${avatarItems.length}`}
+          </DialogTitle>
+          {lightboxIndex !== null && avatarItems[lightboxIndex] && (
+            <div className="relative flex min-h-0 items-center justify-center px-11">
+              {avatarItems.length > 1 && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  className="absolute left-0 z-10 rounded-full"
+                  onClick={prevLightbox}
+                  aria-label="Foto anterior"
+                >
+                  <ChevronLeft />
+                </Button>
+              )}
+              <img
+                src={avatarItems[lightboxIndex].preview}
+                alt={`Foto ${lightboxIndex + 1}`}
+                className="max-h-[80vh] w-auto max-w-full rounded-xl object-contain"
+              />
+              {avatarItems.length > 1 && (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  className="absolute right-0 z-10 rounded-full"
+                  onClick={nextLightbox}
+                  aria-label="Próxima foto"
+                >
+                  <ChevronRight />
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
