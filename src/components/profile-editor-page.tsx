@@ -254,6 +254,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           gemini_model: values.geminiModel,
           veo_model: values.veoModel,
           voice_ref: values.voiceRef,
+          require_review: values.requireReview,
         },
         { onConflict: "profile_id" },
       );
