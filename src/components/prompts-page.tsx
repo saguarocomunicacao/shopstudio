@@ -165,9 +165,18 @@ function GlobalPrompts() {
 }
 
 export function PromptsPage() {
-  const { isAdmin } = useStudio();
+  const { isBackoffice, can, activeProfileId } = useStudio();
 
-  if (!isAdmin) {
+  // Trava de acesso direto pela URL: sem perfil visível e sem backoffice, nada é exibido.
+  if (!isBackoffice && !can("perfis", "visualizar", activeProfileId)) {
+    return (
+      <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+        Você não tem acesso aos prompts.
+      </div>
+    );
+  }
+
+  if (!isBackoffice) {
     return (
       <>
         <Heading eyebrow="Prompts" title="Prompts do perfil" />
