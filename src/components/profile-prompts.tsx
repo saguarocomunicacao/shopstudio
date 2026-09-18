@@ -1,21 +1,36 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { RotateCcw } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowUpCircle, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { usePromptOverrides, usePromptTemplates, type PromptTemplate } from "@/lib/prompts";
+import { restoreProfilePrompt, seedProfilePrompts } from "@/lib/prompts.functions";
+import { usePromptOverrides, usePromptTemplates, type PromptOverride, type PromptTemplate } from "@/lib/prompts";
 import { PlaceholderList } from "./prompts-page";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
 
-function PromptRow({ profileId, template, override }: { profileId: string; template: PromptTemplate; override: string | null }) {
+function PromptRow({
+  profileId,
+  template,
+  override,
+}: {
+  profileId: string;
+  template: PromptTemplate;
+  override: PromptOverride | null;
+}) {
   const qc = useQueryClient();
-  const inherited = override === null;
-  const [body, setBody] = useState(override ?? template.body);
+  const restaurar = useServerFn(restoreProfilePrompt);
+  const salvo = override?.body ?? "";
+  const igualAoPadrao = (override?.origem ?? "copiado_do_padrao") === "copiado_do_padrao";
+  const desatualizado =
+    igualAoPadrao && !!override?.origem_versao && new Date(override.origem_versao) < new Date(template.updated_at);
+
+  const [body, setBody] = useState(salvo);
   const [open, setOpen] = useState(false);
-  useEffect(() => setBody(override ?? template.body), [override, template.body]);
+  useEffect(() => setBody(salvo), [salvo]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["prompt-overrides", profileId] });
 
@@ -23,7 +38,10 @@ function PromptRow({ profileId, template, override }: { profileId: string; templ
     mutationFn: async () => {
       const { error } = await supabase
         .from("profile_prompt_overrides")
-        .upsert({ profile_id: profileId, key: template.key, body }, { onConflict: "profile_id,key" });
+        .upsert(
+          { profile_id: profileId, key: template.key, body, origem: "personalizado" },
+          { onConflict: "profile_id,key" },
+        );
       if (error) throw new Error(error.message);
     },
     onSuccess: () => { toast.success("Prompt deste perfil salvo."); refresh(); },
@@ -31,11 +49,8 @@ function PromptRow({ profileId, template, override }: { profileId: string; templ
   });
 
   const reset = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("profile_prompt_overrides").delete().eq("profile_id", profileId).eq("key", template.key);
-      if (error) throw new Error(error.message);
-    },
-    onSuccess: () => { toast.success("Voltou a usar o padrão."); setBody(template.body); refresh(); },
+    mutationFn: () => restaurar({ data: { profileId, key: template.key } }),
+    onSuccess: () => { toast.success("Prompt restaurado com o padrão do sistema."); refresh(); },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -44,25 +59,33 @@ function PromptRow({ profileId, template, override }: { profileId: string; templ
       <button type="button" className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-left" onClick={() => setOpen(!open)}>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{template.title}</p>
-          <p className="truncate text-xs text-muted-foreground">{inherited ? "usando padrão" : "versão própria deste perfil"}</p>
+          <p className="truncate text-xs text-muted-foreground">{template.description}</p>
         </div>
-        <span className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${inherited ? "status-neutral" : "status-pink"}`}>
-          {inherited ? "Padrão" : "Personalizado"}
+        <span className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${igualAoPadrao ? "status-neutral" : "status-pink"}`}>
+          {igualAoPadrao ? "Igual ao padrão do sistema" : "Personalizado"}
         </span>
       </button>
+
+      {desatualizado && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-xs">
+          <span className="font-semibold text-primary">Há uma versão mais recente do prompt padrão</span>
+          <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-primary" disabled={reset.isPending} onClick={() => reset.mutate()}>
+            <ArrowUpCircle className="size-3.5" />Atualizar
+          </Button>
+        </div>
+      )}
+
       {open && (
         <>
           <PlaceholderList placeholders={template.placeholders} />
           <Textarea className="mt-3 min-h-44 bg-background font-mono text-xs leading-relaxed" value={body} onChange={(e) => setBody(e.target.value)} />
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button size="sm" disabled={save.isPending || body === (override ?? template.body)} onClick={() => save.mutate()}>
-              Usar só neste perfil
+            <Button size="sm" disabled={save.isPending || body === salvo} onClick={() => save.mutate()}>
+              Salvar prompt
             </Button>
-            {!inherited && (
-              <Button size="sm" variant="ghost" disabled={reset.isPending} onClick={() => reset.mutate()}>
-                <RotateCcw />Voltar ao padrão
-              </Button>
-            )}
+            <Button size="sm" variant="ghost" disabled={reset.isPending} onClick={() => reset.mutate()}>
+              <RotateCcw />Restaurar padrão do sistema
+            </Button>
           </div>
         </>
       )}
@@ -70,11 +93,22 @@ function PromptRow({ profileId, template, override }: { profileId: string; templ
   );
 }
 
-/** Os 4 prompts do perfil: herdam o padrão global até serem sobrescritos. */
+/** Os 4 prompts do perfil: cópia própria, criada a partir do padrão do sistema. */
 export function ProfilePrompts({ profileId }: { profileId: string }) {
+  const qc = useQueryClient();
+  const semear = useServerFn(seedProfilePrompts);
   const { data: templates = [] } = usePromptTemplates();
-  const { data: overrides = [] } = usePromptOverrides(profileId);
-  const byKey = new Map(overrides.map((o) => [o.key, o.body]));
+  const { data: overrides, isLoading } = usePromptOverrides(profileId);
+  const byKey = new Map((overrides ?? []).map((o) => [o.key, o]));
+
+  // Perfil sem cópia ainda (criado antes, ou prompt novo no padrão): gera a cópia inicial.
+  const faltando = !isLoading && templates.length > 0 && templates.some((t) => !byKey.has(t.key));
+  useEffect(() => {
+    if (!faltando) return;
+    void semear({ data: { profileId } })
+      .then(() => qc.invalidateQueries({ queryKey: ["prompt-overrides", profileId] }))
+      .catch(() => undefined);
+  }, [faltando, profileId, qc, semear]);
 
   if (!templates.length) return null;
   return (

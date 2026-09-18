@@ -85,6 +85,13 @@
       "when": 1789730404114,
       "tag": "0011_backoffice_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789730910563,
+      "tag": "0012_prompt_copy_on_create",
+      "breakpoints": true
     }
   ]
 }

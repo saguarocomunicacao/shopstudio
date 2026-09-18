@@ -498,18 +498,24 @@ export type Database = {
         Row: {
           body: string
           key: string
+          origem: string
+          origem_versao: string | null
           profile_id: string
           updated_at: string
         }
         Insert: {
           body: string
           key: string
+          origem?: string
+          origem_versao?: string | null
           profile_id: string
           updated_at?: string
         }
         Update: {
           body?: string
           key?: string
+          origem?: string
+          origem_versao?: string | null
           profile_id?: string
           updated_at?: string
         }
@@ -884,6 +890,7 @@ export type Database = {
           placeholders: string[] | null
           sort_order: number | null
           title: string | null
+          updated_at: string | null
         }
         Insert: {
           body?: never
@@ -892,6 +899,7 @@ export type Database = {
           placeholders?: string[] | null
           sort_order?: number | null
           title?: string | null
+          updated_at?: string | null
         }
         Update: {
           body?: never
@@ -900,6 +908,7 @@ export type Database = {
           placeholders?: string[] | null
           sort_order?: number | null
           title?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
