@@ -104,6 +104,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       loading: sessionLoading || accessLoading,
       userId,
       isSuperAdmin: access?.isSuperAdmin ?? false,
+      isBackoffice: access?.isBackoffice ?? false,
       approvalStatus: access?.approvalStatus ?? "pendente",
       pendingAccess:
         !!userId && !accessLoading && (access?.approvalStatus !== "aprovado" || (!isAdmin && profiles.length === 0)),
