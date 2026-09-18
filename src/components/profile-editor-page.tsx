@@ -113,6 +113,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const generateAvatar = useServerFn(generateAvatarReference);
   const saveAvatars = useServerFn(saveAvatarReferences);
+  const seedPrompts = useServerFn(seedProfilePrompts);
 
   useEffect(() => {
     const base: FormState = profile
