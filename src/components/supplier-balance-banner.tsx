@@ -2,11 +2,13 @@ import { AlertTriangle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { brl } from "@/lib/custo";
 import { useSaldosBaixos } from "@/lib/investimento";
+import { useStudio } from "./studio-context";
 
-/** Aviso de saldo baixo nos fornecedores, exibido junto ao gasto do mês. */
+/** Aviso de saldo baixo nos fornecedores. Saldo é dado interno: só backoffice vê. */
 export function SupplierBalanceBanner() {
+  const { isBackoffice } = useStudio();
   const baixos = useSaldosBaixos();
-  if (!baixos.length) return null;
+  if (!isBackoffice || !baixos.length) return null;
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm">

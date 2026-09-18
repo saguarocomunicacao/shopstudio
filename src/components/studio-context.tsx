@@ -20,6 +20,8 @@ type StudioContextValue = {
   userId: string | null;
   pendingAccess: boolean;
   isSuperAdmin: boolean;
+  /** Backoffice: super admin fixo ou quem tem a permissão "backoffice". Dados internos da operação. */
+  isBackoffice: boolean;
   approvalStatus: string;
 };
 
@@ -102,6 +104,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       loading: sessionLoading || accessLoading,
       userId,
       isSuperAdmin: access?.isSuperAdmin ?? false,
+      isBackoffice: access?.isBackoffice ?? false,
       approvalStatus: access?.approvalStatus ?? "pendente",
       pendingAccess:
         !!userId && !accessLoading && (access?.approvalStatus !== "aprovado" || (!isAdmin && profiles.length === 0)),

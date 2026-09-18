@@ -10,9 +10,10 @@ const quando = (iso: string) =>
 
 /** Buscas recentes do perfil ativo em um botão discreto que abre um modal-tabela. */
 export function SearchCostHistory({ onRepeat }: { onRepeat?: (termo: string) => void }) {
-  const { activeProfileId } = useStudio();
-  const { data: buscas = [] } = useBuscaCustos(activeProfileId);
-  if (!buscas.length) return null;
+  const { activeProfileId, isBackoffice, can } = useStudio();
+  const podeVer = isBackoffice || can("custos", "visualizar", activeProfileId);
+  const { data: buscas = [] } = useBuscaCustos(podeVer ? activeProfileId : null);
+  if (!podeVer || !buscas.length) return null;
 
   const total = buscas.reduce((acc, b) => acc + b.valorBrl, 0);
   const podeRepetir = typeof onRepeat === "function";

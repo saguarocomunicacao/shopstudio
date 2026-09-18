@@ -389,9 +389,10 @@ function AlertaConfig({ alertaPercent, bloqueio }: { alertaPercent: number; bloq
 }
 
 export function InvestmentPage() {
-  const { isAdmin, can } = useStudio();
-  const podeVer = isAdmin || can("investimento", "visualizar");
-  const podeEditar = isAdmin || can("investimento", "editar");
+  const { isBackoffice } = useStudio();
+  // Aportes, planos e saldos são dados internos da operação: backoffice apenas.
+  const podeVer = isBackoffice;
+  const podeEditar = isBackoffice;
   const { data, isLoading } = useInvestimento();
   useAppConfig();
 

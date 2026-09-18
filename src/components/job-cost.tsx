@@ -13,9 +13,11 @@ const unidadeDaEtapa: Record<EtapaConsumo, "imagem" | "segundo_video" | "credito
 };
 
 export function useJobCusto(jobId: string): CustoJob | null {
-  const { activeProfileId } = useStudio();
-  const { data } = useJobCustos(activeProfileId);
-  return data?.get(jobId) ?? null;
+  const { activeProfileId, isBackoffice, can } = useStudio();
+  // Custo só aparece para quem tem permissão de custos nesse perfil (mesma regra do banco).
+  const podeVer = isBackoffice || can("custos", "visualizar", activeProfileId);
+  const { data } = useJobCustos(podeVer ? activeProfileId : null);
+  return podeVer ? (data?.get(jobId) ?? null) : null;
 }
 
 /** Valor curto para o card do kanban. */
