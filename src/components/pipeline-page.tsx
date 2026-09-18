@@ -132,12 +132,9 @@ function PipelineContent() {
 
   return (
     <div className="flex h-[calc(100vh-6.5rem)] flex-col gap-4 lg:h-[calc(100vh-8.5rem)]">
-      <div className="mb-2 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
-        <div className="min-w-0">
-          <p className="mb-1 text-xs font-bold uppercase text-primary">Produção</p>
-          <h1 className="truncate text-2xl font-black sm:text-3xl">Pipeline de conteúdo</h1>
-        </div>
-        <Button disabled><Plus />Novo job</Button>
+      <div className="mb-2">
+        <p className="mb-1 text-xs font-bold uppercase text-primary">Produção</p>
+        <h1 className="truncate text-2xl font-black sm:text-3xl">Pipeline de conteúdo</h1>
       </div>
       <SupplierBalanceBanner />
       <div ref={kanbanRef} className="kanban min-h-0 flex-1">
