@@ -522,6 +522,13 @@ export type Database = {
             referencedColumns: ["key"]
           },
           {
+            foreignKeyName: "profile_prompt_overrides_key_fkey"
+            columns: ["key"]
+            isOneToOne: false
+            referencedRelation: "prompt_templates_visible"
+            referencedColumns: ["key"]
+          },
+          {
             foreignKeyName: "profile_prompt_overrides_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
@@ -869,11 +876,38 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      prompt_templates_visible: {
+        Row: {
+          body: string | null
+          description: string | null
+          key: string | null
+          placeholders: string[] | null
+          sort_order: number | null
+          title: string | null
+        }
+        Insert: {
+          body?: never
+          description?: string | null
+          key?: string | null
+          placeholders?: string[] | null
+          sort_order?: number | null
+          title?: string | null
+        }
+        Update: {
+          body?: never
+          description?: string | null
+          key?: string | null
+          placeholders?: string[] | null
+          sort_order?: number | null
+          title?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       can_edit_pipeline: { Args: { _profile_id: string }; Returns: boolean }
       ensure_app_user: { Args: never; Returns: undefined }
+      is_backoffice: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {

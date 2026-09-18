@@ -78,6 +78,13 @@
       "when": 1789729739854,
       "tag": "0010_add_product_description",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789730404114,
+      "tag": "0011_backoffice_rls",
+      "breakpoints": true
     }
   ]
 }
