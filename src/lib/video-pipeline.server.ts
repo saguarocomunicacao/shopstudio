@@ -80,12 +80,47 @@ const geminiKey = () => {
   return key;
 };
 
+/** Erro do Google com marcação de "instabilidade temporária" (vale tentar de novo). */
+class GoogleApiError extends Error {
+  transient: boolean;
+  constructor(message: string, transient: boolean) {
+    super(message);
+    this.name = "GoogleApiError";
+    this.transient = transient;
+  }
+}
+
+/** Um erro é transitório quando vale a pena tentar de novo automaticamente. */
+export function isTransientError(error: unknown): boolean {
+  return !!(error && typeof error === "object" && (error as { transient?: boolean }).transient === true);
+}
+
 /** Traduz erros da API do Google para mensagens úteis ao usuário. */
 function googleError(status: number, body: string): Error {
-  if (status === 429) return new Error("Limite de uso do Google atingido. Tente de novo em alguns minutos.");
-  if (status === 401 || status === 403) return new Error("A chave do Google foi recusada. Verifique a chave configurada.");
-  return new Error(`O Google recusou a requisição (${status}). ${body.slice(0, 200)}`);
+  if (status === 429) {
+    return new GoogleApiError(
+      "O Google está limitando as chamadas agora (429). É temporário: espere alguns minutos e tente de novo.",
+      true,
+    );
+  }
+  if (status === 401 || status === 403) {
+    return new GoogleApiError("A chave do Google foi recusada. Verifique a chave configurada.", false);
+  }
+  if (status === 400) {
+    return new GoogleApiError(
+      `O Google recusou o conteúdo desta cena (400). Ajuste a descrição da imagem e tente de novo. ${body.slice(0, 160)}`,
+      false,
+    );
+  }
+  if (status === 408 || status >= 500) {
+    return new GoogleApiError(
+      `Instabilidade temporária do Google (${status}). Não é problema da sua cena: tente gerar de novo em instantes.`,
+      true,
+    );
+  }
+  return new GoogleApiError(`O Google recusou a requisição (${status}). ${body.slice(0, 200)}`, false);
 }
+
 
 /** Baixa uma imagem/arquivo e devolve em base64. */
 export async function fetchAsBase64(url: string, headers?: Record<string, string>) {
