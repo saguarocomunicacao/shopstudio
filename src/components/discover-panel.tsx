@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
-import { discoverProducts } from "@/lib/discover.functions";
+import { discoverProducts, enrichProductDetails } from "@/lib/discover.functions";
 import { useCategories, type DbProduct } from "@/lib/content";
 import { ProductDataTable } from "./product-data-table";
 import { SearchCostHistory } from "./search-cost-history";
