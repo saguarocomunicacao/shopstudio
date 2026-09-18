@@ -3,8 +3,9 @@ import { TarifasCard } from "./tarifas-card";
 import { BudgetCard } from "./budget-card";
 import { CheckCircle2, CircleDollarSign, FileClock, Loader2, MoreHorizontal, Plus, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JOB_STATUS_LABELS, relativeTime, useJobs } from "@/lib/content";
+import { GlobalPromptsSettings } from "./prompts-page";
 import { SyncCategoriesButton } from "./category-select";
 import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
@@ -80,4 +81,54 @@ function MetricsContent() {
   </>;
 }
 
-export function SettingsPage() { const {activeProfile,isAdmin,isBackoffice}=useStudio(); return <><Heading eyebrow={activeProfile?.name??"Configuração global"} title="Preferências do perfil"/><div className="grid gap-4 lg:grid-cols-2"><section className="panel"><h2 className="font-bold">Fluxo de publicação</h2><p className="mb-5 mt-1 text-sm text-muted-foreground">Ajustes visuais para o comportamento futuro deste perfil.</p>{[["Revisão obrigatória","Exigir aprovação antes de publicar"],["Alertas de tendência","Sinalizar produtos com hype alto"],["Resumo semanal","Receber um resumo de desempenho"]].map(([a,b],i)=><div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-t py-4" key={a}><div><p className="text-sm font-semibold">{a}</p><p className="text-xs text-muted-foreground">{b}</p></div><Switch defaultChecked={i<2}/></div>)}</section><section className="panel"><h2 className="font-bold">Fonte de dados de produto</h2><p className="mt-1 text-sm text-muted-foreground">De onde vêm os produtos em alta garimpados na aba “Descobrir”.</p><div className="mt-5 flex items-center justify-between gap-4 rounded-xl bg-secondary px-4 py-3"><div><p className="text-sm font-semibold">Kalodata</p><p className="text-xs text-muted-foreground">TikTok Shop Brasil · somente produtos com programa de afiliado</p></div><span className="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold status-lime">Ativa</span></div><p className="mt-3 text-xs text-muted-foreground">As chaves de acesso ficam guardadas com segurança no servidor.</p>{isAdmin&&<div className="mt-4 border-t pt-4"><p className="text-sm font-semibold">Categorias oficiais do TikTok Shop</p><p className="mb-3 mt-1 text-xs text-muted-foreground">Usadas nos perfis e produtos. Sincronizadas direto da fonte.</p><SyncCategoriesButton/></div>}</section>{isAdmin&&<VoicesCard/>}{isBackoffice&&<TarifasCard/>}{isBackoffice&&<BudgetCard/>}</div></>; }
+export function SettingsPage() {
+  const { isBackoffice } = useStudio();
+
+  if (!isBackoffice) {
+    return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Você não tem acesso às configurações do backoffice.</div>;
+  }
+
+  return (
+    <>
+      <Heading eyebrow="Backoffice" title="Configurações do sistema" />
+      <Tabs defaultValue="fonte" className="min-w-0">
+        <div className="mb-5 overflow-x-auto pb-1">
+          <TabsList className="h-auto min-w-max justify-start">
+            <TabsTrigger value="fonte">Fonte de dados</TabsTrigger>
+            <TabsTrigger value="tarifas">Tarifas de custo</TabsTrigger>
+            <TabsTrigger value="orcamento">Orçamento</TabsTrigger>
+            <TabsTrigger value="vozes">Vozes</TabsTrigger>
+            <TabsTrigger value="prompts">Prompts padrão do sistema</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="fonte">
+          <section className="panel">
+            <h2 className="font-bold">Fonte de dados de produto</h2>
+            <p className="mt-1 text-sm text-muted-foreground">De onde vêm os produtos em alta garimpados na aba “Descobrir”.</p>
+            <div className="mt-5 flex items-center justify-between gap-4 rounded-xl bg-secondary px-4 py-3">
+              <div><p className="text-sm font-semibold">Kalodata</p><p className="text-xs text-muted-foreground">TikTok Shop Brasil · somente produtos com programa de afiliado</p></div>
+              <span className="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold status-lime">Ativa</span>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">As chaves de acesso ficam guardadas com segurança no servidor.</p>
+            <div className="mt-4 border-t pt-4">
+              <p className="text-sm font-semibold">Categorias oficiais do TikTok Shop</p>
+              <p className="mb-3 mt-1 text-xs text-muted-foreground">Usadas nos perfis e produtos. Sincronizadas direto da fonte.</p>
+              <SyncCategoriesButton />
+            </div>
+          </section>
+        </TabsContent>
+        <TabsContent value="tarifas"><TarifasCard /></TabsContent>
+        <TabsContent value="orcamento"><div className="grid gap-4 lg:grid-cols-2"><BudgetCard /></div></TabsContent>
+        <TabsContent value="vozes"><VoicesCard /></TabsContent>
+        <TabsContent value="prompts">
+          <div className="mb-4">
+            <h2 className="font-bold">Prompts padrão do sistema</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Valem como base ao criar novos perfis.</p>
+          </div>
+          <GlobalPromptsSettings />
+        </TabsContent>
+      </Tabs>
+    </>
+  );
+}

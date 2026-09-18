@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,7 +76,7 @@ const emptyForm: FormState = {
   avatarMode: "livre", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value, voiceRef: null,
 };
 
-type TabKey = "dados" | "identidade" | "video" | "pessoa" | "voz" | "prompts";
+type TabKey = "dados" | "identidade" | "video" | "pessoa" | "voz" | "publicacao" | "prompts";
 
 const TABS: { key: TabKey; label: string; hint: string }[] = [
   { key: "dados", label: "Dados do perfil", hint: "Nome, conta, categoria e status" },
@@ -83,6 +84,7 @@ const TABS: { key: TabKey; label: string; hint: string }[] = [
   { key: "video", label: "Geração de vídeo", hint: "Cenas, duração e qualidade" },
   { key: "pessoa", label: "Pessoa / Avatar", hint: "Quem aparece nos vídeos" },
   { key: "voz", label: "Voz", hint: "Voz da narração" },
+  { key: "publicacao", label: "Publicação", hint: "Revisão, alertas e resumos" },
   { key: "prompts", label: "Prompts", hint: "Versões próprias deste perfil" },
 ];
 
@@ -522,6 +524,27 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
             <div className="grid gap-4">
               <SectionTitle title="Voz da narração" description="Escolha a voz usada nos vídeos deste perfil." />
               <VoiceSelect profileId={profile?.id ?? null} value={form.voiceRef} onChange={(voiceRef) => setForm({ ...form, voiceRef })} />
+            </div>
+          )}
+
+          {tab === "publicacao" && (
+            <div className="grid gap-4">
+              <SectionTitle title="Fluxo de publicação" description="Comportamento de publicação deste perfil." />
+              <div>
+                {[
+                  ["Revisão obrigatória", "Exigir aprovação antes de publicar"],
+                  ["Alertas de tendência", "Sinalizar produtos com hype alto"],
+                  ["Resumo semanal", "Receber um resumo de desempenho"],
+                ].map(([title, description], index) => (
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-t py-4" key={title}>
+                    <div>
+                      <p className="text-sm font-semibold">{title}</p>
+                      <p className="text-xs text-muted-foreground">{description}</p>
+                    </div>
+                    <Switch defaultChecked={index < 2} aria-label={title} />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

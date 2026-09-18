@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, ShieldCheck, Sun, PiggyBank, Users, UserSquare2, Wallet, Wand2, X } from "lucide-react";
+import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, ShieldCheck, Sun, PiggyBank, Users, UserSquare2, Wallet, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import logoMarkDarkAsset from "@/assets/logo-mark-dark.png.asset.json";
 const items: readonly (readonly [string, string, typeof CircleGauge, ModuleKey | null])[] = [
   ["Dashboard", "/app", CircleGauge, null], ["Perfis", "/app/perfis", UserSquare2, "perfis"], ["Produtos", "/app/produtos", Package, "produtos"],
   ["Pipeline", "/app/pipeline", KanbanSquare, "pipeline"], ["Vídeos", "/app/videos", Clapperboard, "videos"], ["Rascunhos", "/app/rascunhos", FileClock, "rascunhos"],
-  ["Métricas", "/app/metricas", BarChart3, "metricas"], ["Custos", "/app/custos", Wallet, "custos"], ["Investimento", "/app/investimento", PiggyBank, "investimento"], ["Equipe", "/app/equipe", Users, "equipe"], ["Prompts", "/app/prompts", Wand2, "prompts" as never], ["Aprovações", "/app/aprovacoes", ShieldCheck, "aprovacoes" as never], ["Configurações", "/app/configuracoes", Settings, "configuracoes"],
+  ["Métricas", "/app/metricas", BarChart3, "metricas"], ["Custos", "/app/custos", Wallet, "custos"], ["Investimento", "/app/investimento", PiggyBank, "investimento"], ["Equipe", "/app/equipe", Users, "equipe"], ["Aprovações", "/app/aprovacoes", ShieldCheck, "aprovacoes" as never], ["Configurações", "/app/configuracoes", Settings, "configuracoes"],
 ];
 
 const titles: Record<string, string> = { "/app": "Visão geral", "/app/perfis": "Perfis", "/app/produtos": "Produtos em alta", "/app/pipeline": "Pipeline de conteúdo", "/app/videos": "Biblioteca de vídeos", "/app/rascunhos": "Rascunhos", "/app/metricas": "Métricas", "/app/custos": "Custos", "/app/investimento": "Investimento nos fornecedores", "/app/equipe": "Equipe e permissões", "/app/prompts": "Prompts do sistema", "/app/aprovacoes": "Aprovação de cadastros", "/app/configuracoes": "Configurações" };
@@ -50,8 +50,8 @@ function useVisibleItems() {
   const { isAdmin, isBackoffice, can, activeProfileId } = useStudio();
   return items.filter(([, to, , module]) => {
     if (!module) return true;
-    if (to === "/app/prompts") return isBackoffice || can("perfis", "visualizar", activeProfileId);
     if (to === "/app/aprovacoes") return isBackoffice;
+    if (to === "/app/configuracoes") return isBackoffice;
     if (module === "equipe") return isAdmin;
     if (module === "investimento") return isBackoffice;
     return can(module, "visualizar", activeProfileId);
