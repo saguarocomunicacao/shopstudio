@@ -134,8 +134,15 @@ export function JobDetailDialog({
             <p className="rounded-xl bg-secondary px-4 py-3 text-sm text-destructive">{job.render_error}</p>
           )}
           {job && (job.scenes?.length ?? 0) > 0 && (
-            <JobScenesReview job={job} canEdit={canEdit && job.status === "cenas_geradas"} />
+            <JobScenesReview
+              job={job}
+              canEdit={
+                canEdit &&
+                (job.status === "cenas_geradas" || (job.status === "roteiro_pronto" && !job.render_stage))
+              }
+            />
           )}
+
           {job && <JobVoiceSelect job={job} canEdit={canEdit} />}
           {job && <JobCostSummary jobId={job.id} />}
           {job && <JobTimeline jobId={job.id} />}
