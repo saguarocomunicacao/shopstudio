@@ -38,13 +38,15 @@ type KitRow = {
   video_url: string | null;
   video_path: string | null;
   video_thumbnail_path: string | null;
+  video_storage_status: string | null;
+  video_storage_error: string | null;
   published_url: string | null;
   rejection_reason: string | null;
   product_id: string | null;
 };
 
 const KIT_COLUMNS =
-  "id, profile_id, status, title, caption, hashtags, script, video_url, video_path, video_thumbnail_path, published_url, rejection_reason, product_id";
+  "id, profile_id, status, title, caption, hashtags, script, video_url, video_path, video_thumbnail_path, video_storage_status, video_storage_error, published_url, rejection_reason, product_id";
 
 /** Primeira linha do roteiro: serve de gancho/título sugerido. */
 function hookFromScript(script: string | null) {
