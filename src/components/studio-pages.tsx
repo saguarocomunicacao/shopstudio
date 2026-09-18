@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JOB_STATUS_LABELS, relativeTime, useJobs } from "@/lib/content";
 import { GlobalPromptsSettings } from "./prompts-page";
 import { SyncCategoriesButton } from "./category-select";
+import { ChampionRefsToggle } from "./champion-refs-toggle";
 import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
 
@@ -107,6 +108,11 @@ export function SettingsPage() {
               <p className="text-sm font-semibold">Categorias oficiais do TikTok Shop</p>
               <p className="mb-3 mt-1 text-xs text-muted-foreground">Usadas nos perfis e produtos. Sincronizadas direto da fonte.</p>
               <SyncCategoriesButton />
+            </div>
+            <div className="mt-4 border-t pt-4">
+              <p className="text-sm font-semibold">Roteiro alimentado por campeões</p>
+              <p className="mb-3 mt-1 text-xs text-muted-foreground">Referência de ganchos que já estão vendendo na categoria do produto.</p>
+              <ChampionRefsToggle />
             </div>
           </section>
         </TabsContent>

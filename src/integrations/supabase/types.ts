@@ -315,6 +315,7 @@ export type Database = {
           render_started_at: string | null
           scenes: Json
           script: string | null
+          script_refs: Json
           status: Database["public"]["Enums"]["job_status"]
           title: string
           updated_at: string
@@ -351,6 +352,7 @@ export type Database = {
           render_started_at?: string | null
           scenes?: Json
           script?: string | null
+          script_refs?: Json
           status?: Database["public"]["Enums"]["job_status"]
           title?: string
           updated_at?: string
@@ -387,6 +389,7 @@ export type Database = {
           render_started_at?: string | null
           scenes?: Json
           script?: string | null
+          script_refs?: Json
           status?: Database["public"]["Enums"]["job_status"]
           title?: string
           updated_at?: string
@@ -424,6 +427,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      kalodata_video_refs: {
+        Row: {
+          category_id: string
+          fetched_at: string
+          videos: Json
+        }
+        Insert: {
+          category_id: string
+          fetched_at?: string
+          videos?: Json
+        }
+        Update: {
+          category_id?: string
+          fetched_at?: string
+          videos?: Json
+        }
+        Relationships: []
       }
       permissions: {
         Row: {

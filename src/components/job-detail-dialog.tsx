@@ -20,6 +20,7 @@ import { JobTimeline } from "./job-timeline";
 import { JobCostSummary } from "./job-cost";
 import { JobVoiceSelect } from "./job-voice-select";
 import { JobVideoStorage } from "./job-video-storage";
+import { JobChampionRefs } from "./job-champion-refs";
 import { brl } from "@/lib/custo";
 import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
 
@@ -201,6 +202,7 @@ export function JobDetailDialog({
             />
           )}
 
+          {job && <JobChampionRefs refs={job.script_refs ?? null} />}
           {job && <JobVoiceSelect job={job} canEdit={canEdit && !isPostStage} />}
           {job && <JobCostSummary jobId={job.id} />}
           {job && <JobTimeline jobId={job.id} />}

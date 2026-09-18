@@ -142,10 +142,10 @@ export const generateJobScript = createServerFn({ method: "POST" })
 
     const [{ data: product }, { data: identity }, { data: profile }] = await Promise.all([
       job.product_id
-        ? supabase.from("products").select("name, price, commission, niche, sales_volume, url, description").eq("id", job.product_id).maybeSingle()
+        ? supabase.from("products").select("name, price, commission, niche, category_id, sales_volume, url, description").eq("id", job.product_id).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from("profile_identities").select("tone, language, style_notes").eq("profile_id", job.profile_id).maybeSingle(),
-      supabase.from("profiles").select("name, niche").eq("id", job.profile_id).maybeSingle(),
+      supabase.from("profiles").select("name, niche, category_id").eq("id", job.profile_id).maybeSingle(),
     ]);
 
     const tone = TONE_LABELS[identity?.tone ?? "descontraido"] ?? (identity?.tone ?? "descontraído");
@@ -154,7 +154,7 @@ export const generateJobScript = createServerFn({ method: "POST" })
 
     const { resolvePrompt, renderPrompt } = await import("./prompts.server");
     const template = await resolvePrompt(supabase, job.profile_id, "roteiro");
-    const prompt = renderPrompt(template, {
+    const basePrompt = renderPrompt(template, {
       idioma: language,
       tom_de_voz: tone,
       perfil: profile?.name ?? "",
@@ -168,6 +168,15 @@ export const generateJobScript = createServerFn({ method: "POST" })
       titulo: job.title ?? "",
       observacoes_estilo: styleNotes ?? "",
     });
+
+    // Referência opcional: ganchos dos vídeos que mais venderam na categoria.
+    // Qualquer falha aqui não trava a geração do roteiro.
+    const { championPromptBlock, championRefsEnabled, getChampionVideos } = await import("./champion-videos.server");
+    const campeoes = (await championRefsEnabled())
+      ? await getChampionVideos(product?.category_id ?? profile?.category_id ?? null, job.profile_id)
+      : [];
+    const prompt = `${basePrompt}${championPromptBlock(campeoes)}`;
+
 
     const { script: generated, usage } = await callLovableAi(prompt);
 
@@ -207,7 +216,9 @@ export const generateJobScript = createServerFn({ method: "POST" })
         post_cta: generated.cta,
         caption: generated.caption,
         hashtags: generated.hashtags,
+        script_refs: campeoes as never,
         status: nextStatus,
+
       })
       .eq("id", job.id);
     if (updateError) throw new Error(updateError.message);
