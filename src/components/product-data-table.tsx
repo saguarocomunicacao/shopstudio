@@ -159,7 +159,8 @@ function Details({ item }: { item: ProductTableItem }) {
   );
 }
 
-export function ProductDataTable<T extends ProductTableItem>({ items, renderActions }: ProductDataTableProps<T>) {
+export function ProductDataTable<T extends ProductTableItem>({ items, renderActions, variant = "default" }: ProductDataTableProps<T>) {
+  const rising = variant === "rising";
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
   const toggle = (id: string) => {
