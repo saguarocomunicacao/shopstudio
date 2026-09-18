@@ -179,7 +179,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
       });
     void supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration, voice_ref")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration, voice_ref, require_review")
       .eq("profile_id", profile.id)
       .maybeSingle()
       .then(({ data }) => {
