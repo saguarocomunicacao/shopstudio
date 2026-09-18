@@ -5,7 +5,6 @@ import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbProfile } from "@/lib/access";
@@ -206,22 +205,38 @@ export function ProfilesPage() {
     const canRemove = can("perfis", "remover", p.id);
     if (!canEdit && !canRemove) return null;
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild><Button variant="ghost" size="sm">Gerenciar</Button></DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {canEdit && (
-            <DropdownMenuItem onSelect={() => void navigate({ to: "/app/perfis/$id/editar", params: { id: p.id } })}>
-              <Pencil />Editar
-            </DropdownMenuItem>
-          )}
-          {canEdit && (
-            <DropdownMenuItem onSelect={() => toggleStatus.mutate(p)}>
-              {p.status === "Ativo" ? <><Pause />Pausar</> : <><Play />Reativar</>}
-            </DropdownMenuItem>
-          )}
-          {canRemove && <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setConfirm(p)}><Trash2 />Remover</DropdownMenuItem>}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <>
+        {canEdit && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-8" onClick={() => void navigate({ to: "/app/perfis/$id/editar", params: { id: p.id } })} aria-label="Editar perfil">
+                <Pencil className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Editar</TooltipContent>
+          </Tooltip>
+        )}
+        {canEdit && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-8" onClick={() => toggleStatus.mutate(p)} aria-label={p.status === "Ativo" ? "Pausar perfil" : "Ativar perfil"}>
+                {p.status === "Ativo" ? <Pause className="size-4" /> : <Play className="size-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{p.status === "Ativo" ? "Pausar" : "Ativar"}</TooltipContent>
+          </Tooltip>
+        )}
+        {canRemove && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-8 text-primary hover:text-primary" onClick={() => setConfirm(p)} aria-label="Remover perfil">
+                <Trash2 className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Remover</TooltipContent>
+          </Tooltip>
+        )}
+      </>
     );
   };
 
@@ -317,14 +332,14 @@ export function ProfilesPage() {
       <AlertDialog open={!!confirm} onOpenChange={(open) => !open && setConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover “{confirm?.name}”?</AlertDialogTitle>
+            <AlertDialogTitle>Remover perfil</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação é permanente. O perfil e os acessos da equipe a ele serão apagados.
+              Esta ação é permanente. O perfil “{confirm?.name}” será apagado junto dos acessos da equipe a ele. Jobs e vídeos relacionados a este perfil podem deixar de ser acessíveis. Isso não pode ser desfeito.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); if (confirm) remove.mutate(confirm); }}>Remover</AlertDialogAction>
+            <AlertDialogAction className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.preventDefault(); if (confirm) remove.mutate(confirm); }}>Remover</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
