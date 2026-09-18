@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Mic, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,11 +16,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { VoicePlayButton } from "@/components/voice-play-button";
-import { FONTE_LABELS, GENERO_LABELS, useVoices, type VoiceGenero, type VoiceRow } from "@/lib/voices";
-import { cloneVoice, generateVoicePreview, listElevenLabsVoices } from "@/lib/voices.functions";
+import { GENERO_LABELS, type VoiceGenero, type VoiceRow } from "@/lib/voices";
+import { cloneVoice, listElevenLabsVoices } from "@/lib/voices.functions";
+
+/**
+ * Diálogos compartilhados de cadastro de vozes (catálogo ElevenLabs e
+ * clonagem). As vozes criadas aqui ficam disponíveis para todos os perfis.
+ */
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir.");
 
@@ -32,122 +36,7 @@ const fileToBase64 = (file: File) =>
     reader.readAsDataURL(file);
   });
 
-/** Gestão do catálogo de vozes de narração (somente admin). */
-export function VoicesCard() {
-  const qc = useQueryClient();
-  const { data: voices = [], isLoading } = useVoices();
-  const [catalogOpen, setCatalogOpen] = useState(false);
-  const [cloneOpen, setCloneOpen] = useState(false);
-  const preview = useServerFn(generateVoicePreview);
-
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["voices"] });
-
-  const remove = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("voices").delete().eq("id", id);
-      if (error) throw new Error(error.message);
-    },
-    onSuccess: () => {
-      toast.success("Voz removida.");
-      invalidate();
-    },
-    onError: (e) => toast.error(errMessage(e)),
-  });
-
-  const regenerate = useMutation({
-    mutationFn: async (id: string) => preview({ data: { id } }),
-    onSuccess: () => {
-      toast.success("Preview gerado.");
-      invalidate();
-    },
-    onError: (e) => toast.error(errMessage(e)),
-  });
-
-  return (
-    <section className="panel lg:col-span-2">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-bold">Vozes de narração</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Vozes disponíveis para os perfis: clonadas, do catálogo ElevenLabs e as vozes padrão.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setCatalogOpen(true)}>
-            <Plus className="mr-1.5 h-4 w-4" /> Catálogo ElevenLabs
-          </Button>
-          <Button size="sm" onClick={() => setCloneOpen(true)}>
-            <Mic className="mr-1.5 h-4 w-4" /> Clonar nova voz
-          </Button>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        {isLoading ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Carregando vozes…</p>
-        ) : voices.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Nenhuma voz cadastrada ainda.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Voz</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Gênero</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {voices.map((v: VoiceRow) => (
-                <TableRow key={v.id}>
-                  <TableCell className="font-semibold">
-                    {v.nome}
-                    <span className="block text-xs font-normal text-muted-foreground">{v.voice_id}</span>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{FONTE_LABELS[v.fonte]}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {v.genero ? GENERO_LABELS[v.genero] : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <VoicePlayButton voiceRowId={v.id} previewUrl={v.preview_url} />
-                      {v.fonte !== "azure_padrao" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 rounded-full"
-                          title="Gerar preview"
-                          disabled={regenerate.isPending}
-                          onClick={() => regenerate.mutate(v.id)}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full text-destructive"
-                        title="Remover voz"
-                        onClick={() => remove.mutate(v.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
-
-      <CatalogDialog open={catalogOpen} onOpenChange={setCatalogOpen} existing={voices} onSaved={invalidate} />
-      <CloneDialog open={cloneOpen} onOpenChange={setCloneOpen} onSaved={invalidate} />
-    </section>
-  );
-}
-
-function CatalogDialog({
+export function CatalogDialog({
   open,
   onOpenChange,
   existing,
@@ -242,7 +131,7 @@ function CatalogDialog({
   );
 }
 
-function CloneDialog({
+export function CloneDialog({
   open,
   onOpenChange,
   onSaved,
