@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BadgeCheck, Clapperboard, Images, Loader2, RefreshCw, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { BadgeCheck, Clapperboard, Images, Loader2, LockKeyhole, RefreshCw, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUS_LABELS, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/video.functions";
-import { approveDraft } from "@/lib/drafts.functions";
+import { approveDraft, saveDraftPostTexts } from "@/lib/drafts.functions";
 import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
 import { JobCostSummary } from "./job-cost";
@@ -52,6 +52,7 @@ export function JobDetailDialog({
   const generateScenes = useServerFn(generateJobScenes);
   const approveScenes = useServerFn(approveJobScenes);
   const approveRascunho = useServerFn(approveDraft);
+  const savePostTexts = useServerFn(saveDraftPostTexts);
 
   const [confirmVeo, setConfirmVeo] = useState(false);
   const cenas = Array.isArray(job?.scenes) ? (job!.scenes as unknown[]).length : 0;
@@ -60,17 +61,21 @@ export function JobDetailDialog({
   const orcamentoEstourado = !!gasto?.bloqueado;
 
   const [script, setScript] = useState("");
+  const [postCta, setPostCta] = useState("");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
 
   useEffect(() => {
     if (!job) return;
     setScript(job.script ?? "");
+    setPostCta(job.post_cta ?? "");
     setCaption(job.caption ?? "");
     setHashtags((job.hashtags ?? []).join(" "));
   }, [job]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["jobs"] });
+  const isPostStage = !!job && SHAREABLE_STATUS.includes(job.status);
+  const canEditPostTexts = canEdit && (job?.status === "video_pronto" || job?.status === "rascunho_enviado");
 
   const runGenerate = useMutation({
     mutationFn: async (jobId: string) => generate({ data: { jobId } }),
@@ -107,6 +112,15 @@ export function JobDetailDialog({
       if (error) throw new Error(error.message);
     },
     onSuccess: () => { toast.success("Roteiro salvo."); refresh(); onOpenChange(false); },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const savePost = useMutation({
+    mutationFn: async (jobId: string) => {
+      const tags = hashtags.split(/[\s,]+/).map((tag) => tag.replace(/^#/, "").trim()).filter(Boolean);
+      return savePostTexts({ data: { jobId, postCta, caption, hashtags: tags } });
+    },
+    onSuccess: () => { toast.success("Textos de publicação salvos."); refresh(); },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -167,13 +181,13 @@ export function JobDetailDialog({
             <JobScenesReview
               job={job}
               canEdit={
-                canEdit &&
+                canEdit && !isPostStage &&
                 (job.status === "cenas_geradas" || (job.status === "roteiro_pronto" && !job.render_stage))
               }
             />
           )}
 
-          {job && <JobVoiceSelect job={job} canEdit={canEdit} />}
+          {job && <JobVoiceSelect job={job} canEdit={canEdit && !isPostStage} />}
           {job && <JobCostSummary jobId={job.id} />}
           {job && <JobTimeline jobId={job.id} />}
 
@@ -183,6 +197,37 @@ export function JobDetailDialog({
               <Loader2 className="size-4 animate-spin" />
               Gerando roteiro com inteligência artificial...
             </div>
+          ) : isPostStage ? (
+            <>
+              <section className="grid gap-4 rounded-xl border border-primary/25 bg-primary/5 p-4">
+                <div>
+                  <p className="text-sm font-black text-primary">Textos para postar</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Você pode editar e salvar estes textos sem custo até publicar.</p>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="j-post-cta">CTA / título</Label>
+                  <Input id="j-post-cta" value={postCta} onChange={(e) => setPostCta(e.target.value)} disabled={!canEditPostTexts} placeholder="Chamada curta para a publicação" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="j-caption">Legenda sugerida</Label>
+                  <Textarea id="j-caption" rows={4} value={caption} onChange={(e) => setCaption(e.target.value)} disabled={!canEditPostTexts} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="j-tags">Hashtags</Label>
+                  <Input id="j-tags" value={hashtags} onChange={(e) => setHashtags(e.target.value)} disabled={!canEditPostTexts} placeholder="tiktokshop achadinhos" />
+                </div>
+              </section>
+              <section className="grid gap-3 rounded-xl border bg-secondary/50 p-4">
+                <div className="flex items-start gap-2">
+                  <LockKeyhole className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-black">Conteúdo gerado (referência)</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Roteiro usado na narração (somente leitura). Para mudar a fala, volte a etapa e regenere — essa ação tem custo.</p>
+                  </div>
+                </div>
+                <Textarea aria-label="Roteiro usado na narração" rows={10} value={script} readOnly className="bg-background text-muted-foreground" />
+              </section>
+            </>
           ) : hasScript ? (
             <>
               <div className="grid gap-2">
