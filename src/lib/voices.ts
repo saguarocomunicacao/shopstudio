@@ -15,6 +15,7 @@ export type VoiceRow = {
   voice_id: string;
   genero: VoiceGenero | null;
   profile_id: string | null;
+  owner_id: string | null;
   preview_url: string | null;
   created_at: string;
 };
@@ -33,7 +34,7 @@ export const GENERO_LABELS: Record<VoiceGenero, string> = {
 
 export const PREVIEW_PHRASE = "Oi, essa é a minha voz no Shop Studio.";
 
-const SELECT = "id, nome, fonte, voice_id, genero, profile_id, preview_url, created_at";
+const SELECT = "id, nome, fonte, voice_id, genero, profile_id, owner_id, preview_url, created_at";
 
 /** Vozes globais + as do perfil informado (quando informado). */
 export function useVoices(profileId?: string | null) {

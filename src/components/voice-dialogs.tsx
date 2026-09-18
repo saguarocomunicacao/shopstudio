@@ -58,6 +58,9 @@ export function CatalogDialog({
 
   const save = useMutation({
     mutationFn: async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const ownerId = auth.user?.id;
+      if (!ownerId) throw new Error("Sessão expirada. Entre novamente.");
       const rows = (data?.voices ?? [])
         .filter((v) => selected[v.voiceId])
         .map((v) => ({
@@ -66,6 +69,7 @@ export function CatalogDialog({
           voice_id: v.voiceId,
           genero: v.genero,
           profile_id: null,
+          owner_id: ownerId,
           preview_url: v.previewUrl,
         }));
       if (rows.length === 0) throw new Error("Selecione ao menos uma voz.");
@@ -73,6 +77,7 @@ export function CatalogDialog({
       if (insertError) throw new Error(insertError.message);
       return rows.length;
     },
+
     onSuccess: (count) => {
       toast.success(`${count} ${count === 1 ? "voz adicionada" : "vozes adicionadas"}.`);
       setSelected({});

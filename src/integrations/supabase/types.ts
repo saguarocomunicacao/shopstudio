@@ -844,6 +844,7 @@ export type Database = {
           genero: string | null
           id: string
           nome: string
+          owner_id: string | null
           preview_url: string | null
           profile_id: string | null
           voice_id: string
@@ -855,6 +856,7 @@ export type Database = {
           genero?: string | null
           id?: string
           nome: string
+          owner_id?: string | null
           preview_url?: string | null
           profile_id?: string | null
           voice_id: string
@@ -866,6 +868,7 @@ export type Database = {
           genero?: string | null
           id?: string
           nome?: string
+          owner_id?: string | null
           preview_url?: string | null
           profile_id?: string | null
           voice_id?: string
