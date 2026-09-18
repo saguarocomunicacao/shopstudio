@@ -190,8 +190,8 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
       enriched += 1;
 
       // Fonte sem descrição: a IA de visão descreve o produto pelas fotos reais.
-      const temDescricao = !!(detail.description || (!manual ? null : row.description) || (manual ? row.description : null));
-      if (!temDescricao && images.length) {
+      const descricaoAtual = (manual ? row.description : detail.description || row.description) ?? "";
+      if (!descricaoAtual.trim() && images.length) {
         try {
           const { generateAndSaveDescription } = await import("./product-description.server");
           await generateAndSaveDescription(supabase as never, {
