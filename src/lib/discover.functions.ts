@@ -72,6 +72,7 @@ export const discoverProducts = createServerFn({ method: "POST" })
       ...(data.commissionRate ? { commissionRate: data.commissionRate } : {}),
       ...(data.revenueRange ? { revenueRange: data.revenueRange } : {}),
       ...(data.launchDate ? { launchDate: data.launchDate } : {}),
+      ...(data.categoryIds?.length ? { categoryIds: data.categoryIds } : {}),
       ...(data.deliveryType ? { deliveryType: data.deliveryType } : {}),
     });
     // Consumo real da busca: uma linha por evento, com o termo buscado.
