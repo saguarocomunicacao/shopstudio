@@ -253,6 +253,7 @@ export type Database = {
       }
       jobs: {
         Row: {
+          approved_at: string | null
           caption: string | null
           created_at: string
           created_by: string | null
@@ -262,6 +263,9 @@ export type Database = {
           notes: string | null
           product_id: string | null
           profile_id: string
+          published_at: string | null
+          published_url: string | null
+          rejection_reason: string | null
           render_error: string | null
           render_id: string | null
           render_stage: string | null
@@ -272,11 +276,14 @@ export type Database = {
           title: string
           updated_at: string
           veo_takes_count: number
+          video_path: string | null
+          video_thumbnail_path: string | null
           video_thumbnail_url: string | null
           video_url: string | null
           voice_ref: string | null
         }
         Insert: {
+          approved_at?: string | null
           caption?: string | null
           created_at?: string
           created_by?: string | null
@@ -286,6 +293,9 @@ export type Database = {
           notes?: string | null
           product_id?: string | null
           profile_id: string
+          published_at?: string | null
+          published_url?: string | null
+          rejection_reason?: string | null
           render_error?: string | null
           render_id?: string | null
           render_stage?: string | null
@@ -296,11 +306,14 @@ export type Database = {
           title?: string
           updated_at?: string
           veo_takes_count?: number
+          video_path?: string | null
+          video_thumbnail_path?: string | null
           video_thumbnail_url?: string | null
           video_url?: string | null
           voice_ref?: string | null
         }
         Update: {
+          approved_at?: string | null
           caption?: string | null
           created_at?: string
           created_by?: string | null
@@ -310,6 +323,9 @@ export type Database = {
           notes?: string | null
           product_id?: string | null
           profile_id?: string
+          published_at?: string | null
+          published_url?: string | null
+          rejection_reason?: string | null
           render_error?: string | null
           render_id?: string | null
           render_stage?: string | null
@@ -320,6 +336,8 @@ export type Database = {
           title?: string
           updated_at?: string
           veo_takes_count?: number
+          video_path?: string | null
+          video_thumbnail_path?: string | null
           video_thumbnail_url?: string | null
           video_url?: string | null
           voice_ref?: string | null
@@ -554,6 +572,7 @@ export type Database = {
           created_at: string
           gemini_model: string
           profile_id: string
+          require_review: boolean
           take_duration: number
           takes_count: number
           updated_at: string
@@ -567,6 +586,7 @@ export type Database = {
           created_at?: string
           gemini_model?: string
           profile_id: string
+          require_review?: boolean
           take_duration?: number
           takes_count?: number
           updated_at?: string
@@ -580,6 +600,7 @@ export type Database = {
           created_at?: string
           gemini_model?: string
           profile_id?: string
+          require_review?: boolean
           take_duration?: number
           takes_count?: number
           updated_at?: string

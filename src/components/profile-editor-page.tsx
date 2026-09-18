@@ -85,11 +85,13 @@ type FormState = {
   name: string; handle: string; niche: string; categoryId: string; followers: string; status: string;
   tone: string; language: string; notes: string;
   avatarMode: string; takes: string; duration: string; geminiModel: string; veoModel: string; voiceRef: string | null;
+  requireReview: boolean;
 };
 const emptyForm: FormState = {
   name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo",
   tone: "descontraido", language: "pt-BR", notes: "",
   avatarMode: "livre", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value, voiceRef: null,
+  requireReview: true,
 };
 
 type TabKey = "dados" | "identidade" | "video" | "pessoa" | "voz" | "publicacao" | "prompts";
@@ -111,6 +113,7 @@ const TAB_FIELDS: Partial<Record<TabKey, (keyof FormState)[]>> = {
   video: ["takes", "duration", "geminiModel", "veoModel"],
   pessoa: ["avatarMode"],
   voz: ["voiceRef"],
+  publicacao: ["requireReview"],
 };
 
 export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
@@ -176,7 +179,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
       });
     void supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration, voice_ref")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration, voice_ref, require_review")
       .eq("profile_id", profile.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -194,6 +197,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           geminiModel: data.gemini_model,
           veoModel: data.veo_model,
           voiceRef: data.voice_ref ?? null,
+          requireReview: data.require_review ?? true,
         };
         setForm((f) => ({ ...f, ...patch }));
         setSaved((f) => ({ ...f, ...patch }));
@@ -250,6 +254,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           gemini_model: values.geminiModel,
           veo_model: values.veoModel,
           voice_ref: values.voiceRef,
+          require_review: values.requireReview,
         },
         { onConflict: "profile_id" },
       );
@@ -672,8 +677,19 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
             <div className="grid gap-4">
               <SectionTitle title="Fluxo de publicação" description="Comportamento de publicação deste perfil." />
               <div>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-t py-4">
+                  <div>
+                    <p className="text-sm font-semibold">Revisão obrigatória</p>
+                    <p className="text-xs text-muted-foreground">Exigir aprovação do rascunho antes de marcar como publicado</p>
+                  </div>
+                  <Switch
+                    checked={form.requireReview}
+                    onCheckedChange={(checked) => setForm({ ...form, requireReview: checked })}
+                    disabled={!allowed}
+                    aria-label="Revisão obrigatória"
+                  />
+                </div>
                 {[
-                  ["Revisão obrigatória", "Exigir aprovação antes de publicar"],
                   ["Alertas de tendência", "Sinalizar produtos com hype alto"],
                   ["Resumo semanal", "Receber um resumo de desempenho"],
                 ].map(([title, description], index) => (
@@ -682,7 +698,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                       <p className="text-sm font-semibold">{title}</p>
                       <p className="text-xs text-muted-foreground">{description}</p>
                     </div>
-                    <Switch defaultChecked={index < 2} aria-label={title} />
+                    <Switch defaultChecked={index < 1} aria-label={title} />
                   </div>
                 ))}
               </div>
