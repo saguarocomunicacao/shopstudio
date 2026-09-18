@@ -262,6 +262,23 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
         { onConflict: "profile_id,source,external_id", ignoreDuplicates: true },
       );
       if (error) throw new Error(error.message);
+
+      // Busca a descrição real e as fotos extras dos produtos importados.
+      const { data: rows } = await supabase
+        .from("products")
+        .select("id")
+        .eq("profile_id", activeProfileId ?? "")
+        .in("external_id", fresh.map((i) => i.externalId))
+        .is("description", null)
+        .limit(20);
+      const ids = (rows ?? []).map((r) => r.id);
+      if (ids.length) {
+        try {
+          await enrichDetails({ data: { productIds: ids } });
+        } catch {
+          // Detalhe indisponível não impede o uso do produto.
+        }
+      }
       return fresh.length;
     },
     onSuccess: (count) => {
