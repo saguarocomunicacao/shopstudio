@@ -20,11 +20,16 @@ export type ProductTableItem = {
   productUrl?: string | null;
   /** Texto pronto tipo "há 3 h" com a última atualização dos dados. */
   updatedLabel?: string | null;
+  /** Score de ascensão (0-100), usado só no radar de emergentes. */
+  risingScore?: number | null;
+  revenue?: number | null;
 };
 
 type ProductDataTableProps<T extends ProductTableItem> = {
   items: T[];
   renderActions: (item: T) => ReactNode;
+  /** "rising" troca nicho/hype por crescimento, vendas e score de ascensão. */
+  variant?: "default" | "rising";
 };
 
 const compactNumber = (value: number) =>
