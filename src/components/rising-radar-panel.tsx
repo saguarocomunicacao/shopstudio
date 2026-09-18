@@ -51,6 +51,7 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
 
   const [periodo, setPeriodo] = useState("last7Day");
   const [crescimentoMin, setCrescimentoMin] = useState("50");
+  const [comissaoMin, setComissaoMin] = useState("5");
   const [vendasMax, setVendasMax] = useState("3000");
   const [receitaMax, setReceitaMax] = useState("");
   const [lancamento, setLancamento] = useState(""); // "" | "<7" | "<30"
@@ -62,6 +63,7 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
 
   const run = useMutation({
     mutationFn: async () => {
+      const minCommission = Number(numeric(comissaoMin) || "0");
       const pool: Found[] = [];
       for (let page = 1; page <= POOL_PAGES; page += 1) {
         const res = (await search({
@@ -75,6 +77,7 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
             profileId: activeProfileId,
             ...(lancamento ? { launchDate: lancamento as "<7" } : {}),
             ...(categoria ? { categoryIds: [categoria] } : {}),
+            ...(minCommission > 0 ? { commissionRate: `>${minCommission}` } : {}),
             ...(receitaMax && numeric(receitaMax) ? { revenueRange: `<${numeric(receitaMax)}` } : {}),
           },
         })) as { items: Found[]; hasMore: boolean };
@@ -85,6 +88,7 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
     },
     onSuccess: (pool) => {
       const minGrowth = Number(numeric(crescimentoMin) || "0");
+      const minCommission = Number(numeric(comissaoMin) || "0");
       const maxSales = numeric(vendasMax) ? Number(numeric(vendasMax)) : Infinity;
       const maxRevenue = numeric(receitaMax) ? Number(numeric(receitaMax)) : Infinity;
       const seen = new Set<string>();
@@ -93,7 +97,13 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
           const key = `${item.source}:${item.externalId}`;
           if (seen.has(key)) return false;
           seen.add(key);
-          return item.growthRate >= minGrowth && item.salesVolume <= maxSales && item.revenue <= maxRevenue;
+          return (
+            item.growthRate >= minGrowth &&
+            item.commission > 0 &&
+            item.commission >= minCommission &&
+            item.salesVolume <= maxSales &&
+            item.revenue <= maxRevenue
+          );
         })
         .map((item) => ({
           ...item,
@@ -101,16 +111,18 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
             growthRate: item.growthRate,
             salesVolume: item.salesVolume,
             revenue: item.revenue,
+            commission: item.commission,
             recentLaunch: !!lancamento,
           }),
         }))
         .sort((a, b) => b.risingScore - a.risingScore);
       setResults(scored);
       setSelected({});
-      if (!scored.length) toast.info("Nenhum produto emergente com esses critérios. Reduza o crescimento mínimo ou aumente o teto de vendas.");
+      if (!scored.length) toast.info("Nenhum produto emergente com esses critérios. Reduza o crescimento ou a comissão mínima.");
     },
     onError: (e) => toast.error(errMessage(e)),
   });
+
 
   const save = useMutation({
     mutationFn: async (items: Scored[]) => {
