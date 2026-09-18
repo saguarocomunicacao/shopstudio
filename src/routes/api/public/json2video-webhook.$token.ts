@@ -77,16 +77,18 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
               video_url: url,
               video_thumbnail_url: thumbnail,
               render_error: null,
+              video_storage_status: "pendente",
+              video_storage_error: null,
+              video_storage_updated_at: new Date().toISOString(),
             })
             .eq("id", job.id);
 
           // O JSON2Video apaga o arquivo em 7 dias: guardamos uma cópia nossa.
-          try {
-            const drafts = await import("@/lib/drafts.functions");
-            await drafts.storeJobVideo(job.id, url, thumbnail);
-          } catch {
-            // Falha na cópia não pode derrubar o job; a fila tenta de novo.
-          }
+          // A cópia roda fora da resposta do webhook; a rotina agendada cobre o que falhar.
+          const { ensureJobVideoStoredWithRetry } = await import("@/lib/video-storage.server");
+          void ensureJobVideoStoredWithRetry(job.id).catch((e) => {
+            console.error(`[video-storage] cópia em background do job ${job.id} falhou:`, e);
+          });
         } else {
           await supabaseAdmin
             .from("jobs")
