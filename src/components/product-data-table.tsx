@@ -3,6 +3,7 @@ import { Fragment, type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatPrice } from "@/lib/content";
+import { RISING_BADGE_THRESHOLD } from "@/lib/radar";
 
 export type ProductTableItem = {
   id: string;
@@ -20,11 +21,16 @@ export type ProductTableItem = {
   productUrl?: string | null;
   /** Texto pronto tipo "há 3 h" com a última atualização dos dados. */
   updatedLabel?: string | null;
+  /** Score de ascensão (0-100), usado só no radar de emergentes. */
+  risingScore?: number | null;
+  revenue?: number | null;
 };
 
 type ProductDataTableProps<T extends ProductTableItem> = {
   items: T[];
   renderActions: (item: T) => ReactNode;
+  /** "rising" troca nicho/hype por crescimento, vendas e score de ascensão. */
+  variant?: "default" | "rising";
 };
 
 const compactNumber = (value: number) =>
@@ -72,6 +78,27 @@ function HypeScore({ value }: { value: number }) {
         <div className="h-full rounded-full bg-primary" style={{ width: `${safeValue}%` }} />
       </div>
       <b className="w-7 text-right text-xs">{Math.round(safeValue)}</b>
+    </div>
+  );
+}
+
+function GrowthBadge({ value }: { value: number }) {
+  return (
+    <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-1 text-sm font-bold tabular-nums text-primary">
+      <TrendingUp className="size-3.5" aria-hidden="true" />
+      {Math.round(value)}%
+    </span>
+  );
+}
+
+function RisingScore({ value }: { value: number }) {
+  const safeValue = Math.min(100, Math.max(0, value));
+  return (
+    <div className="grid gap-1">
+      <HypeScore value={safeValue} />
+      {safeValue >= RISING_BADGE_THRESHOLD ? (
+        <span className="w-fit rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-primary-foreground">Em ascensão</span>
+      ) : null}
     </div>
   );
 }
@@ -132,7 +159,8 @@ function Details({ item }: { item: ProductTableItem }) {
   );
 }
 
-export function ProductDataTable<T extends ProductTableItem>({ items, renderActions }: ProductDataTableProps<T>) {
+export function ProductDataTable<T extends ProductTableItem>({ items, renderActions, variant = "default" }: ProductDataTableProps<T>) {
+  const rising = variant === "rising";
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
   const toggle = (id: string) => {
@@ -150,17 +178,17 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
         <table className="w-full min-w-[860px] table-fixed text-left text-sm">
           <colgroup>
             <col className="w-10" /><col className="w-16" /><col /><col className="w-28" />
-            <col className="w-20" /><col className="w-36" /><col className="w-36" /><col className="w-52" />
+            <col className="w-20" /><col className="w-36" /><col className="w-40" /><col className="w-52" />
           </colgroup>
           <thead>
             <tr className="border-b text-xs text-muted-foreground">
               <th className="px-1 pb-3"><span className="sr-only">Expandir</span></th>
               <th className="px-2 pb-3 font-medium">Foto</th>
               <th className="px-3 pb-3 font-medium">Produto</th>
-              <th className="px-3 pb-3 font-medium">Nicho</th>
-              <th className="px-3 pb-3 text-right font-medium">Preço</th>
+              <th className="px-3 pb-3 font-medium">{rising ? "Crescimento" : "Nicho"}</th>
+              <th className="px-3 pb-3 text-right font-medium">{rising ? "Vendas" : "Preço"}</th>
               <th className="px-3 pb-3 font-medium">Comissão</th>
-              <th className="px-3 pb-3 font-medium">Hype score</th>
+              <th className="px-3 pb-3 font-medium">{rising ? "Score de ascensão" : "Hype score"}</th>
               <th className="px-1 pb-3 text-right font-medium">Ação</th>
             </tr>
           </thead>
@@ -177,10 +205,18 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
                     </td>
                     <td className="px-2 py-2"><ProductImage item={item} /></td>
                     <td className="min-w-0 px-3 py-2"><ProductName item={item} /></td>
-                    <td className="px-3 py-2"><span className="block truncate text-muted-foreground" title={productCategory(item)}>{productCategory(item)}</span></td>
-                    <td className="px-3 py-2 text-right font-semibold tabular-nums">{formatPrice(item.price)}</td>
+                    <td className="px-3 py-2">
+                      {rising
+                        ? <GrowthBadge value={item.growthRate ?? 0} />
+                        : <span className="block truncate text-muted-foreground" title={productCategory(item)}>{productCategory(item)}</span>}
+                    </td>
+                    <td className="px-3 py-2 text-right font-semibold tabular-nums">
+                      {rising ? compactNumber(item.salesVolume ?? 0) : formatPrice(item.price)}
+                    </td>
                     <td className="px-3 py-2"><Commission item={item} /></td>
-                    <td className="px-3 py-2"><HypeScore value={item.hype} /></td>
+                    <td className="px-3 py-2">
+                      {rising ? <RisingScore value={item.risingScore ?? 0} /> : <HypeScore value={item.hype} />}
+                    </td>
                     <td className="px-1 py-2"><div className="flex items-center justify-end gap-2.5">{renderActions(item)}</div></td>
                   </tr>
                   {isExpanded && <tr className="border-b"><td colSpan={8} className="px-3 py-3"><Details item={item} /></td></tr>}
@@ -208,9 +244,19 @@ export function ProductDataTable<T extends ProductTableItem>({ items, renderActi
                 <div className="flex shrink-0 items-center justify-end gap-2">{renderActions(item)}</div>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-3 border-t pt-3 text-xs sm:grid-cols-3">
-                <div><p className="text-muted-foreground">Preço</p><p className="mt-1 font-semibold tabular-nums">{formatPrice(item.price)}</p></div>
-                <div><p className="text-muted-foreground">Comissão</p><div className="mt-1"><Commission item={item} /></div></div>
-                <div className="col-span-2 sm:col-span-1"><p className="text-muted-foreground">Hype score</p><div className="mt-2"><HypeScore value={item.hype} /></div></div>
+                {rising ? (
+                  <>
+                    <div><p className="text-muted-foreground">Crescimento</p><div className="mt-1"><GrowthBadge value={item.growthRate ?? 0} /></div></div>
+                    <div><p className="text-muted-foreground">Vendas</p><p className="mt-1 font-semibold tabular-nums">{compactNumber(item.salesVolume ?? 0)}</p></div>
+                    <div className="col-span-2 sm:col-span-1"><p className="text-muted-foreground">Score de ascensão</p><div className="mt-2"><RisingScore value={item.risingScore ?? 0} /></div></div>
+                  </>
+                ) : (
+                  <>
+                    <div><p className="text-muted-foreground">Preço</p><p className="mt-1 font-semibold tabular-nums">{formatPrice(item.price)}</p></div>
+                    <div><p className="text-muted-foreground">Comissão</p><div className="mt-1"><Commission item={item} /></div></div>
+                    <div className="col-span-2 sm:col-span-1"><p className="text-muted-foreground">Hype score</p><div className="mt-2"><HypeScore value={item.hype} /></div></div>
+                  </>
+                )}
               </div>
               {isExpanded && <div className="mt-3 border-t pt-3"><Details item={item} /></div>}
             </article>

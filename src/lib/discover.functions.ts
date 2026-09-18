@@ -19,6 +19,7 @@ const schema = z.object({
   commissionRate: faixa,
   revenueRange: faixa,
   launchDate: z.enum(["<3", "<7", "<30", ">30"]).optional(),
+  categoryIds: z.array(z.string().min(1)).max(10).optional(),
   deliveryType: z.enum(["local", "global"]).optional(),
   needAll: z.boolean().default(false),
   page: z.number().int().min(1).max(20).default(1),
@@ -71,6 +72,7 @@ export const discoverProducts = createServerFn({ method: "POST" })
       ...(data.commissionRate ? { commissionRate: data.commissionRate } : {}),
       ...(data.revenueRange ? { revenueRange: data.revenueRange } : {}),
       ...(data.launchDate ? { launchDate: data.launchDate } : {}),
+      ...(data.categoryIds?.length ? { categoryIds: data.categoryIds } : {}),
       ...(data.deliveryType ? { deliveryType: data.deliveryType } : {}),
     });
     // Consumo real da busca: uma linha por evento, com o termo buscado.
