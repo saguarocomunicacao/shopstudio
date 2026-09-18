@@ -292,27 +292,37 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
       qc.invalidateQueries({ queryKey: ["video-settings"] });
     },
     onError: (e) => toast.error(errMessage(e)),
+    onSettled: () => setPendingAvatars([]),
   });
 
-  const pickAvatarFiles = async (files: FileList | null) => {
-    if (!files?.length) return;
+  const pickAvatarFiles = async (files: FileList | File[] | null) => {
+    const list = files ? Array.from(files) : [];
+    if (!list.length) return;
     const free = MAX_AVATARS - avatarItems.length;
     if (free <= 0) {
       toast.error(`Máximo de ${MAX_AVATARS} fotos. Remova uma para enviar outra.`);
       return;
     }
-    const chosen = Array.from(files)
-      .filter((f) => ["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(f.type))
-      .slice(0, free);
-    if (!chosen.length) {
-      toast.error("Envie imagens JPG ou PNG.");
-      return;
+
+    const rejects: { id: string; name: string; reason: string }[] = [];
+    const accepted: File[] = [];
+    for (const file of list) {
+      const id = `${file.name}-${file.size}-${Math.random().toString(36).slice(2, 8)}`;
+      if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)) {
+        rejects.push({ id, name: file.name, reason: "Formato inválido (use JPG ou PNG)" });
+      } else if (file.size > 5 * 1024 * 1024) {
+        rejects.push({ id, name: file.name, reason: "Maior que 5 MB" });
+      } else if (accepted.length >= free) {
+        rejects.push({ id, name: file.name, reason: `Limite de ${MAX_AVATARS} fotos` });
+      } else {
+        accepted.push(file);
+      }
     }
-    if (chosen.some((f) => f.size > 5 * 1024 * 1024)) {
-      toast.error("Cada foto precisa ter até 5 MB.");
-      return;
-    }
-    const read = await Promise.all(chosen.map(readFile));
+    setRejectedAvatars(rejects);
+    if (!accepted.length) return;
+
+    const read = await Promise.all(accepted.map(readFile));
+    setPendingAvatars(read);
     const small = read.filter((r) => r.width && r.height && Math.min(r.width, r.height) < MIN_AVATAR_SIDE);
     if (small.length) {
       toast.warning(
@@ -323,6 +333,14 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
     }
     uploadAvatars.mutate([...avatarItems, ...read]);
   };
+
+  const onAvatarDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (!profile || uploadAvatars.isPending || avatarItems.length >= MAX_AVATARS) return;
+    void pickAvatarFiles(e.dataTransfer.files);
+  };
+
 
   const goBack = () => void navigate({ to: "/app/perfis" });
 
