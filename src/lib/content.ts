@@ -22,6 +22,7 @@ export type DbProduct = {
   category_id: string | null;
   description: string | null;
   extra_image_urls: string[] | null;
+  updated_at?: string | null;
 };
 
 export type DbCategory = { category_id: string; category_name: string; level: number; parent_id: string | null };
