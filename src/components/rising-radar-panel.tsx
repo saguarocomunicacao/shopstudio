@@ -124,6 +124,50 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
   });
 
 
+  /** Grava os produtos no catálogo do perfil ativo e devolve as linhas salvas. */
+  const saveToCatalog = async (items: Scored[]) => {
+    const { error } = await supabase.from("products").upsert(
+      items.map((i) => ({
+        name: i.name,
+        niche: i.category,
+        category_id: categoryIdFor(i.category),
+        price: i.price,
+        commission: i.commission,
+        url: i.productUrl,
+        hype: i.hype,
+        status: "Ativo",
+        image_url: i.imageUrl,
+        seller_name: i.sellerName,
+        sales_volume: i.salesVolume,
+        growth_rate: i.growthRate,
+        revenue: i.revenue,
+        origin: "garimpo",
+        source: i.source,
+        external_id: i.externalId,
+        created_by: userId,
+        profile_id: activeProfileId,
+      })),
+      { onConflict: "profile_id,source,external_id", ignoreDuplicates: true },
+    );
+    if (error) throw new Error(error.message);
+
+    const { data: rows } = await supabase
+      .from("products")
+      .select("id, external_id, description")
+      .eq("profile_id", activeProfileId ?? "")
+      .in("external_id", items.map((i) => i.externalId));
+    const found = rows ?? [];
+    const ids = found.filter((r) => !r.description).map((r) => r.id).slice(0, 20);
+    if (ids.length) {
+      try {
+        await enrichDetails({ data: { productIds: ids } });
+      } catch {
+        // Detalhe indisponível não impede o uso do produto.
+      }
+    }
+    return found;
+  };
+
   const save = useMutation({
     mutationFn: async (items: Scored[]) => {
       const seen = new Set<string>();
@@ -134,46 +178,7 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
         return true;
       });
       if (!fresh.length) throw new Error("Todos os selecionados já estão no catálogo.");
-      const { error } = await supabase.from("products").upsert(
-        fresh.map((i) => ({
-          name: i.name,
-          niche: i.category,
-          category_id: categoryIdFor(i.category),
-          price: i.price,
-          commission: i.commission,
-          url: i.productUrl,
-          hype: i.hype,
-          status: "Ativo",
-          image_url: i.imageUrl,
-          seller_name: i.sellerName,
-          sales_volume: i.salesVolume,
-          growth_rate: i.growthRate,
-          revenue: i.revenue,
-          origin: "garimpo",
-          source: i.source,
-          external_id: i.externalId,
-          created_by: userId,
-          profile_id: activeProfileId,
-        })),
-        { onConflict: "profile_id,source,external_id", ignoreDuplicates: true },
-      );
-      if (error) throw new Error(error.message);
-
-      const { data: rows } = await supabase
-        .from("products")
-        .select("id")
-        .eq("profile_id", activeProfileId ?? "")
-        .in("external_id", fresh.map((i) => i.externalId))
-        .is("description", null)
-        .limit(20);
-      const ids = (rows ?? []).map((r) => r.id);
-      if (ids.length) {
-        try {
-          await enrichDetails({ data: { productIds: ids } });
-        } catch {
-          // Detalhe indisponível não impede o uso do produto.
-        }
-      }
+      await saveToCatalog(fresh);
       return fresh.length;
     },
     onSuccess: (count) => {
@@ -184,7 +189,32 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
     onError: (e) => toast.error(errMessage(e)),
   });
 
+  /** "Usar": salva no catálogo (se preciso) e já cria o job no perfil ativo. */
+  const use = useMutation({
+    mutationFn: async (item: Scored) => {
+      if (!activeProfileId) throw new Error("Selecione um perfil no seletor acima.");
+      const rows = await saveToCatalog([item]);
+      const row = rows.find((r) => r.external_id === item.externalId);
+      if (!row) throw new Error("Não foi possível salvar o produto no catálogo.");
+      const { error } = await supabase.from("jobs").insert({
+        product_id: row.id,
+        profile_id: activeProfileId,
+        status: "produto_escolhido",
+        title: item.name,
+        created_by: userId,
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Job criado na etapa “Produto escolhido”.");
+      qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+      qc.invalidateQueries({ queryKey: ["jobs", activeProfileId] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
   const selectedItems = (results ?? []).filter((r) => selected[r.externalId]);
+
 
   return (
     <div className="space-y-4">
