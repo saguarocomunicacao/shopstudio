@@ -27,17 +27,6 @@ const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi p
 /** A partir de "vídeo pronto" o job já pode ser compartilhado por link público. */
 const SHAREABLE_STATUS: DbJob["status"][] = ["video_pronto", "rascunho_enviado", "publicado"];
 
-function publicationTitleFromScript(script: string | null) {
-  if (!script) return "";
-  const lines = script.replace(/\r/g, "").split("\n").map((line) => line.trim()).filter(Boolean);
-  const hookIndex = lines.findIndex((line) => /^gancho/i.test(line));
-  if (hookIndex < 0) return lines[0] ?? "";
-  const hookLine = lines[hookIndex];
-  if (!hookLine) return "";
-  const inline = hookLine.replace(/^gancho(?:\s*\([^)]*\))?\s*[:\-–]?\s*/i, "").trim();
-  return inline || lines[hookIndex + 1] || "";
-}
-
 export function JobDetailDialog({
   job,
   productName,
@@ -71,6 +60,7 @@ export function JobDetailDialog({
   const orcamentoEstourado = !!gasto?.bloqueado;
 
   const [script, setScript] = useState("");
+  const [hook, setHook] = useState("");
   const [postCta, setPostCta] = useState("");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
@@ -78,7 +68,8 @@ export function JobDetailDialog({
   useEffect(() => {
     if (!job) return;
     setScript(job.script ?? "");
-    setPostCta(job.post_cta ?? publicationTitleFromScript(job.script));
+    setHook(job.hook ?? "");
+    setPostCta(job.post_cta ?? "");
     setCaption(job.caption ?? "");
     setHashtags((job.hashtags ?? []).join(" "));
   }, [job]);
@@ -91,6 +82,8 @@ export function JobDetailDialog({
     mutationFn: async (jobId: string) => generate({ data: { jobId } }),
     onSuccess: (result) => {
       setScript(`GANCHO (0-3s)\n${result.hook}\n\nCORPO\n${result.body}\n\nCTA\n${result.cta}`);
+      setHook(result.hook);
+      setPostCta(result.cta);
       setCaption(result.caption);
       setHashtags(result.hashtags.join(" "));
       toast.success("Roteiro gerado.");
@@ -128,7 +121,7 @@ export function JobDetailDialog({
   const savePost = useMutation({
     mutationFn: async (jobId: string) => {
       const tags = hashtags.split(/[\s,]+/).map((tag) => tag.replace(/^#/, "").trim()).filter(Boolean);
-      return savePostTexts({ data: { jobId, postCta, caption, hashtags: tags } });
+      return savePostTexts({ data: { jobId, hook, postCta, caption, hashtags: tags } });
     },
     onSuccess: () => { toast.success("Textos de publicação salvos."); refresh(); },
     onError: (e) => toast.error(errMessage(e)),
@@ -225,7 +218,11 @@ export function JobDetailDialog({
                   <p className="mt-1 text-xs text-muted-foreground">Você pode editar e salvar estes textos sem custo até publicar.</p>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="j-post-cta">CTA / título</Label>
+                  <Label htmlFor="j-hook">Título / gancho</Label>
+                  <Input id="j-hook" value={hook} onChange={(e) => setHook(e.target.value)} disabled={!canEditPostTexts} placeholder="Frase de abertura da publicação" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="j-post-cta">CTA final</Label>
                   <Input id="j-post-cta" value={postCta} onChange={(e) => setPostCta(e.target.value)} disabled={!canEditPostTexts} placeholder="Chamada curta para a publicação" />
                 </div>
                 <div className="grid gap-2">

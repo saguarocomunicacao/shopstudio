@@ -262,6 +262,7 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
   const [postUrl, setPostUrl] = useState("");
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
+  const [hook, setHook] = useState("");
   const [postCta, setPostCta] = useState("");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
@@ -273,6 +274,7 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
 
   useEffect(() => {
     if (!kit.data) return;
+    setHook(kit.data.hook);
     setPostCta(kit.data.postCta);
     setCaption(kit.data.caption);
     setHashtags(kit.data.hashtags.join(" "));
@@ -295,7 +297,7 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
   const saveTexts = useMutation({
     mutationFn: () => {
       const tags = hashtags.split(/[\s,]+/).map((tag) => tag.replace(/^#/, "").trim()).filter(Boolean);
-      return savePostTexts({ data: { jobId, postCta, caption, hashtags: tags } });
+      return savePostTexts({ data: { jobId, hook, postCta, caption, hashtags: tags } });
     },
     onSuccess: () => {
       toast.success("Textos de publicação salvos.");
@@ -417,7 +419,8 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
                     : "Edite, salve e copie estes textos sem custo antes de publicar."}
                 </p>
               </div>
-              <PostTextField id="draft-post-cta" title="CTA / título" value={postCta} onChange={setPostCta} readOnly={data.status === "publicado"} />
+              <PostTextField id="draft-hook" title="Título / gancho" value={hook} onChange={setHook} readOnly={data.status === "publicado"} />
+              <PostTextField id="draft-post-cta" title="CTA final" value={postCta} onChange={setPostCta} readOnly={data.status === "publicado"} />
               <PostTextField id="draft-caption" title="Legenda sugerida" value={caption} onChange={setCaption} readOnly={data.status === "publicado"} multiline />
               <PostTextField id="draft-hashtags" title="Hashtags" value={hashtags} onChange={setHashtags} readOnly={data.status === "publicado"} multiline />
               {data.status !== "publicado" && (

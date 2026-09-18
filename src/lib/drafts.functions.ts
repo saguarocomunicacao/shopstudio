@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { extractHookFromScript } from "@/lib/script-parser";
 
 /**
  * Fila de rascunhos: o vídeo renderizado é copiado para o nosso bucket privado
@@ -32,6 +33,7 @@ type KitRow = {
   profile_id: string;
   status: string;
   title: string;
+  hook: string | null;
   post_cta: string | null;
   caption: string | null;
   hashtags: string[] | null;
@@ -47,21 +49,7 @@ type KitRow = {
 };
 
 const KIT_COLUMNS =
-  "id, profile_id, status, title, post_cta, caption, hashtags, script, video_url, video_path, video_thumbnail_path, video_storage_status, video_storage_error, published_url, rejection_reason, product_id";
-
-/** Primeira linha do roteiro: serve de gancho/título sugerido. */
-function hookFromScript(script: string | null) {
-  if (!script) return null;
-  const lines = script.replace(/\r/g, "").split("\n").map((l) => l.trim()).filter(Boolean);
-  const hook = lines.find((l) => /^gancho/i.test(l));
-  if (hook) {
-    const inline = hook.replace(/^gancho\s*[:\-–]?\s*/i, "").trim();
-    if (inline) return inline;
-    const idx = lines.indexOf(hook);
-    return lines[idx + 1] ?? null;
-  }
-  return lines[0] ?? null;
-}
+  "id, profile_id, status, title, hook, post_cta, caption, hashtags, script, video_url, video_path, video_thumbnail_path, video_storage_status, video_storage_error, published_url, rejection_reason, product_id";
 
 /** Kit de postagem de um rascunho: vídeo do nosso storage + textos prontos. */
 export const getDraftKit = createServerFn({ method: "POST" })
@@ -105,7 +93,8 @@ export const getDraftKit = createServerFn({ method: "POST" })
       id: row.id,
       status: row.status,
       title: row.title,
-      postCta: row.post_cta ?? hookFromScript(row.script) ?? "",
+      hook: row.hook ?? extractHookFromScript(row.script) ?? "",
+      postCta: row.post_cta ?? "",
       caption: row.caption ?? "",
       hashtags: row.hashtags ?? [],
       script: row.script ?? "",
@@ -129,6 +118,7 @@ export const saveDraftPostTexts = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
     z.object({
       jobId: z.string().uuid(),
+      hook: z.string().trim().max(500),
       postCta: z.string().trim().max(500),
       caption: z.string().trim().max(5000),
       hashtags: z.array(z.string().trim().min(1).max(100)).max(30),
@@ -149,6 +139,7 @@ export const saveDraftPostTexts = createServerFn({ method: "POST" })
     const { error } = await context.supabase
       .from("jobs")
       .update({
+        hook: data.hook || null,
         post_cta: data.postCta,
         caption: data.caption || null,
         hashtags: data.hashtags,

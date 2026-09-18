@@ -300,6 +300,7 @@ export type Database = {
           created_by: string | null
           gemini_images_count: number
           hashtags: string[] | null
+          hook: string | null
           id: string
           notes: string | null
           post_cta: string | null
@@ -335,6 +336,7 @@ export type Database = {
           created_by?: string | null
           gemini_images_count?: number
           hashtags?: string[] | null
+          hook?: string | null
           id?: string
           notes?: string | null
           post_cta?: string | null
@@ -370,6 +372,7 @@ export type Database = {
           created_by?: string | null
           gemini_images_count?: number
           hashtags?: string[] | null
+          hook?: string | null
           id?: string
           notes?: string | null
           post_cta?: string | null
