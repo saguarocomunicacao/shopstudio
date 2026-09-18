@@ -206,22 +206,38 @@ export function ProfilesPage() {
     const canRemove = can("perfis", "remover", p.id);
     if (!canEdit && !canRemove) return null;
     return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild><Button variant="ghost" size="sm">Gerenciar</Button></DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {canEdit && (
-            <DropdownMenuItem onSelect={() => void navigate({ to: "/app/perfis/$id/editar", params: { id: p.id } })}>
-              <Pencil />Editar
-            </DropdownMenuItem>
-          )}
-          {canEdit && (
-            <DropdownMenuItem onSelect={() => toggleStatus.mutate(p)}>
-              {p.status === "Ativo" ? <><Pause />Pausar</> : <><Play />Reativar</>}
-            </DropdownMenuItem>
-          )}
-          {canRemove && <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setConfirm(p)}><Trash2 />Remover</DropdownMenuItem>}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <>
+        {canEdit && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-8" onClick={() => void navigate({ to: "/app/perfis/$id/editar", params: { id: p.id } })} aria-label="Editar perfil">
+                <Pencil className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Editar</TooltipContent>
+          </Tooltip>
+        )}
+        {canEdit && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-8" onClick={() => toggleStatus.mutate(p)} aria-label={p.status === "Ativo" ? "Pausar perfil" : "Ativar perfil"}>
+                {p.status === "Ativo" ? <Pause className="size-4" /> : <Play className="size-4" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{p.status === "Ativo" ? "Pausar" : "Ativar"}</TooltipContent>
+          </Tooltip>
+        )}
+        {canRemove && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-8 text-primary hover:text-primary" onClick={() => setConfirm(p)} aria-label="Remover perfil">
+                <Trash2 className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Remover</TooltipContent>
+          </Tooltip>
+        )}
+      </>
     );
   };
 
