@@ -1,4 +1,3 @@
-import { VoicesCard } from "@/components/voices-card";
 import { TarifasCard } from "./tarifas-card";
 import { BudgetCard } from "./budget-card";
 import { CheckCircle2, CircleDollarSign, FileClock, Loader2, MoreHorizontal, Plus, Video } from "lucide-react";
@@ -97,7 +96,6 @@ export function SettingsPage() {
             <TabsTrigger value="fonte">Fonte de dados</TabsTrigger>
             <TabsTrigger value="tarifas">Tarifas de custo</TabsTrigger>
             <TabsTrigger value="orcamento">Orçamento</TabsTrigger>
-            <TabsTrigger value="vozes">Vozes</TabsTrigger>
             <TabsTrigger value="prompts">Prompts padrão do sistema</TabsTrigger>
           </TabsList>
         </div>
@@ -120,7 +118,6 @@ export function SettingsPage() {
         </TabsContent>
         <TabsContent value="tarifas"><TarifasCard /></TabsContent>
         <TabsContent value="orcamento"><div className="grid gap-4 lg:grid-cols-2"><BudgetCard /></div></TabsContent>
-        <TabsContent value="vozes"><VoicesCard /></TabsContent>
         <TabsContent value="prompts">
           <div className="mb-4">
             <h2 className="font-bold">Prompts padrão do sistema</h2>
