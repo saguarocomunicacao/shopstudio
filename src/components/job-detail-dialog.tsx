@@ -17,6 +17,7 @@ import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
 import { JobCostSummary } from "./job-cost";
 import { JobVoiceSelect } from "./job-voice-select";
+import { SharePanel } from "./share-panel";
 import { brl } from "@/lib/custo";
 import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
 
