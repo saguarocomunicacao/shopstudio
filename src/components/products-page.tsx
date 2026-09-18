@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { supabase } from "@/integrations/supabase/client";
 import { useProducts, type DbProduct } from "@/lib/content";
 import { enrichProductDetails } from "@/lib/discover.functions";
+import { generateProductDescription } from "@/lib/product-description.functions";
 import { DiscoverPanel } from "./discover-panel";
 import { ProductDataTable } from "./product-data-table";
 import { ProfileGate } from "./profile-gate";
