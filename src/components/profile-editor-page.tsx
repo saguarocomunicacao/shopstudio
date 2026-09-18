@@ -113,6 +113,7 @@ const TAB_FIELDS: Partial<Record<TabKey, (keyof FormState)[]>> = {
   video: ["takes", "duration", "geminiModel", "veoModel"],
   pessoa: ["avatarMode"],
   voz: ["voiceRef"],
+  publicacao: ["requireReview"],
 };
 
 export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
