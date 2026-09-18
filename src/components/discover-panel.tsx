@@ -142,6 +142,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
   const categoryIdFor = (name: string) =>
     categories.find((c) => normalize(c.category_name) === normalize(name))?.category_id ?? null;
   const search = useServerFn(discoverProducts);
+  const enrichDetails = useServerFn(enrichProductDetails);
 
   const [filters, setFilters] = useState<Filters>(readFilters);
   const [results, setResults] = useState<Found[] | null>(null);
