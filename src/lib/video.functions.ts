@@ -31,6 +31,7 @@ type JobRow = {
   scenes: unknown;
   gemini_images_count: number;
   veo_takes_count: number;
+  voice_ref: string | null;
 };
 
 /** Quebra o roteiro salvo (GANCHO / CORPO / CTA) nos blocos narrados. */
@@ -93,7 +94,7 @@ async function resolveElevenLabsVoice(
 async function loadJob(supabase: any, jobId: string): Promise<JobRow> {
   const { data: job, error } = await supabase
     .from("jobs")
-    .select("id, product_id, profile_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count")
+    .select("id, product_id, profile_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref")
     .eq("id", jobId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -334,7 +335,8 @@ async function runStep(
     gemini_model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
     veo_model: settingsRow?.veo_model ?? "veo-3.1-fast-generate-preview",
     take_duration: settingsRow?.take_duration ?? 8,
-    voice_ref: settingsRow?.voice_ref ?? null,
+    // Voz efetiva: a escolhida no job vence a voz padrão do perfil.
+    voice_ref: job.voice_ref ?? settingsRow?.voice_ref ?? null,
   };
   const language = identity?.language || "pt-BR";
 
