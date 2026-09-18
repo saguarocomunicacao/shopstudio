@@ -121,9 +121,10 @@ function useJobsDoPeriodo(jobIds: string[]) {
 }
 
 export function CostsPage() {
-  const { profiles, activeProfileId, isAdmin, can } = useStudio();
-  const podeVer = isAdmin || can("custos", "visualizar", activeProfileId);
-  const podeVerGlobal = isAdmin || can("custos", "ver_global");
+  const { profiles, activeProfileId, isBackoffice, can } = useStudio();
+  const podeVer = isBackoffice || can("custos", "visualizar", activeProfileId);
+  // Visão "Todos os perfis" e orçamento são dados internos da operação: só backoffice.
+  const podeVerGlobal = isBackoffice;
   const [periodo, setPeriodo] = useState<PeriodoKey>("mes");
   const [de, setDe] = useState(iso(startOfToday()));
   const [ate, setAte] = useState(iso(startOfToday()));
