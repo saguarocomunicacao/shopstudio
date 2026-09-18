@@ -263,9 +263,49 @@ function ProductsContent() {
                 <DetailRow label="Crescimento">{details.growth_rate ? `${details.growth_rate}%` : "—"}</DetailRow>
               </div>
               <DetailRow label="Descrição usada pela IA">
-                {details.description
-                  ? <p className="max-h-40 overflow-y-auto whitespace-pre-line text-sm font-normal text-muted-foreground">{details.description}</p>
-                  : <span className="text-muted-foreground">Sem descrição. A IA só conhece o nome e a foto principal deste produto.</span>}
+                <div className="grid gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <OriginBadge origem={details.description_origem} temDescricao={!!details.description} />
+                    {canUpdate && (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          disabled={generateDesc.isPending || editing}
+                          onClick={() => details && generateDesc.mutate(details)}
+                        >
+                          <Wand2 className={generateDesc.isPending ? "animate-spin" : ""} />
+                          {details.description ? "Regerar por IA" : "Gerar descrição por IA"}
+                        </Button>
+                        {editing ? null : (
+                          <Button type="button" size="sm" variant="ghost" onClick={() => { setDraft(details.description ?? ""); setEditing(true); }}>
+                            <Pencil />Editar
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {editing ? (
+                    <div className="grid gap-2">
+                      <textarea
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        rows={6}
+                        className="w-full rounded-lg border-0 bg-input p-3 text-sm font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        placeholder="Cole aqui a descrição real do TikTok Shop ou ajuste o texto."
+                      />
+                      <div className="flex gap-2">
+                        <Button type="button" size="sm" disabled={saveDesc.isPending} onClick={() => details && saveDesc.mutate({ product: details, texto: draft })}>Salvar descrição</Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button>
+                      </div>
+                    </div>
+                  ) : details.description ? (
+                    <p className="max-h-40 overflow-y-auto whitespace-pre-line text-sm font-normal text-muted-foreground">{details.description}</p>
+                  ) : (
+                    <span className="text-muted-foreground">Sem descrição. A IA só conhece o nome e a foto principal deste produto.</span>
+                  )}
+                </div>
               </DetailRow>
               {details.extra_image_urls?.length ? (
                 <DetailRow label="Fotos enviadas à IA">
