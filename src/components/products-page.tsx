@@ -56,11 +56,14 @@ function ProductsContent() {
   const enrichDetails = useServerFn(enrichProductDetails);
 
   const canRemove = can("produtos", "remover");
+  const canUpdate = can("produtos", "editar");
 
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
   const [tab, setTab] = useState<"catalogo" | "descobrir">("catalogo");
   const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
   const [details, setDetails] = useState<DbProduct | null>(null);
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
+  const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
 
   const canCreateJob = can("pipeline", "criar", activeProfileId);
 
