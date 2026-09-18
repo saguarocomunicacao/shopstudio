@@ -403,10 +403,10 @@ export async function refreshMediaUrl(url: string): Promise<string> {
   return data?.signedUrl ?? url;
 }
 
-/** Baixa as imagens de referência da pessoa (até 3) para mandar ao Gemini. */
+/** Baixa as imagens de referência da pessoa (até 5) para mandar ao Gemini. */
 export async function loadPersonReferences(urls: (string | null | undefined)[]) {
   const refs: { base64: string; mimeType: string }[] = [];
-  for (const raw of urls.filter((u): u is string => !!u).slice(0, 3)) {
+  for (const raw of urls.filter((u): u is string => !!u).slice(0, 5)) {
     try {
       const fresh = await refreshMediaUrl(raw);
       const img = await fetchAsBase64(fresh);

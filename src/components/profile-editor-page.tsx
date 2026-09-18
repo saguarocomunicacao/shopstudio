@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Loader2, Sparkles, Upload, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, Sparkles, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,9 +51,20 @@ const VEO_MODELS = [
 ];
 
 /** Foto de referência da pessoa: já salva (url) ou recém-escolhida (base64). */
-type AvatarItem = { preview: string; url?: string; base64?: string; mimeType?: string };
+type AvatarItem = { preview: string; url?: string; base64?: string; mimeType?: string; width?: number; height?: number };
 
-const MAX_AVATARS = 3;
+const MAX_AVATARS = 5;
+/** Abaixo disso o rosto costuma sair sem detalhe suficiente para o Gemini. */
+const MIN_AVATAR_SIDE = 512;
+
+const AVATAR_TIPS: { good: boolean; text: string }[] = [
+  { good: true, text: "A mesma pessoa em todas as fotos." },
+  { good: true, text: "Rosto bem visível, nítido e bem iluminado (luz natural de dia é ideal)." },
+  { good: true, text: "Ângulos diferentes: uma de frente, uma de leve perfil e uma de meio corpo." },
+  { good: true, text: "Fundo neutro e limpo, sem bagunça atrás." },
+  { good: true, text: "Expressões naturais, sem óculos escuros, boné ou nada cobrindo o rosto." },
+  { good: false, text: "Evite: foto borrada, escura, muito de longe, com várias pessoas ou com filtro pesado." },
+];
 
 const readFile = (file: File) =>
   new Promise<AvatarItem>((resolve, reject) => {
@@ -61,7 +72,11 @@ const readFile = (file: File) =>
     reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
     reader.onload = () => {
       const result = String(reader.result);
-      resolve({ preview: result, base64: result.split(",")[1] ?? "", mimeType: file.type });
+      const item: AvatarItem = { preview: result, base64: result.split(",")[1] ?? "", mimeType: file.type };
+      const probe = new Image();
+      probe.onload = () => resolve({ ...item, width: probe.naturalWidth, height: probe.naturalHeight });
+      probe.onerror = () => resolve(item);
+      probe.src = result;
     };
     reader.readAsDataURL(file);
   });
@@ -280,7 +295,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
     if (!files?.length) return;
     const free = MAX_AVATARS - avatarItems.length;
     if (free <= 0) {
-      toast.error("Máximo de 3 fotos. Remova uma para enviar outra.");
+      toast.error(`Máximo de ${MAX_AVATARS} fotos. Remova uma para enviar outra.`);
       return;
     }
     const chosen = Array.from(files)
@@ -295,6 +310,14 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
       return;
     }
     const read = await Promise.all(chosen.map(readFile));
+    const small = read.filter((r) => r.width && r.height && Math.min(r.width, r.height) < MIN_AVATAR_SIDE);
+    if (small.length) {
+      toast.warning(
+        small.length === 1
+          ? "Uma das fotos tem resolução baixa e pode deixar o rosto menos fiel. Se puder, envie uma maior."
+          : `${small.length} fotos têm resolução baixa e podem deixar o rosto menos fiel. Se puder, envie versões maiores.`,
+      );
+    }
     uploadAvatars.mutate([...avatarItems, ...read]);
   };
 
@@ -520,10 +543,32 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                       </Button>
                     </div>
                   ) : (
-                    <div className="grid gap-2">
+                    <div className="grid gap-3">
                       <p className="text-xs text-muted-foreground">
-                        Envie de 1 a 3 fotos da mesma pessoa (ângulos e expressões diferentes deixam os vídeos mais consistentes). JPG ou PNG, até 5 MB cada.
+                        Envie de 1 a {MAX_AVATARS} fotos da mesma pessoa. JPG ou PNG, até 5 MB cada.{" "}
+                        <span className="font-semibold text-foreground">3 boas fotos já bastam</span> — acima disso o ganho é pequeno.
                       </p>
+
+                      <div className="rounded-xl border bg-muted/40 p-3">
+                        <p className="mb-2 text-xs font-bold">Como devem ser as fotos</p>
+                        <ul className="grid gap-1.5">
+                          {AVATAR_TIPS.map((tip) => (
+                            <li key={tip.text} className="flex gap-2 text-xs text-muted-foreground">
+                              {tip.good ? (
+                                <Check className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                              ) : (
+                                <X className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                              )}
+                              <span>{tip.text}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <p className="text-xs font-semibold">
+                        {avatarItems.length} de {MAX_AVATARS} fotos enviadas
+                      </p>
+
                       <input
                         ref={fileInput}
                         type="file"
