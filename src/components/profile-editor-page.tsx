@@ -517,7 +517,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                     ))}
                   </div>
 
-                  {avatarItems.length > 0 && (
+                  {(avatarItems.length > 0 || pendingAvatars.length > 0 || rejectedAvatars.length > 0) && (
                     <div className="mb-3 flex flex-wrap gap-3">
                       {avatarItems.map((item, i) => (
                         <div className="group relative" key={item.url ?? i}>
@@ -538,6 +538,35 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                             className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow"
                             disabled={uploadAvatars.isPending}
                             onClick={() => uploadAvatars.mutate(avatarItems.filter((_, idx) => idx !== i))}
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                      ))}
+
+                      {pendingAvatars.map((item, i) => (
+                        <div className="relative size-24 overflow-hidden rounded-xl" key={`pending-${i}`}>
+                          <img src={item.preview} alt="" className="size-24 rounded-xl object-cover opacity-50" />
+                          <span className="absolute inset-0 grid place-items-center bg-foreground/30">
+                            <Loader2 className="size-5 animate-spin text-background" />
+                          </span>
+                        </div>
+                      ))}
+
+                      {rejectedAvatars.map((item) => (
+                        <div
+                          key={item.id}
+                          className="relative grid size-24 place-items-center rounded-xl border border-dashed border-destructive/60 bg-destructive/5 p-2 text-center"
+                        >
+                          <div>
+                            <AlertTriangle className="mx-auto mb-1 size-4 text-destructive" />
+                            <p className="line-clamp-2 text-[10px] font-semibold text-destructive">{item.reason}</p>
+                          </div>
+                          <button
+                            type="button"
+                            aria-label="Descartar arquivo"
+                            className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-muted text-foreground shadow"
+                            onClick={() => setRejectedAvatars((prev) => prev.filter((r) => r.id !== item.id))}
                           >
                             <X className="size-3.5" />
                           </button>
