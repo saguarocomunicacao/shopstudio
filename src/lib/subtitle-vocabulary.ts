@@ -18,6 +18,11 @@ const TRANSCRIPTION_ALIASES: Record<string, string[]> = {
   waterproof: ["water proof"],
 };
 
+/** Erros observados em marcas cuja pronúncia não é preservada pelo STT. */
+const BRAND_TRANSCRIPTION_ALIASES: Record<string, string[]> = {
+  oceane: ["oceane", "ossiane", "ociane", "da"],
+};
+
 const normalizeSpace = (value: string) => value.replace(/\s+/g, " ").trim();
 const stripPunctuation = (value: string) => value.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}'+-]+$/gu, "");
 const fold = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -104,6 +109,20 @@ export function buildSubtitleVocabulary(input: {
       addReplacement(ascii.toLocaleLowerCase("pt-BR"), canonical);
     }
     for (const alias of TRANSCRIPTION_ALIASES[fold(lower)] ?? []) addReplacement(alias, canonical);
+  }
+
+  // Uma variação curta de marca (ex.: "da") nunca é substituída sozinha.
+  // Ela só vale dentro da frase em que a marca aparece na narração.
+  for (const canonical of canonicalTerms) {
+    const aliases = BRAND_TRANSCRIPTION_ALIASES[fold(canonical).toLocaleLowerCase("pt-BR")];
+    if (!aliases?.length) continue;
+    const words = narrationText.split(/\s+/).map(stripPunctuation).filter(Boolean);
+    for (let index = 0; index < words.length; index += 1) {
+      if (fold(words[index] ?? "").toLocaleLowerCase("pt-BR") !== fold(canonical).toLocaleLowerCase("pt-BR")) continue;
+      const prefix = words.slice(Math.max(0, index - 3), index).join(" ");
+      if (!prefix) continue;
+      for (const alias of aliases) addReplacement(`${prefix} ${alias}`, `${prefix} ${canonical}`);
+    }
   }
 
   const boundedKeywords = keywordList.slice(0, MAX_KEYWORDS);
