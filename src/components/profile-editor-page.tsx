@@ -198,6 +198,8 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
         const { data, error } = await supabase.from("profiles").insert({ ...payload, slug: slugify(payload.handle || payload.name) }).select("id").single();
         if (error) throw new Error(error.message);
         newId = data.id;
+        // O perfil nasce com a cópia dos prompts padrão (feita no servidor).
+        await seedPrompts({ data: { profileId: newId } }).catch(() => undefined);
       }
       const identity = { profile_id: newId, tone: values.tone, language: values.language.trim() || "pt-BR", style_notes: values.notes.trim() };
       const { error: identityError } = await supabase.from("profile_identities").upsert(identity, { onConflict: "profile_id" });
