@@ -305,17 +305,26 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
             items={results.map((item) => ({ ...item, id: `${item.source}:${item.externalId}`, niche: item.category }))}
             renderActions={(item) => {
               const already = saved.has(`${item.source}:${item.externalId}`);
-              if (!canCreate) return null;
-              return already ? (
-                <span className="shrink-0 text-[11px] font-bold text-muted-foreground">No catálogo</span>
-              ) : (
-                <Checkbox
-                  aria-label={`Selecionar ${item.name}`}
-                  checked={!!selected[item.externalId]}
-                  onCheckedChange={(value) => setSelected((current) => ({ ...current, [item.externalId]: !!value }))}
-                />
+              const busy = use.isPending && use.variables?.externalId === item.externalId;
+              return (
+                <>
+                  {canCreateJob && (
+                    <Button size="sm" disabled={use.isPending} onClick={() => use.mutate(item)}>
+                      {busy ? <Loader2 className="animate-spin" /> : <Sparkles />}Usar
+                    </Button>
+                  )}
+                  {canCreate && !already && (
+                    <Checkbox
+                      aria-label={`Selecionar ${item.name}`}
+                      checked={!!selected[item.externalId]}
+                      onCheckedChange={(value) => setSelected((current) => ({ ...current, [item.externalId]: !!value }))}
+                    />
+                  )}
+                  {already && <span className="shrink-0 text-[11px] font-bold text-muted-foreground">No catálogo</span>}
+                </>
               );
             }}
+
           />
         </div>
       )}
