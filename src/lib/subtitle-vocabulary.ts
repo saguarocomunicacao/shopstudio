@@ -8,6 +8,8 @@ const ENGLISH_COMMERCE_TERMS = new Set([
   "waterproof",
 ]);
 
+const SENTENCE_WORDS = new Set(["a", "agora", "com", "da", "de", "do", "e", "esse", "essa", "este", "esta", "mais", "na", "no", "o", "olha", "para", "por", "seu", "sua", "um", "uma"]);
+
 /** Variações fonéticas recorrentes que o português costuma produzir no STT. */
 const TRANSCRIPTION_ALIASES: Record<string, string[]> = {
   brush: ["brus", "brux"],
@@ -36,9 +38,9 @@ function usefulNarrationTerms(text: string): string[] {
       const lower = fold(token).toLocaleLowerCase("pt-BR");
       return (
         ENGLISH_COMMERCE_TERMS.has(lower) ||
-        /[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]{2,}/u.test(token) ||
+        (/[A-ZÁÀÂÃÉÊÍÓÔÕÚÇ][a-záàâãéêíóôõúç]{2,}/u.test(token) && !SENTENCE_WORDS.has(lower)) ||
         /[a-záàâãéêíóôõúç][A-ZÁÀÂÃÉÊÍÓÔÕÚÇ]/u.test(token) ||
-        /[\u00c0-\u024f]/u.test(token)
+        /[A-Z]{2,}/u.test(token)
       );
     });
 }
@@ -96,10 +98,11 @@ export function buildSubtitleVocabulary(input: {
 
   for (const canonical of canonicalTerms) {
     const lower = canonical.toLocaleLowerCase("pt-BR");
-    addReplacement(lower, canonical);
     const ascii = fold(canonical);
-    addReplacement(ascii, canonical);
-    addReplacement(ascii.toLocaleLowerCase("pt-BR"), canonical);
+    if (ascii !== canonical) {
+      addReplacement(ascii, canonical);
+      addReplacement(ascii.toLocaleLowerCase("pt-BR"), canonical);
+    }
     for (const alias of TRANSCRIPTION_ALIASES[fold(lower)] ?? []) addReplacement(alias, canonical);
   }
 
