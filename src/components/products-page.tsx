@@ -58,6 +58,15 @@ function ProductsContent() {
   const createJob = useMutation({
     mutationFn: async ({ product, profileId }: { product: DbProduct; profileId: string | null }) => {
       if (!profileId) throw new Error("Selecione um perfil no seletor acima.");
+      // Produtos antigos ainda sem descrição: busca o detalhe antes de virar job.
+      if (!product.description && product.external_id) {
+        try {
+          await enrichDetails({ data: { productIds: [product.id] } });
+          qc.invalidateQueries({ queryKey: ["products", activeProfileId] });
+        } catch {
+          // Segue com nome e foto principal.
+        }
+      }
       const { error } = await supabase.from("jobs").insert({
         product_id: product.id,
         profile_id: profileId,
