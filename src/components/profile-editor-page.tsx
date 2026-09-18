@@ -114,6 +114,22 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const [avatarSource, setAvatarSource] = useState<"ia" | "upload">("ia");
   const [avatarDescription, setAvatarDescription] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const closeLightbox = useCallback(() => setLightboxIndex(null), []);
+  const prevLightbox = useCallback(() => setLightboxIndex((i) => (i === null ? null : (i - 1 + avatarItems.length) % avatarItems.length)), [avatarItems.length]);
+  const nextLightbox = useCallback(() => setLightboxIndex((i) => (i === null ? null : (i + 1) % avatarItems.length)), [avatarItems.length]);
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") { e.preventDefault(); prevLightbox(); }
+      if (e.key === "ArrowRight") { e.preventDefault(); nextLightbox(); }
+      if (e.key === "Escape") { e.preventDefault(); closeLightbox(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxIndex, prevLightbox, nextLightbox, closeLightbox]);
   const generateAvatar = useServerFn(generateAvatarReference);
   const saveAvatars = useServerFn(saveAvatarReferences);
   const seedPrompts = useServerFn(seedProfilePrompts);
