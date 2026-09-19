@@ -36,8 +36,14 @@ export const Route = createFileRoute("/auth_/tiktok/callback")({
           return back(destino, { tiktok: "error", msg: "A autorização demorou demais. Tente conectar de novo." });
         }
 
-        if (!authCode) {
-          const motivo = url.searchParams.get("message") ?? "O TikTok não devolveu o código de autorização.";
+        const erroTiktok = url.searchParams.get("error");
+        if (!authCode || authCode === "null" || erroTiktok) {
+          const motivo =
+            erroTiktok === "auth_denied"
+              ? "Você recusou a autorização no TikTok."
+              : (url.searchParams.get("error_description") ??
+                url.searchParams.get("message") ??
+                "O TikTok não devolveu o código de autorização.");
           const { markConnectionError } = await import("@/lib/tiktok.server");
           await markConnectionError(pending.profile_id, motivo);
           return back(destino, { tiktok: "error", msg: motivo });

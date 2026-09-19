@@ -88,7 +88,7 @@ export function TiktokIntegrationCard({ profileId, canEdit }: { profileId: strin
         <div className="min-w-0">
           <p className="text-sm font-bold">TikTok Shop</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Conecte a conta deste perfil para o Shop Studio agir em nome dela nos próximos recursos de afiliado.
+            Conecte a conta de criador afiliado deste perfil para o Shop Studio agir em nome dela nos próximos recursos.
           </p>
         </div>
         <span
@@ -111,9 +111,12 @@ export function TiktokIntegrationCard({ profileId, canEdit }: { profileId: strin
             <div className="mt-4 grid gap-2 rounded-lg bg-secondary px-4 py-3 text-xs">
               <p className="flex items-center gap-2 font-semibold text-foreground">
                 <CheckCircle2 className="size-4 text-primary" />
-                {conexao?.sellerName || "Conta TikTok"}
+                Conta de criador conectada
               </p>
               {conexao?.openId && <p className="text-muted-foreground">Identificador: {conexao.openId}</p>}
+              {conexao?.grantedScopes?.length ? (
+                <p className="text-muted-foreground">Permissões: {conexao.grantedScopes.join(", ")}</p>
+              ) : null}
               <p className="text-muted-foreground">Autorização válida até {formatDate(conexao?.accessTokenExpiresAt ?? null)}</p>
             </div>
           )}

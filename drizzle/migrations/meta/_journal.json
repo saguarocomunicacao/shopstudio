@@ -176,6 +176,13 @@
       "when": 1789834840449,
       "tag": "0024_create_tiktok_connections",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1789835288068,
+      "tag": "0025_tiktok_creator_oauth",
+      "breakpoints": true
     }
   ]
 }
