@@ -28,6 +28,7 @@ import { seedProfilePrompts } from "@/lib/prompts.functions";
 import { CategorySelect } from "./category-select";
 import { LanguageSelect } from "./language-select";
 import { ProfilePrompts } from "./profile-prompts";
+import { TiktokIntegrationCard } from "./tiktok-integration-card";
 import { VoiceSelect } from "./voice-select";
 import { useStudio } from "./studio-context";
 
@@ -94,7 +95,7 @@ const emptyForm: FormState = {
   requireReview: true,
 };
 
-type TabKey = "dados" | "identidade" | "video" | "pessoa" | "voz" | "publicacao" | "prompts";
+type TabKey = "dados" | "identidade" | "video" | "pessoa" | "voz" | "publicacao" | "integracoes" | "prompts";
 
 const TABS: { key: TabKey; label: string; hint: string }[] = [
   { key: "dados", label: "Dados do perfil", hint: "Nome, conta, categoria e status" },
@@ -103,6 +104,7 @@ const TABS: { key: TabKey; label: string; hint: string }[] = [
   { key: "pessoa", label: "Pessoa / Avatar", hint: "Quem aparece nos vídeos" },
   { key: "voz", label: "Voz", hint: "Voz da narração" },
   { key: "publicacao", label: "Publicação", hint: "Revisão, alertas e resumos" },
+  { key: "integracoes", label: "Integrações", hint: "Conta do TikTok Shop" },
   { key: "prompts", label: "Prompts", hint: "Versões próprias deste perfil" },
 ];
 
