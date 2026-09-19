@@ -1,15 +1,19 @@
 /**
- * Encanamento OAuth do TikTok Shop Partner.
+ * Encanamento OAuth do TikTok Shop — fluxo de CRIADOR (Affiliate Creator).
  * Tudo aqui roda só no servidor: as chaves do app e os tokens nunca saem daqui.
  */
 
-const SERVICE_ID = "7686814709862418192";
-const AUTH_BASE = "https://services.tiktokshop.com/open/authorize";
-const TOKEN_URL = "https://auth.tiktok-shops.com/api/v2/token/get";
+const CREATOR_AUTH_BASE = "https://shop.tiktok.com/alliance/creator/auth";
+const TOKEN_GET_URL = "https://auth.tiktok-shops.com/api/v2/token/get";
+const TOKEN_REFRESH_URL = "https://auth.tiktok-shops.com/api/v2/token/refresh";
+
+/** Escopos exigidos pelas Affiliate Creator APIs. */
+export const REQUIRED_SCOPES = ["creator.affiliate_collaboration.read", "creator.affiliate.info"];
 
 export type TiktokTokens = {
   openId: string | null;
-  sellerName: string | null;
+  userType: number | null;
+  grantedScopes: string[];
   accessToken: string;
   refreshToken: string;
   accessTokenExpiresAt: string | null;
@@ -25,9 +29,10 @@ function appCredentials() {
   return { appKey, appSecret };
 }
 
-/** URL de autorização que o usuário abre para aprovar a conta. */
+/** URL de autorização do criador (usa app_key + state, nunca service_id). */
 export function authorizeUrl(state: string) {
-  return `${AUTH_BASE}?service_id=${SERVICE_ID}&state=${encodeURIComponent(state)}`;
+  const { appKey } = appCredentials();
+  return `${CREATOR_AUTH_BASE}?app_key=${encodeURIComponent(appKey)}&state=${encodeURIComponent(state)}`;
 }
 
 /** Epoch em segundos (ou ms) -> ISO. */
@@ -41,10 +46,20 @@ function str(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-/** Chama o endpoint de token do TikTok e normaliza a resposta. */
-async function callTokenEndpoint(params: Record<string, string>): Promise<TiktokTokens> {
+function parseScopes(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
+  const raw = str(value);
+  if (!raw) return [];
+  return raw
+    .split(/[,\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** Chama /token/get ou /token/refresh e normaliza + valida a resposta. */
+async function callTokenEndpoint(endpoint: string, params: Record<string, string>): Promise<TiktokTokens> {
   const { appKey, appSecret } = appCredentials();
-  const url = new URL(TOKEN_URL);
+  const url = new URL(endpoint);
   url.searchParams.set("app_key", appKey);
   url.searchParams.set("app_secret", appSecret);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
@@ -60,9 +75,11 @@ async function callTokenEndpoint(params: Record<string, string>): Promise<Tiktok
 
   const code = typeof payload["code"] === "number" ? payload["code"] : null;
   const message = str(payload["message"]) ?? "";
-  if (!res.ok || (code !== null && code !== 0)) {
+  if (!res.ok || code !== 0) {
     // Nunca logar app_secret: só status, código e mensagem do TikTok.
-    console.error(`[tiktok-oauth] token/get falhou http=${res.status} code=${code ?? "-"} message=${message || text.slice(0, 200)}`);
+    console.error(
+      `[tiktok-oauth] ${endpoint.endsWith("refresh") ? "token/refresh" : "token/get"} falhou http=${res.status} code=${code ?? "-"} message=${message || text.slice(0, 200)}`,
+    );
     throw new Error(message || `TikTok recusou a autorização (código ${code ?? res.status}).`);
   }
 
@@ -74,9 +91,21 @@ async function callTokenEndpoint(params: Record<string, string>): Promise<Tiktok
     throw new Error("O TikTok não devolveu os tokens de acesso.");
   }
 
+  const userType = typeof data["user_type"] === "number" ? data["user_type"] : null;
+  if (userType !== 1) {
+    throw new Error("Essa conta não é um criador do TikTok Shop. Entre com a conta de criador afiliado.");
+  }
+
+  const grantedScopes = parseScopes(data["granted_scopes"]);
+  const faltando = REQUIRED_SCOPES.filter((s) => !grantedScopes.includes(s));
+  if (faltando.length) {
+    throw new Error(`A autorização não liberou as permissões necessárias: ${faltando.join(", ")}.`);
+  }
+
   return {
-    openId: str(data["open_id"]) ?? str(data["seller_base_region"]),
-    sellerName: str(data["seller_name"]),
+    openId: str(data["open_id"]),
+    userType,
+    grantedScopes,
     accessToken,
     refreshToken,
     accessTokenExpiresAt: toIso(data["access_token_expire_in"]),
@@ -84,14 +113,14 @@ async function callTokenEndpoint(params: Record<string, string>): Promise<Tiktok
   };
 }
 
-/** Troca o auth_code recebido no callback por tokens. */
+/** Troca o auth_code recebido no callback por tokens (grant_type exato: authorized_code). */
 export function exchangeAuthCode(authCode: string) {
-  return callTokenEndpoint({ auth_code: authCode, grant_type: "authorized_code" });
+  return callTokenEndpoint(TOKEN_GET_URL, { auth_code: authCode, grant_type: "authorized_code" });
 }
 
 /** Renova o access_token a partir do refresh_token. */
 export function refreshTokens(refreshToken: string) {
-  return callTokenEndpoint({ refresh_token: refreshToken, grant_type: "refresh_token" });
+  return callTokenEndpoint(TOKEN_REFRESH_URL, { refresh_token: refreshToken, grant_type: "refresh_token" });
 }
 
 /** Grava (ou atualiza) a conexão do perfil. */
@@ -101,7 +130,8 @@ export async function saveConnection(profileId: string, tokens: TiktokTokens) {
     {
       profile_id: profileId,
       open_id: tokens.openId,
-      seller_name: tokens.sellerName,
+      user_type: tokens.userType,
+      granted_scopes: tokens.grantedScopes,
       access_token: tokens.accessToken,
       refresh_token: tokens.refreshToken,
       access_token_expires_at: tokens.accessTokenExpiresAt,
@@ -122,10 +152,10 @@ export async function markConnectionError(profileId: string, motivo: string) {
     .upsert({ profile_id: profileId, status: "error", last_error: motivo.slice(0, 500) }, { onConflict: "profile_id" });
 }
 
-/** Renova as conexões cujo access_token expira dentro de `dias`. */
-export async function refreshExpiring(dias = 15, limite = 25) {
+/** Renova as conexões cujo access_token expira dentro de `horas` (padrão 48h). */
+export async function refreshExpiring(horas = 48, limite = 50) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const limite_data = new Date(Date.now() + dias * 24 * 60 * 60 * 1000).toISOString();
+  const limite_data = new Date(Date.now() + horas * 60 * 60 * 1000).toISOString();
   const { data: rows, error } = await supabaseAdmin
     .from("tiktok_connections")
     .select("profile_id, refresh_token, access_token_expires_at")
@@ -151,7 +181,7 @@ export async function refreshExpiring(dias = 15, limite = 25) {
   return results;
 }
 
-/** Renova um perfil específico se o token estiver perto de expirar. */
+/** Renova um perfil específico. */
 export async function refreshProfile(profileId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: row } = await supabaseAdmin
