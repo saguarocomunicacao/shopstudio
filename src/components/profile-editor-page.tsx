@@ -707,6 +707,18 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
             </div>
           )}
 
+          {tab === "integracoes" && (
+            <div className="grid gap-4">
+              <SectionTitle
+                title="Integrações"
+                description={profile
+                  ? "Contas externas ligadas a este perfil."
+                  : "Salve o perfil primeiro para conectar contas externas."}
+              />
+              {profile && <TiktokIntegrationCard profileId={profile.id} canEdit={allowed} />}
+            </div>
+          )}
+
           {tab === "prompts" && (
             <div className="grid gap-4">
               <SectionTitle
