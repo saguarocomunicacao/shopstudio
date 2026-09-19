@@ -35,7 +35,7 @@ export const getTiktokConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(profileInput)
   .handler(async ({ data, context }): Promise<TiktokConnectionView | null> => {
-    await assertAccess(context, data.profileId, "ver");
+    await assertAccess(context.supabase, data.profileId, "ver");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("tiktok_connections")
@@ -62,7 +62,7 @@ export const startTiktokAuth = createServerFn({ method: "POST" })
     z.object({ profileId: z.string().uuid(), redirectTo: z.string().max(300).optional() }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    await assertAccess(context, data.profileId, "editar");
+    await assertAccess(context.supabase, data.profileId, "editar");
     const { authorizeUrl } = await import("@/lib/tiktok.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -89,7 +89,7 @@ export const disconnectTiktok = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(profileInput)
   .handler(async ({ data, context }) => {
-    await assertAccess(context, data.profileId, "editar");
+    await assertAccess(context.supabase, data.profileId, "editar");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("tiktok_connections")
@@ -111,7 +111,7 @@ export const refreshTiktokToken = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(profileInput)
   .handler(async ({ data, context }) => {
-    await assertAccess(context, data.profileId, "editar");
+    await assertAccess(context.supabase, data.profileId, "editar");
     const { refreshProfile, markConnectionError } = await import("@/lib/tiktok.server");
     try {
       const tokens = await refreshProfile(data.profileId);
