@@ -27,9 +27,11 @@ import { Route as AuthenticatedAppProdutosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAppPromptsRouteImport } from './routes/_authenticated/app/prompts'
 import { Route as AuthenticatedAppRascunhosRouteImport } from './routes/_authenticated/app/rascunhos'
 import { Route as AuthenticatedAppVideosRouteImport } from './routes/_authenticated/app/videos'
+import { Route as AuthTiktokCallbackRouteImport } from './routes/auth_.tiktok.callback'
 import { Route as AuthenticatedAppPerfisIndexRouteImport } from './routes/_authenticated/app/perfis.index'
 import { Route as AuthenticatedAppPerfisNovoRouteImport } from './routes/_authenticated/app/perfis.novo'
 import { Route as ApiPublicCronStoreVideosRouteImport } from './routes/api/public/cron/store-videos'
+import { Route as ApiPublicCronTiktokRefreshRouteImport } from './routes/api/public/cron/tiktok-refresh'
 import { Route as ApiPublicJson2videoWebhookTokenRouteImport } from './routes/api/public/json2video-webhook.$token'
 import { Route as AuthenticatedAppPerfisIdEditarRouteImport } from './routes/_authenticated/app/perfis.$id.editar'
 
@@ -129,6 +131,11 @@ const AuthenticatedAppVideosRoute = AuthenticatedAppVideosRouteImport.update({
   path: '/app/videos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthTiktokCallbackRoute = AuthTiktokCallbackRouteImport.update({
+  id: '/auth_/tiktok/callback',
+  path: '/auth/tiktok/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAppPerfisIndexRoute =
   AuthenticatedAppPerfisIndexRouteImport.update({
     id: '/app/perfis/',
@@ -145,6 +152,12 @@ const ApiPublicCronStoreVideosRoute =
   ApiPublicCronStoreVideosRouteImport.update({
     id: '/api/public/cron/store-videos',
     path: '/api/public/cron/store-videos',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicCronTiktokRefreshRoute =
+  ApiPublicCronTiktokRefreshRouteImport.update({
+    id: '/api/public/cron/tiktok-refresh',
+    path: '/api/public/cron/tiktok-refresh',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicJson2videoWebhookTokenRoute =
@@ -177,9 +190,11 @@ export interface FileRoutesByFullPath {
   '/app/prompts': typeof AuthenticatedAppPromptsRoute
   '/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
   '/app/videos': typeof AuthenticatedAppVideosRoute
+  '/auth/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
+  '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
   '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
@@ -201,9 +216,11 @@ export interface FileRoutesByTo {
   '/app/prompts': typeof AuthenticatedAppPromptsRoute
   '/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
   '/app/videos': typeof AuthenticatedAppVideosRoute
+  '/auth/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
+  '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/app/perfis': typeof AuthenticatedAppPerfisIndexRoute
   '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
@@ -227,9 +244,11 @@ export interface FileRoutesById {
   '/_authenticated/app/prompts': typeof AuthenticatedAppPromptsRoute
   '/_authenticated/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
   '/_authenticated/app/videos': typeof AuthenticatedAppVideosRoute
+  '/auth_/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
+  '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/_authenticated/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
   '/_authenticated/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
@@ -253,9 +272,11 @@ export interface FileRouteTypes {
     | '/app/prompts'
     | '/app/rascunhos'
     | '/app/videos'
+    | '/auth/tiktok/callback'
     | '/app/'
     | '/app/perfis/novo'
     | '/api/public/cron/store-videos'
+    | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
     | '/app/perfis/'
     | '/app/perfis/$id/editar'
@@ -277,9 +298,11 @@ export interface FileRouteTypes {
     | '/app/prompts'
     | '/app/rascunhos'
     | '/app/videos'
+    | '/auth/tiktok/callback'
     | '/app'
     | '/app/perfis/novo'
     | '/api/public/cron/store-videos'
+    | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
     | '/app/perfis'
     | '/app/perfis/$id/editar'
@@ -302,9 +325,11 @@ export interface FileRouteTypes {
     | '/_authenticated/app/prompts'
     | '/_authenticated/app/rascunhos'
     | '/_authenticated/app/videos'
+    | '/auth_/tiktok/callback'
     | '/_authenticated/app/'
     | '/_authenticated/app/perfis/novo'
     | '/api/public/cron/store-videos'
+    | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
     | '/_authenticated/app/perfis/'
     | '/_authenticated/app/perfis/$id/editar'
@@ -317,7 +342,9 @@ export interface RootRouteChildren {
   EntrarRoute: typeof EntrarRoute
   LoginRoute: typeof LoginRoute
   VTokenRoute: typeof VTokenRoute
+  AuthTiktokCallbackRoute: typeof AuthTiktokCallbackRoute
   ApiPublicCronStoreVideosRoute: typeof ApiPublicCronStoreVideosRoute
+  ApiPublicCronTiktokRefreshRoute: typeof ApiPublicCronTiktokRefreshRoute
   ApiPublicJson2videoWebhookTokenRoute: typeof ApiPublicJson2videoWebhookTokenRoute
 }
 
@@ -449,6 +476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppVideosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/auth_/tiktok/callback': {
+      id: '/auth_/tiktok/callback'
+      path: '/auth/tiktok/callback'
+      fullPath: '/auth/tiktok/callback'
+      preLoaderRoute: typeof AuthTiktokCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/app/perfis/': {
       id: '/_authenticated/app/perfis/'
       path: '/app/perfis'
@@ -468,6 +502,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/cron/store-videos'
       fullPath: '/api/public/cron/store-videos'
       preLoaderRoute: typeof ApiPublicCronStoreVideosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/tiktok-refresh': {
+      id: '/api/public/cron/tiktok-refresh'
+      path: '/api/public/cron/tiktok-refresh'
+      fullPath: '/api/public/cron/tiktok-refresh'
+      preLoaderRoute: typeof ApiPublicCronTiktokRefreshRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/json2video-webhook/$token': {
@@ -533,7 +574,9 @@ const rootRouteChildren: RootRouteChildren = {
   EntrarRoute: EntrarRoute,
   LoginRoute: LoginRoute,
   VTokenRoute: VTokenRoute,
+  AuthTiktokCallbackRoute: AuthTiktokCallbackRoute,
   ApiPublicCronStoreVideosRoute: ApiPublicCronStoreVideosRoute,
+  ApiPublicCronTiktokRefreshRoute: ApiPublicCronTiktokRefreshRoute,
   ApiPublicJson2videoWebhookTokenRoute: ApiPublicJson2videoWebhookTokenRoute,
 }
 export const routeTree = rootRouteImport
