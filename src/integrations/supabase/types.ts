@@ -889,6 +889,94 @@ export type Database = {
         }
         Relationships: []
       }
+      tiktok_connections: {
+        Row: {
+          access_token: string | null
+          access_token_expires_at: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          open_id: string | null
+          profile_id: string
+          refresh_token: string | null
+          refresh_token_expires_at: string | null
+          seller_name: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          open_id?: string | null
+          profile_id: string
+          refresh_token?: string | null
+          refresh_token_expires_at?: string | null
+          seller_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          open_id?: string | null
+          profile_id?: string
+          refresh_token?: string | null
+          refresh_token_expires_at?: string | null
+          seller_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_connections_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tiktok_oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          profile_id: string
+          redirect_to: string | null
+          state: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          profile_id: string
+          redirect_to?: string | null
+          state: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          profile_id?: string
+          redirect_to?: string | null
+          state?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiktok_oauth_states_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_invites: {
         Row: {
           created_at: string
@@ -1031,6 +1119,8 @@ export type Database = {
     }
     Functions: {
       can_edit_pipeline: { Args: { _profile_id: string }; Returns: boolean }
+      can_edit_profile: { Args: { _profile_id: string }; Returns: boolean }
+      can_view_profile: { Args: { _profile_id: string }; Returns: boolean }
       ensure_app_user: { Args: never; Returns: undefined }
       is_backoffice: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
