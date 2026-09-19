@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { authenticateCronRequest } from "@/integrations/supabase/cron-auth";
 
 /**
- * Rotina agendada: renova os access_tokens do TikTok Shop que expiram em breve.
- * O access_token dura ~90 dias; rodar diariamente mantém todas as contas válidas.
+ * Rotina agendada: renova os access_tokens do TikTok Shop que expiram nas próximas 48h.
+ * O access_token do criador dura ~7 dias; rodar diariamente mantém todas as contas válidas.
  */
 export const Route = createFileRoute("/api/public/cron/tiktok-refresh")({
   server: {
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/api/public/cron/tiktok-refresh")({
         if (denied) return denied;
         const { refreshExpiring } = await import("@/lib/tiktok.server");
         try {
-          const results = await refreshExpiring(15, 25);
+          const results = await refreshExpiring(48, 50);
           return Response.json({ ok: true, processados: results.length, results });
         } catch (e) {
           const motivo = e instanceof Error ? e.message : String(e);
