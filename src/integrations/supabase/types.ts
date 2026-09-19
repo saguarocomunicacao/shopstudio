@@ -894,6 +894,7 @@ export type Database = {
           access_token: string | null
           access_token_expires_at: string | null
           created_at: string
+          granted_scopes: string[]
           id: string
           last_error: string | null
           open_id: string | null
@@ -903,11 +904,13 @@ export type Database = {
           seller_name: string | null
           status: string
           updated_at: string
+          user_type: number | null
         }
         Insert: {
           access_token?: string | null
           access_token_expires_at?: string | null
           created_at?: string
+          granted_scopes?: string[]
           id?: string
           last_error?: string | null
           open_id?: string | null
@@ -917,11 +920,13 @@ export type Database = {
           seller_name?: string | null
           status?: string
           updated_at?: string
+          user_type?: number | null
         }
         Update: {
           access_token?: string | null
           access_token_expires_at?: string | null
           created_at?: string
+          granted_scopes?: string[]
           id?: string
           last_error?: string | null
           open_id?: string | null
@@ -931,6 +936,7 @@ export type Database = {
           seller_name?: string | null
           status?: string
           updated_at?: string
+          user_type?: number | null
         }
         Relationships: [
           {
