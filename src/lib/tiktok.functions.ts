@@ -10,7 +10,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 export type TiktokConnectionView = {
   status: "connected" | "disconnected" | "error";
   openId: string | null;
-  sellerName: string | null;
+  grantedScopes: string[];
   accessTokenExpiresAt: string | null;
   refreshTokenExpiresAt: string | null;
   lastError: string | null;
@@ -39,7 +39,7 @@ export const getTiktokConnection = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("tiktok_connections")
-      .select("status, open_id, seller_name, access_token_expires_at, refresh_token_expires_at, last_error, updated_at")
+      .select("status, open_id, granted_scopes, access_token_expires_at, refresh_token_expires_at, last_error, updated_at")
       .eq("profile_id", data.profileId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -47,7 +47,7 @@ export const getTiktokConnection = createServerFn({ method: "POST" })
     return {
       status: (row.status as TiktokConnectionView["status"]) ?? "disconnected",
       openId: row.open_id,
-      sellerName: row.seller_name,
+      grantedScopes: row.granted_scopes ?? [],
       accessTokenExpiresAt: row.access_token_expires_at,
       refreshTokenExpiresAt: row.refresh_token_expires_at,
       lastError: row.last_error,
@@ -99,6 +99,7 @@ export const disconnectTiktok = createServerFn({ method: "POST" })
         refresh_token: null,
         access_token_expires_at: null,
         refresh_token_expires_at: null,
+        granted_scopes: [],
         last_error: null,
       })
       .eq("profile_id", data.profileId);
