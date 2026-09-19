@@ -167,6 +167,7 @@ function LandingPage() {
           <div><img src={logoDark.url} alt="Shop Studio" className="h-9 w-auto" /><p className="mt-3 max-w-xs text-sm leading-6 text-landing-muted">A esteira de vídeo do TikTok Shop, do produto ao post.</p></div>
           <FooterLinks title="Produto" links={[["Como funciona","#como-funciona"],["Recursos","#recursos"],["O estúdio de IA","#estudio"],["Controle","#controle"]]} />
           <FooterLinks title="Conta" links={[["Entrar","/entrar"],["Criar conta","/entrar"]]} />
+          <FooterLinks title="Legal" links={[["Política de Privacidade","/privacidade"],["Política de Segurança","/seguranca"]]} />
         </div>
         <div className="mx-auto mt-10 max-w-7xl border-t border-landing-line pt-6 text-sm text-landing-muted">© 2026 Shop Studio · shopstudio.com.br</div>
       </footer>
