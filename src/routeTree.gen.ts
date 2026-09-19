@@ -14,6 +14,8 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as SegurancaRouteImport } from './routes/seguranca'
 import { Route as VTokenRouteImport } from './routes/v.$token'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
 import { Route as AuthenticatedAppAprovacoesRouteImport } from './routes/_authenticated/app/aprovacoes'
@@ -57,6 +59,16 @@ const EntrarRoute = EntrarRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SegurancaRoute = SegurancaRouteImport.update({
+  id: '/seguranca',
+  path: '/seguranca',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VTokenRoute = VTokenRouteImport.update({
@@ -178,6 +190,8 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/seguranca': typeof SegurancaRoute
   '/v/$token': typeof VTokenRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
@@ -204,6 +218,8 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/seguranca': typeof SegurancaRoute
   '/v/$token': typeof VTokenRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
@@ -232,6 +248,8 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
+  '/privacidade': typeof PrivacidadeRoute
+  '/seguranca': typeof SegurancaRoute
   '/v/$token': typeof VTokenRoute
   '/_authenticated/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
@@ -260,6 +278,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/entrar'
     | '/login'
+    | '/privacidade'
+    | '/seguranca'
     | '/v/$token'
     | '/app/aprovacoes'
     | '/app/configuracoes'
@@ -286,6 +306,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/entrar'
     | '/login'
+    | '/privacidade'
+    | '/seguranca'
     | '/v/$token'
     | '/app/aprovacoes'
     | '/app/configuracoes'
@@ -313,6 +335,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/entrar'
     | '/login'
+    | '/privacidade'
+    | '/seguranca'
     | '/v/$token'
     | '/_authenticated/app/aprovacoes'
     | '/_authenticated/app/configuracoes'
@@ -341,6 +365,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   EntrarRoute: typeof EntrarRoute
   LoginRoute: typeof LoginRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
+  SegurancaRoute: typeof SegurancaRoute
   VTokenRoute: typeof VTokenRoute
   AuthTiktokCallbackRoute: typeof AuthTiktokCallbackRoute
   ApiPublicCronStoreVideosRoute: typeof ApiPublicCronStoreVideosRoute
@@ -383,6 +409,20 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/seguranca': {
+      id: '/seguranca'
+      path: '/seguranca'
+      fullPath: '/seguranca'
+      preLoaderRoute: typeof SegurancaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/v/$token': {
@@ -573,6 +613,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   EntrarRoute: EntrarRoute,
   LoginRoute: LoginRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
+  SegurancaRoute: SegurancaRoute,
   VTokenRoute: VTokenRoute,
   AuthTiktokCallbackRoute: AuthTiktokCallbackRoute,
   ApiPublicCronStoreVideosRoute: ApiPublicCronStoreVideosRoute,
