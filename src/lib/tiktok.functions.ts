@@ -21,12 +21,12 @@ const profileInput = (data: unknown) => z.object({ profileId: z.string().uuid() 
 
 /** Confere se o usuário pode ver/editar este perfil. */
 async function assertAccess(
-  context: { supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> } },
+  supabase: { rpc: (fn: "can_edit_profile" | "can_view_profile", args: { _profile_id: string }) => PromiseLike<{ data: unknown }> },
   profileId: string,
   modo: "ver" | "editar",
 ) {
   const fn = modo === "editar" ? "can_edit_profile" : "can_view_profile";
-  const { data } = await context.supabase.rpc(fn, { _profile_id: profileId });
+  const { data } = await supabase.rpc(fn, { _profile_id: profileId });
   if (data !== true) throw new Error("Você não tem permissão para esta conta.");
 }
 
