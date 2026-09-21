@@ -224,6 +224,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
       if (event.data.size > 0) chunksRef.current.push(event.data);
     };
     recorder.onerror = () => {
+      canvasCleanupRef.current();
       stopStream();
       setRecording(false);
       setRolando(false);
@@ -232,6 +233,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     recorder.onstop = () => {
       const type = recorder.mimeType || "video/webm";
       const recorded = new Blob(chunksRef.current, { type });
+      canvasCleanupRef.current();
       stopStream();
       setRecording(false);
       setRolando(false);
@@ -247,6 +249,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     try {
       recorder.start(1000);
     } catch {
+      canvasCleanupRef.current();
       setError("Não foi possível iniciar a gravação neste aparelho. Verifique as permissões e tente novamente.");
       return;
     }
