@@ -7,8 +7,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  * descartado em seguida (nunca gravamos o arquivo em lugar nenhum).
  */
 
-const MODELO = "gemini-2.5-flash-audio";
-const GEMINI_MODEL = "gemini-2.5-flash";
+const MODELO = "gemini-3.6-flash-audio";
+const GEMINI_MODEL = "gemini-3.6-flash";
 
 const INSTRUCAO = [
   "Transcreva literalmente o áudio em português do Brasil (pt-BR).",
