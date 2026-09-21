@@ -42,8 +42,6 @@ function usePlan(userId: string | null) {
   });
 }
 
-const BILLING_LABEL: Record<string, string> = { gratuito: "Sem cobrança", por_video: "Cobrado por vídeo", mensal: "Mensalidade" };
-const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export function AccountPage() {
   const { access, userId } = useStudio();
