@@ -239,6 +239,13 @@
       "when": 1790002067887,
       "tag": "0033_roles_unique_per_tenant",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1790002843771,
+      "tag": "0034_tenant_rls",
+      "breakpoints": true
     }
   ]
 }
