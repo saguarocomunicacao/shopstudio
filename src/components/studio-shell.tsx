@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, ShieldCheck, Sun, PiggyBank, Users, UserSquare2, Wallet, X } from "lucide-react";
+import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, ShieldCheck, Sun, PiggyBank, UserCog, Users, UserSquare2, Wallet, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import type { ModuleKey } from "@/lib/access";
 import { OPEN_PROFILE_PICKER_EVENT } from "./profile-gate";
+import { useAvatarUrl } from "./account-page";
 import { StudioProvider, useStudio } from "./studio-context";
 import { UpdateGate } from "./update-gate";
 import { SessionExpiredDialog } from "./session-expired-dialog";
@@ -97,7 +98,8 @@ function UserMenu() {
   const { access, isAdmin } = useStudio();
   const signOut = useSignOut();
   const label = access?.me?.name || access?.me?.email || "Usuário";
-  return <DropdownMenu><DropdownMenuTrigger asChild><button className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-xs font-bold text-background" aria-label="Conta">{initialsOf(label)}</button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-60 rounded-xl p-1.5"><DropdownMenuLabel className="truncate">{label}<p className="truncate text-xs font-normal text-muted-foreground">{isAdmin ? "Administrador" : "Membro"}</p></DropdownMenuLabel><DropdownMenuSeparator/><DropdownMenuItem onClick={signOut}><LogOut className="h-4 w-4"/>Sair</DropdownMenuItem></DropdownMenuContent></DropdownMenu>;
+  const { data: avatarUrl } = useAvatarUrl(access?.me?.avatar_url);
+  return <DropdownMenu><DropdownMenuTrigger asChild><button className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-foreground text-xs font-bold text-background" aria-label="Conta">{avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : initialsOf(label)}</button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-60 rounded-xl p-1.5"><DropdownMenuLabel className="truncate">{label}<p className="truncate text-xs font-normal text-muted-foreground">{isAdmin ? "Administrador" : "Membro"}</p></DropdownMenuLabel><DropdownMenuSeparator/><DropdownMenuItem asChild><Link to="/app/conta"><UserCog className="h-4 w-4"/>Minha conta</Link></DropdownMenuItem><DropdownMenuItem onClick={signOut}><LogOut className="h-4 w-4"/>Sair</DropdownMenuItem></DropdownMenuContent></DropdownMenu>;
 }
 
 function PendingAccess() {

@@ -527,6 +527,39 @@ export type Database = {
         }
         Relationships: []
       }
+      plans: {
+        Row: {
+          billing_model: string
+          created_at: string
+          fallback_cap_cents: number
+          id: string
+          is_active: boolean
+          key_source: string
+          name: string
+          price_cents: number
+        }
+        Insert: {
+          billing_model: string
+          created_at?: string
+          fallback_cap_cents?: number
+          id?: string
+          is_active?: boolean
+          key_source: string
+          name: string
+          price_cents?: number
+        }
+        Update: {
+          billing_model?: string
+          created_at?: string
+          fallback_cap_cents?: number
+          id?: string
+          is_active?: boolean
+          key_source?: string
+          name?: string
+          price_cents?: number
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category_id: string | null
@@ -1045,7 +1078,15 @@ export type Database = {
           name?: string
           plan_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenants_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tiktok_connections: {
         Row: {

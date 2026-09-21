@@ -253,6 +253,20 @@
       "when": 1790002935426,
       "tag": "0035_tenant_in_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1790003545531,
+      "tag": "0036_create_plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1790003564449,
+      "tag": "0037_tenants_select_scope_and_avatars_storage",
+      "breakpoints": true
     }
   ]
 }
