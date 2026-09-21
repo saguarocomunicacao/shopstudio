@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Camera,
   Loader2,
+  Mic,
+  MicOff,
   Minus,
   Pause,
   Play,
@@ -37,6 +39,18 @@ function teleprompterItems(job: DbJob) {
   if (!items.length && job.script) items.push({ fala: job.script });
   return items;
 }
+
+const FILTROS = [
+  { id: "nenhum", label: "Nenhum", css: "" },
+  { id: "natural", label: "Natural", css: "brightness(1.06) contrast(1.06)" },
+  { id: "quente", label: "Quente", css: "sepia(0.25) saturate(1.2) brightness(1.04)" },
+  { id: "frio", label: "Frio", css: "hue-rotate(15deg) saturate(1.1) brightness(1.03)" },
+  { id: "vivido", label: "Vívido", css: "saturate(1.45) contrast(1.1)" },
+  { id: "suave", label: "Suave", css: "blur(0.7px) brightness(1.08) saturate(1.05)" },
+  { id: "pb", label: "P&B", css: "grayscale(1) contrast(1.12)" },
+] as const;
+
+type FiltroId = (typeof FILTROS)[number]["id"];
 
 function pickMimeType() {
   const candidates = [
@@ -77,6 +91,10 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const [blob, setBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cameraSession, setCameraSession] = useState(0);
+  const [filtro, setFiltro] = useState<FiltroId>("nenhum");
+  const [reduzirRuido, setReduzirRuido] = useState(true);
+  const canvasCleanupRef = useRef<() => void>(() => undefined);
+  const filtroCss = FILTROS.find((f) => f.id === filtro)?.css ?? "";
 
   const teleprompter = teleprompterItems(job);
 
@@ -87,12 +105,14 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   }, []);
 
   const startCamera = useCallback(
-    async (mode: "user" | "environment") => {
+    async (mode: "user" | "environment", limparRuido: boolean) => {
       try {
         stopStream();
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: mode, width: { ideal: 1080 }, height: { ideal: 1920 } },
-          audio: true,
+          audio: limparRuido
+            ? { noiseSuppression: true, echoCancellation: true, autoGainControl: true }
+            : { noiseSuppression: false, echoCancellation: false, autoGainControl: false },
         });
         streamRef.current = stream;
         if (videoRef.current) {
@@ -113,9 +133,9 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
 
   useEffect(() => {
     if (!supported) return;
-    void startCamera(facing);
+    void startCamera(facing, reduzirRuido);
     return stopStream;
-  }, [cameraSession, facing, supported, startCamera, stopStream]);
+  }, [cameraSession, facing, reduzirRuido, supported, startCamera, stopStream]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -156,15 +176,49 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
+  /** Grava pela tela do canvas para que o filtro escolhido saia no arquivo salvo. */
+  const buildFilteredStream = (base: MediaStream): MediaStream => {
+    const video = videoRef.current;
+    const track = base.getVideoTracks()[0];
+    if (!filtroCss || !video || !track) return base;
+    const settings = track.getSettings();
+    const canvas = document.createElement("canvas");
+    canvas.width = settings.width ?? video.videoWidth ?? 720;
+    canvas.height = settings.height ?? video.videoHeight ?? 1280;
+    const ctx = canvas.getContext("2d");
+    if (!ctx || typeof ctx.filter !== "string" || typeof canvas.captureStream !== "function") return base;
+    let frame = 0;
+    const draw = () => {
+      ctx.filter = filtroCss;
+      try {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } catch {
+        // Quadro ainda indisponível; tenta no próximo.
+      }
+      frame = requestAnimationFrame(draw);
+    };
+    draw();
+    const output = canvas.captureStream(30);
+    base.getAudioTracks().forEach((audio) => output.addTrack(audio));
+    canvasCleanupRef.current = () => {
+      cancelAnimationFrame(frame);
+      output.getVideoTracks().forEach((t) => t.stop());
+      canvasCleanupRef.current = () => undefined;
+    };
+    return output;
+  };
+
   const start = () => {
     const stream = streamRef.current;
     if (!stream) return;
     chunksRef.current = [];
     const mimeType = pickMimeType();
+    const recordingStream = buildFilteredStream(stream);
     let recorder: MediaRecorder;
     try {
-      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      recorder = new MediaRecorder(recordingStream, mimeType ? { mimeType } : undefined);
     } catch {
+      canvasCleanupRef.current();
       setError("Este navegador não conseguiu iniciar a gravação. Atualize o Chrome ou Safari e tente novamente.");
       return;
     }
@@ -172,6 +226,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
       if (event.data.size > 0) chunksRef.current.push(event.data);
     };
     recorder.onerror = () => {
+      canvasCleanupRef.current();
       stopStream();
       setRecording(false);
       setRolando(false);
@@ -180,6 +235,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     recorder.onstop = () => {
       const type = recorder.mimeType || "video/webm";
       const recorded = new Blob(chunksRef.current, { type });
+      canvasCleanupRef.current();
       stopStream();
       setRecording(false);
       setRolando(false);
@@ -195,6 +251,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     try {
       recorder.start(1000);
     } catch {
+      canvasCleanupRef.current();
       setError("Não foi possível iniciar a gravação neste aparelho. Verifique as permissões e tente novamente.");
       return;
     }
@@ -273,6 +330,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
               ref={videoRef}
               muted
               playsInline
+              style={filtroCss ? { filter: filtroCss } : undefined}
               className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
             />
           )}
@@ -280,7 +338,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
           {error && (
             <div className="absolute inset-x-4 top-4 rounded-xl bg-black/80 p-4 text-sm text-white">
               {error}
-              <Button variant="secondary" size="sm" className="mt-3" onClick={() => void startCamera(facing)}>
+              <Button variant="secondary" size="sm" className="mt-3" onClick={() => void startCamera(facing, reduzirRuido)}>
                 <RefreshCw />
                 Tentar de novo
               </Button>
@@ -335,6 +393,41 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
         <div className="mx-auto w-full max-w-[520px] px-4 pb-6 pt-3">
           {!previewUrl ? (
             <>
+              <div className="mb-3">
+                <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-white/60">Filtro de imagem</p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {FILTROS.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      aria-pressed={filtro === f.id}
+                      onClick={() => setFiltro(f.id)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                        filtro === f.id ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-3 flex flex-col items-center gap-1">
+                <Button
+                  variant={reduzirRuido ? "default" : "secondary"}
+                  size="sm"
+                  disabled={recording}
+                  aria-pressed={reduzirRuido}
+                  onClick={() => setReduzirRuido((v) => !v)}
+                >
+                  {reduzirRuido ? <Mic /> : <MicOff />}
+                  {reduzirRuido ? "Reduzir ruído: ligado" : "Reduzir ruído: desligado"}
+                </Button>
+                <p className="text-center text-[11px] leading-snug text-white/60">
+                  Reduz ruídos de fundo na captação do microfone. Não remove o ruído por completo.
+                </p>
+              </div>
+
               <div className="mb-3 flex flex-wrap items-center justify-center gap-2 text-white">
                 <Button variant="secondary" size="sm" onClick={() => setRolando((v) => !v)}>
                   {rolando ? <Pause /> : <Play />}
