@@ -13,9 +13,12 @@
 - [x] Isolar a proporção de gravação do layout dos ajustes e controles
 - [x] Validar as quatro correções no mobile sem regressão no desktop
 
-## Editor de vídeo (parte 1 — aparar)
+## Editor de vídeo
 - [x] Original preservado no armazenamento; versão editada salva em paralelo
 - [x] Botão "Editar" na revisão, com linha do tempo, barra de progresso e aviso no celular
 - [x] "Restaurar original" na fila de rascunhos
 - [x] Corte real testado (6,1s → 3,3s)
-- [ ] Partes 2 e 3: recorte de quadro e tesoura (remover trecho do meio)
+- [x] Corrigir layout responsivo do editor em desktop e mobile
+- [x] Adicionar múltiplos cortes internos com tesoura e concatenação
+- [x] Testar trim e tesoura reais e validar o resultado visual
+- [ ] Parte futura: recorte de quadro
