@@ -91,7 +91,15 @@ function pickMimeType() {
   return supported ?? "";
 }
 
-export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => void }) {
+export function RecordingStudio({
+  job,
+  onClose,
+  onSaved,
+}: {
+  job: DbJob;
+  onClose: () => void;
+  onSaved?: () => void;
+}) {
   const qc = useQueryClient();
   const getUploadUrl = useServerFn(createRecordingUploadUrl);
   const finish = useServerFn(finishRecording);
@@ -479,7 +487,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
       toast.success("Gravação salva. O vídeo está na fila de rascunhos.");
       void qc.invalidateQueries({ queryKey: ["jobs"] });
       void qc.invalidateQueries({ queryKey: ["draft-kit", job.id] });
-      onClose();
+      (onSaved ?? onClose)();
     },
     onError: (e) => toast.error(`Não foi possível salvar. Seu vídeo continua aqui para tentar novamente. ${errMessage(e)}`),
   });
