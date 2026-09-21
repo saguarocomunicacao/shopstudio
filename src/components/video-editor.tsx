@@ -177,10 +177,63 @@ export function VideoEditor({
     window.addEventListener("pointerup", onUp);
   };
 
+  const selectCropRatio = (aspectRatio: RecordingAspectRatio) => {
+    if (!videoSize) return;
+    setHistory((current) => [...current, { start, end, cuts, crop }]);
+    setCrop(initialCrop(aspectRatio, videoSize));
+    setErro(null);
+  };
+
+  const dragCrop = (kind: "move" | "nw" | "ne" | "sw" | "se") => (event: React.PointerEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const frame = videoFrameRef.current;
+    if (!frame || !crop || !videoSize) return;
+    const rect = frame.getBoundingClientRect();
+    const originX = event.clientX;
+    const originY = event.clientY;
+    const original = { ...crop };
+    const format = RECORDING_FORMATS[crop.aspectRatio];
+    const normalizedRatio = (format.width / format.height) / (videoSize.width / videoSize.height);
+    setHistory((current) => [...current, { start, end, cuts, crop }]);
+
+    const onMove = (moveEvent: PointerEvent) => {
+      const dx = (moveEvent.clientX - originX) / rect.width;
+      const dy = (moveEvent.clientY - originY) / rect.height;
+      if (kind === "move") {
+        setCrop({
+          ...original,
+          x: Math.min(1 - original.width, Math.max(0, original.x + dx)),
+          y: Math.min(1 - original.height, Math.max(0, original.y + dy)),
+        });
+        return;
+      }
+      const fromLeft = kind === "nw" || kind === "sw";
+      const fromTop = kind === "nw" || kind === "ne";
+      const oppositeX = fromLeft ? original.x + original.width : original.x;
+      const oppositeY = fromTop ? original.y + original.height : original.y;
+      const pointerX = fromLeft ? original.x + dx : original.x + original.width + dx;
+      const pointerY = fromTop ? original.y + dy : original.y + original.height + dy;
+      let width = Math.max(Math.abs(oppositeX - pointerX), Math.abs(oppositeY - pointerY) * normalizedRatio);
+      const maxWidth = fromLeft ? oppositeX : 1 - oppositeX;
+      const maxHeight = fromTop ? oppositeY : 1 - oppositeY;
+      width = Math.max(0.12, Math.min(width, maxWidth, maxHeight * normalizedRatio));
+      const height = width / normalizedRatio;
+      setCrop({ ...original, width, height, x: fromLeft ? oppositeX - width : oppositeX, y: fromTop ? oppositeY - height : oppositeY });
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
   const aparado = start > 0.05 || end < duration - 0.05;
   const operations: VideoEditOperation[] = [
     ...(aparado ? [{ type: "trim" as const, start, end }] : []),
     ...cuts,
+    ...(crop ? [crop] : []),
   ];
   /** Trechos que permanecem: o player usa esta lista para pular o que foi cortado. */
   const ranges = duration > 0 ? keepRanges(duration, operations) : [];
@@ -194,7 +247,7 @@ export function VideoEditor({
       setErro("O corte não pode remover o vídeo inteiro.");
       return;
     }
-    setHistory((current) => [...current, { start, end, cuts }]);
+    setHistory((current) => [...current, { start, end, cuts, crop }]);
     setCuts(next);
     setErro(null);
     // O corte vale na hora: se o cursor estava dentro dele, pula para a continuação.
@@ -209,6 +262,7 @@ export function VideoEditor({
       setStart(previous.start);
       setEnd(previous.end);
       setCuts(previous.cuts);
+      setCrop(previous.crop);
       setErro(null);
       return current.slice(0, -1);
     });
@@ -235,18 +289,18 @@ export function VideoEditor({
     setProgresso(0);
     setErro(null);
     const inputExtension = source.type.includes("mp4") ? "mp4" : "webm";
-    const outputExtension = cuts.length ? "mp4" : inputExtension;
+    const outputExtension = cuts.length || crop ? "mp4" : inputExtension;
     const input = `${EDIT_INPUT}.${inputExtension}`;
     const output = `saida.${outputExtension}`;
     try {
       const { fetchFile } = await import("@ffmpeg/util");
       await ffmpeg.writeFile(input, await fetchFile(source));
-      let exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration, true));
+      let exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration, true, videoSize ?? undefined));
       // Alguns vídeos importados não têm faixa de áudio. Nesse caso, repete o
       // mesmo pipeline apenas com vídeo em vez de tornar a edição indisponível.
-      if (exitCode !== 0 && cuts.length) {
+      if (exitCode !== 0 && operations.some((operation) => operation.type !== "trim")) {
         await ffmpeg.deleteFile(output).catch(() => undefined);
-        exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration, false));
+        exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration, false, videoSize ?? undefined));
       }
       if (exitCode !== 0) throw new Error(`ffmpeg ${exitCode}`);
       const data = (await ffmpeg.readFile(output)) as Uint8Array;
