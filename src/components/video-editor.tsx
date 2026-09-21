@@ -249,7 +249,7 @@ export function VideoEditor({
     const progressOffset = circumference * (1 - progresso / 100);
 
     return (
-      <div className="fixed inset-0 z-[80] grid place-items-center overflow-hidden bg-background px-6 text-foreground">
+      <div className="dark fixed inset-0 z-[80] grid place-items-center overflow-hidden bg-background px-6 text-foreground">
         <div className="grid justify-items-center gap-7 text-center" role="status" aria-live="polite" aria-label={`Aplicando edição, ${progresso}% concluído`}>
           <div className="relative grid size-36 place-items-center">
             <svg className="absolute inset-0 size-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
@@ -263,9 +263,9 @@ export function VideoEditor({
                 strokeLinecap="round"
                 strokeDasharray={circumference}
                 strokeDashoffset={progressOffset}
-                className="stroke-primary transition-[stroke-dashoffset] duration-300"
+                className="stroke-brand-cyan transition-[stroke-dashoffset] duration-300"
               />
-              <circle cx="60" cy="12" r="4" className="fill-destructive" />
+              <circle cx="60" cy="12" r="4" className="fill-secondary-brand" />
             </svg>
             <span className="text-2xl font-bold tabular-nums">{progresso}%</span>
           </div>
