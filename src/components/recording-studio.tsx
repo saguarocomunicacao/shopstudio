@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowDownToLine,
+  ArrowUpToLine,
   Camera,
   FlipHorizontal,
   Loader2,
@@ -22,6 +22,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbJob } from "@/lib/content";
 import { createRecordingUploadUrl, finishRecording } from "@/lib/recording.functions";
@@ -99,9 +100,8 @@ export function RecordingStudio({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const scrollPositionRef = useRef(0);
   const frameRef = useRef(0);
-  const lastScrollFrameRef = useRef(0);
+  const lastFrameRef = useRef(0);
   const scrollingRef = useRef(false);
-  const scrollTickRef = useRef<(timestamp: number) => void>(() => undefined);
   const velocidadeRef = useRef(28);
   const mountedRef = useRef(true);
 
@@ -125,13 +125,14 @@ export function RecordingStudio({
   const [intensidade, setIntensidade] = useState<SkinIntensity>("leve");
   const [suavizarStatus, setSuavizarStatus] = useState<"off" | "carregando" | "ativo">("off");
   const [painel, setPainel] = useState<"ajustes" | "texto" | null>(null);
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<RecordingAspectRatio>(aspectRatio);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const smootherRef = useRef<SkinSmoother | null>(null);
   const suavizarRef = useRef(false);
   const recordingRef = useRef(false);
   const canvasCleanupRef = useRef<() => void>(() => undefined);
   const filtroCss = FILTROS.find((f) => f.id === filtro)?.css ?? "";
-  const outputFormat = RECORDING_FORMATS[aspectRatio];
+  const outputFormat = RECORDING_FORMATS[selectedAspectRatio];
   const outWidth = outputFormat.width;
   const outHeight = outputFormat.height;
 
@@ -140,47 +141,18 @@ export function RecordingStudio({
   suavizarRef.current = suavizar && suavizarStatus === "ativo";
   velocidadeRef.current = velocidade;
 
-  const cancelScrollFrame = useCallback(() => {
+  const cancelAnimationLoop = useCallback(() => {
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
     frameRef.current = 0;
-    lastScrollFrameRef.current = 0;
+    lastFrameRef.current = 0;
   }, []);
 
   const stopScrolling = useCallback(() => {
     scrollingRef.current = false;
-    cancelScrollFrame();
     if (mountedRef.current) setRolando(false);
-  }, [cancelScrollFrame]);
-
-  scrollTickRef.current = (now: number) => {
-    frameRef.current = 0;
-    if (!mountedRef.current || !scrollingRef.current) return;
-
-    const el = scrollRef.current;
-    if (!el) {
-      lastScrollFrameRef.current = now;
-      frameRef.current = requestAnimationFrame((timestamp) => scrollTickRef.current(timestamp));
-      return;
-    }
-
-    const previous = lastScrollFrameRef.current;
-    // Ao voltar de uma aba suspensa, o primeiro quadro apenas redefine o relógio.
-    const deltaSeconds = previous ? Math.min(0.05, Math.max(0, (now - previous) / 1000)) : 0;
-    lastScrollFrameRef.current = now;
-    const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
-    const next = Math.min(maxScroll, scrollPositionRef.current + velocidadeRef.current * deltaSeconds);
-    scrollPositionRef.current = next;
-    el.scrollTop = next;
-
-    if (maxScroll <= 0 || next >= maxScroll - 0.5) {
-      stopScrolling();
-      return;
-    }
-    frameRef.current = requestAnimationFrame((timestamp) => scrollTickRef.current(timestamp));
-  };
+  }, []);
 
   const startScrolling = useCallback(() => {
-    cancelScrollFrame();
     const el = scrollRef.current;
     if (el) {
       const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
@@ -191,8 +163,13 @@ export function RecordingStudio({
     }
     scrollingRef.current = true;
     setRolando(true);
-    frameRef.current = requestAnimationFrame((timestamp) => scrollTickRef.current(timestamp));
-  }, [cancelScrollFrame]);
+  }, []);
+
+  const resetScrolling = useCallback(() => {
+    scrollPositionRef.current = 0;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    lastFrameRef.current = 0;
+  }, []);
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -238,12 +215,12 @@ export function RecordingStudio({
     return () => {
       mountedRef.current = false;
       scrollingRef.current = false;
-      cancelScrollFrame();
+      cancelAnimationLoop();
       const recorder = recorderRef.current;
       if (recorder?.state === "recording") recorder.stop();
       stopStream();
     };
-  }, [cancelScrollFrame, stopStream]);
+  }, [cancelAnimationLoop, stopStream]);
 
   useEffect(() => {
     if (!recording) return;
@@ -251,13 +228,10 @@ export function RecordingStudio({
     return () => window.clearInterval(timer);
   }, [recording]);
 
-  // Descarta timestamps antigos quando a aba volta, evitando saltos sem matar o loop.
+  // Descarta timestamps antigos quando a aba volta e garante um único ciclo ativo.
   useEffect(() => {
     const onVisibilityChange = () => {
-      lastScrollFrameRef.current = 0;
-      if (document.visibilityState === "visible" && scrollingRef.current && !frameRef.current) {
-        frameRef.current = requestAnimationFrame((timestamp) => scrollTickRef.current(timestamp));
-      }
+      lastFrameRef.current = 0;
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
@@ -269,84 +243,98 @@ export function RecordingStudio({
     else startScrolling();
   }, [startScrolling, stopScrolling]);
 
-  // Pipeline de imagem: recorta a câmera na proporção configurada e alimenta preview e gravação.
+  // Um único ciclo anima o preview e o texto, evitando concorrência e perda de avanço no celular.
   useEffect(() => {
     if (previewUrl || !supported) return;
     let cancelled = false;
-    let frame = 0;
     let frames = 0;
     let janela = performance.now();
     let lastDrawAt = 0;
 
     const loop = (now: number) => {
-      if (now - lastDrawAt < 1000 / 30) {
-        if (!cancelled) frame = requestAnimationFrame(loop);
-        return;
+      frameRef.current = 0;
+      if (cancelled || !mountedRef.current) return;
+
+      const previous = lastFrameRef.current;
+      const deltaSeconds = previous ? Math.min(0.25, Math.max(0, (now - previous) / 1000)) : 0;
+      lastFrameRef.current = now;
+
+      const scrollElement = scrollRef.current;
+      if (scrollingRef.current && scrollElement) {
+        const maxScroll = Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight);
+        const next = Math.min(maxScroll, scrollPositionRef.current + velocidadeRef.current * deltaSeconds);
+        scrollPositionRef.current = next;
+        scrollElement.scrollTop = next;
+        if (maxScroll <= 0 || next >= maxScroll - 0.5) stopScrolling();
       }
-      lastDrawAt = now;
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const smoother = smootherRef.current;
-      if (video && canvas && video.videoWidth && video.videoHeight) {
-        if (canvas.width !== outWidth || canvas.height !== outHeight) {
-          canvas.width = outWidth;
-          canvas.height = outHeight;
-        }
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          const crop = cropCover(video.videoWidth, video.videoHeight, outWidth, outHeight);
-          const drawSource = (target: CanvasRenderingContext2D) => {
-            target.filter = filtroCss || "none";
-            try {
-              target.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, outWidth, outHeight);
-            } catch {
-              // quadro ainda indisponível
-            }
-            target.filter = "none";
-          };
-          drawSource(ctx);
-          if (smoother && suavizarRef.current) {
-            try {
-              smoother.render(ctx, video, {
-                intensity: intensidade,
-                timestamp: now,
-                drawSource,
-                project: (x, y) => ({
-                  x: (x * video.videoWidth - crop.sx) * (outWidth / crop.sw),
-                  y: (y * video.videoHeight - crop.sy) * (outHeight / crop.sh),
-                }),
-              });
-            } catch {
-              // segue mostrando o quadro sem suavização
+
+      if (now - lastDrawAt >= 1000 / 30) {
+        lastDrawAt = now;
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        const smoother = smootherRef.current;
+        if (video && canvas && video.videoWidth && video.videoHeight) {
+          if (canvas.width !== outWidth || canvas.height !== outHeight) {
+            canvas.width = outWidth;
+            canvas.height = outHeight;
+          }
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            const crop = cropCover(video.videoWidth, video.videoHeight, outWidth, outHeight);
+            const drawSource = (target: CanvasRenderingContext2D) => {
+              target.filter = filtroCss || "none";
+              try {
+                target.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, outWidth, outHeight);
+              } catch {
+                // quadro ainda indisponível
+              }
+              target.filter = "none";
+            };
+            drawSource(ctx);
+            if (smoother && suavizarRef.current) {
+              try {
+                smoother.render(ctx, video, {
+                  intensity: intensidade,
+                  timestamp: now,
+                  drawSource,
+                  project: (x, y) => ({
+                    x: (x * video.videoWidth - crop.sx) * (outWidth / crop.sw),
+                    y: (y * video.videoHeight - crop.sy) * (outHeight / crop.sh),
+                  }),
+                });
+              } catch {
+                // segue mostrando o quadro sem suavização
+              }
             }
           }
-        }
-        if (suavizarRef.current) {
-          frames += 1;
-          const elapsed = performance.now() - janela;
-          if (elapsed > 5000) {
-            const fps = (frames * 1000) / elapsed;
+          if (suavizarRef.current) {
+            frames += 1;
+            const elapsed = performance.now() - janela;
+            if (elapsed > 5000) {
+              const fps = (frames * 1000) / elapsed;
+              frames = 0;
+              janela = performance.now();
+              if (fps < 10 && !recordingRef.current) {
+                toast.warning("Suavizar pele foi desligado: ficou pesado neste aparelho. A gravação segue normal.");
+                setSuavizar(false);
+              }
+            }
+          } else {
             frames = 0;
             janela = performance.now();
-            if (fps < 10 && !recordingRef.current) {
-              toast.warning("Suavizar pele foi desligado: ficou pesado neste aparelho. A gravação segue normal.");
-              setSuavizar(false);
-            }
           }
-        } else {
-          frames = 0;
-          janela = performance.now();
         }
       }
-      if (!cancelled) frame = requestAnimationFrame(loop);
+      if (!cancelled) frameRef.current = requestAnimationFrame(loop);
     };
 
-     frame = requestAnimationFrame(loop);
+    cancelAnimationLoop();
+    frameRef.current = requestAnimationFrame(loop);
     return () => {
       cancelled = true;
-      cancelAnimationFrame(frame);
+      cancelAnimationLoop();
     };
-  }, [filtroCss, intensidade, outHeight, outWidth, previewUrl, supported]);
+  }, [cancelAnimationLoop, filtroCss, intensidade, outHeight, outWidth, previewUrl, stopScrolling, supported]);
 
   // Carrega a suavização de pele só quando a pessoa liga o recurso.
   useEffect(() => {
@@ -444,8 +432,7 @@ export function RecordingStudio({
     setPreviewUrl(null);
     setSeconds(0);
     setRecording(true);
-    scrollPositionRef.current = 0;
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    resetScrolling();
     startScrolling();
   };
 
@@ -493,7 +480,7 @@ export function RecordingStudio({
           computador, para usar o estúdio.
         </div>
       ) : (
-        <div className={`relative overflow-hidden bg-black ${outputFormat.frameClass}`} data-recording-aspect-ratio={aspectRatio}>
+        <div className={`relative shrink-0 overflow-hidden bg-black ${outputFormat.frameClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
           {previewUrl ? (
             <video
               src={previewUrl}
@@ -589,6 +576,18 @@ export function RecordingStudio({
                 </Button>
               </div>
 
+              {recording && (
+                <div className="absolute inset-x-3 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] z-20 flex items-center justify-center gap-2">
+                  <div className="flex items-center gap-1 rounded-full bg-black/55 p-1.5 text-white shadow-xl backdrop-blur-md">
+                    <Button variant="ghost" size="icon" aria-label="Diminuir velocidade do texto" title="Diminuir velocidade" className="size-11 rounded-full text-white hover:bg-white/15 hover:text-white" onClick={() => setVelocidade((v) => Math.max(8, v - 6))}><Minus /></Button>
+                    <span className="min-w-10 text-center text-xs font-bold" aria-live="polite">{velocidade}</span>
+                    <Button variant="ghost" size="icon" aria-label="Aumentar velocidade do texto" title="Aumentar velocidade" className="size-11 rounded-full text-white hover:bg-white/15 hover:text-white" onClick={() => setVelocidade((v) => Math.min(90, v + 6))}><Plus /></Button>
+                    <Button variant="ghost" size="icon" aria-label={rolando ? "Pausar texto" : "Continuar texto"} title={rolando ? "Pausar texto" : "Continuar texto"} className="size-11 rounded-full text-white hover:bg-white/15 hover:text-white" onClick={alternarRolagem}>{rolando ? <Pause /> : <Play />}</Button>
+                    <Button variant="ghost" size="icon" aria-label="Voltar texto ao início" title="Voltar ao início" className="size-11 rounded-full text-white hover:bg-white/15 hover:text-white" onClick={resetScrolling}><ArrowUpToLine /></Button>
+                  </div>
+                </div>
+              )}
+
               <div className="absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-[1fr_auto_1fr] items-end px-4">
                 <Button variant="secondary" size="icon" aria-label={rolando ? "Pausar texto" : "Rolar texto"} title={rolando ? "Pausar texto" : "Rolar texto"} className="justify-self-start rounded-full bg-black/45 text-white backdrop-blur-md hover:bg-black/65 hover:text-white" onClick={alternarRolagem}>
                   {rolando ? <Pause /> : <Play />}
@@ -609,6 +608,37 @@ export function RecordingStudio({
                     </div>
                     {painel === "ajustes" ? (
                       <div className="grid gap-5">
+                        <div>
+                          <p className="mb-2 text-xs font-semibold text-muted-foreground">Formato de gravação</p>
+                          <Select
+                            value={selectedAspectRatio}
+                            disabled={recording}
+                            onValueChange={(value: RecordingAspectRatio) => {
+                              const previous = selectedAspectRatio;
+                              setSelectedAspectRatio(value);
+                              void supabase
+                                .from("profile_video_settings")
+                                .update({ recording_aspect_ratio: value })
+                                .eq("profile_id", job.profile_id)
+                                .then(({ error: updateError }) => {
+                                  if (updateError) {
+                                    setSelectedAspectRatio(previous);
+                                    toast.error("Não foi possível salvar o formato de gravação.");
+                                  } else {
+                                    void qc.invalidateQueries({ queryKey: ["video-settings"] });
+                                  }
+                                });
+                            }}
+                          >
+                            <SelectTrigger aria-label="Formato de gravação"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {(Object.entries(RECORDING_FORMATS) as [RecordingAspectRatio, (typeof RECORDING_FORMATS)[RecordingAspectRatio]][]).map(([value, option]) => (
+                                <SelectItem key={value} value={value}>{option.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="mt-2 text-xs text-muted-foreground">O preview e o arquivo salvo usam exatamente este recorte.</p>
+                        </div>
                         <div>
                           <p className="mb-2 text-xs font-semibold text-muted-foreground">Filtro de imagem</p>
                           <div className="flex flex-wrap gap-2">
@@ -656,7 +686,7 @@ export function RecordingStudio({
                   setPreviewUrl(null);
                   setBlob(null);
                   setSeconds(0);
-                  scrollPositionRef.current = 0;
+                  resetScrolling();
                   setError(null);
                   setCameraSession((session) => session + 1);
                 }}

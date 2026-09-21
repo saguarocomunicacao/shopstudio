@@ -203,17 +203,32 @@ function DraftsContent() {
                 )}
                 {!pendente && <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>}
                 <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${current?.badge ?? "status-violet"}`}
-                  >
-                    {pendente ? "Pendente de gravação" : current?.label}
-                  </span>
-                  {!pendente && !job.video_path && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
-                      <AlertTriangle className="size-3" />
-                      não salvo
+                <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${current?.badge ?? "status-violet"}`}
+                    >
+                      {pendente ? "Pendente de gravação" : current?.label}
                     </span>
+                    {!pendente && !job.video_path && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                        <AlertTriangle className="size-3" />
+                        não salvo
+                      </span>
+                    )}
+                  </div>
+                  {pendente && canRemove(job) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      aria-label={`Excluir ${job.title || "vídeo"}`}
+                      title="Excluir vídeo"
+                      onClick={() => setDeleting(job)}
+                    >
+                      <Trash2 />
+                    </Button>
                   )}
                 </div>
                 <div className={`mt-3 grid gap-2 ${pendente ? "grid-cols-1" : "grid-cols-[minmax(0,1fr)_auto]"}`}>
@@ -229,19 +244,6 @@ function DraftsContent() {
                     </>
                   ) : (
                     <Button className="min-w-0" onClick={abrir}>Abrir kit de postagem</Button>
-                  )}
-                  {pendente && canRemove(job) && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="justify-self-end text-destructive hover:text-destructive"
-                      aria-label={`Excluir ${job.title || "vídeo"}`}
-                      title="Excluir vídeo"
-                      onClick={() => setDeleting(job)}
-                    >
-                      <Trash2 />
-                    </Button>
                   )}
                 </div>
               </article>
