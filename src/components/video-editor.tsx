@@ -347,7 +347,7 @@ export function VideoEditor({
     const progressOffset = circumference * (1 - progresso / 100);
 
     return (
-      <div className="dark fixed inset-0 z-[80] grid h-screen w-screen place-items-center overflow-hidden bg-background px-[max(1.5rem,env(safe-area-inset-right))] py-[env(safe-area-inset-bottom)] text-foreground supports-[height:100dvh]:h-[100dvh]">
+      <div className="dark fixed inset-0 z-[80] grid h-screen w-screen place-items-center overflow-hidden bg-background pb-[env(safe-area-inset-bottom)] pl-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] text-foreground supports-[height:100dvh]:h-[100dvh]">
         <div className="grid justify-items-center gap-7 text-center" role="status" aria-live="polite" aria-label={`Aplicando edição, ${progresso}% concluído`}>
           <div className="relative grid size-36 place-items-center">
             <svg className="absolute inset-0 size-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
