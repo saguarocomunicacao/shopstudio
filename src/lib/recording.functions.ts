@@ -338,7 +338,13 @@ export const saveRecordingScript = createServerFn({ method: "POST" })
 export const createRecordingUploadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ jobId: z.string().uuid(), extension: z.enum(["webm", "mp4"]).default("webm") }).parse(data),
+    z
+      .object({
+        jobId: z.string().uuid(),
+        extension: z.enum(["webm", "mp4"]).default("webm"),
+        kind: z.enum(["original", "editado"]).default("original"),
+      })
+      .parse(data),
   )
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
@@ -351,7 +357,7 @@ export const createRecordingUploadUrl = createServerFn({ method: "POST" })
     if (job.formato !== "gravacao") throw new Error("Este job não é do formato Gravar eu mesmo.");
     await assertCanEdit(context.supabase, job.profile_id);
 
-    const path = `gravacoes/${data.jobId}-${Date.now()}.${data.extension}`;
+    const path = `gravacoes/${data.jobId}-${data.kind}-${Date.now()}.${data.extension}`;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: signed, error: signError } = await supabaseAdmin.storage
       .from("job-media")
@@ -360,16 +366,85 @@ export const createRecordingUploadUrl = createServerFn({ method: "POST" })
     return { path, token: signed.token, signedUrl: signed.signedUrl };
   });
 
-/** Conclui a gravação: o arquivo enviado vira o vídeo do job e entra na fila de rascunhos. */
+const editOperation = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("trim"), start: z.number().min(0), end: z.number().min(0) }),
+  z.object({ type: z.literal("crop"), x: z.number(), y: z.number(), width: z.number(), height: z.number() }),
+  z.object({ type: z.literal("cut"), start: z.number().min(0), end: z.number().min(0) }),
+]);
+
+/**
+ * Conclui a gravação. O arquivo original é sempre preservado; quando existe uma
+ * versão editada, ela vira o vídeo exibido, sem apagar o original.
+ */
 export const finishRecording = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ jobId: z.string().uuid(), path: z.string().trim().min(3).max(300) }).parse(data),
+    z
+      .object({
+        jobId: z.string().uuid(),
+        path: z.string().trim().min(3).max(300),
+        editedPath: z.string().trim().min(3).max(300).nullish(),
+        operations: z.array(editOperation).max(20).nullish(),
+      })
+      .parse(data),
   )
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("jobs")
-      .select("id, profile_id, formato, video_path")
+      .select("id, profile_id, formato, video_path, video_original_path")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Job não encontrado.");
+    if (job.formato !== "gravacao") throw new Error("Este job não é do formato Gravar eu mesmo.");
+    for (const candidate of [data.path, data.editedPath]) {
+      if (candidate && !candidate.startsWith(`gravacoes/${data.jobId}-`)) throw new Error("Arquivo inválido para este job.");
+    }
+    await assertCanEdit(context.supabase, job.profile_id);
+
+    const visible = data.editedPath ?? data.path;
+    const { error: updateError } = await context.supabase
+      .from("jobs")
+      .update({
+        status: "video_pronto",
+        video_path: visible,
+        video_original_path: data.path,
+        video_edits: data.editedPath ? ((data.operations ?? []) as never) : null,
+        video_storage_status: "salvo",
+        video_storage_error: null,
+        recorded_at: new Date().toISOString(),
+        render_error: null,
+      })
+      .eq("id", data.jobId);
+    if (updateError) throw new Error(updateError.message);
+
+    const obsoletos = [job.video_path, job.video_original_path].filter(
+      (p): p is string => !!p && p !== visible && p !== data.path,
+    );
+    if (obsoletos.length) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: cleanupError } = await supabaseAdmin.storage.from("job-media").remove(obsoletos);
+      if (cleanupError) console.error("Falha ao limpar gravação substituída", { jobId: job.id, message: cleanupError.message });
+    }
+    return { ok: true };
+  });
+
+/** Salva uma edição feita depois da gravação, sem tocar no arquivo original. */
+export const saveEditedRecording = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        jobId: z.string().uuid(),
+        path: z.string().trim().min(3).max(300),
+        operations: z.array(editOperation).max(20),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, profile_id, formato, video_path, video_original_path")
       .eq("id", data.jobId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -378,22 +453,48 @@ export const finishRecording = createServerFn({ method: "POST" })
     if (!data.path.startsWith(`gravacoes/${data.jobId}-`)) throw new Error("Arquivo inválido para este job.");
     await assertCanEdit(context.supabase, job.profile_id);
 
+    const original = job.video_original_path ?? job.video_path;
+    if (!original) throw new Error("Este vídeo ainda não tem uma gravação original salva.");
+
     const { error: updateError } = await context.supabase
       .from("jobs")
-      .update({
-        status: "video_pronto",
-        video_path: data.path,
-        video_storage_status: "salvo",
-        video_storage_error: null,
-        recorded_at: new Date().toISOString(),
-        render_error: null,
-      })
+      .update({ video_path: data.path, video_original_path: original, video_edits: data.operations as never })
       .eq("id", data.jobId);
     if (updateError) throw new Error(updateError.message);
-    if (job.video_path && job.video_path !== data.path) {
+
+    if (job.video_path && job.video_path !== original && job.video_path !== data.path) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { error: cleanupError } = await supabaseAdmin.storage.from("job-media").remove([job.video_path]);
-      if (cleanupError) console.error("Falha ao limpar gravação substituída", { jobId: job.id, message: cleanupError.message });
+      await supabaseAdmin.storage.from("job-media").remove([job.video_path]);
+    }
+    return { ok: true };
+  });
+
+/** Descarta a edição e volta a exibir a gravação original. */
+export const restoreOriginalRecording = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ jobId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, profile_id, formato, video_path, video_original_path")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Job não encontrado.");
+    if (job.formato !== "gravacao") throw new Error("Este job não é do formato Gravar eu mesmo.");
+    await assertCanEdit(context.supabase, job.profile_id);
+    const original = job.video_original_path;
+    if (!original) throw new Error("Este vídeo não tem uma versão original separada.");
+
+    const { error: updateError } = await context.supabase
+      .from("jobs")
+      .update({ video_path: original, video_edits: null })
+      .eq("id", data.jobId);
+    if (updateError) throw new Error(updateError.message);
+
+    if (job.video_path && job.video_path !== original) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.storage.from("job-media").remove([job.video_path]);
     }
     return { ok: true };
   });
@@ -423,7 +524,7 @@ export const deleteRecordingJob = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job, error: readError } = await context.supabase
       .from("jobs")
-      .select("id, profile_id, formato, video_path")
+      .select("id, profile_id, formato, video_path, video_original_path")
       .eq("id", data.jobId)
       .maybeSingle();
     if (readError) throw new Error(readError.message);
@@ -442,8 +543,9 @@ export const deleteRecordingJob = createServerFn({ method: "POST" })
     if (deleteError) throw new Error(deleteError.message);
     if (!deleted) throw new Error("Você não tem permissão para remover conteúdo deste perfil.");
 
-    if (job.video_path) {
-      const { error: storageError } = await supabaseAdmin.storage.from("job-media").remove([job.video_path]);
+    const arquivos = [...new Set([job.video_path, job.video_original_path].filter((p): p is string => !!p))];
+    if (arquivos.length) {
+      const { error: storageError } = await supabaseAdmin.storage.from("job-media").remove(arquivos);
       if (storageError) console.error("Falha ao limpar gravação excluída", { jobId: job.id, message: storageError.message });
     }
 

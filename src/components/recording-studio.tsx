@@ -12,6 +12,7 @@ import {
   Play,
   Plus,
   RefreshCw,
+  Scissors,
   Sparkles,
   Square,
   SlidersHorizontal,
@@ -30,6 +31,8 @@ import { withoutDuplicatedHook } from "@/lib/recording-script";
 import { RECORDING_FORMATS, cropCover, type RecordingAspectRatio } from "@/lib/recording-format";
 import { createSkinSmoother, type SkinIntensity, type SkinSmoother } from "@/lib/skin-smoothing";
 import { actionError } from "@/lib/api-keys";
+import { VideoEditor } from "@/components/video-editor";
+import type { VideoEditOperation } from "@/lib/video-edit";
 
 const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
   { id: "leve", label: "Leve" },
@@ -126,6 +129,11 @@ export function RecordingStudio({
   const [espelhado, setEspelhado] = useState(false);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // O original nunca é substituído: a edição vive ao lado dele até o envio.
+  const [editedBlob, setEditedBlob] = useState<Blob | null>(null);
+  const [editedUrl, setEditedUrl] = useState<string | null>(null);
+  const [operations, setOperations] = useState<VideoEditOperation[]>([]);
+  const [editorAberto, setEditorAberto] = useState(false);
   const [cameraSession, setCameraSession] = useState(0);
   const [filtro, setFiltro] = useState<FiltroId>("nenhum");
   const [reduzirRuido, setReduzirRuido] = useState(true);
@@ -502,16 +510,22 @@ export function RecordingStudio({
     recorder.stop();
   };
 
+  const enviar = async (arquivo: Blob, kind: "original" | "editado") => {
+    const extension = arquivo.type.includes("mp4") ? "mp4" : "webm";
+    const { path, token } = await getUploadUrl({ data: { jobId: job.id, extension, kind } });
+    const { error: uploadError } = await supabase.storage.from("job-media").uploadToSignedUrl(path, token, arquivo, {
+      contentType: arquivo.type || "video/webm",
+    });
+    if (uploadError) throw new Error(uploadError.message);
+    return path;
+  };
+
   const salvar = useMutation({
     mutationFn: async () => {
       if (!blob) throw new Error("Nada gravado ainda.");
-      const extension = blob.type.includes("mp4") ? "mp4" : "webm";
-      const { path, token } = await getUploadUrl({ data: { jobId: job.id, extension } });
-      const { error: uploadError } = await supabase.storage.from("job-media").uploadToSignedUrl(path, token, blob, {
-        contentType: blob.type || "video/webm",
-      });
-      if (uploadError) throw new Error(uploadError.message);
-      await finish({ data: { jobId: job.id, path } });
+      const path = await enviar(blob, "original");
+      const editedPath = editedBlob ? await enviar(editedBlob, "editado") : null;
+      await finish({ data: { jobId: job.id, path, editedPath, operations: editedPath ? operations : null } });
     },
     onSuccess: () => {
       stopStream();
@@ -538,7 +552,7 @@ export function RecordingStudio({
             <div className={`relative w-full max-h-full overflow-hidden bg-black ${outputFormat.mediaClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
               {previewUrl ? (
                 <video
-                  src={previewUrl}
+                  src={editedUrl ?? previewUrl}
                   controls
                   playsInline
                   preload="metadata"
@@ -728,26 +742,50 @@ export function RecordingStudio({
                 {salvar.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
                 {salvar.isPending ? "Salvando..." : "Salvar"}
               </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                disabled={salvar.isPending}
-                onClick={() => {
-                  if (previewUrl) URL.revokeObjectURL(previewUrl);
-                  setPreviewUrl(null);
-                  setBlob(null);
-                  setSeconds(0);
-                  resetScrolling();
-                  setError(null);
-                  setCameraSession((session) => session + 1);
-                }}
-              >
-                <RefreshCw />
-                Regravar
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="secondary" size="lg" disabled={salvar.isPending} onClick={() => setEditorAberto(true)}>
+                  <Scissors />
+                  Editar
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  disabled={salvar.isPending}
+                  onClick={() => {
+                    if (previewUrl) URL.revokeObjectURL(previewUrl);
+                    if (editedUrl) URL.revokeObjectURL(editedUrl);
+                    setPreviewUrl(null);
+                    setEditedUrl(null);
+                    setEditedBlob(null);
+                    setOperations([]);
+                    setBlob(null);
+                    setSeconds(0);
+                    resetScrolling();
+                    setError(null);
+                    setCameraSession((session) => session + 1);
+                  }}
+                >
+                  <RefreshCw />
+                  Regravar
+                </Button>
+              </div>
+              {editedBlob && <p className="text-center text-xs text-white/70">Mostrando a versão editada. O vídeo original continua guardado.</p>}
             </div>
           )}
         </div>
+      )}
+      {editorAberto && blob && (
+        <VideoEditor
+          source={blob}
+          onCancel={() => setEditorAberto(false)}
+          onApply={(resultado, ops) => {
+            if (editedUrl) URL.revokeObjectURL(editedUrl);
+            setEditedBlob(resultado);
+            setEditedUrl(URL.createObjectURL(resultado));
+            setOperations(ops);
+            setEditorAberto(false);
+          }}
+        />
       )}
     </div>
   );
