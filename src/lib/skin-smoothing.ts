@@ -75,15 +75,18 @@ export async function loadSkinSmoother() {
   return cached;
 }
 
+export type SkinRenderOptions = {
+  intensity: SkinIntensity;
+  timestamp: number;
+  /** Redesenha o quadro original (já recortado/filtrado) no contexto. */
+  drawSource: (ctx: CanvasRenderingContext2D) => void;
+  /** Converte coordenadas normalizadas do vídeo para pixels do canvas de saída. */
+  project: (x: number, y: number) => { x: number; y: number };
+};
+
 export type SkinSmoother = {
   /** Desenha o quadro já suavizado no contexto informado. Retorna false se não conseguiu detectar rosto. */
-  render: (
-    ctx: CanvasRenderingContext2D,
-    video: HTMLVideoElement,
-    intensity: SkinIntensity,
-    timestamp: number,
-    filterCss: string,
-  ) => boolean;
+  render: (ctx: CanvasRenderingContext2D, video: HTMLVideoElement, options: SkinRenderOptions) => boolean;
   close: () => void;
 };
 
@@ -93,19 +96,25 @@ export async function createSkinSmoother(): Promise<SkinSmoother> {
   const blurCtx = blurCanvas.getContext("2d");
   let lastTs = -1;
 
-  const tracePath = (target: CanvasRenderingContext2D, pts: Landmark[], idx: number[], w: number, h: number) => {
+  const tracePath = (
+    target: CanvasRenderingContext2D,
+    pts: Landmark[],
+    idx: number[],
+    project: SkinRenderOptions["project"],
+  ) => {
     target.beginPath();
     idx.forEach((i, position) => {
       const p = pts[i];
       if (!p) return;
-      if (position === 0) target.moveTo(p.x * w, p.y * h);
-      else target.lineTo(p.x * w, p.y * h);
+      const point = project(p.x, p.y);
+      if (position === 0) target.moveTo(point.x, point.y);
+      else target.lineTo(point.x, point.y);
     });
     target.closePath();
   };
 
   return {
-    render(ctx, video, intensity, timestamp, filterCss) {
+    render(ctx, video, { intensity, timestamp, drawSource, project }) {
       const w = ctx.canvas.width;
       const h = ctx.canvas.height;
       if (!blurCtx || !w || !h) return false;
@@ -129,7 +138,7 @@ export async function createSkinSmoother(): Promise<SkinSmoother> {
       blurCtx.filter = "none";
 
       ctx.save();
-      tracePath(ctx, landmarks, regions.oval, w, h);
+      tracePath(ctx, landmarks, regions.oval, project);
       ctx.clip();
       ctx.globalAlpha = alpha;
       ctx.drawImage(blurCanvas, 0, 0, w, h);
@@ -139,15 +148,13 @@ export async function createSkinSmoother(): Promise<SkinSmoother> {
       // Repõe olhos, sobrancelhas e boca nítidos por cima da região suavizada.
       for (const hole of regions.holes) {
         ctx.save();
-        tracePath(ctx, landmarks, hole, w, h);
+        tracePath(ctx, landmarks, hole, project);
         ctx.clip();
-        ctx.filter = filterCss || "none";
         try {
-          ctx.drawImage(video, 0, 0, w, h);
+          drawSource(ctx);
         } catch {
           // quadro indisponível
         }
-        ctx.filter = "none";
         ctx.restore();
       }
       return true;
