@@ -61,15 +61,23 @@ const ACAO_POR_ETAPA: Record<ConsumoEvento["etapa"], BillableAction> = {
 /** Tenant da plataforma, usado apenas em consumo global (sem job e sem perfil). */
 const PLATFORM_TENANT_ID = "f7192d96-160f-4157-8599-eced5990bf8b";
 
+/** Primeiro dia do mês-calendário vigente (ciclo da franquia). */
+function inicioDoCiclo(): string {
+  const agora = new Date();
+  return new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), 1)).toISOString();
+}
+
 /**
- * Preço da ferramenta para esta ação no plano vigente do cliente.
+ * Preço da ferramenta para esta ação no plano vigente do cliente, considerando
+ * a franquia mensal: dentro da franquia custa 0, fora custa o excedente, e
+ * planos sem franquia cobram o preço unitário desde a primeira unidade.
  * É gravado como snapshot no evento e nunca recalculado depois.
  */
 async function toolPriceCents(
   supabaseAdmin: { from: (t: string) => any },
   tenantId: string,
   acao: BillableAction,
-): Promise<number> {
+): Promise<{ price: number; mode: "unitario" | "incluido" | "excedente" }> {
   try {
     const { data: tenant } = await supabaseAdmin
       .from("tenants")
@@ -77,17 +85,33 @@ async function toolPriceCents(
       .eq("id", tenantId)
       .maybeSingle();
     const planId = tenant?.plan_id ?? null;
-    if (!planId) return 0;
+    if (!planId) return { price: 0, mode: "unitario" };
     const { data: price } = await supabaseAdmin
       .from("plan_action_prices")
-      .select("price_cents")
+      .select("included_qty, unit_price_cents, overage_price_cents")
       .eq("plan_id", planId)
       .eq("action_type", acao)
       .maybeSingle();
-    return Number(price?.price_cents ?? 0) || 0;
+    if (!price) return { price: 0, mode: "unitario" };
+
+    const incluidas = Number(price.included_qty ?? 0) || 0;
+    const unitario = Number(price.unit_price_cents ?? 0) || 0;
+    const excedente = Number(price.overage_price_cents ?? 0) || 0;
+    if (incluidas <= 0) return { price: unitario, mode: "unitario" };
+
+    const { count } = await supabaseAdmin
+      .from("consumo_eventos")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("action_type", acao)
+      .gte("created_at", inicioDoCiclo());
+    const jaUsadas = Number(count ?? 0) || 0;
+    return jaUsadas < incluidas
+      ? { price: 0, mode: "incluido" }
+      : { price: excedente, mode: "excedente" };
   } catch (e) {
     console.error("[consumo] falha ao resolver preço da ação", e);
-    return 0;
+    return { price: 0, mode: "unitario" };
   }
 }
 
