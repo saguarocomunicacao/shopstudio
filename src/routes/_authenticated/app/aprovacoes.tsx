@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ApprovalsPage } from "@/components/approvals-page";
+import { requireBackofficeRoute } from "@/lib/backoffice-route";
 
 export const Route = createFileRoute("/_authenticated/app/aprovacoes")({
+  beforeLoad: requireBackofficeRoute,
   head: () => ({
     meta: [
       { title: "Empresas — Shop Studio" },

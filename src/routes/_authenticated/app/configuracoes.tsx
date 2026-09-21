@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SettingsPage } from "@/components/studio-pages";
+import { requireBackofficeRoute } from "@/lib/backoffice-route";
 
 export const Route = createFileRoute("/_authenticated/app/configuracoes")({
+  beforeLoad: requireBackofficeRoute,
   head: () => ({
     meta: [
       { title: "Configurações do backoffice — Shop Studio" },

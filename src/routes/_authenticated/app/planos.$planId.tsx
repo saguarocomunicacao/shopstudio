@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PlanDetailPage } from "@/components/plans-card";
+import { requireBackofficeRoute } from "@/lib/backoffice-route";
 
 export const Route = createFileRoute("/_authenticated/app/planos/$planId")({
+  beforeLoad: requireBackofficeRoute,
   head: () => ({ meta: [
     { title: "Detalhe do plano — Shop Studio" },
     { name: "description", content: "Configure franquias e preços por ação do plano." },
