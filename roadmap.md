@@ -8,7 +8,7 @@
 - [x] Diagnosticar a distorção do preview e do arquivo gravado no mobile
 - [x] Preservar o stream nativo e aplicar recorte central no canvas
 - [x] Validar proporção dos pixels no preview e no arquivo gravado
-- [ ] Manter controles do teleprompter disponíveis antes e durante a gravação
-- [ ] Sincronizar reinício, velocidade e tamanho do texto em tempo real
-- [ ] Isolar a proporção de gravação do layout dos ajustes e controles
-- [ ] Validar as quatro correções no mobile sem regressão no desktop
+- [x] Manter controles do teleprompter disponíveis antes e durante a gravação
+- [x] Sincronizar reinício, velocidade e tamanho do texto em tempo real
+- [x] Isolar a proporção de gravação do layout dos ajustes e controles
+- [x] Validar as quatro correções no mobile sem regressão no desktop
