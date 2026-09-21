@@ -322,8 +322,9 @@ export function VideoEditor({
               return;
             }
             video.pause();
-            video.currentTime = list[0].start;
-            setCurrentTime(list[0].start);
+            const inicio = list[0]?.start ?? 0;
+            video.currentTime = inicio;
+            setCurrentTime(inicio);
           }}
           />
           <Button type="button" size="icon" aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"} className="absolute bottom-3 left-1/2 size-11 -translate-x-1/2 rounded-full shadow-xl" onClick={() => void togglePlayback()}>
