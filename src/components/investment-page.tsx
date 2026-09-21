@@ -236,7 +236,7 @@ function CarteiraCard({
           </div>
           <p className="mt-1 max-w-xl text-xs text-muted-foreground">{def.descricao}</p>
         </div>
-        {podeEditar && <AporteDialog fornecedor={def.key} unidade={def.unidade} />}
+        {podeEditar && <AporteDialog fornecedor={def.key} unidade={def.unidade} tenantId={tenantId} />}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
