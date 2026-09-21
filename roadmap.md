@@ -21,4 +21,6 @@
 - [x] Corrigir layout responsivo do editor em desktop e mobile
 - [x] Adicionar múltiplos cortes internos com tesoura e concatenação
 - [x] Testar trim e tesoura reais e validar o resultado visual
+- [x] Mostrar tela dedicada com progresso circular ao aplicar edição
+- [x] Permitir reproduzir o vídeo na revisão antes de salvar
 - [ ] Parte futura: recorte de quadro
