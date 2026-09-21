@@ -277,6 +277,14 @@ function PipelineContent() {
         onOpenChange={(open) => !open && setDetail(null)}
       />
 
+      {recording && (
+        <RecordingKitDialog
+          job={jobs.find((j) => j.id === recording.id) ?? recording}
+          canEdit={canEditJob(recording)}
+          onClose={() => setRecording(null)}
+        />
+      )}
+
       <AlertDialog open={!!reverting} onOpenChange={(open) => !open && setReverting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
