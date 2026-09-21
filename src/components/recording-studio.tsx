@@ -39,6 +39,12 @@ const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
+// Solicita uma captura comum da câmera, sem obrigar o navegador a remodelar o
+// sensor para a proporção final. O recorte para 9:16, 1:1, 4:5 ou 16:9 é feito
+// somente depois, a partir dos pixels nativos expostos pelo elemento de vídeo.
+const CAMERA_IDEAL_WIDTH = 1920;
+const CAMERA_IDEAL_HEIGHT = 1080;
+
 type TeleprompterItem = { fala: string; orientacao?: string };
 
 /** Somente o conteúdo falado: gancho e falas dos blocos, com suas dicas de ação. */
@@ -200,7 +206,11 @@ export function RecordingStudio({
       try {
         stopStream();
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: mode, width: { ideal: outWidth }, height: { ideal: outHeight } },
+          video: {
+            facingMode: { ideal: mode },
+            width: { ideal: CAMERA_IDEAL_WIDTH },
+            height: { ideal: CAMERA_IDEAL_HEIGHT },
+          },
           audio: limparRuido
             ? { noiseSuppression: true, echoCancellation: true, autoGainControl: true }
             : { noiseSuppression: false, echoCancellation: false, autoGainControl: false },
@@ -219,7 +229,7 @@ export function RecordingStudio({
         );
       }
     },
-    [outHeight, outWidth, stopStream],
+    [stopStream],
   );
 
   useEffect(() => {
@@ -388,11 +398,11 @@ export function RecordingStudio({
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
   /** Grava pelo canvas configurado, então o arquivo salvo replica enquadramento e filtros do preview. */
-  const buildFilteredStream = (base: MediaStream): MediaStream => {
+  const buildFilteredStream = (base: MediaStream): MediaStream | null => {
     const canvas = canvasRef.current;
-    if (!canvas || typeof canvas.captureStream !== "function") return base;
+    if (!canvas || typeof canvas.captureStream !== "function") return null;
     const output = canvas.captureStream(30);
-    if (!output.getVideoTracks().length) return base;
+    if (!output.getVideoTracks().length) return null;
     base.getAudioTracks().forEach((audio) => output.addTrack(audio));
     canvasCleanupRef.current = () => {
       output.getVideoTracks().forEach((t) => t.stop());
@@ -407,6 +417,10 @@ export function RecordingStudio({
     chunksRef.current = [];
     const mimeType = pickMimeType();
     const recordingStream = buildFilteredStream(stream);
+    if (!recordingStream) {
+      setError("Este navegador não consegue gravar o enquadramento mostrado. Atualize o Chrome ou Safari e tente novamente.");
+      return;
+    }
     let recorder: MediaRecorder;
     try {
       recorder = new MediaRecorder(recordingStream, mimeType ? { mimeType } : undefined);
@@ -503,7 +517,7 @@ export function RecordingStudio({
           computador, para usar o estúdio.
         </div>
       ) : (
-        <div className={`relative shrink-0 overflow-hidden bg-black ${outputFormat.frameClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
+        <div className={`relative shrink-0 overflow-hidden bg-black ${outputFormat.frameClass} ${outputFormat.mediaClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
           {previewUrl ? (
             <video
               src={previewUrl}
@@ -524,7 +538,9 @@ export function RecordingStudio({
               />
               <canvas
                 ref={canvasRef}
-                className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
+                width={outWidth}
+                height={outHeight}
+                className={`block size-full bg-black ${facing === "user" ? "-scale-x-100" : ""}`}
               />
             </>
           )}
