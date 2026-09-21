@@ -1151,6 +1151,7 @@ export type Database = {
         | "busca_kalodata"
         | "roteiro_texto"
         | "narracao_elevenlabs"
+        | "transcricao_audio"
       job_status:
         | "novo"
         | "produto_escolhido"
@@ -1169,6 +1170,7 @@ export type Database = {
         | "token_input"
         | "token_output"
         | "mil_caracteres"
+        | "minuto_audio"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1303,6 +1305,7 @@ export const Constants = {
         "busca_kalodata",
         "roteiro_texto",
         "narracao_elevenlabs",
+        "transcricao_audio",
       ],
       job_status: [
         "novo",
@@ -1323,6 +1326,7 @@ export const Constants = {
         "token_input",
         "token_output",
         "mil_caracteres",
+        "minuto_audio",
       ],
     },
   },

@@ -15,7 +15,8 @@ type Unidade =
   | "bloco_linhas_kalodata"
   | "token_input"
   | "token_output"
-  | "mil_caracteres";
+  | "mil_caracteres"
+  | "minuto_audio";
 
 type Tarifa = {
   id: string;
@@ -35,6 +36,7 @@ const UNIDADES: { value: Unidade; label: string }[] = [
   { value: "token_input", label: "Por token de entrada (texto)" },
   { value: "token_output", label: "Por token de saída (texto)" },
   { value: "mil_caracteres", label: "Por mil caracteres (narração)" },
+  { value: "minuto_audio", label: "Por minuto de áudio (ditado por voz)" },
 ];
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");
