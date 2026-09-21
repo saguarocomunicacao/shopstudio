@@ -26,8 +26,9 @@ import {
 } from "@/lib/custo-periodo";
 import type { DbJob } from "@/lib/content";
 import { useGastoMes } from "@/lib/orcamento";
-import { openProfilePicker } from "./profile-gate";
+import { useMeuTenantId, useTenants } from "@/lib/tenants";
 import { JobDetailDialog } from "./job-detail-dialog";
+import { TenantCostsView } from "./costs-tenant-view";
 import { useStudio } from "./studio-context";
 
 type PeriodoKey = "hoje" | "7d" | "30d" | "mes" | "custom";
@@ -121,10 +122,14 @@ function useJobsDoPeriodo(jobIds: string[]) {
 }
 
 export function CostsPage() {
-  const { profiles, activeProfileId, isBackoffice, can } = useStudio();
+  const { profiles, activeProfileId, isBackoffice, can, userId } = useStudio();
   const podeVer = isBackoffice || can("custos", "visualizar", activeProfileId);
   // Visão "Todos os perfis" e orçamento são dados internos da operação: só backoffice.
   const podeVerGlobal = isBackoffice;
+  const { data: tenants } = useTenants();
+  const { data: meuTenantId } = useMeuTenantId(userId);
+  const [tenantSel, setTenantSel] = useState<string | null>(null);
+  const tenantId = isBackoffice ? tenantSel ?? meuTenantId ?? null : meuTenantId ?? null;
   const [periodo, setPeriodo] = useState<PeriodoKey>("mes");
   const [de, setDe] = useState(iso(startOfToday()));
   const [ate, setAte] = useState(iso(startOfToday()));
@@ -150,12 +155,11 @@ export function CostsPage() {
     window.history.replaceState(window.history.state, "", url.toString());
   }, [todosPerfis, perfisEscolhidos.join(","), etapasSel.join(",")]);
 
-  // Sem escolha explícita, o filtro segue o perfil ativo global.
-  const perfisEfetivos = perfisEscolhidos.length ? perfisEscolhidos : activeProfileId ? [activeProfileId] : [];
-
+  // Com o cliente selecionado, o padrão é a visão consolidada dele;
+  // o filtro de perfil só entra quando escolhido explicitamente.
   const intervalo = useMemo(() => intervaloDe(periodo, de, ate), [periodo, de, ate]);
-  const perfilFiltro = todosPerfis ? null : perfisEfetivos;
-  const { data, isLoading } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapasSel);
+  const perfilFiltro = perfisEscolhidos.length ? perfisEscolhidos : null;
+  const { data, isLoading } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapasSel, tenantId);
   const gasto = useGastoMes(activeProfileId);
 
   const jobsLinhas = useMemo(() => {
@@ -205,6 +209,9 @@ export function CostsPage() {
     );
   }
 
+  // Cliente comum: visão consolidada do próprio consumo, sem divisão interna.
+  if (!isBackoffice) return <TenantCostsView />;
+
   if (!profiles.length) {
     return (
       <div className="grid min-h-[60vh] place-items-center">
@@ -224,7 +231,7 @@ export function CostsPage() {
     );
   }
 
-  const semSelecao = !todosPerfis && perfisEfetivos.length === 0;
+  const semSelecao = !tenantId;
   const teto = gasto?.tetoPerfil ?? gasto?.tetoGlobal ?? null;
   const consumidoMes = gasto ? (gasto.tetoPerfil ? gasto.perfilBrl : gasto.globalBrl) : 0;
 
@@ -233,6 +240,17 @@ export function CostsPage() {
     <div className="grid gap-6">
       {/* Filtros */}
       <div className="panel flex flex-wrap items-end gap-3">
+        <div className="grid gap-1">
+          <label className="text-xs font-semibold text-muted-foreground">Empresa</label>
+          <Select value={tenantId ?? ""} onValueChange={(v) => setTenantSel(v)}>
+            <SelectTrigger className="w-56"><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
+            <SelectContent>
+              {(tenants ?? []).map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="grid gap-1">
           <label className="text-xs font-semibold text-muted-foreground">Período</label>
           <Select value={periodo} onValueChange={(v) => setPeriodo(v as PeriodoKey)}>
@@ -296,13 +314,10 @@ export function CostsPage() {
             <span className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-full bg-secondary text-primary">
               <UserSquare2 className="h-5 w-5" />
             </span>
-            <h2 className="text-xl font-black">Selecione um perfil</h2>
+            <h2 className="text-xl font-black">Selecione uma empresa</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Escolha um perfil no seletor acima, ou use "Todos os perfis" para a visão consolidada.
+              Escolha a empresa no seletor acima para ver o consumo dela.
             </p>
-            <div className="mt-6 flex justify-center">
-              <Button onClick={openProfilePicker}>Escolher perfil</Button>
-            </div>
           </div>
         </div>
       ) : isLoading || !data ? (
@@ -322,6 +337,16 @@ export function CostsPage() {
             <Card label="Vídeos gerados" value={String(data.jobsComCusto)} hint="jobs com custo no período" />
             <Card label="Custo médio por vídeo" value={brl(data.custoMedioPorJob)} />
             <Card label="Buscas de produto" value={String(data.buscasCount)} hint="inclui atualizações de categorias" />
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Card label="Preço ao cliente" value={brl(data.totalPrecoClienteBrl)} hint="preço da ferramenta cobrado" />
+            <Card label="Custo de API" value={brl(data.totalBrl)} hint="custo estimado dos fornecedores" />
+            <Card
+              label="Margem"
+              value={brl(data.totalPrecoClienteBrl - data.totalBrl)}
+              hint="preço ao cliente menos custo de API"
+            />
           </div>
 
           {podeVerGlobal && teto && (

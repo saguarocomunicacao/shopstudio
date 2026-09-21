@@ -26,6 +26,8 @@ import {
   type FornecedorKey,
 } from "@/lib/investimento";
 import { useAppConfig } from "@/lib/orcamento";
+import { useMeuTenantId, useTenants } from "@/lib/tenants";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStudio } from "./studio-context";
 
 const hoje = () => new Date().toISOString().slice(0, 10);
@@ -60,13 +62,18 @@ function Resumo({ label, value, hint, destaque }: { label: string; value: string
   );
 }
 
-function AporteDialog({ fornecedor, unidade, onSaved }: { fornecedor: FornecedorKey; unidade: string | null; onSaved?: () => void }) {
+function AporteDialog({
+  fornecedor,
+  unidade,
+  tenantId,
+  onSaved,
+}: { fornecedor: FornecedorKey; unidade: string | null; tenantId: string | null; onSaved?: () => void }) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState(hoje());
   const [valor, setValor] = useState("");
   const [unidades, setUnidades] = useState("");
   const [obs, setObs] = useState("");
-  const salvar = useSalvarAporte();
+  const salvar = useSalvarAporte(tenantId);
 
   const submit = () => {
     const v = parseNum(valor);
@@ -146,12 +153,12 @@ function AporteDialog({ fornecedor, unidade, onSaved }: { fornecedor: Fornecedor
   );
 }
 
-function PlanoForm({ carteira }: { carteira: CarteiraFornecedor }) {
+function PlanoForm({ carteira, tenantId }: { carteira: CarteiraFornecedor; tenantId: string | null }) {
   const plano = carteira.plano;
   const [creditos, setCreditos] = useState("");
   const [valor, setValor] = useState("");
   const [dia, setDia] = useState("");
-  const salvar = useSalvarPlano();
+  const salvar = useSalvarPlano(tenantId);
 
   useEffect(() => {
     setCreditos(plano ? String(plano.creditos_mes) : "");
@@ -201,7 +208,11 @@ function PlanoForm({ carteira }: { carteira: CarteiraFornecedor }) {
   );
 }
 
-function CarteiraCard({ carteira, podeEditar }: { carteira: CarteiraFornecedor; podeEditar: boolean }) {
+function CarteiraCard({
+  carteira,
+  podeEditar,
+  tenantId,
+}: { carteira: CarteiraFornecedor; podeEditar: boolean; tenantId: string | null }) {
   const { def } = carteira;
   const remover = useRemoverAporte();
   const assinatura = def.tipo === "assinatura";
@@ -225,7 +236,7 @@ function CarteiraCard({ carteira, podeEditar }: { carteira: CarteiraFornecedor; 
           </div>
           <p className="mt-1 max-w-xl text-xs text-muted-foreground">{def.descricao}</p>
         </div>
-        {podeEditar && <AporteDialog fornecedor={def.key} unidade={def.unidade} />}
+        {podeEditar && <AporteDialog fornecedor={def.key} unidade={def.unidade} tenantId={tenantId} />}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -276,7 +287,7 @@ function CarteiraCard({ carteira, podeEditar }: { carteira: CarteiraFornecedor; 
       )}
 
       {assinatura ? (
-        podeEditar && <PlanoForm carteira={carteira} />
+        podeEditar && <PlanoForm carteira={carteira} tenantId={tenantId} />
       ) : (
         <div className="grid gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Histórico de aportes</p>
@@ -389,11 +400,15 @@ function AlertaConfig({ alertaPercent, bloqueio }: { alertaPercent: number; bloq
 }
 
 export function InvestmentPage() {
-  const { isBackoffice } = useStudio();
-  // Aportes, planos e saldos são dados internos da operação: backoffice apenas.
-  const podeVer = isBackoffice;
-  const podeEditar = isBackoffice;
-  const { data, isLoading } = useInvestimento();
+  const { isBackoffice, can, userId } = useStudio();
+  // Cada empresa vê e lança os próprios aportes; o backoffice escolhe a empresa.
+  const podeVer = isBackoffice || can("investimento", "visualizar");
+  const podeEditar = podeVer;
+  const { data: tenants } = useTenants();
+  const { data: meuTenantId } = useMeuTenantId(userId);
+  const [tenantSel, setTenantSel] = useState<string | null>(null);
+  const tenantId = isBackoffice ? tenantSel ?? meuTenantId ?? null : meuTenantId ?? null;
+  const { data, isLoading } = useInvestimento(tenantId, isBackoffice ? "api" : "consolidado");
   useAppConfig();
 
   const saldoGeral = useMemo(() => {
@@ -425,6 +440,22 @@ export function InvestmentPage() {
 
   return (
     <div className="grid gap-6">
+      {isBackoffice && (
+        <div className="panel flex flex-wrap items-end gap-3">
+          <div className="grid gap-1">
+            <label className="text-xs font-semibold text-muted-foreground">Empresa</label>
+            <Select value={tenantId ?? ""} onValueChange={(v) => setTenantSel(v)}>
+              <SelectTrigger className="w-56"><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
+              <SelectContent>
+                {(tenants ?? []).map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
       {baixos.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm">
           <span className="flex items-center gap-2 font-semibold text-primary">
@@ -449,10 +480,10 @@ export function InvestmentPage() {
       </div>
 
       {data.carteiras.map((c) => (
-        <CarteiraCard key={c.def.key} carteira={c} podeEditar={podeEditar} />
+        <CarteiraCard key={c.def.key} carteira={c} podeEditar={podeEditar && !!tenantId} tenantId={tenantId} />
       ))}
 
-      {podeEditar && <AlertaConfig alertaPercent={data.alertaPercent} bloqueio={data.bloqueio} />}
+      {isBackoffice && <AlertaConfig alertaPercent={data.alertaPercent} bloqueio={data.bloqueio} />}
 
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <PiggyBank className="h-4 w-4" />

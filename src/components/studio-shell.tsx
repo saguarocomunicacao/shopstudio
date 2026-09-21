@@ -55,7 +55,7 @@ function useVisibleItems() {
     if (to === "/app/aprovacoes") return isBackoffice;
     if (to === "/app/configuracoes") return isBackoffice;
     if (module === "equipe") return isAdmin;
-    if (module === "investimento") return isBackoffice;
+    if (module === "investimento") return isBackoffice || can("investimento", "visualizar", activeProfileId);
     return can(module, "visualizar", activeProfileId);
   });
 }

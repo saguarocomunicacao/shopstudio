@@ -1,17 +1,22 @@
 /**
- * Investimento / saldo dos fornecedores.
+ * Investimento / saldo dos fornecedores, por cliente (tenant).
  * Cruza os aportes lançados manualmente (carteira pré-paga) e o plano de
- * assinatura com o consumo já gravado em consumo_eventos. Não recalcula
- * preço: reaproveita as tarifas vigentes e a cotação (custo.ts).
+ * assinatura com o consumo já gravado em consumo_eventos.
+ *
+ * Backoffice vê o consumo discriminado (custo de API calculado das tarifas);
+ * o cliente recebe do servidor o valor já consolidado (ferramenta + API).
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import {
   computeEventoCusto,
+  precoFerramentaBrl,
   useTarifas,
   type ConsumoEventoRow,
   type EtapaConsumo,
 } from "./custo";
+import { consumoPorFornecedor } from "./consumo-tenant.functions";
 import { useAppConfig } from "./orcamento";
 
 export type FornecedorKey = "google" | "kalodata" | "json2video" | "elevenlabs";
@@ -143,14 +148,16 @@ export function cicloAtual(diaRenovacao: number, agora = new Date()) {
   return { inicio, fim };
 }
 
-export function useAportes() {
+export function useAportes(tenantId: string | null) {
   return useQuery({
-    queryKey: ["fornecedor-aportes"],
+    queryKey: ["fornecedor-aportes", tenantId ?? "todos"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("fornecedor_aportes")
         .select("id, fornecedor, data, valor_brl, unidades, unidade, observacao, created_at")
         .order("data", { ascending: false });
+      if (tenantId) query = query.eq("tenant_id", tenantId);
+      const { data, error } = await query;
       if (error) throw new Error(error.message);
       return (data ?? []).map((a) => ({
         ...a,
@@ -161,13 +168,15 @@ export function useAportes() {
   });
 }
 
-export function usePlanos() {
+export function usePlanos(tenantId: string | null) {
   return useQuery({
-    queryKey: ["fornecedor-planos"],
+    queryKey: ["fornecedor-planos", tenantId ?? "todos"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("fornecedor_planos")
         .select("fornecedor, creditos_mes, valor_mensal, dia_renovacao, ativo");
+      if (tenantId) query = query.eq("tenant_id", tenantId);
+      const { data, error } = await query;
       if (error) throw new Error(error.message);
       return (data ?? []).map((p) => ({
         ...p,
@@ -178,71 +187,105 @@ export function usePlanos() {
   });
 }
 
-function useEventosConsumo() {
+function useEventosConsumo(tenantId: string | null, enabled: boolean) {
   return useQuery({
-    queryKey: ["investimento-consumo"],
+    queryKey: ["investimento-consumo", tenantId ?? "todos"],
+    enabled,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("consumo_eventos")
-        .select("id, job_id, profile_id, etapa, modelo, quantidade, unidade, metadados, created_at")
+        .select(
+          "id, job_id, profile_id, tenant_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, tool_price_cents",
+        )
         .order("created_at", { ascending: true });
+      if (tenantId) query = query.eq("tenant_id", tenantId);
+      const { data, error } = await query;
       if (error) throw new Error(error.message);
       return (data ?? []) as unknown as ConsumoEventoRow[];
     },
   });
 }
 
-/** Visão completa: aportes × consumo por fornecedor, com alertas de saldo baixo. */
-export function useInvestimento(): { data: VisaoInvestimento | null; isLoading: boolean } {
+type UsoFornecedor = { brl: number; unidades: number; mesBrl: number; cicloUnidades: number };
+
+/**
+ * Visão completa: aportes × consumo por fornecedor, com alertas de saldo baixo.
+ * modo "api" = backoffice (custo de API das tarifas);
+ * modo "consolidado" = cliente (valor único vindo do servidor).
+ */
+export function useInvestimento(
+  tenantId: string | null,
+  modo: "api" | "consolidado" = "api",
+): { data: VisaoInvestimento | null; isLoading: boolean } {
+  const backoffice = modo === "api";
   const { data: precos, isLoading: l1 } = useTarifas();
-  const { data: aportes, isLoading: l2 } = useAportes();
-  const { data: planos, isLoading: l3 } = usePlanos();
-  const { data: eventos, isLoading: l4 } = useEventosConsumo();
+  const { data: aportes, isLoading: l2 } = useAportes(tenantId);
+  const { data: planos, isLoading: l3 } = usePlanos(tenantId);
+  const { data: eventos, isLoading: l4 } = useEventosConsumo(tenantId, backoffice);
   const { data: config } = useAppConfig();
 
-  const isLoading = l1 || l2 || l3 || l4;
-  if (!precos || !aportes || !planos || !eventos) return { data: null, isLoading };
+  const planoJson = planos?.find((p) => p.fornecedor === "json2video") ?? null;
+  const ciclo = planoJson ? cicloAtual(planoJson.dia_renovacao) : null;
+
+  const buscarConsumo = useServerFn(consumoPorFornecedor);
+  const { data: consumoServidor, isLoading: l5 } = useQuery({
+    queryKey: ["investimento-consumo-servidor", ciclo?.inicio.toISOString() ?? null],
+    enabled: !backoffice && !!planos,
+    refetchInterval: 60_000,
+    queryFn: () =>
+      buscarConsumo({
+        data: {
+          cicloInicio: ciclo ? ciclo.inicio.toISOString() : null,
+          cicloFim: ciclo ? ciclo.fim.toISOString() : null,
+        },
+      }),
+  });
+
+  const isLoading = backoffice ? l1 || l2 || l3 || l4 : l2 || l3 || l5;
+  const consumoPronto = backoffice ? !!precos && !!eventos : !!consumoServidor;
+  if (!aportes || !planos || !consumoPronto) return { data: null, isLoading };
 
   const alertaRaw = Number(config?.get(CONFIG_INVESTIMENTO.alertaPercent)?.value_num ?? ALERTA_PADRAO);
   const alertaPercent = Number.isFinite(alertaRaw) && alertaRaw > 0 ? alertaRaw : ALERTA_PADRAO;
   const bloqueio = Number(config?.get(CONFIG_INVESTIMENTO.bloqueio)?.value_num ?? 0) === 1;
 
-  const inicioMes = new Date();
-  inicioMes.setDate(1);
-  inicioMes.setHours(0, 0, 0, 0);
-
-  // Segundos por job para estimar créditos de montagem não informados.
-  const segundosPorJob = new Map<string, number>();
-  for (const e of eventos) {
-    if (e.etapa !== "animacao_veo" || !e.job_id) continue;
-    segundosPorJob.set(e.job_id, (segundosPorJob.get(e.job_id) ?? 0) + (e.quantidade ?? 0));
-  }
-
-  const acc = new Map<FornecedorKey, { brl: number; unidades: number; mesBrl: number; cicloUnidades: number }>();
+  const acc = new Map<FornecedorKey, UsoFornecedor>();
   for (const f of FORNECEDORES) acc.set(f.key, { brl: 0, unidades: 0, mesBrl: 0, cicloUnidades: 0 });
-
-  const planoJson = planos.find((p) => p.fornecedor === "json2video") ?? null;
-  const ciclo = planoJson ? cicloAtual(planoJson.dia_renovacao) : null;
-
   let totalConsumidoBrl = 0;
-  for (const evento of eventos) {
-    const custo = computeEventoCusto(
-      evento,
-      precos.tarifas,
-      precos.cotacao,
-      evento.job_id ? segundosPorJob.get(evento.job_id) ?? 0 : 0,
-    );
-    const key = fornecedorDe(evento.etapa);
-    const alvo = acc.get(key)!;
-    const quando = new Date(evento.created_at);
-    alvo.brl += custo.valorBrl;
-    alvo.unidades += custo.unidadesTarifadas;
-    if (quando >= inicioMes) alvo.mesBrl += custo.valorBrl;
-    if (key === "json2video" && ciclo && quando >= ciclo.inicio && quando < ciclo.fim) {
-      alvo.cicloUnidades += custo.unidadesTarifadas;
+
+  if (backoffice) {
+    const inicioMes = new Date();
+    inicioMes.setDate(1);
+    inicioMes.setHours(0, 0, 0, 0);
+
+    const segundosPorJob = new Map<string, number>();
+    for (const e of eventos!) {
+      if (e.etapa !== "animacao_veo" || !e.job_id) continue;
+      segundosPorJob.set(e.job_id, (segundosPorJob.get(e.job_id) ?? 0) + (e.quantidade ?? 0));
     }
-    totalConsumidoBrl += custo.valorBrl;
+
+    for (const evento of eventos!) {
+      const custo = computeEventoCusto(
+        evento,
+        precos!.tarifas,
+        precos!.cotacao,
+        evento.job_id ? segundosPorJob.get(evento.job_id) ?? 0 : 0,
+      );
+      const key = fornecedorDe(evento.etapa);
+      const alvo = acc.get(key)!;
+      const quando = new Date(evento.created_at);
+      alvo.brl += custo.valorBrl;
+      alvo.unidades += custo.unidadesTarifadas;
+      if (quando >= inicioMes) alvo.mesBrl += custo.valorBrl;
+      if (key === "json2video" && ciclo && quando >= ciclo.inicio && quando < ciclo.fim) {
+        alvo.cicloUnidades += custo.unidadesTarifadas;
+      }
+      totalConsumidoBrl += custo.valorBrl;
+    }
+  } else {
+    for (const f of FORNECEDORES) acc.set(f.key, { ...consumoServidor!.fornecedores[f.key] });
+    totalConsumidoBrl = consumoServidor!.totalBrl;
   }
 
   const carteiras = FORNECEDORES.map<CarteiraFornecedor>((def) => {
@@ -307,13 +350,13 @@ export function useInvestimento(): { data: VisaoInvestimento | null; isLoading: 
   };
 }
 
-/** Fornecedores com saldo/cota abaixo do limite configurado. */
+/** Fornecedores com saldo/cota abaixo do limite configurado (visão interna). */
 export function useSaldosBaixos() {
-  const { data } = useInvestimento();
+  const { data } = useInvestimento(null, "api");
   return data ? data.carteiras.filter((c) => c.baixo) : [];
 }
 
-export function useSalvarAporte() {
+export function useSalvarAporte(tenantId: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: {
@@ -325,7 +368,7 @@ export function useSalvarAporte() {
     }) => {
       const { data: userData } = await supabase.auth.getUser();
       const def = fornecedorInfo(input.fornecedor);
-      const { error } = await supabase.from("fornecedor_aportes").insert({
+      const linha: Record<string, unknown> = {
         fornecedor: input.fornecedor,
         data: input.data,
         valor_brl: input.valor_brl,
@@ -333,7 +376,9 @@ export function useSalvarAporte() {
         unidade: def.unidade,
         observacao: input.observacao,
         created_by: userData.user?.id ?? null,
-      });
+      };
+      if (tenantId) linha["tenant_id"] = tenantId;
+      const { error } = await supabase.from("fornecedor_aportes").insert(linha as never);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["fornecedor-aportes"] }),
@@ -351,24 +396,25 @@ export function useRemoverAporte() {
   });
 }
 
-export function useSalvarPlano() {
+export function useSalvarPlano(tenantId: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: PlanoRow) => {
+      const linha: Record<string, unknown> = {
+        fornecedor: input.fornecedor,
+        creditos_mes: input.creditos_mes,
+        valor_mensal: input.valor_mensal,
+        dia_renovacao: input.dia_renovacao,
+        ativo: input.ativo,
+      };
+      if (tenantId) linha["tenant_id"] = tenantId;
       const { error } = await supabase
         .from("fornecedor_planos")
-        .upsert(
-          {
-            fornecedor: input.fornecedor,
-            creditos_mes: input.creditos_mes,
-            valor_mensal: input.valor_mensal,
-            dia_renovacao: input.dia_renovacao,
-            ativo: input.ativo,
-          },
-          { onConflict: "fornecedor" },
-        );
+        .upsert(linha as never, { onConflict: "tenant_id,fornecedor" });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["fornecedor-planos"] }),
   });
 }
+
+export { precoFerramentaBrl };

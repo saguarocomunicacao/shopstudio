@@ -281,6 +281,13 @@
       "when": 1790011300445,
       "tag": "0039_billable_actions_and_plan_prices",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1790012108439,
+      "tag": "0040_investimento_por_tenant",
+      "breakpoints": true
     }
   ]
 }

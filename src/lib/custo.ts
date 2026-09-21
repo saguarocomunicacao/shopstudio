@@ -6,57 +6,30 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  computeEventoCusto,
+  type ConsumoEventoRow,
+  type EtapaConsumo,
+  type TarifaRow,
+  type UnidadeTarifa,
+} from "./custo-core";
 
-export type EtapaConsumo =
-  | "cena_gemini"
-  | "animacao_veo"
-  | "montagem_json2video"
-  | "busca_kalodata"
-  | "roteiro_texto"
-  | "narracao_elevenlabs"
-  | "transcricao_audio";
-export type UnidadeTarifa =
-  | "imagem"
-  | "segundo_video"
-  | "credito_montagem"
-  | "bloco_linhas_kalodata"
-  | "token_input"
-  | "token_output"
-  | "mil_caracteres"
-  | "minuto_audio";
-
-export type ConsumoEventoRow = {
-  id: string;
-  job_id: string | null;
-  profile_id: string | null;
-  etapa: EtapaConsumo;
-  modelo: string;
-  quantidade: number | null;
-  unidade: UnidadeTarifa;
-  metadados: Record<string, unknown> | null;
-  created_at: string;
-};
-
-export type TarifaRow = {
-  tipo_unidade: UnidadeTarifa;
-  modelo: string;
-  preco_unitario: number;
-  moeda: "USD" | "BRL";
-  vigente_desde: string;
-  ativo: boolean;
-};
-
-export type CustoEvento = {
-  evento: ConsumoEventoRow;
-  /** Quantidade efetivamente tarifada (pontos, no caso da busca). */
-  unidadesTarifadas: number;
-  valorOriginal: number;
-  moeda: "USD" | "BRL";
-  cotacaoUsada: number;
-  valorBrl: number;
-  semTarifa: boolean;
-  estimado: boolean;
-};
+export {
+  ACAO_LABELS,
+  acaoDoEvento,
+  brl,
+  computeEventoCusto,
+  findTarifa,
+  precoFerramentaBrl,
+} from "./custo-core";
+export type {
+  BillableAction,
+  ConsumoEventoRow,
+  CustoEvento,
+  EtapaConsumo,
+  TarifaRow,
+  UnidadeTarifa,
+} from "./custo-core";
 
 export type CustoEtapa = {
   etapa: EtapaConsumo;
@@ -75,9 +48,6 @@ export type CustoJob = {
   semTarifa: boolean;
   estimado: boolean;
 };
-
-export const brl = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2 });
 
 export const ETAPA_LABELS: Record<EtapaConsumo, string> = {
   cena_gemini: "Cenas (imagens)",
@@ -100,67 +70,7 @@ export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
   minuto_audio: (q) => `${Number(q.toFixed(2))} min de áudio`,
 };
 
-/** Tarifa vigente: mesmo modelo e unidade, ativa, com a vigência mais recente até a data. */
-export function findTarifa(tarifas: TarifaRow[], modelo: string, unidade: UnidadeTarifa, quando: string) {
-  const dia = quando.slice(0, 10);
-  const candidatas = tarifas
-    .filter((t) => t.ativo && t.modelo === modelo && t.tipo_unidade === unidade && t.vigente_desde <= dia)
-    .sort((a, b) => (a.vigente_desde < b.vigente_desde ? 1 : -1));
-  return candidatas[0] ?? null;
-}
-
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
-
-/** Custo de um evento, já convertido para reais. */
-export function computeEventoCusto(
-  evento: ConsumoEventoRow,
-  tarifas: TarifaRow[],
-  cotacao: number,
-  /** Segundos totais de vídeo do job, usado para estimar créditos de montagem. */
-  segundosDoJob = 0,
-): CustoEvento {
-  const meta = evento.metadados ?? {};
-  let estimado = Boolean(meta["duracao_estimada"]);
-  let unidades = evento.quantidade ?? 0;
-
-  if (evento.etapa === "busca_kalodata") {
-    const linhas = num(meta["linhas"]) ?? evento.quantidade ?? 0;
-    unidades = 0.1 * Math.ceil(linhas / 100);
-  }
-
-  if (evento.etapa === "montagem_json2video" && evento.quantidade === null) {
-    // Créditos não retornados: ~1 crédito por segundo de vídeo montado.
-    unidades = segundosDoJob;
-    estimado = true;
-  }
-
-  const tarifa = findTarifa(tarifas, evento.modelo, evento.unidade, evento.created_at);
-  if (!tarifa) {
-    return {
-      evento,
-      unidadesTarifadas: unidades,
-      valorOriginal: 0,
-      moeda: "BRL",
-      cotacaoUsada: cotacao,
-      valorBrl: 0,
-      semTarifa: true,
-      estimado,
-    };
-  }
-
-  const valorOriginal = unidades * Number(tarifa.preco_unitario);
-  const valorBrl = tarifa.moeda === "USD" ? valorOriginal * cotacao : valorOriginal;
-  return {
-    evento,
-    unidadesTarifadas: unidades,
-    valorOriginal,
-    moeda: tarifa.moeda,
-    cotacaoUsada: cotacao,
-    valorBrl,
-    semTarifa: false,
-    estimado,
-  };
-}
 
 /** Resumo de custo de um job, quebrado por etapa. */
 export function computeJobCusto(eventos: ConsumoEventoRow[], tarifas: TarifaRow[], cotacao: number): CustoJob {
