@@ -225,6 +225,13 @@
       "when": 1790001265251,
       "tag": "0031_tenant_id_defaults",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1790002004824,
+      "tag": "0032_tenant_signup_seed",
+      "breakpoints": true
     }
   ]
 }
