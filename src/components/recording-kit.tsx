@@ -411,9 +411,14 @@ export function RecordingKitDialog({
                     {gerar.isPending ? <Loader2 className="animate-spin" /> : temRoteiro ? <RefreshCw /> : <Sparkles />}
                     {gerar.isPending ? "Gerando..." : temRoteiro ? "Regenerar roteiro" : "Gerar roteiro"}
                   </Button>
-                  <Button variant="secondary" disabled={salvar.isPending} onClick={() => salvar.mutate()}>
+                  <Button
+                    variant="secondary"
+                    disabled={salvar.isPending}
+                    onClick={() => salvar.mutate()}
+                    className={isDirty ? "ring-2 ring-[#25F4EE] ring-offset-2 ring-offset-background animate-pulse" : "bg-[#25F4EE] text-[#0A0A0A] hover:bg-[#25F4EE]/90"}
+                  >
                     {salvar.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-                    Salvar textos
+                    Salvar alterações
                   </Button>
                 </div>
               )}
