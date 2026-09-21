@@ -86,6 +86,7 @@ export const ETAPA_LABELS: Record<EtapaConsumo, string> = {
   busca_kalodata: "Busca de produto",
   roteiro_texto: "Roteiro",
   narracao_elevenlabs: "Narração (ElevenLabs)",
+  transcricao_audio: "Ditado por voz",
 };
 
 export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
@@ -96,6 +97,7 @@ export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
   token_input: (q) => `${Math.round(q)} tokens`,
   token_output: (q) => `${Math.round(q)} tokens`,
   mil_caracteres: (q) => `${Number(q.toFixed(2))} mil caracteres`,
+  minuto_audio: (q) => `${Number(q.toFixed(2))} min de áudio`,
 };
 
 /** Tarifa vigente: mesmo modelo e unidade, ativa, com a vigência mais recente até a data. */
@@ -197,6 +199,7 @@ export function computeJobCusto(eventos: ConsumoEventoRow[], tarifas: TarifaRow[
 
   const ordem: EtapaConsumo[] = [
     "roteiro_texto",
+    "transcricao_audio",
     "cena_gemini",
     "animacao_veo",
     "montagem_json2video",
