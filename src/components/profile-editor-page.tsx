@@ -25,7 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TONE_OPTIONS } from "@/lib/content";
 import { generateAvatarReference, saveAvatarReferences } from "@/lib/video.functions";
 import { seedProfilePrompts } from "@/lib/prompts.functions";
-import { DEFAULT_RECORDING_ASPECT_RATIO, RECORDING_FORMATS, type RecordingAspectRatio } from "@/lib/recording-format";
+import { DEFAULT_RECORDING_ASPECT_RATIO, RECORDING_FORMATS, normalizeRecordingAspectRatio, type RecordingAspectRatio } from "@/lib/recording-format";
 import { CategorySelect } from "./category-select";
 import { LanguageSelect } from "./language-select";
 import { ProfilePrompts } from "./profile-prompts";
@@ -199,7 +199,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           duration: String(data.take_duration),
           geminiModel: data.gemini_model,
           veoModel: data.veo_model,
-          recordingAspectRatio: data.recording_aspect_ratio ?? DEFAULT_RECORDING_ASPECT_RATIO,
+          recordingAspectRatio: normalizeRecordingAspectRatio(data.recording_aspect_ratio),
           voiceRef: data.voice_ref ?? null,
           requireReview: data.require_review ?? true,
         };

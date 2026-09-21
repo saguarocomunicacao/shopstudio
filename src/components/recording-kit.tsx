@@ -8,10 +8,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { DbJob, RoteiroBloco } from "@/lib/content";
+import { useVideoSettings, type DbJob, type RoteiroBloco } from "@/lib/content";
 import { withoutDuplicatedHook } from "@/lib/recording-script";
 import { DEFAULT_RECORDING_ASPECT_RATIO, RECORDING_FORMATS, normalizeRecordingAspectRatio } from "@/lib/recording-format";
-import { useVideoSettings } from "@/lib/content";
 import {
   createOwnVideoJob,
   generateRecordingScript,
