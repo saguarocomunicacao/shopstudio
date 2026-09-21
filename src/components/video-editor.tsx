@@ -1,7 +1,6 @@
 import { Check, Loader2, Pause, Play, RotateCcw, Scissors, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   buildFfmpegArgs,
   EDIT_INPUT,
@@ -245,6 +244,40 @@ export function VideoEditor({
 
   const pct = (value: number) => (duration > 0 ? (value / duration) * 100 : 0);
 
+  if (processando) {
+    const circumference = 2 * Math.PI * 48;
+    const progressOffset = circumference * (1 - progresso / 100);
+
+    return (
+      <div className="dark fixed inset-0 z-[80] grid place-items-center overflow-hidden bg-background px-6 text-foreground">
+        <div className="grid justify-items-center gap-7 text-center" role="status" aria-live="polite" aria-label={`Aplicando edição, ${progresso}% concluído`}>
+          <div className="relative grid size-36 place-items-center">
+            <svg className="absolute inset-0 size-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="48" fill="none" strokeWidth="8" className="stroke-muted" />
+              <circle
+                cx="60"
+                cy="60"
+                r="48"
+                fill="none"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={progressOffset}
+                className="stroke-brand-cyan transition-[stroke-dashoffset] duration-300"
+              />
+              <circle cx="60" cy="12" r="4" className="fill-primary" />
+            </svg>
+            <span className="text-2xl font-bold tabular-nums">{progresso}%</span>
+          </div>
+          <div className="grid gap-2">
+            <h2 className="text-xl font-bold">Aplicando edição...</h2>
+            <p className="max-w-xs text-sm text-muted-foreground">Mantenha esta tela aberta até o vídeo ficar pronto.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-[70] grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-background text-foreground">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
@@ -413,12 +446,6 @@ export function VideoEditor({
           </div>
         )}
 
-        {processando && (
-          <div className="grid gap-1">
-            <Progress value={progresso} aria-label="Progresso do processamento" />
-            <p className="text-xs text-muted-foreground">Processando... {progresso}%</p>
-          </div>
-        )}
         {erro && <p className="text-xs text-destructive">{erro}</p>}
 
         <div className="grid grid-cols-2 gap-2">

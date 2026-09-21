@@ -104,6 +104,7 @@ export function RecordingStudio({
   const finish = useServerFn(finishRecording);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const reviewVideoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -134,6 +135,7 @@ export function RecordingStudio({
   const [editedUrl, setEditedUrl] = useState<string | null>(null);
   const [operations, setOperations] = useState<VideoEditOperation[]>([]);
   const [editorAberto, setEditorAberto] = useState(false);
+  const [reviewPlaying, setReviewPlaying] = useState(false);
   const [cameraSession, setCameraSession] = useState(0);
   const [filtro, setFiltro] = useState<FiltroId>("nenhum");
   const [reduzirRuido, setReduzirRuido] = useState(true);
@@ -539,6 +541,17 @@ export function RecordingStudio({
 
   const tempo = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 
+  const toggleReviewPlayback = async () => {
+    const video = reviewVideoRef.current;
+    if (!video) return;
+    if (!video.paused) {
+      video.pause();
+      return;
+    }
+    if (video.ended) video.currentTime = 0;
+    await video.play().catch(() => undefined);
+  };
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-black">
       {!supported ? (
@@ -552,12 +565,16 @@ export function RecordingStudio({
             <div className={`relative w-full max-h-full overflow-hidden bg-black ${outputFormat.mediaClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
               {previewUrl ? (
                 <video
+                  ref={reviewVideoRef}
                   src={editedUrl ?? previewUrl}
-                  controls
                   playsInline
                   preload="metadata"
                   aria-label="Revisão do vídeo gravado"
                   className="size-full bg-black object-cover"
+                  onPlay={() => setReviewPlaying(true)}
+                  onPause={() => setReviewPlaying(false)}
+                  onEnded={() => setReviewPlaying(false)}
+                  onClick={() => void toggleReviewPlayback()}
                 />
               ) : (
                 <>
@@ -736,7 +753,18 @@ export function RecordingStudio({
               )}
             </>
           ) : (
-            <div className="absolute inset-x-0 bottom-0 z-20 grid gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-16">
+            <>
+              <Button
+                type="button"
+                size="icon"
+                aria-label={reviewPlaying ? "Pausar vídeo" : "Reproduzir vídeo"}
+                title={reviewPlaying ? "Pausar" : "Reproduzir"}
+                className="absolute left-1/2 top-1/2 z-20 size-14 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/95 text-primary-foreground shadow-2xl hover:bg-primary sm:size-16"
+                onClick={() => void toggleReviewPlayback()}
+              >
+                {reviewPlaying ? <Pause className="size-6" /> : <Play className="size-6" />}
+              </Button>
+              <div className="absolute inset-x-0 bottom-0 z-20 grid gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-16">
               <p className="text-center text-sm font-semibold text-white">Revise sua gravação</p>
               <Button size="lg" disabled={salvar.isPending} onClick={() => salvar.mutate()}>
                 {salvar.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
@@ -758,6 +786,7 @@ export function RecordingStudio({
                     setEditedUrl(null);
                     setEditedBlob(null);
                     setOperations([]);
+                    setReviewPlaying(false);
                     setBlob(null);
                     setSeconds(0);
                     resetScrolling();
@@ -770,7 +799,8 @@ export function RecordingStudio({
                 </Button>
               </div>
               {editedBlob && <p className="text-center text-xs text-white/70">Mostrando a versão editada. O vídeo original continua guardado.</p>}
-            </div>
+              </div>
+            </>
           )}
         </div>
       )}
