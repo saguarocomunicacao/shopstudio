@@ -167,7 +167,7 @@ export function AccountPage() {
               <p className="text-sm font-semibold" data-testid="plano-atual">{planName}</p>
               <p className="text-xs text-muted-foreground">
                 {tenant?.plans
-                  ? `${BILLING_LABEL[tenant.plans.billing_model] ?? tenant.plans.billing_model}${tenant.plans.price_cents ? ` · ${brl(tenant.plans.price_cents)}` : ""}`
+                  ? "Cobrança por item: cada uso tem quantidade incluída no mês e preço por unidade."
                   : "Aguardando definição do administrador."}
               </p>
             </div>
