@@ -23,12 +23,14 @@ export const ETAPA_VISUAL_LABELS: Record<EtapaVisual, string> = {
   animacao_veo: "Animação (Veo)",
   montagem_json2video: "Montagem (JSON2Video)",
   narracao_elevenlabs: "Narração (ElevenLabs)",
+  transcricao_audio: "Ditado por voz",
   busca_kalodata: "Buscas (Kalodata)",
   categorias_kalodata: "Categorias (Kalodata)",
 };
 
 export const ETAPA_VISUAL_ORDEM: EtapaVisual[] = [
   "roteiro_texto",
+  "transcricao_audio",
   "cena_gemini",
   "animacao_veo",
   "montagem_json2video",
@@ -43,6 +45,7 @@ const CONSUMO_LABEL: Record<EtapaVisual, (q: number, eventos: number) => string>
   animacao_veo: (q) => `${Math.round(q)} seg`,
   montagem_json2video: (q) => `${Number(q.toFixed(2))} créditos`,
   narracao_elevenlabs: (q) => `${Number(q.toFixed(2))} mil caracteres`,
+  transcricao_audio: (q) => `${Number(q.toFixed(2))} min de áudio`,
   busca_kalodata: (_q, eventos) => `${eventos} ${eventos === 1 ? "chamada" : "chamadas"}`,
   categorias_kalodata: (_q, eventos) => `${eventos} ${eventos === 1 ? "chamada" : "chamadas"}`,
 };
