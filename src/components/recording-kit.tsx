@@ -148,6 +148,31 @@ export function RecordingKitDialog({
   const [caption, setCaption] = useState(job.caption ?? "");
   const [hashtags, setHashtags] = useState((job.hashtags ?? []).join(" "));
   const [studioOpen, setStudioOpen] = useState(openStudioInitially);
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+
+  // Snapshot "salvo" dos campos, usado para detectar alterações não salvas (dirty state).
+  const savedSnapshot = () =>
+    JSON.stringify({
+      titulo: (job.title ?? "").trim(),
+      gancho: (job.hook ?? "").trim(),
+      blocos: (job.roteiro_blocos ?? []).map((b) => ({ tempo: b.tempo.trim(), orientacao: b.orientacao.trim(), fala: b.fala.trim() })),
+      textoTela: (job.texto_tela ?? "").trim(),
+      cta: (job.post_cta ?? "").trim(),
+      caption: (job.caption ?? "").trim(),
+      hashtags: (job.hashtags ?? []).join(" ").trim(),
+    });
+  const [savedKey, setSavedKey] = useState(savedSnapshot);
+
+  const currentKey = JSON.stringify({
+    titulo: titulo.trim(),
+    gancho: gancho.trim(),
+    blocos: blocos.map((b) => ({ tempo: b.tempo.trim(), orientacao: b.orientacao.trim(), fala: b.fala.trim() })),
+    textoTela: textoTela.trim(),
+    cta: cta.trim(),
+    caption: caption.trim(),
+    hashtags: hashtags.trim(),
+  });
+  const isDirty = canEdit && currentKey !== savedKey;
 
   useEffect(() => {
     setTitulo(job.title ?? "");
@@ -157,7 +182,15 @@ export function RecordingKitDialog({
     setCta(job.post_cta ?? "");
     setCaption(job.caption ?? "");
     setHashtags((job.hashtags ?? []).join(" "));
+    setSavedKey(savedSnapshot());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job]);
+
+  /** Tenta fechar o modal: se há alterações não salvas, pede confirmação; senão, fecha direto. */
+  const attemptClose = () => {
+    if (isDirty) setConfirmCloseOpen(true);
+    else onClose();
+  };
 
   const gravado = !!job.video_path && !!job.recorded_at;
   const recordingAspectRatio = normalizeRecordingAspectRatio(videoSettings?.recording_aspect_ratio ?? DEFAULT_RECORDING_ASPECT_RATIO);
