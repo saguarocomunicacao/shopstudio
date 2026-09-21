@@ -134,6 +134,7 @@ export function SettingsPage() {
           </div>
           <GlobalPromptsSettings />
         </TabsContent>
+        <TabsContent value="planos"><PlansCard /></TabsContent>
       </Tabs>
     </>
   );
