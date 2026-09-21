@@ -197,6 +197,13 @@
       "when": 1789992629702,
       "tag": "0027_add_transcricao_audio_consumo",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1789992645175,
+      "tag": "0028_tarifa_transcricao_audio",
+      "breakpoints": true
     }
   ]
 }
