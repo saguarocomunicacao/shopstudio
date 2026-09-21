@@ -153,12 +153,12 @@ function AporteDialog({
   );
 }
 
-function PlanoForm({ carteira }: { carteira: CarteiraFornecedor }) {
+function PlanoForm({ carteira, tenantId }: { carteira: CarteiraFornecedor; tenantId: string | null }) {
   const plano = carteira.plano;
   const [creditos, setCreditos] = useState("");
   const [valor, setValor] = useState("");
   const [dia, setDia] = useState("");
-  const salvar = useSalvarPlano();
+  const salvar = useSalvarPlano(tenantId);
 
   useEffect(() => {
     setCreditos(plano ? String(plano.creditos_mes) : "");
