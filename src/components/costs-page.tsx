@@ -241,6 +241,17 @@ export function CostsPage() {
       {/* Filtros */}
       <div className="panel flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
+          <label className="text-xs font-semibold text-muted-foreground">Empresa</label>
+          <Select value={tenantId ?? ""} onValueChange={(v) => setTenantSel(v)}>
+            <SelectTrigger className="w-56"><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
+            <SelectContent>
+              {(tenants ?? []).map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-1">
           <label className="text-xs font-semibold text-muted-foreground">Período</label>
           <Select value={periodo} onValueChange={(v) => setPeriodo(v as PeriodoKey)}>
             <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
