@@ -480,10 +480,10 @@ export function InvestmentPage() {
       </div>
 
       {data.carteiras.map((c) => (
-        <CarteiraCard key={c.def.key} carteira={c} podeEditar={podeEditar} />
+        <CarteiraCard key={c.def.key} carteira={c} podeEditar={podeEditar && !!tenantId} tenantId={tenantId} />
       ))}
 
-      {podeEditar && <AlertaConfig alertaPercent={data.alertaPercent} bloqueio={data.bloqueio} />}
+      {isBackoffice && <AlertaConfig alertaPercent={data.alertaPercent} bloqueio={data.bloqueio} />}
 
       <p className="flex items-center gap-2 text-xs text-muted-foreground">
         <PiggyBank className="h-4 w-4" />
