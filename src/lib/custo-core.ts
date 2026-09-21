@@ -64,6 +64,10 @@ export type ConsumoEventoRow = {
   tenant_id?: string | null;
   action_type?: BillableAction | null;
   tool_price_cents?: number | null;
+  /** Consumo em crédito/ponto nativo do fornecedor (null quando não se aplica). */
+  credito_consumido?: number | null;
+  credito_unidade?: string | null;
+  credito_origem?: "real" | "estimado" | null;
 };
 
 export type TarifaRow = {
@@ -74,6 +78,34 @@ export type TarifaRow = {
   vigente_desde: string;
   ativo: boolean;
 };
+
+export type CreditoRegra = "por_chamada" | "por_bloco_100_linhas" | "por_segundo";
+
+export type CreditoTaxaRow = {
+  action_type: BillableAction;
+  fornecedor: string;
+  credito_por_unidade: number;
+  regra: CreditoRegra;
+  vigente_desde: string;
+  ativo: boolean;
+};
+
+/** Unidade nativa de crédito por unidade tarifada do evento. */
+export const CREDITO_UNIDADE: Partial<Record<UnidadeTarifa, string>> = {
+  bloco_linhas_kalodata: "pontos",
+  credito_montagem: "créditos",
+  mil_caracteres: "mil caracteres",
+};
+
+export type CreditoEvento = {
+  /** Crédito/ponto consumido do fornecedor; null quando o fornecedor cobra só em dinheiro. */
+  credito: number | null;
+  unidade: string | null;
+  origem: "real" | "estimado" | null;
+  /** Não existe taxa cadastrada para a ação: não dá para estimar o crédito. */
+  semTaxa: boolean;
+};
+
 
 export type CustoEvento = {
   evento: ConsumoEventoRow;
