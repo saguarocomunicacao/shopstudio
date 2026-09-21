@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { DbJob, RoteiroBloco } from "@/lib/content";
+import { withoutDuplicatedHook } from "@/lib/recording-script";
 import {
   createOwnVideoJob,
   generateRecordingScript,
@@ -194,7 +195,10 @@ export function RecordingKitDialog({
   });
 
   const temRoteiro = !!gancho || blocos.length > 0;
-  const roteiroCompleto = [gancho, ...blocos.map((b) => b.fala), cta].filter(Boolean).join("\n\n");
+  const blocosVisiveis = blocos
+    .map((bloco, originalIndex) => ({ bloco, originalIndex }))
+    .filter(({ bloco }) => withoutDuplicatedHook(gancho, [bloco]).length > 0);
+  const roteiroCompleto = [gancho, ...blocosVisiveis.map(({ bloco }) => bloco.fala), cta].filter(Boolean).join("\n\n");
 
   return (
     <>
@@ -216,7 +220,10 @@ export function RecordingKitDialog({
                     <>
                       <video src={download.data.url} controls playsInline className="aspect-[9/16] w-full rounded-xl bg-black object-contain" />
                       <Button asChild size="lg" className="mt-3 w-full">
-                        <a href={download.data.url} download={`${job.title || "video"}.mp4`}>
+                        <a
+                          href={download.data.url}
+                          download={`${job.title || "video"}.${job.video_path?.toLowerCase().endsWith(".webm") ? "webm" : "mp4"}`}
+                        >
                           <Download />
                           Baixar vídeo
                         </a>
@@ -252,8 +259,8 @@ export function RecordingKitDialog({
                   <p className="text-sm font-bold">Blocos de tempo</p>
                   <CopyButton value={roteiroCompleto} label="Roteiro" />
                 </div>
-                {blocos.map((bloco, index) => (
-                  <div key={index} className="grid gap-2 rounded-lg bg-secondary/50 p-3">
+                {blocosVisiveis.map(({ bloco, originalIndex }) => (
+                  <div key={originalIndex} className="grid gap-2 rounded-lg bg-secondary/50 p-3">
                     <div className="flex items-center gap-2">
                       <Input
                         aria-label="Tempo do bloco"
@@ -261,7 +268,7 @@ export function RecordingKitDialog({
                         readOnly={!canEdit}
                         className="h-8 w-24 bg-background"
                         onChange={(e) =>
-                          setBlocos((list) => list.map((b, i) => (i === index ? { ...b, tempo: e.target.value } : b)))
+                          setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, tempo: e.target.value } : b)))
                         }
                       />
                       <Textarea
@@ -272,7 +279,7 @@ export function RecordingKitDialog({
                         placeholder="O que mostrar ou fazer"
                         className="min-h-8 flex-1 bg-background py-1.5"
                         onChange={(e) =>
-                          setBlocos((list) => list.map((b, i) => (i === index ? { ...b, orientacao: e.target.value } : b)))
+                          setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, orientacao: e.target.value } : b)))
                         }
                       />
                       {canEdit && (
@@ -281,7 +288,7 @@ export function RecordingKitDialog({
                           variant="ghost"
                           size="icon"
                           aria-label="Remover bloco"
-                          onClick={() => setBlocos((list) => list.filter((_, i) => i !== index))}
+                          onClick={() => setBlocos((list) => list.filter((_, i) => i !== originalIndex))}
                         >
                           <Trash2 />
                         </Button>
@@ -293,7 +300,7 @@ export function RecordingKitDialog({
                       value={bloco.fala}
                       readOnly={!canEdit}
                       className="bg-background"
-                      onChange={(e) => setBlocos((list) => list.map((b, i) => (i === index ? { ...b, fala: e.target.value } : b)))}
+                      onChange={(e) => setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, fala: e.target.value } : b)))}
                     />
                   </div>
                 ))}
