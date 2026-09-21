@@ -116,10 +116,15 @@ function ProductsContent() {
         status: "produto_escolhido",
         title: product.name,
         created_by: userId,
+        formato,
       });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { toast.success("Job criado no pipeline."); setUseTarget(null); qc.invalidateQueries({ queryKey: ["jobs", activeProfileId] }); },
+    onSuccess: () => {
+      toast.success(formato === "gravacao" ? "Vídeo criado. Gere o roteiro e grave você mesmo." : "Job criado no pipeline.");
+      setUseTarget(null);
+      qc.invalidateQueries({ queryKey: ["jobs", activeProfileId] });
+    },
     onError: (e) => toast.error(errMessage(e)),
   });
 
