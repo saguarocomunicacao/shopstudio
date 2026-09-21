@@ -18,7 +18,7 @@
 - [x] Botão "Editar" na revisão, com linha do tempo, barra de progresso e aviso no celular
 - [x] "Restaurar original" na fila de rascunhos
 - [x] Corte real testado (6,1s → 3,3s)
-- [ ] Corrigir layout responsivo do editor em desktop e mobile
-- [ ] Adicionar múltiplos cortes internos com tesoura e concatenação
-- [ ] Testar trim e tesoura reais e validar o resultado visual
+- [x] Corrigir layout responsivo do editor em desktop e mobile
+- [x] Adicionar múltiplos cortes internos com tesoura e concatenação
+- [x] Testar trim e tesoura reais e validar o resultado visual
 - [ ] Parte futura: recorte de quadro
