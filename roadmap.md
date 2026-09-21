@@ -26,3 +26,5 @@
 - [x] Adicionar reenquadramento com proporção travada, arraste e redimensionamento
 - [x] Combinar crop, scale, trim e tesoura em uma única geração final
 - [x] Testar crop 9:16 + tesoura com áudio e validar o layout responsivo
+- [x] Manter crop e cortes visíveis no preview em todas as ferramentas
+- [x] Abrir o fluxo de gravação em tela cheia no mobile e voltar à fila ao fechar

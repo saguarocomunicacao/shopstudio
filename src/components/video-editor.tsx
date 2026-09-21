@@ -330,6 +330,15 @@ export function VideoEditor({
   };
 
   const pct = (value: number) => (duration > 0 ? (value / duration) * 100 : 0);
+  const previewFormat = crop ? RECORDING_FORMATS[crop.aspectRatio] : null;
+  const previewTransform = crop
+    ? {
+        width: `${100 / crop.width}%`,
+        height: `${100 / crop.height}%`,
+        left: `${(-crop.x / crop.width) * 100}%`,
+        top: `${(-crop.y / crop.height) * 100}%`,
+      }
+    : undefined;
 
   if (processando) {
     const circumference = 2 * Math.PI * 48;
@@ -382,9 +391,9 @@ export function VideoEditor({
             ref={videoFrameRef}
             className="relative overflow-hidden shadow-2xl"
             style={videoSize ? {
-              aspectRatio: `${videoSize.width} / ${videoSize.height}`,
-              width: `min(100cqw, calc(100cqh * ${videoSize.width / videoSize.height}))`,
-              height: `min(100cqh, calc(100cqw * ${videoSize.height / videoSize.width}))`,
+              aspectRatio: previewFormat ? `${previewFormat.width} / ${previewFormat.height}` : `${videoSize.width} / ${videoSize.height}`,
+              width: `min(100cqw, calc(100cqh * ${previewFormat ? previewFormat.width / previewFormat.height : videoSize.width / videoSize.height}))`,
+              height: `min(100cqh, calc(100cqw * ${previewFormat ? previewFormat.height / previewFormat.width : videoSize.height / videoSize.width}))`,
             } : undefined}
           >
             <video
@@ -393,7 +402,8 @@ export function VideoEditor({
             playsInline
             preload="metadata"
             aria-label="Vídeo em edição"
-            className="block size-full object-contain"
+            className={`block object-fill ${crop ? "absolute max-w-none" : "size-full"}`}
+            style={previewTransform}
             onClick={() => void togglePlayback()}
           onLoadedMetadata={(event) => {
             const video = event.currentTarget;
@@ -459,14 +469,9 @@ export function VideoEditor({
           }}
             />
             {mode === "crop" && crop && (
-              <div className="absolute inset-0 z-10" aria-label="Moldura de reenquadramento">
-                <div className="pointer-events-none absolute left-0 right-0 top-0 bg-background/70" style={{ height: `${crop.y * 100}%` }} />
-                <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-background/70" style={{ top: `${(crop.y + crop.height) * 100}%` }} />
-                <div className="pointer-events-none absolute left-0 bg-background/70" style={{ top: `${crop.y * 100}%`, width: `${crop.x * 100}%`, height: `${crop.height * 100}%` }} />
-                <div className="pointer-events-none absolute right-0 bg-background/70" style={{ top: `${crop.y * 100}%`, left: `${(crop.x + crop.width) * 100}%`, height: `${crop.height * 100}%` }} />
+              <div className="absolute inset-0 z-10 bg-background/10" aria-label="Moldura de reenquadramento">
                 <div
-                  className="absolute touch-none border-2 border-brand-cyan"
-                  style={{ left: `${crop.x * 100}%`, top: `${crop.y * 100}%`, width: `${crop.width * 100}%`, height: `${crop.height * 100}%` }}
+                  className="absolute inset-0 touch-none border-2 border-brand-cyan"
                 >
                   <div role="button" tabIndex={0} aria-label="Arrastar moldura" className="absolute inset-3 cursor-move touch-none" onPointerDown={dragCrop("move")} />
                   {(["nw", "ne", "sw", "se"] as const).map((corner) => (
