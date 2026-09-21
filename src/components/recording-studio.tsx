@@ -517,7 +517,7 @@ export function RecordingStudio({
           computador, para usar o estúdio.
         </div>
       ) : (
-        <div className={`relative shrink-0 overflow-hidden bg-black ${outputFormat.frameClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
+        <div className={`relative shrink-0 overflow-hidden bg-black ${outputFormat.frameClass} ${outputFormat.mediaClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
           {previewUrl ? (
             <video
               src={previewUrl}
@@ -540,7 +540,7 @@ export function RecordingStudio({
                 ref={canvasRef}
                 width={outWidth}
                 height={outHeight}
-                className={`block size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
+                className={`block size-full bg-black ${facing === "user" ? "-scale-x-100" : ""}`}
               />
             </>
           )}
