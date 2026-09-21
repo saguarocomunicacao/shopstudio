@@ -89,7 +89,8 @@ function DraftsContent() {
   const removeRecording = useServerFn(deleteRecordingJob);
 
   const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
-  const canRemove = (job: DbJob) => can("pipeline", "remover", job.profile_id);
+  const canRemove = (job: DbJob) =>
+    can("pipeline", "criar", job.profile_id) || can("pipeline", "editar", job.profile_id);
   const gravarList = jobs.filter(paraGravar);
   const current = QUEUES.find((q) => q.key === queue);
   const list = queue === "gravar" ? gravarList : jobs.filter((j) => j.status === current!.status);

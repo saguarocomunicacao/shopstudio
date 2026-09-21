@@ -418,8 +418,10 @@ export const deleteRecordingJob = createServerFn({ method: "POST" })
     if (readError) throw new Error(readError.message);
     if (!job) throw new Error("Vídeo não encontrado ou sem permissão de acesso.");
     if (job.formato !== "gravacao") throw new Error("Somente vídeos do formato Gravar eu mesmo podem ser removidos por esta ação.");
+    await assertCanEdit(context.supabase, job.profile_id);
 
-    const { data: deleted, error: deleteError } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: deleted, error: deleteError } = await supabaseAdmin
       .from("jobs")
       .delete()
       .eq("id", job.id)
@@ -430,7 +432,6 @@ export const deleteRecordingJob = createServerFn({ method: "POST" })
     if (!deleted) throw new Error("Você não tem permissão para remover conteúdo deste perfil.");
 
     if (job.video_path) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error: storageError } = await supabaseAdmin.storage.from("job-media").remove([job.video_path]);
       if (storageError) console.error("Falha ao limpar gravação excluída", { jobId: job.id, message: storageError.message });
     }
