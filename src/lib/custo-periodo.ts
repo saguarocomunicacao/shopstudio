@@ -117,6 +117,7 @@ export function agregarPeriodo(
   tarifas: TarifaRow[],
   cotacao: number,
   filtroEtapas: EtapaVisual[] = [],
+  taxas: import("./custo-core").CreditoTaxaRow[] = [],
 ): CustoPeriodo {
   const filtrados = filtroEtapas.length
     ? eventos.filter((e) => filtroEtapas.includes(etapaVisualDe(e)))
@@ -137,7 +138,13 @@ export function agregarPeriodo(
   let totalPrecoClienteBrl = 0;
 
   for (const evento of filtrados) {
-    const custo = computeEventoCusto(evento, tarifas, cotacao, evento.job_id ? segundosPorJob.get(evento.job_id) ?? 0 : 0);
+    const custo = computeEventoCusto(
+      evento,
+      tarifas,
+      cotacao,
+      evento.job_id ? segundosPorJob.get(evento.job_id) ?? 0 : 0,
+      taxas,
+    );
     const etapa = etapaVisualDe(evento);
     const precoCliente = precoFerramentaBrl(evento);
     totalBrl += custo.valorBrl;
@@ -228,7 +235,7 @@ export function agregarPeriodo(
 }
 
 const selectEventos =
-  "id, job_id, profile_id, tenant_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, tool_price_cents";
+  "id, job_id, profile_id, tenant_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, tool_price_cents, credito_consumido, credito_unidade, credito_origem";
 
 /** Eventos de consumo do intervalo; profileId nulo traz todos os perfis acessíveis. */
 export function useEventosPeriodo(
@@ -273,7 +280,7 @@ export function useCustoPeriodo(
   const pronto = !!precos && !!eventos;
   return {
     isLoading: isLoading || !pronto,
-    data: pronto ? agregarPeriodo(eventos!, precos!.tarifas, precos!.cotacao, etapas) : null,
+    data: pronto ? agregarPeriodo(eventos!, precos!.tarifas, precos!.cotacao, etapas, precos!.taxas) : null,
     chaveEtapas,
   };
 }

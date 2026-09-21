@@ -75,7 +75,7 @@ export function useGastoMes(profileId: string | null): GastoMes | null {
   let globalBrl = 0;
   let perfilBrl = 0;
   for (const evento of eventos) {
-    const custo = computeEventoCusto(evento, precos.tarifas, precos.cotacao);
+    const custo = computeEventoCusto(evento, precos.tarifas, precos.cotacao, 0, precos.taxas);
     globalBrl += custo.valorBrl;
     if (profileId && evento.profile_id === profileId) perfilBrl += custo.valorBrl;
   }

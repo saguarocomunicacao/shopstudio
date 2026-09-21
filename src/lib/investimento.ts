@@ -196,7 +196,7 @@ function useEventosConsumo(tenantId: string | null, enabled: boolean) {
       let query = supabase
         .from("consumo_eventos")
         .select(
-          "id, job_id, profile_id, tenant_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, tool_price_cents",
+          "id, job_id, profile_id, tenant_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, tool_price_cents, credito_consumido, credito_unidade, credito_origem",
         )
         .order("created_at", { ascending: true });
       if (tenantId) query = query.eq("tenant_id", tenantId);
@@ -271,6 +271,7 @@ export function useInvestimento(
         precos!.tarifas,
         precos!.cotacao,
         evento.job_id ? segundosPorJob.get(evento.job_id) ?? 0 : 0,
+        precos!.taxas,
       );
       const key = fornecedorDe(evento.etapa);
       const alvo = acc.get(key)!;

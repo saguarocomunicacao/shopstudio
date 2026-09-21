@@ -14,24 +14,32 @@ import {
   precoFerramentaBrl,
   type BillableAction,
   type ConsumoEventoRow,
+  type CreditoTaxaRow,
   type EtapaConsumo,
   type TarifaRow,
 } from "./custo-core";
 
 const SELECT =
-  "id, job_id, profile_id, tenant_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, tool_price_cents";
+  "id, job_id, profile_id, tenant_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, tool_price_cents, credito_consumido, credito_unidade, credito_origem";
 
 async function carregarPrecos() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const [tarifasRes, cotacaoRes] = await Promise.all([
+  const [tarifasRes, taxasRes, cotacaoRes] = await Promise.all([
     supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    supabaseAdmin
+      .from("credito_taxas")
+      .select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
     supabaseAdmin.from("app_config").select("value_num").eq("key", "cotacao_usd_brl").maybeSingle(),
   ]);
   const tarifas = ((tarifasRes.data ?? []) as Array<Record<string, unknown>>).map((t) => ({
     ...t,
     preco_unitario: Number(t["preco_unitario"]),
   })) as TarifaRow[];
-  return { tarifas, cotacao: Number(cotacaoRes.data?.value_num ?? 1) };
+  const taxas = ((taxasRes.data ?? []) as Array<Record<string, unknown>>).map((t) => ({
+    ...t,
+    credito_por_unidade: Number(t["credito_por_unidade"]),
+  })) as unknown as CreditoTaxaRow[];
+  return { tarifas, taxas, cotacao: Number(cotacaoRes.data?.value_num ?? 1) };
 }
 
 /** Soma consolidada de um evento: preço da ferramenta + custo de API estimado. */
@@ -40,9 +48,14 @@ function valorConsolidado(
   tarifas: TarifaRow[],
   cotacao: number,
   segundosDoJob: number,
+  taxas: CreditoTaxaRow[] = [],
 ) {
-  const custo = computeEventoCusto(evento, tarifas, cotacao, segundosDoJob);
-  return { valorBrl: custo.valorBrl + precoFerramentaBrl(evento), unidades: custo.unidadesTarifadas };
+  const custo = computeEventoCusto(evento, tarifas, cotacao, segundosDoJob, taxas);
+  return {
+    valorBrl: custo.valorBrl + precoFerramentaBrl(evento),
+    unidades: custo.unidadesTarifadas,
+    credito: custo.credito,
+  };
 }
 
 function segundosPorJobDe(eventos: ConsumoEventoRow[]) {
@@ -91,7 +104,7 @@ export const consumoConsolidado = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<ConsumoConsolidado> => {
     const { eventos } = await eventosDoTenant(context.supabase as never, context.userId, data);
-    const { tarifas, cotacao } = await carregarPrecos();
+    const { tarifas, taxas, cotacao } = await carregarPrecos();
     const segundos = segundosPorJobDe(eventos);
 
     const porAcao = new Map<BillableAction, { eventos: number; valorBrl: number }>();
@@ -105,6 +118,7 @@ export const consumoConsolidado = createServerFn({ method: "POST" })
         tarifas,
         cotacao,
         evento.job_id ? segundos.get(evento.job_id) ?? 0 : 0,
+        taxas,
       );
       const acao = acaoDoEvento(evento);
       totalBrl += valorBrl;
@@ -165,7 +179,7 @@ export const consumoPorFornecedor = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }): Promise<ConsumoFornecedores> => {
     const { eventos } = await eventosDoTenant(context.supabase as never, context.userId, {});
-    const { tarifas, cotacao } = await carregarPrecos();
+    const { tarifas, taxas, cotacao } = await carregarPrecos();
     const segundos = segundosPorJobDe(eventos);
 
     const inicioMes = new Date();
@@ -189,6 +203,7 @@ export const consumoPorFornecedor = createServerFn({ method: "POST" })
         tarifas,
         cotacao,
         evento.job_id ? segundos.get(evento.job_id) ?? 0 : 0,
+        taxas,
       );
       const alvo = fornecedores[FORNECEDOR_DE[evento.etapa]];
       const quando = new Date(evento.created_at);
