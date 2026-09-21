@@ -1059,6 +1059,50 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_api_keys: {
+        Row: {
+          created_at: string
+          encrypted_key: string
+          id: string
+          last_test_ok: boolean | null
+          last_tested_at: string | null
+          provider: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_key: string
+          id?: string
+          last_test_ok?: boolean | null
+          last_tested_at?: string | null
+          provider: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_key?: string
+          id?: string
+          last_test_ok?: boolean | null
+          last_tested_at?: string | null
+          provider?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_api_keys_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string

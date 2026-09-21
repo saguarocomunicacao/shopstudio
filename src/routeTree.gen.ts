@@ -18,6 +18,7 @@ import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as SegurancaRouteImport } from './routes/seguranca'
 import { Route as VTokenRouteImport } from './routes/v.$token'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
+import { Route as AuthenticatedAppApisRouteImport } from './routes/_authenticated/app/apis'
 import { Route as AuthenticatedAppAprovacoesRouteImport } from './routes/_authenticated/app/aprovacoes'
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
 import { Route as AuthenticatedAppContaRouteImport } from './routes/_authenticated/app/conta'
@@ -80,6 +81,11 @@ const VTokenRoute = VTokenRouteImport.update({
 const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   id: '/app/',
   path: '/app/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAppApisRoute = AuthenticatedAppApisRouteImport.update({
+  id: '/app/apis',
+  path: '/app/apis',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAppAprovacoesRoute =
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/privacidade': typeof PrivacidadeRoute
   '/seguranca': typeof SegurancaRoute
   '/v/$token': typeof VTokenRoute
+  '/app/apis': typeof AuthenticatedAppApisRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/conta': typeof AuthenticatedAppContaRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/privacidade': typeof PrivacidadeRoute
   '/seguranca': typeof SegurancaRoute
   '/v/$token': typeof VTokenRoute
+  '/app/apis': typeof AuthenticatedAppApisRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/conta': typeof AuthenticatedAppContaRoute
@@ -259,6 +267,7 @@ export interface FileRoutesById {
   '/privacidade': typeof PrivacidadeRoute
   '/seguranca': typeof SegurancaRoute
   '/v/$token': typeof VTokenRoute
+  '/_authenticated/app/apis': typeof AuthenticatedAppApisRoute
   '/_authenticated/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/_authenticated/app/conta': typeof AuthenticatedAppContaRoute
@@ -290,6 +299,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/seguranca'
     | '/v/$token'
+    | '/app/apis'
     | '/app/aprovacoes'
     | '/app/configuracoes'
     | '/app/conta'
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/seguranca'
     | '/v/$token'
+    | '/app/apis'
     | '/app/aprovacoes'
     | '/app/configuracoes'
     | '/app/conta'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/seguranca'
     | '/v/$token'
+    | '/_authenticated/app/apis'
     | '/_authenticated/app/aprovacoes'
     | '/_authenticated/app/configuracoes'
     | '/_authenticated/app/conta'
@@ -449,6 +461,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app/'
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/apis': {
+      id: '/_authenticated/app/apis'
+      path: '/app/apis'
+      fullPath: '/app/apis'
+      preLoaderRoute: typeof AuthenticatedAppApisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/app/aprovacoes': {
@@ -588,6 +607,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAppApisRoute: typeof AuthenticatedAppApisRoute
   AuthenticatedAppAprovacoesRoute: typeof AuthenticatedAppAprovacoesRoute
   AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
   AuthenticatedAppContaRoute: typeof AuthenticatedAppContaRoute
@@ -607,6 +627,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAppApisRoute: AuthenticatedAppApisRoute,
   AuthenticatedAppAprovacoesRoute: AuthenticatedAppAprovacoesRoute,
   AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
   AuthenticatedAppContaRoute: AuthenticatedAppContaRoute,
