@@ -78,7 +78,8 @@ export function CreditoTaxasCard() {
   const salvar = useMutation({
     mutationFn: async (taxa: Taxa) => {
       const edit = rascunho[taxa.id];
-      const credito = Number(String(edit?.credito ?? "").replace(",", "."));
+      if (!edit) throw new Error("Nada para salvar.");
+      const credito = Number(String(edit.credito ?? "").replace(",", "."));
       if (!Number.isFinite(credito) || credito < 0) throw new Error("Informe um número válido.");
       const { error } = await supabase
         .from("credito_taxas")
