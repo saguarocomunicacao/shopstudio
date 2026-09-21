@@ -1,6 +1,7 @@
 # Roadmap
 
-- [x] Adicionar formato de gravação às configurações por perfil
-- [x] Generalizar preview, recorte e gravação para quatro proporções
-- [x] Preservar filtros, suavização, áudio e revisão
-- [x] Validar 9:16 e 1:1, permissões e compilação
+- [x] Restringir a leitura de `plans` ao catálogo completo para backoffice e ao plano próprio para cada tenant.
+- [x] Mover o reset de senha da tela Empresas para uma função autenticada com validação server-side de backoffice.
+- [x] Proteger Empresas, rota legada de Aprovações, Planos, detalhe de plano e Configurações antes da renderização.
+- [x] Preservar Custos e Investimento para usuários de tenant nas visões próprias já previstas.
+- [x] Validar políticas finais, compilação e acesso administrativo disponível.

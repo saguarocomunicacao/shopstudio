@@ -55,7 +55,7 @@ export function ApprovalsPage() {
   });
 
   const resetPassword = useMutation({
-    mutationFn: async (userId: string) => sendPasswordReset({ data: { userId, redirectTo: `${window.location.origin}/redefinir-senha` } }),
+    mutationFn: async (userId: string) => sendPasswordReset({ data: { userId } }),
     onSuccess: () => toast.success("E-mail de redefinição enviado."),
     onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível enviar o e-mail."),
   });

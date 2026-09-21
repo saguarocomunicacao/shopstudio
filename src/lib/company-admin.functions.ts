@@ -6,7 +6,6 @@ export const sendCompanyPasswordReset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({
     userId: z.string().uuid(),
-    redirectTo: z.string().url().refine((value) => new URL(value).pathname === "/redefinir-senha", "Destino inválido."),
   }).parse(input))
   .handler(async ({ data, context }) => {
     const { data: allowed, error: accessError } = await context.supabase.rpc("is_backoffice");
@@ -21,7 +20,7 @@ export const sendCompanyPasswordReset = createServerFn({ method: "POST" })
     if (!account?.email) throw new Error("Conta não encontrada.");
 
     const { error } = await context.supabase.auth.resetPasswordForEmail(account.email, {
-      redirectTo: data.redirectTo,
+      redirectTo: "https://shopstudio.com.br/redefinir-senha",
     });
     if (error) throw new Error("Não foi possível enviar o e-mail de redefinição.");
     return { ok: true };
