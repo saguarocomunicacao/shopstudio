@@ -228,6 +228,8 @@ export function RecordingKitDialog({
       }),
     onSuccess: () => {
       toast.success("Roteiro salvo.");
+      // Zera o dirty state: o snapshot salvo passa a refletir o que está nos campos agora.
+      setSavedKey(currentKey);
       refresh();
     },
     onError: (e) => toast.error(errMessage(e)),
