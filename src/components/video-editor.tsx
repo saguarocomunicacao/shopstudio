@@ -1,11 +1,14 @@
-import { Check, Loader2, RotateCcw, Scissors, X } from "lucide-react";
+import { Check, Loader2, Pause, Play, Plus, RotateCcw, Scissors, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   buildFfmpegArgs,
   EDIT_INPUT,
+  keepRanges,
+  normalizeCuts,
   resultingDuration,
+  type CutOperation,
   type VideoEditOperation,
 } from "@/lib/video-edit";
 
@@ -46,8 +49,14 @@ export function VideoEditor({
 
   const [url, setUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [playing, setPlaying] = useState(false);
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(0);
+  const [mode, setMode] = useState<"trim" | "cut">("trim");
+  const [cutStart, setCutStart] = useState(0);
+  const [cutEnd, setCutEnd] = useState(0);
+  const [cuts, setCuts] = useState<CutOperation[]>([]);
   const [engine, setEngine] = useState<"carregando" | "pronto" | "erro">("carregando");
   const [processando, setProcessando] = useState(false);
   const [progresso, setProgresso] = useState(0);
@@ -93,26 +102,43 @@ export function VideoEditor({
 
   const seek = useCallback((time: number) => {
     const video = videoRef.current;
-    if (video) video.currentTime = time;
+    if (video) {
+      video.currentTime = time;
+      setCurrentTime(time);
+    }
   }, []);
 
-  const dragHandle = (handle: "start" | "end") => (event: React.PointerEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const timeFromPointer = useCallback((clientX: number) => {
     const track = trackRef.current;
-    if (!track || duration <= 0) return;
+    if (!track || duration <= 0) return 0;
+    const rect = track.getBoundingClientRect();
+    return Math.min(duration, Math.max(0, ((clientX - rect.left) / rect.width) * duration));
+  }, [duration]);
+
+  const dragHandle = (handle: "start" | "end" | "cutStart" | "cutEnd") => (event: React.PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (!trackRef.current || duration <= 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     const move = (clientX: number) => {
-      const rect = track.getBoundingClientRect();
-      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      const time = ratio * duration;
+      const time = timeFromPointer(clientX);
       if (handle === "start") {
         const next = Math.min(time, end - 0.2);
         setStart(Math.max(0, next));
+        setCuts((current) => normalizeCuts(current, Math.max(0, next), end));
         seek(Math.max(0, next));
-      } else {
+      } else if (handle === "end") {
         const next = Math.max(time, start + 0.2);
         setEnd(Math.min(duration, next));
+        setCuts((current) => normalizeCuts(current, start, Math.min(duration, next)));
         seek(Math.min(duration, next));
+      } else if (handle === "cutStart") {
+        const next = Math.min(Math.max(time, start), cutEnd - 0.2);
+        setCutStart(next);
+        seek(next);
+      } else {
+        const next = Math.max(Math.min(time, end), cutStart + 0.2);
+        setCutEnd(next);
+        seek(next);
       }
     };
     move(event.clientX);
@@ -126,7 +152,33 @@ export function VideoEditor({
   };
 
   const aparado = start > 0.05 || end < duration - 0.05;
-  const operations: VideoEditOperation[] = aparado ? [{ type: "trim", start, end }] : [];
+  const operations: VideoEditOperation[] = [
+    ...(aparado ? [{ type: "trim" as const, start, end }] : []),
+    ...cuts,
+  ];
+  const validResult = duration > 0 && keepRanges(duration, operations).length > 0;
+
+  const addCut = () => {
+    if (cutEnd - cutStart < 0.2) return;
+    const next = normalizeCuts([...cuts, { type: "cut", start: cutStart, end: cutEnd }], start, end);
+    if (!keepRanges(duration, [...(aparado ? [{ type: "trim" as const, start, end }] : []), ...next]).length) {
+      setErro("O corte não pode remover o vídeo inteiro.");
+      return;
+    }
+    setCuts(next);
+    setErro(null);
+  };
+
+  const togglePlayback = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (!video.paused) {
+      video.pause();
+      return;
+    }
+    if (video.currentTime < start || video.currentTime >= end) seek(start);
+    await video.play().catch(() => undefined);
+  };
 
   const aplicar = async () => {
     const ffmpeg = ffmpegRef.current;
@@ -134,16 +186,18 @@ export function VideoEditor({
     setProcessando(true);
     setProgresso(0);
     setErro(null);
-    const extension = source.type.includes("mp4") ? "mp4" : "webm";
-    const input = `${EDIT_INPUT}.${extension}`;
-    const output = `saida.${extension}`;
+    const inputExtension = source.type.includes("mp4") ? "mp4" : "webm";
+    const outputExtension = cuts.length ? "mp4" : inputExtension;
+    const input = `${EDIT_INPUT}.${inputExtension}`;
+    const output = `saida.${outputExtension}`;
     try {
       const { fetchFile } = await import("@ffmpeg/util");
       await ffmpeg.writeFile(input, await fetchFile(source));
-      await ffmpeg.exec(buildFfmpegArgs(operations, input, output));
+      const exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration));
+      if (exitCode !== 0) throw new Error(`ffmpeg ${exitCode}`);
       const data = (await ffmpeg.readFile(output)) as Uint8Array;
       if (!data?.length) throw new Error("vazio");
-      const edited = new Blob([data.slice().buffer as ArrayBuffer], { type: source.type || `video/${extension}` });
+      const edited = new Blob([data.slice().buffer as ArrayBuffer], { type: `video/${outputExtension}` });
       await ffmpeg.deleteFile(input).catch(() => undefined);
       await ffmpeg.deleteFile(output).catch(() => undefined);
       onApply(edited, operations);
@@ -157,23 +211,27 @@ export function VideoEditor({
   const pct = (value: number) => (duration > 0 ? (value / duration) * 100 : 0);
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col bg-black/95 text-white">
-      <div className="flex items-center justify-between gap-3 px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <p className="text-sm font-bold">Editar vídeo</p>
-        <Button variant="ghost" size="icon" aria-label="Fechar editor" className="text-white hover:bg-white/15 hover:text-white" onClick={onCancel} disabled={processando}>
+    <div className="fixed inset-0 z-[70] grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-background text-foreground">
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold sm:text-base">Editar vídeo</p>
+          <p className="truncate text-xs text-muted-foreground">O original será preservado</p>
+        </div>
+        <Button variant="ghost" size="icon" aria-label="Fechar editor" onClick={onCancel} disabled={processando}>
           <X />
         </Button>
-      </div>
+      </header>
 
-      <div className="grid min-h-0 flex-1 place-items-center px-3 py-2">
-        <video
-          ref={videoRef}
-          src={url ?? undefined}
-          controls
-          playsInline
-          preload="metadata"
-          aria-label="Vídeo em edição"
-          className="max-h-full w-auto max-w-full rounded-xl bg-black"
+      <main className="flex min-h-0 items-center justify-center overflow-hidden bg-muted/30 p-3 sm:p-5">
+        <div className="relative flex size-full min-h-0 items-center justify-center overflow-hidden">
+          <video
+            ref={videoRef}
+            src={url ?? undefined}
+            playsInline
+            preload="metadata"
+            aria-label="Vídeo em edição"
+            className="block max-h-full max-w-full object-contain shadow-2xl"
+            onClick={() => void togglePlayback()}
           onLoadedMetadata={(event) => {
             const video = event.currentTarget;
             const d = video.duration;
@@ -201,8 +259,12 @@ export function VideoEditor({
               event.currentTarget.currentTime = 0;
             }
           }}
-          onTimeUpdate={(event) => {
+            onPlay={() => setPlaying(true)}
+            onPause={() => setPlaying(false)}
+            onEnded={() => setPlaying(false)}
+            onTimeUpdate={(event) => {
             const video = event.currentTarget;
+            setCurrentTime(video.currentTime);
             const d = video.duration;
             if (duration <= 0) {
               if (Number.isFinite(d) && d > 0) {
@@ -212,14 +274,23 @@ export function VideoEditor({
               }
               return;
             }
-            if (video.currentTime > end) video.pause();
+            if (video.currentTime >= end) {
+              video.pause();
+              video.currentTime = start;
+              setCurrentTime(start);
+            }
           }}
-        />
-      </div>
+          />
+          <Button type="button" size="icon" aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"} className="absolute bottom-3 left-3 size-11 rounded-full shadow-xl" onClick={() => void togglePlayback()}>
+            {playing ? <Pause /> : <Play />}
+          </Button>
+        </div>
+      </main>
 
-      <div className="grid gap-3 bg-black/70 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+      <section className="max-h-[52dvh] shrink-0 overflow-y-auto border-t border-border bg-card px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:max-h-[46dvh] sm:px-6">
+        <div className="mx-auto grid w-full max-w-5xl gap-3">
         {engine === "carregando" && (
-          <p className="flex items-center gap-2 text-xs text-white/80">
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
             Preparando o editor pela primeira vez. Pode levar alguns segundos.
           </p>
@@ -228,40 +299,75 @@ export function VideoEditor({
           <p className="text-xs text-destructive">Não foi possível carregar o editor. Verifique sua conexão e abra novamente.</p>
         )}
         {isMobile() && (
-          <p className="text-xs text-white/70">No celular, o processamento pode demorar. Mantenha a tela aberta até terminar.</p>
+          <p className="text-xs text-muted-foreground">No celular, o processamento pode demorar. Mantenha a tela aberta até terminar.</p>
         )}
 
-        <div>
-          <div className="mb-2 flex items-center justify-between text-xs font-semibold">
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1" role="group" aria-label="Ferramenta da timeline">
+          <Button type="button" size="sm" variant={mode === "trim" ? "default" : "ghost"} aria-pressed={mode === "trim"} onClick={() => setMode("trim")}>
+            <RotateCcw /> Aparar pontas
+          </Button>
+          <Button type="button" size="sm" variant={mode === "cut" ? "default" : "ghost"} aria-pressed={mode === "cut"} onClick={() => {
+            setMode("cut");
+            const span = Math.max(0.2, end - start);
+            setCutStart(start + span * 0.35);
+            setCutEnd(start + span * 0.65);
+          }}>
+            <Scissors /> Tesoura
+          </Button>
+        </div>
+
+        <div className="min-w-0">
+          <div className="mb-2 grid grid-cols-3 items-center gap-2 text-xs font-semibold">
             <span>Início {formatTime(start)}</span>
-            <span>Duração final {formatTime(resultingDuration(duration, operations))}</span>
-            <span>Fim {formatTime(end)}</span>
+            <span className="text-center">Final {formatTime(resultingDuration(duration, operations))}</span>
+            <span className="text-right">Fim {formatTime(end)}</span>
           </div>
-          <div ref={trackRef} data-trim-track className="relative h-12 select-none rounded-lg bg-white/15" aria-label="Linha do tempo do vídeo">
-            <div className="absolute inset-y-0 rounded-lg bg-primary/35" style={{ left: `${pct(start)}%`, right: `${100 - pct(end)}%` }} />
-            <button
-              type="button"
-              aria-label="Início do trecho"
-              data-trim-handle="start"
-              className="absolute top-0 h-12 w-6 -translate-x-1/2 touch-none rounded-md border-2 border-white bg-primary"
-              style={{ left: `${pct(start)}%` }}
-              onPointerDown={dragHandle("start")}
-            />
-            <button
-              type="button"
-              aria-label="Fim do trecho"
-              data-trim-handle="end"
-              className="absolute top-0 h-12 w-6 -translate-x-1/2 touch-none rounded-md border-2 border-white bg-primary"
-              style={{ left: `${pct(end)}%` }}
-              onPointerDown={dragHandle("end")}
-            />
+          <div ref={trackRef} data-trim-track className="relative h-14 select-none overflow-visible rounded-md bg-muted" aria-label="Linha do tempo do vídeo" onPointerDown={(event) => seek(timeFromPointer(event.clientX))}>
+            <div className="absolute inset-y-0 rounded-md bg-primary/25" style={{ left: `${pct(start)}%`, right: `${100 - pct(end)}%` }} />
+            {cuts.map((cut, index) => (
+              <div key={`${cut.start}-${cut.end}-${index}`} className="absolute inset-y-0 bg-destructive/65" style={{ left: `${pct(cut.start)}%`, width: `${pct(cut.end - cut.start)}%` }} />
+            ))}
+            {mode === "cut" && cutEnd > cutStart && (
+              <div className="absolute inset-y-0 border-x-2 border-destructive bg-destructive/30" style={{ left: `${pct(cutStart)}%`, width: `${pct(cutEnd - cutStart)}%` }} />
+            )}
+            <div className="pointer-events-none absolute inset-y-0 w-0.5 bg-foreground" style={{ left: `${pct(currentTime)}%` }} />
+            {mode === "trim" ? (
+              <>
+                <Button type="button" variant="default" aria-label="Início do trecho" data-trim-handle="start" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(start)}%` }} onPointerDown={dragHandle("start")} />
+                <Button type="button" variant="default" aria-label="Fim do trecho" data-trim-handle="end" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(end)}%` }} onPointerDown={dragHandle("end")} />
+              </>
+            ) : (
+              <>
+                <Button type="button" variant="destructive" aria-label="Início do corte interno" data-cut-handle="start" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutStart)}%` }} onPointerDown={dragHandle("cutStart")} />
+                <Button type="button" variant="destructive" aria-label="Fim do corte interno" data-cut-handle="end" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutEnd)}%` }} onPointerDown={dragHandle("cutEnd")} />
+              </>
+            )}
           </div>
         </div>
+
+        {mode === "cut" && (
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <p className="min-w-0 text-xs text-muted-foreground">Trecho a remover: {formatTime(cutStart)}–{formatTime(cutEnd)}</p>
+            <Button type="button" size="sm" variant="destructive" onClick={addCut} disabled={cutEnd - cutStart < 0.2}>
+              <Plus /> Adicionar corte
+            </Button>
+          </div>
+        )}
+
+        {cuts.length > 0 && (
+          <div className="flex flex-wrap gap-2" aria-label="Cortes internos adicionados">
+            {cuts.map((cut, index) => (
+              <Button key={`${cut.start}-${cut.end}-${index}`} type="button" size="sm" variant="secondary" aria-label={`Remover corte ${index + 1}`} onClick={() => setCuts((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
+                {formatTime(cut.start)}–{formatTime(cut.end)} <Trash2 />
+              </Button>
+            ))}
+          </div>
+        )}
 
         {processando && (
           <div className="grid gap-1">
             <Progress value={progresso} aria-label="Progresso do processamento" />
-            <p className="text-xs text-white/80">Processando... {progresso}%</p>
+            <p className="text-xs text-muted-foreground">Processando... {progresso}%</p>
           </div>
         )}
         {erro && <p className="text-xs text-destructive">{erro}</p>}
@@ -270,22 +376,26 @@ export function VideoEditor({
           <Button
             variant="secondary"
             size="lg"
-            disabled={processando || !aparado}
+            disabled={processando || !operations.length}
             onClick={() => {
               setStart(0);
               setEnd(duration);
+              setCuts([]);
+              setCutStart(duration * 0.35);
+              setCutEnd(duration * 0.65);
               seek(0);
             }}
           >
             <RotateCcw />
             Desfazer
           </Button>
-          <Button size="lg" disabled={processando || engine !== "pronto" || !aparado} onClick={() => void aplicar()}>
-            {processando ? <Loader2 className="animate-spin" /> : aparado ? <Scissors /> : <Check />}
+          <Button size="lg" disabled={processando || engine !== "pronto" || !operations.length || !validResult} onClick={() => void aplicar()}>
+            {processando ? <Loader2 className="animate-spin" /> : operations.length ? <Scissors /> : <Check />}
             {processando ? "Processando..." : "Aplicar corte"}
           </Button>
         </div>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }
