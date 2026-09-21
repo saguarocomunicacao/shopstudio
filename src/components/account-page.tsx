@@ -75,7 +75,10 @@ export function AccountPage() {
 
   const upload = async (file: File) => {
     if (!userId) return;
-    if (!file.type.startsWith("image/")) return toast.error("Escolha uma imagem.");
+    if (!file.type.startsWith("image/")) {
+      toast.error("Escolha uma imagem.");
+      return;
+    }
     setUploading(true);
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
