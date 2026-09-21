@@ -96,6 +96,14 @@ export function NewOwnVideoDialog({
             onChange={(e) => setAssunto(e.target.value)}
             placeholder="Ex: me apresentar e contar o que as pessoas encontram no meu perfil"
           />
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <VoiceDictationButton
+              profileId={activeProfileId}
+              disabled={criar.isPending}
+              onText={(texto) => setAssunto((atual) => (atual.trim() ? `${atual.trim()} ${texto}` : texto))}
+            />
+            <p className="text-xs text-muted-foreground">Fale o assunto e ajuste o texto depois, se quiser.</p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={criar.isPending}>

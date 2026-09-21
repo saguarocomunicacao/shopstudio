@@ -144,6 +144,7 @@ export function VoiceDictationButton({
     >
       {gravando ? (
         <>
+          <Mic className="animate-pulse" />
           <Square className="fill-current" />
           Parar ({segundos}s)
         </>
