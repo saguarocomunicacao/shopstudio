@@ -15,7 +15,7 @@ import coreWasmAsset from "@/assets/ffmpeg-core.wasm.asset.json";
 
 type FFmpegLike = {
   on: (event: "progress", cb: (e: { progress: number }) => void) => void;
-  load: (opts: { coreURL: string; wasmURL: string }) => Promise<boolean>;
+  load: (opts: { coreURL: string; wasmURL: string; classWorkerURL?: string }) => Promise<boolean>;
   writeFile: (name: string, data: Uint8Array) => Promise<boolean>;
   readFile: (name: string) => Promise<unknown>;
   deleteFile: (name: string) => Promise<boolean>;
@@ -71,6 +71,8 @@ export function VideoEditor({
           if (!cancelled) setProgresso(Math.max(0, Math.min(100, Math.round(progress * 100))));
         });
         await instance.load({
+          // Worker clássico servido pelo app: o worker em módulo não importa o núcleo.
+          classWorkerURL: new URL("/ffmpeg/814.ffmpeg.js", window.location.origin).href,
           coreURL: await toBlobURL(coreJsAsset.url, "text/javascript"),
           wasmURL: await toBlobURL(coreWasmAsset.url, "application/wasm"),
         });
