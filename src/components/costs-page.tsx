@@ -155,12 +155,11 @@ export function CostsPage() {
     window.history.replaceState(window.history.state, "", url.toString());
   }, [todosPerfis, perfisEscolhidos.join(","), etapasSel.join(",")]);
 
-  // Sem escolha explícita, o filtro segue o perfil ativo global.
-  const perfisEfetivos = perfisEscolhidos.length ? perfisEscolhidos : activeProfileId ? [activeProfileId] : [];
-
+  // Com o cliente selecionado, o padrão é a visão consolidada dele;
+  // o filtro de perfil só entra quando escolhido explicitamente.
   const intervalo = useMemo(() => intervaloDe(periodo, de, ate), [periodo, de, ate]);
-  const perfilFiltro = todosPerfis ? null : perfisEfetivos;
-  const { data, isLoading } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapasSel);
+  const perfilFiltro = perfisEscolhidos.length ? perfisEscolhidos : null;
+  const { data, isLoading } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapasSel, tenantId);
   const gasto = useGastoMes(activeProfileId);
 
   const jobsLinhas = useMemo(() => {
