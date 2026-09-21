@@ -36,7 +36,7 @@ function formatTime(value: number) {
   return `${String(m).padStart(2, "0")}:${s.toFixed(1).padStart(4, "0")}`;
 }
 
-function initialCrop(aspectRatio: RecordingAspectRatio, source: VideoSourceSize, coverage = 0.9): CropOperation {
+function initialCrop(aspectRatio: RecordingAspectRatio, source: VideoSourceSize, coverage = 1): CropOperation {
   const output = RECORDING_FORMATS[aspectRatio];
   const relativeRatio = (output.width / output.height) / (source.width / source.height);
   const width = relativeRatio >= 1 ? coverage : coverage * relativeRatio;
