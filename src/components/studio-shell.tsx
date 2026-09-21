@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, ShieldCheck, Sun, PiggyBank, Users, UserSquare2, Wallet, X } from "lucide-react";
+import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, ShieldCheck, Sun, PiggyBank, UserCog, Users, UserSquare2, Wallet, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
