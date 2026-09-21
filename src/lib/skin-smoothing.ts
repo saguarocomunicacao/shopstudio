@@ -82,6 +82,7 @@ export type SkinSmoother = {
     video: HTMLVideoElement,
     intensity: SkinIntensity,
     timestamp: number,
+    filterCss: string,
   ) => boolean;
   close: () => void;
 };
@@ -104,7 +105,7 @@ export async function createSkinSmoother(): Promise<SkinSmoother> {
   };
 
   return {
-    render(ctx, video, intensity, timestamp) {
+    render(ctx, video, intensity, timestamp, filterCss) {
       const w = ctx.canvas.width;
       const h = ctx.canvas.height;
       if (!blurCtx || !w || !h) return false;
@@ -140,11 +141,13 @@ export async function createSkinSmoother(): Promise<SkinSmoother> {
         ctx.save();
         tracePath(ctx, landmarks, hole, w, h);
         ctx.clip();
+        ctx.filter = filterCss || "none";
         try {
           ctx.drawImage(video, 0, 0, w, h);
         } catch {
           // quadro indisponível
         }
+        ctx.filter = "none";
         ctx.restore();
       }
       return true;
