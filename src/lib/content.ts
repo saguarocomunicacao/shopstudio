@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { RecordingAspectRatio } from "@/lib/recording-format";
 
 export type DbProduct = {
   id: string;
@@ -145,6 +146,7 @@ export type DbVideoSettings = {
   gemini_model: string;
   veo_model: string;
   take_duration: number;
+  recording_aspect_ratio: RecordingAspectRatio;
 };
 
 export function useVideoSettings(profileId: string | null) {
@@ -153,7 +155,7 @@ export function useVideoSettings(profileId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profile_video_settings")
-        .select("profile_id, avatar_mode, avatar_reference_url, takes_count, gemini_model, veo_model, take_duration")
+        .select("profile_id, avatar_mode, avatar_reference_url, takes_count, gemini_model, veo_model, take_duration, recording_aspect_ratio")
         .eq("profile_id", profileId!)
         .maybeSingle();
       if (error) throw new Error(error.message);
