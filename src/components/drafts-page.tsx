@@ -43,13 +43,17 @@ import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
 
-type QueueKey = "revisao" | "aprovado" | "publicado";
+type QueueKey = "gravar" | "revisao" | "aprovado" | "publicado";
 
 const QUEUES: { key: QueueKey; label: string; status: DbJob["status"]; badge: string }[] = [
   { key: "revisao", label: "Aguardando revisão", status: "video_pronto", badge: "status-lime" },
   { key: "aprovado", label: "Aprovados", status: "rascunho_enviado", badge: "status-orange" },
   { key: "publicado", label: "Publicados", status: "publicado", badge: "status-pink" },
 ];
+
+/** Vídeos do formato "Gravar eu mesmo" que ainda não foram gravados. */
+const paraGravar = (job: DbJob) =>
+  job.formato === "gravacao" && (job.status === "produto_escolhido" || job.status === "roteiro_pronto");
 
 export function DraftsPage() {
   return (
@@ -60,14 +64,19 @@ export function DraftsPage() {
 }
 
 function DraftsContent() {
-  const { activeProfileId } = useStudio();
+  const { activeProfileId, can } = useStudio();
   const { data: jobs = [], isLoading } = useJobs(activeProfileId);
   const [queue, setQueue] = useState<QueueKey>("revisao");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [novoOpen, setNovoOpen] = useState(false);
 
-  const current = QUEUES.find((q) => q.key === queue)!;
-  const list = jobs.filter((j) => j.status === current.status);
+  const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
+  const gravarList = jobs.filter(paraGravar);
+  const current = QUEUES.find((q) => q.key === queue);
+  const list = queue === "gravar" ? gravarList : jobs.filter((j) => j.status === current!.status);
   const countOf = (status: DbJob["status"]) => jobs.filter((j) => j.status === status).length;
+  const recordingJob = jobs.find((j) => j.id === recordingId) ?? null;
 
   return (
     <>
