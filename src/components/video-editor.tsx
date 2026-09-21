@@ -1,4 +1,4 @@
-import { Check, Loader2, Pause, Play, RotateCcw, Scissors, Trash2, X } from "lucide-react";
+import { Check, Crop, Loader2, Pause, Play, RotateCcw, Scissors, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,8 +8,11 @@ import {
   normalizeCuts,
   resultingDuration,
   type CutOperation,
+  type CropOperation,
   type VideoEditOperation,
+  type VideoSourceSize,
 } from "@/lib/video-edit";
+import { RECORDING_ASPECT_RATIOS, RECORDING_FORMATS, type RecordingAspectRatio } from "@/lib/recording-format";
 
 /** Núcleo do ffmpeg servido pelo próprio app e carregado só quando o editor abre. */
 import coreWasmAsset from "@/assets/ffmpeg-core.wasm.asset.json";
@@ -33,6 +36,16 @@ function formatTime(value: number) {
   return `${String(m).padStart(2, "0")}:${s.toFixed(1).padStart(4, "0")}`;
 }
 
+function initialCrop(aspectRatio: RecordingAspectRatio, source: VideoSourceSize, coverage = 0.9): CropOperation {
+  const output = RECORDING_FORMATS[aspectRatio];
+  const relativeRatio = (output.width / output.height) / (source.width / source.height);
+  const width = relativeRatio >= 1 ? coverage : coverage * relativeRatio;
+  const height = relativeRatio >= 1 ? coverage / relativeRatio : coverage;
+  return { type: "crop", aspectRatio, x: (1 - width) / 2, y: (1 - height) / 2, width, height };
+}
+
+type EditorSnapshot = { start: number; end: number; cuts: CutOperation[]; crop: CropOperation | null };
+
 export function VideoEditor({
   source,
   onCancel,
@@ -43,6 +56,7 @@ export function VideoEditor({
   onApply: (edited: Blob, operations: VideoEditOperation[]) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoFrameRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const ffmpegRef = useRef<FFmpegLike | null>(null);
 
@@ -50,14 +64,16 @@ export function VideoEditor({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [videoSize, setVideoSize] = useState<VideoSourceSize | null>(null);
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(0);
-  const [mode, setMode] = useState<"trim" | "cut">("trim");
+  const [mode, setMode] = useState<"trim" | "cut" | "crop">("trim");
   const [cutStart, setCutStart] = useState(0);
   const [cutEnd, setCutEnd] = useState(0);
   const [cuts, setCuts] = useState<CutOperation[]>([]);
+  const [crop, setCrop] = useState<CropOperation | null>(null);
   /** Pilha de estados anteriores: cada corte/aparo entra aqui para o "Desfazer". */
-  const [history, setHistory] = useState<{ start: number; end: number; cuts: CutOperation[] }[]>([]);
+  const [history, setHistory] = useState<EditorSnapshot[]>([]);
   const rangesRef = useRef<{ start: number; end: number }[]>([]);
   const [engine, setEngine] = useState<"carregando" | "pronto" | "erro">("carregando");
   const [processando, setProcessando] = useState(false);
@@ -126,7 +142,7 @@ export function VideoEditor({
     if (!trackRef.current || duration <= 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     if (handle === "start" || handle === "end") {
-      const snapshot = { start, end, cuts };
+      const snapshot = { start, end, cuts, crop };
       setHistory((current) => [...current, snapshot]);
     }
     const move = (clientX: number) => {
