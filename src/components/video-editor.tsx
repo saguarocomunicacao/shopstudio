@@ -57,6 +57,9 @@ export function VideoEditor({
   const [cutStart, setCutStart] = useState(0);
   const [cutEnd, setCutEnd] = useState(0);
   const [cuts, setCuts] = useState<CutOperation[]>([]);
+  /** Pilha de estados anteriores: cada corte/aparo entra aqui para o "Desfazer". */
+  const [history, setHistory] = useState<{ start: number; end: number; cuts: CutOperation[] }[]>([]);
+  const rangesRef = useRef<{ start: number; end: number }[]>([]);
   const [engine, setEngine] = useState<"carregando" | "pronto" | "erro">("carregando");
   const [processando, setProcessando] = useState(false);
   const [progresso, setProgresso] = useState(0);
