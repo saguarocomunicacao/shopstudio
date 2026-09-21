@@ -464,7 +464,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
           computador, para usar o estúdio.
         </div>
       ) : (
-        <div className="relative mx-auto w-full max-w-[520px] flex-1 overflow-hidden">
+        <div className="relative mx-auto aspect-[9/16] max-h-full w-auto max-w-full flex-1 overflow-hidden bg-black">
           {previewUrl ? (
             <video
               src={previewUrl}
@@ -472,25 +472,21 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
               playsInline
               preload="metadata"
               aria-label="Revisão do vídeo gravado"
-              className="size-full bg-black object-contain"
+              className="size-full bg-black object-cover"
             />
           ) : (
             <>
+              {/* Fonte da câmera: fica oculta, o que aparece é o quadro 9:16 desenhado no canvas. */}
               <video
                 ref={videoRef}
                 muted
                 playsInline
-                style={filtroCss && !suavizar ? { filter: filtroCss } : undefined}
-                className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""} ${
-                  suavizar ? "invisible absolute inset-0" : ""
-                }`}
+                className="pointer-events-none absolute inset-0 size-full opacity-0"
               />
-              {suavizar && (
-                <canvas
-                  ref={canvasRef}
-                  className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
-                />
-              )}
+              <canvas
+                ref={canvasRef}
+                className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
+              />
             </>
           )}
 
