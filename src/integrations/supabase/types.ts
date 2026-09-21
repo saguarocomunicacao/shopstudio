@@ -79,6 +79,24 @@ export type Database = {
           },
         ]
       }
+      billable_actions: {
+        Row: {
+          action_type: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          action_type: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          action_type?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           category_id: string
@@ -108,6 +126,7 @@ export type Database = {
       }
       consumo_eventos: {
         Row: {
+          action_type: string | null
           created_at: string
           etapa: Database["public"]["Enums"]["etapa_consumo"]
           id: string
@@ -117,9 +136,11 @@ export type Database = {
           profile_id: string | null
           quantidade: number | null
           tenant_id: string
+          tool_price_cents: number
           unidade: Database["public"]["Enums"]["unidade_tarifa"]
         }
         Insert: {
+          action_type?: string | null
           created_at?: string
           etapa: Database["public"]["Enums"]["etapa_consumo"]
           id?: string
@@ -129,9 +150,11 @@ export type Database = {
           profile_id?: string | null
           quantidade?: number | null
           tenant_id?: string
+          tool_price_cents?: number
           unidade: Database["public"]["Enums"]["unidade_tarifa"]
         }
         Update: {
+          action_type?: string | null
           created_at?: string
           etapa?: Database["public"]["Enums"]["etapa_consumo"]
           id?: string
@@ -141,9 +164,17 @@ export type Database = {
           profile_id?: string | null
           quantidade?: number | null
           tenant_id?: string
+          tool_price_cents?: number
           unidade?: Database["public"]["Enums"]["unidade_tarifa"]
         }
         Relationships: [
+          {
+            foreignKeyName: "consumo_eventos_action_type_fkey"
+            columns: ["action_type"]
+            isOneToOne: false
+            referencedRelation: "billable_actions"
+            referencedColumns: ["action_type"]
+          },
           {
             foreignKeyName: "consumo_eventos_job_id_fkey"
             columns: ["job_id"]
@@ -526,6 +557,42 @@ export type Database = {
           module?: string
         }
         Relationships: []
+      }
+      plan_action_prices: {
+        Row: {
+          action_type: string
+          plan_id: string
+          price_cents: number
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          plan_id: string
+          price_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          plan_id?: string
+          price_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_action_prices_action_type_fkey"
+            columns: ["action_type"]
+            isOneToOne: false
+            referencedRelation: "billable_actions"
+            referencedColumns: ["action_type"]
+          },
+          {
+            foreignKeyName: "plan_action_prices_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       plans: {
         Row: {
