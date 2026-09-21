@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
+  ArrowDownToLine,
   Camera,
+  FlipHorizontal,
   Loader2,
   Mic,
   MicOff,
@@ -12,9 +14,10 @@ import {
   RefreshCw,
   Sparkles,
   Square,
+  SlidersHorizontal,
+  Type,
   Upload,
   X,
-  FlipHorizontal,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -100,6 +103,10 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const scrollPositionRef = useRef(0);
   const frameRef = useRef(0);
+  const lastScrollFrameRef = useRef(0);
+  const scrollingRef = useRef(false);
+  const scrollTickRef = useRef<(timestamp: number) => void>(() => undefined);
+  const velocidadeRef = useRef(28);
   const mountedRef = useRef(true);
 
   const [supported] = useState(
@@ -121,6 +128,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const [suavizar, setSuavizar] = useState(false);
   const [intensidade, setIntensidade] = useState<SkinIntensity>("leve");
   const [suavizarStatus, setSuavizarStatus] = useState<"off" | "carregando" | "ativo">("off");
+  const [painel, setPainel] = useState<"ajustes" | "texto" | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const smootherRef = useRef<SkinSmoother | null>(null);
   const suavizarRef = useRef(false);
@@ -131,6 +139,61 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const teleprompter = teleprompterItems(job);
   recordingRef.current = recording;
   suavizarRef.current = suavizar && suavizarStatus === "ativo";
+  velocidadeRef.current = velocidade;
+
+  const cancelScrollFrame = useCallback(() => {
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    frameRef.current = 0;
+    lastScrollFrameRef.current = 0;
+  }, []);
+
+  const stopScrolling = useCallback(() => {
+    scrollingRef.current = false;
+    cancelScrollFrame();
+    if (mountedRef.current) setRolando(false);
+  }, [cancelScrollFrame]);
+
+  scrollTickRef.current = (now: number) => {
+    frameRef.current = 0;
+    if (!mountedRef.current || !scrollingRef.current) return;
+
+    const el = scrollRef.current;
+    if (!el) {
+      lastScrollFrameRef.current = now;
+      frameRef.current = requestAnimationFrame((timestamp) => scrollTickRef.current(timestamp));
+      return;
+    }
+
+    const previous = lastScrollFrameRef.current;
+    // Ao voltar de uma aba suspensa, o primeiro quadro apenas redefine o relógio.
+    const deltaSeconds = previous ? Math.min(0.05, Math.max(0, (now - previous) / 1000)) : 0;
+    lastScrollFrameRef.current = now;
+    const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+    const next = Math.min(maxScroll, scrollPositionRef.current + velocidadeRef.current * deltaSeconds);
+    scrollPositionRef.current = next;
+    el.scrollTop = next;
+
+    if (maxScroll <= 0 || next >= maxScroll - 0.5) {
+      stopScrolling();
+      return;
+    }
+    frameRef.current = requestAnimationFrame((timestamp) => scrollTickRef.current(timestamp));
+  };
+
+  const startScrolling = useCallback(() => {
+    cancelScrollFrame();
+    const el = scrollRef.current;
+    if (el) {
+      const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+      if (scrollPositionRef.current >= maxScroll - 2) {
+        scrollPositionRef.current = 0;
+        el.scrollTop = 0;
+      }
+    }
+    scrollingRef.current = true;
+    setRolando(true);
+    frameRef.current = requestAnimationFrame((timestamp) => scrollTickRef.current(timestamp));
+  }, [cancelScrollFrame]);
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -175,13 +238,13 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      frameRef.current = 0;
+      scrollingRef.current = false;
+      cancelScrollFrame();
       const recorder = recorderRef.current;
       if (recorder?.state === "recording") recorder.stop();
       stopStream();
     };
-  }, [stopStream]);
+  }, [cancelScrollFrame, stopStream]);
 
   useEffect(() => {
     if (!recording) return;
@@ -189,54 +252,23 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     return () => window.clearInterval(timer);
   }, [recording]);
 
-  // Rolagem suave do teleprompter: um único loop, sempre cancelado antes de recomeçar.
+  // Descarta timestamps antigos quando a aba volta, evitando saltos sem matar o loop.
   useEffect(() => {
-    if (!rolando) {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      frameRef.current = 0;
-      return;
-    }
-    if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    let last = performance.now();
-    const step = (now: number) => {
-      frameRef.current = 0;
-      const el = scrollRef.current;
-      // Limita o salto quando o navegador pausa a animação (aba em segundo plano).
-      const delta = Math.min(0.1, Math.max(0, (now - last) / 1000));
-      last = now;
-      if (el) {
-        const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
-        scrollPositionRef.current = Math.min(maxScroll, scrollPositionRef.current + velocidade * delta);
-        el.scrollTop = scrollPositionRef.current;
-        if (scrollPositionRef.current >= maxScroll) {
-          setRolando(false);
-          return;
-        }
+    const onVisibilityChange = () => {
+      lastScrollFrameRef.current = 0;
+      if (document.visibilityState === "visible" && scrollingRef.current && !frameRef.current) {
+        frameRef.current = requestAnimationFrame((timestamp) => scrollTickRef.current(timestamp));
       }
-      frameRef.current = requestAnimationFrame(step);
     };
-    frameRef.current = requestAnimationFrame(step);
-    return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      frameRef.current = 0;
-    };
-  }, [rolando, velocidade]);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
 
   /** Liga/desliga a rolagem. Se o texto já terminou, recomeça do topo em vez de ficar inerte. */
   const alternarRolagem = useCallback(() => {
-    setRolando((atual) => {
-      if (atual) return false;
-      const el = scrollRef.current;
-      if (el) {
-        const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
-        if (scrollPositionRef.current >= maxScroll - 2) {
-          scrollPositionRef.current = 0;
-          el.scrollTop = 0;
-        }
-      }
-      return true;
-    });
-  }, []);
+    if (scrollingRef.current) stopScrolling();
+    else startScrolling();
+  }, [startScrolling, stopScrolling]);
 
   // Pipeline de imagem: recorta o quadro da câmera em 9:16, aplica filtros e alimenta preview e gravação.
   useEffect(() => {
@@ -245,8 +277,14 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     let frame = 0;
     let frames = 0;
     let janela = performance.now();
+    let lastDrawAt = 0;
 
-    const loop = () => {
+    const loop = (now: number) => {
+      if (now - lastDrawAt < 1000 / 30) {
+        if (!cancelled) frame = requestAnimationFrame(loop);
+        return;
+      }
+      lastDrawAt = now;
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const smoother = smootherRef.current;
@@ -272,7 +310,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
             try {
               smoother.render(ctx, video, {
                 intensity: intensidade,
-                timestamp: performance.now(),
+                timestamp: now,
                 drawSource,
                 project: (x, y) => ({
                   x: (x * video.videoWidth - crop.sx) * (OUT_W / crop.sw),
@@ -304,7 +342,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
       if (!cancelled) frame = requestAnimationFrame(loop);
     };
 
-    frame = requestAnimationFrame(loop);
+     frame = requestAnimationFrame(loop);
     return () => {
       cancelled = true;
       cancelAnimationFrame(frame);
@@ -377,7 +415,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
       canvasCleanupRef.current();
       stopStream();
       setRecording(false);
-      setRolando(false);
+      stopScrolling();
       setError("A gravação foi interrompida pelo navegador. Tente gravar novamente.");
     };
     recorder.onstop = () => {
@@ -386,7 +424,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
       canvasCleanupRef.current();
       stopStream();
       setRecording(false);
-      setRolando(false);
+      stopScrolling();
       if (!mountedRef.current) return;
       if (recorded.size === 0) {
         setError("O navegador não gerou o arquivo do vídeo. Tente gravar novamente.");
@@ -409,8 +447,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     setRecording(true);
     scrollPositionRef.current = 0;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    setRolando(false);
-    requestAnimationFrame(() => setRolando(true));
+    startScrolling();
   };
 
   const stop = () => {
@@ -450,21 +487,14 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const tempo = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 text-white">
-        <p className="min-w-0 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Gravar vídeo"}</p>
-        <Button type="button" variant="ghost" size="icon" aria-label="Fechar estúdio" className="text-white hover:bg-white/10 hover:text-white" onClick={onClose}>
-          <X className="size-5" />
-        </Button>
-      </div>
-
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-black">
       {!supported ? (
         <div className="m-6 rounded-xl bg-white/10 p-6 text-center text-sm text-white">
           Este navegador não permite gravar vídeo. Abra o Shop Studio pelo Chrome ou Safari atualizado, no celular ou no
           computador, para usar o estúdio.
         </div>
       ) : (
-        <div className="relative mx-auto aspect-[9/16] max-h-full w-auto max-w-full flex-1 overflow-hidden bg-black">
+        <div className="relative aspect-[9/16] h-full max-h-[100dvh] w-auto max-w-full overflow-hidden bg-black">
           {previewUrl ? (
             <video
               src={previewUrl}
@@ -490,8 +520,15 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
             </>
           )}
 
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/70 to-transparent px-3 pb-10 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+            <p className="min-w-0 truncate pt-2 text-sm font-bold">{job.title || "Gravar vídeo"}</p>
+            <Button type="button" variant="ghost" size="icon" aria-label="Fechar estúdio" title="Fechar estúdio" className="pointer-events-auto shrink-0 bg-black/30 text-white backdrop-blur-md hover:bg-black/50 hover:text-white" onClick={onClose}>
+              <X className="size-5" />
+            </Button>
+          </div>
+
           {error && (
-            <div className="absolute inset-x-4 top-4 rounded-xl bg-black/80 p-4 text-sm text-white">
+            <div className="absolute inset-x-4 top-20 z-30 rounded-xl bg-black/80 p-4 text-sm text-white backdrop-blur-md">
               {error}
               <Button variant="secondary" size="sm" className="mt-3" onClick={() => void startCamera(facing, reduzirRuido)}>
                 <RefreshCw />
@@ -536,138 +573,76 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
           )}
 
           {recording && (
-            <span className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white">
+            <span className="absolute left-3 top-16 z-20 inline-flex items-center gap-2 rounded-full bg-destructive px-3 py-1 text-xs font-bold text-destructive-foreground">
               <span className="size-2 animate-pulse rounded-full bg-white" />
               {tempo}
             </span>
           )}
-        </div>
-      )}
 
-      {supported && (
-        <div className="mx-auto w-full max-w-[520px] px-4 pb-6 pt-3">
           {!previewUrl ? (
             <>
-              <div className="mb-3">
-                <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-white/60">Filtro de imagem</p>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  {FILTROS.map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      aria-pressed={filtro === f.id}
-                      onClick={() => setFiltro(f.id)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
-                        filtro === f.id ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mb-3 flex flex-col items-center gap-2">
-                <Button
-                  variant={suavizar ? "default" : "secondary"}
-                  size="sm"
-                  disabled={recording}
-                  aria-pressed={suavizar}
-                  onClick={() => setSuavizar((v) => !v)}
-                >
-                  {suavizarStatus === "carregando" ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                  {suavizar
-                    ? suavizarStatus === "carregando"
-                      ? "Suavizar pele (beta): preparando..."
-                      : "Suavizar pele (beta): ligado"
-                    : "Suavizar pele (beta)"}
+              <div className="absolute right-3 top-24 z-20 flex flex-col gap-3">
+                <Button variant="secondary" size="icon" aria-label="Ajustes da câmera" title="Ajustes da câmera" className="rounded-full bg-black/45 text-white backdrop-blur-md hover:bg-black/65 hover:text-white" onClick={() => setPainel((p) => p === "ajustes" ? null : "ajustes")}>
+                  <SlidersHorizontal />
                 </Button>
-                {suavizar && (
-                  <div className="flex items-center justify-center gap-2">
-                    {INTENSIDADES.map((i) => (
-                      <button
-                        key={i.id}
-                        type="button"
-                        aria-pressed={intensidade === i.id}
-                        disabled={recording}
-                        onClick={() => setIntensidade(i.id)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
-                          intensidade === i.id ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
-                        }`}
-                      >
-                        {i.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <p className="text-center text-[11px] leading-snug text-white/60">
-                  Beta. Pode deixar a gravação mais lenta em celulares mais simples. Se travar, desligue.
-                </p>
-              </div>
-
-              <div className="mb-3 flex flex-col items-center gap-1">
-                <Button
-                  variant={reduzirRuido ? "default" : "secondary"}
-                  size="sm"
-                  disabled={recording}
-                  aria-pressed={reduzirRuido}
-                  onClick={() => setReduzirRuido((v) => !v)}
-                >
-                  {reduzirRuido ? <Mic /> : <MicOff />}
-                  {reduzirRuido ? "Reduzir ruído: ligado" : "Reduzir ruído: desligado"}
+                <Button variant="secondary" size="icon" aria-label="Ajustes do texto" title="Ajustes do texto" className="rounded-full bg-black/45 text-white backdrop-blur-md hover:bg-black/65 hover:text-white" onClick={() => setPainel((p) => p === "texto" ? null : "texto")}>
+                  <Type />
                 </Button>
-                <p className="text-center text-[11px] leading-snug text-white/60">
-                  Reduz ruídos de fundo na captação do microfone. Não remove o ruído por completo.
-                </p>
               </div>
 
-              <div className="mb-3 flex flex-wrap items-center justify-center gap-2 text-white">
-                <Button variant="secondary" size="sm" onClick={alternarRolagem}>
+              <div className="absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-[1fr_auto_1fr] items-end px-4">
+                <Button variant="secondary" size="icon" aria-label={rolando ? "Pausar texto" : "Rolar texto"} title={rolando ? "Pausar texto" : "Rolar texto"} className="justify-self-start rounded-full bg-black/45 text-white backdrop-blur-md hover:bg-black/65 hover:text-white" onClick={alternarRolagem}>
                   {rolando ? <Pause /> : <Play />}
-                  {rolando ? "Pausar texto" : "Rolar texto"}
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => setVelocidade((v) => Math.max(8, v - 6))}>
-                  <Minus />
-                  Velocidade
+                <Button size="icon" aria-label={recording ? "Parar gravação" : "Iniciar gravação"} title={recording ? "Parar gravação" : "Iniciar gravação"} className={`size-16 rounded-full border-4 border-white shadow-xl ${recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`} disabled={!!error} onClick={() => (recording ? stop() : start())}>
+                  {recording ? <Square className="size-6 fill-current" /> : <span className="size-7 rounded-full bg-current" />}
                 </Button>
-                <Button variant="secondary" size="sm" onClick={() => setVelocidade((v) => Math.min(90, v + 6))}>
-                  <Plus />
-                  Velocidade
-                </Button>
-                <Button variant="secondary" size="sm" onClick={() => setFonte((f) => Math.max(16, f - 3))}>
-                  <Minus />
-                  Fonte
-                </Button>
-                <Button variant="secondary" size="sm" onClick={() => setFonte((f) => Math.min(60, f + 3))}>
-                  <Plus />
-                  Fonte
-                </Button>
-                <Button variant="secondary" size="sm" onClick={() => setEspelhado((v) => !v)}>
-                  <FlipHorizontal />
-                  Espelhar texto
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={recording}
-                  onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
-                >
-                  <Camera />
-                  Virar câmera
-                </Button>
+                <span />
               </div>
-              <Button
-                size="lg"
-                className="w-full"
-                variant={recording ? "destructive" : "default"}
-                disabled={!!error}
-                onClick={() => (recording ? stop() : start())}
-              >
-                {recording ? <><Square />Parar gravação</> : <><Camera />Iniciar gravação</>}
-              </Button>
+
+              {painel && (
+                <div className="absolute inset-0 z-30 flex items-end bg-black/35" onPointerDown={() => setPainel(null)}>
+                  <section aria-label={painel === "ajustes" ? "Ajustes da câmera" : "Ajustes do texto"} className="max-h-[68%] w-full overflow-y-auto rounded-t-2xl bg-popover/95 px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 text-popover-foreground shadow-2xl backdrop-blur-xl" onPointerDown={(event) => event.stopPropagation()}>
+                    <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted-foreground/35" />
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <h2 className="font-bold">{painel === "ajustes" ? "Ajustes da câmera" : "Ajustes do texto"}</h2>
+                      <Button variant="ghost" size="icon" aria-label="Fechar ajustes" onClick={() => setPainel(null)}><X /></Button>
+                    </div>
+                    {painel === "ajustes" ? (
+                      <div className="grid gap-5">
+                        <div>
+                          <p className="mb-2 text-xs font-semibold text-muted-foreground">Filtro de imagem</p>
+                          <div className="flex flex-wrap gap-2">
+                            {FILTROS.map((f) => <Button key={f.id} type="button" size="sm" variant={filtro === f.id ? "default" : "secondary"} aria-pressed={filtro === f.id} onClick={() => setFiltro(f.id)}>{f.label}</Button>)}
+                          </div>
+                        </div>
+                        <div className="grid gap-2">
+                          <Button variant={suavizar ? "default" : "secondary"} size="sm" disabled={recording} aria-pressed={suavizar} onClick={() => setSuavizar((v) => !v)}>
+                            {suavizarStatus === "carregando" ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                            {suavizar ? suavizarStatus === "carregando" ? "Preparando suavização..." : "Suavizar pele: ligado" : "Suavizar pele (beta)"}
+                          </Button>
+                          {suavizar && <div className="flex flex-wrap gap-2">{INTENSIDADES.map((i) => <Button key={i.id} type="button" size="sm" variant={intensidade === i.id ? "default" : "secondary"} aria-pressed={intensidade === i.id} disabled={recording} onClick={() => setIntensidade(i.id)}>{i.label}</Button>)}</div>}
+                          <p className="text-xs text-muted-foreground">Beta. Pode deixar a gravação mais lenta em celulares mais simples. Se travar, desligue.</p>
+                        </div>
+                        <Button variant={reduzirRuido ? "default" : "secondary"} size="sm" disabled={recording} aria-pressed={reduzirRuido} onClick={() => setReduzirRuido((v) => !v)}>
+                          {reduzirRuido ? <Mic /> : <MicOff />}{reduzirRuido ? "Reduzir ruído: ligado" : "Reduzir ruído: desligado"}
+                        </Button>
+                        <Button variant="secondary" size="sm" disabled={recording} onClick={() => { setFacing((f) => f === "user" ? "environment" : "user"); setPainel(null); }}><Camera />Virar câmera</Button>
+                      </div>
+                    ) : (
+                      <div className="grid gap-5">
+                        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2"><span className="text-sm font-semibold">Velocidade: {velocidade}</span><Button variant="secondary" size="icon" aria-label="Diminuir velocidade" onClick={() => setVelocidade((v) => Math.max(8, v - 6))}><Minus /></Button><Button variant="secondary" size="icon" aria-label="Aumentar velocidade" onClick={() => setVelocidade((v) => Math.min(90, v + 6))}><Plus /></Button></div>
+                        <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2"><span className="text-sm font-semibold">Fonte: {fonte}</span><Button variant="secondary" size="icon" aria-label="Diminuir fonte" onClick={() => setFonte((f) => Math.max(16, f - 3))}><Minus /></Button><Button variant="secondary" size="icon" aria-label="Aumentar fonte" onClick={() => setFonte((f) => Math.min(60, f + 3))}><Plus /></Button></div>
+                        <Button variant={espelhado ? "default" : "secondary"} size="sm" aria-pressed={espelhado} onClick={() => setEspelhado((v) => !v)}><FlipHorizontal />{espelhado ? "Texto espelhado" : "Espelhar texto"}</Button>
+                        <Button variant="secondary" size="sm" onClick={() => { alternarRolagem(); setPainel(null); }}>{rolando ? <Pause /> : <Play />}{rolando ? "Pausar texto" : "Rolar texto"}</Button>
+                      </div>
+                    )}
+                  </section>
+                </div>
+              )}
             </>
           ) : (
-            <div className="grid gap-2">
+            <div className="absolute inset-x-0 bottom-0 z-20 grid gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-16">
               <p className="text-center text-sm font-semibold text-white">Revise sua gravação</p>
               <Button size="lg" disabled={salvar.isPending} onClick={() => salvar.mutate()}>
                 {salvar.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
