@@ -265,7 +265,7 @@ export function VideoEditor({
                 strokeDashoffset={progressOffset}
                 className="stroke-brand-cyan transition-[stroke-dashoffset] duration-300"
               />
-              <circle cx="60" cy="12" r="4" className="fill-secondary-brand" />
+              <circle cx="60" cy="12" r="4" className="fill-primary" />
             </svg>
             <span className="text-2xl font-bold tabular-nums">{progresso}%</span>
           </div>
