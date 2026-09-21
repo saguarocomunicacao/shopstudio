@@ -527,6 +527,7 @@ export function RecordingStudio({
             <div className="pointer-events-none absolute inset-x-0 bottom-0 top-1/3 bg-gradient-to-t from-black/85 via-black/60 to-transparent">
               <div
                 ref={scrollRef}
+                data-teleprompter-scroll
                 className="pointer-events-auto h-full overflow-y-auto px-5 py-8"
                 style={{ scrollbarWidth: "none" }}
                 onScroll={(event) => {
