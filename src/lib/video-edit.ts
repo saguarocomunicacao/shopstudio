@@ -96,14 +96,14 @@ export function buildFfmpegArgs(
   const needsReencode = !!crop || cuts.length > 0;
   const args: string[] = [];
 
-  if (trim) args.push("-ss", trim.start.toFixed(3), "-to", trim.end.toFixed(3));
-  args.push("-i", input);
-
   if (!needsReencode) {
+    if (trim) args.push("-ss", trim.start.toFixed(3), "-to", trim.end.toFixed(3));
+    args.push("-i", input);
     args.push("-c", "copy", "-avoid_negative_ts", "make_zero", output);
     return args;
   }
 
+  args.push("-i", input);
   const ranges = keepRanges(duration, operations);
   if (!ranges.length) throw new Error("A edição removeria o vídeo inteiro.");
 
