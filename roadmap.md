@@ -23,4 +23,6 @@
 - [x] Testar trim e tesoura reais e validar o resultado visual
 - [x] Mostrar tela dedicada com progresso circular ao aplicar edição
 - [x] Permitir reproduzir o vídeo na revisão antes de salvar
-- [ ] Parte futura: recorte de quadro
+- [x] Adicionar reenquadramento com proporção travada, arraste e redimensionamento
+- [x] Combinar crop, scale, trim e tesoura em uma única geração final
+- [x] Testar crop 9:16 + tesoura com áudio e validar o layout responsivo

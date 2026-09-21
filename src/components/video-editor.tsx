@@ -1,4 +1,4 @@
-import { Check, Loader2, Pause, Play, RotateCcw, Scissors, Trash2, X } from "lucide-react";
+import { Check, Crop as CropIcon, Loader2, Pause, Play, RotateCcw, Scissors, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,8 +8,11 @@ import {
   normalizeCuts,
   resultingDuration,
   type CutOperation,
+  type CropOperation,
   type VideoEditOperation,
+  type VideoSourceSize,
 } from "@/lib/video-edit";
+import { RECORDING_ASPECT_RATIOS, RECORDING_FORMATS, type RecordingAspectRatio } from "@/lib/recording-format";
 
 /** Núcleo do ffmpeg servido pelo próprio app e carregado só quando o editor abre. */
 import coreWasmAsset from "@/assets/ffmpeg-core.wasm.asset.json";
@@ -33,6 +36,16 @@ function formatTime(value: number) {
   return `${String(m).padStart(2, "0")}:${s.toFixed(1).padStart(4, "0")}`;
 }
 
+function initialCrop(aspectRatio: RecordingAspectRatio, source: VideoSourceSize, coverage = 1): CropOperation {
+  const output = RECORDING_FORMATS[aspectRatio];
+  const relativeRatio = (output.width / output.height) / (source.width / source.height);
+  const width = relativeRatio >= 1 ? coverage : coverage * relativeRatio;
+  const height = relativeRatio >= 1 ? coverage / relativeRatio : coverage;
+  return { type: "crop", aspectRatio, x: (1 - width) / 2, y: (1 - height) / 2, width, height };
+}
+
+type EditorSnapshot = { start: number; end: number; cuts: CutOperation[]; crop: CropOperation | null };
+
 export function VideoEditor({
   source,
   onCancel,
@@ -43,6 +56,7 @@ export function VideoEditor({
   onApply: (edited: Blob, operations: VideoEditOperation[]) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoFrameRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const ffmpegRef = useRef<FFmpegLike | null>(null);
 
@@ -50,14 +64,16 @@ export function VideoEditor({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [videoSize, setVideoSize] = useState<VideoSourceSize | null>(null);
   const [start, setStart] = useState(0);
   const [end, setEnd] = useState(0);
-  const [mode, setMode] = useState<"trim" | "cut">("trim");
+  const [mode, setMode] = useState<"trim" | "cut" | "crop">("trim");
   const [cutStart, setCutStart] = useState(0);
   const [cutEnd, setCutEnd] = useState(0);
   const [cuts, setCuts] = useState<CutOperation[]>([]);
+  const [crop, setCrop] = useState<CropOperation | null>(null);
   /** Pilha de estados anteriores: cada corte/aparo entra aqui para o "Desfazer". */
-  const [history, setHistory] = useState<{ start: number; end: number; cuts: CutOperation[] }[]>([]);
+  const [history, setHistory] = useState<EditorSnapshot[]>([]);
   const rangesRef = useRef<{ start: number; end: number }[]>([]);
   const [engine, setEngine] = useState<"carregando" | "pronto" | "erro">("carregando");
   const [processando, setProcessando] = useState(false);
@@ -126,7 +142,7 @@ export function VideoEditor({
     if (!trackRef.current || duration <= 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     if (handle === "start" || handle === "end") {
-      const snapshot = { start, end, cuts };
+      const snapshot = { start, end, cuts, crop };
       setHistory((current) => [...current, snapshot]);
     }
     const move = (clientX: number) => {
@@ -161,10 +177,63 @@ export function VideoEditor({
     window.addEventListener("pointerup", onUp);
   };
 
+  const selectCropRatio = (aspectRatio: RecordingAspectRatio) => {
+    if (!videoSize) return;
+    setHistory((current) => [...current, { start, end, cuts, crop }]);
+    setCrop(initialCrop(aspectRatio, videoSize));
+    setErro(null);
+  };
+
+  const dragCrop = (kind: "move" | "nw" | "ne" | "sw" | "se") => (event: React.PointerEvent<HTMLElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const frame = videoFrameRef.current;
+    if (!frame || !crop || !videoSize) return;
+    const rect = frame.getBoundingClientRect();
+    const originX = event.clientX;
+    const originY = event.clientY;
+    const original = { ...crop };
+    const format = RECORDING_FORMATS[crop.aspectRatio];
+    const normalizedRatio = (format.width / format.height) / (videoSize.width / videoSize.height);
+    setHistory((current) => [...current, { start, end, cuts, crop }]);
+
+    const onMove = (moveEvent: PointerEvent) => {
+      const dx = (moveEvent.clientX - originX) / rect.width;
+      const dy = (moveEvent.clientY - originY) / rect.height;
+      if (kind === "move") {
+        setCrop({
+          ...original,
+          x: Math.min(1 - original.width, Math.max(0, original.x + dx)),
+          y: Math.min(1 - original.height, Math.max(0, original.y + dy)),
+        });
+        return;
+      }
+      const fromLeft = kind === "nw" || kind === "sw";
+      const fromTop = kind === "nw" || kind === "ne";
+      const oppositeX = fromLeft ? original.x + original.width : original.x;
+      const oppositeY = fromTop ? original.y + original.height : original.y;
+      const pointerX = fromLeft ? original.x + dx : original.x + original.width + dx;
+      const pointerY = fromTop ? original.y + dy : original.y + original.height + dy;
+      let width = Math.max(Math.abs(oppositeX - pointerX), Math.abs(oppositeY - pointerY) * normalizedRatio);
+      const maxWidth = fromLeft ? oppositeX : 1 - oppositeX;
+      const maxHeight = fromTop ? oppositeY : 1 - oppositeY;
+      width = Math.max(0.12, Math.min(width, maxWidth, maxHeight * normalizedRatio));
+      const height = width / normalizedRatio;
+      setCrop({ ...original, width, height, x: fromLeft ? oppositeX - width : oppositeX, y: fromTop ? oppositeY - height : oppositeY });
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
   const aparado = start > 0.05 || end < duration - 0.05;
   const operations: VideoEditOperation[] = [
     ...(aparado ? [{ type: "trim" as const, start, end }] : []),
     ...cuts,
+    ...(crop ? [crop] : []),
   ];
   /** Trechos que permanecem: o player usa esta lista para pular o que foi cortado. */
   const ranges = duration > 0 ? keepRanges(duration, operations) : [];
@@ -178,7 +247,7 @@ export function VideoEditor({
       setErro("O corte não pode remover o vídeo inteiro.");
       return;
     }
-    setHistory((current) => [...current, { start, end, cuts }]);
+    setHistory((current) => [...current, { start, end, cuts, crop }]);
     setCuts(next);
     setErro(null);
     // O corte vale na hora: se o cursor estava dentro dele, pula para a continuação.
@@ -193,6 +262,7 @@ export function VideoEditor({
       setStart(previous.start);
       setEnd(previous.end);
       setCuts(previous.cuts);
+      setCrop(previous.crop);
       setErro(null);
       return current.slice(0, -1);
     });
@@ -219,18 +289,18 @@ export function VideoEditor({
     setProgresso(0);
     setErro(null);
     const inputExtension = source.type.includes("mp4") ? "mp4" : "webm";
-    const outputExtension = cuts.length ? "mp4" : inputExtension;
+    const outputExtension = cuts.length || crop ? "mp4" : inputExtension;
     const input = `${EDIT_INPUT}.${inputExtension}`;
     const output = `saida.${outputExtension}`;
     try {
       const { fetchFile } = await import("@ffmpeg/util");
       await ffmpeg.writeFile(input, await fetchFile(source));
-      let exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration, true));
+      let exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration, true, videoSize ?? undefined));
       // Alguns vídeos importados não têm faixa de áudio. Nesse caso, repete o
       // mesmo pipeline apenas com vídeo em vez de tornar a edição indisponível.
-      if (exitCode !== 0 && cuts.length) {
+      if (exitCode !== 0 && operations.some((operation) => operation.type !== "trim")) {
         await ffmpeg.deleteFile(output).catch(() => undefined);
-        exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration, false));
+        exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration, false, videoSize ?? undefined));
       }
       if (exitCode !== 0) throw new Error(`ffmpeg ${exitCode}`);
       const data = (await ffmpeg.readFile(output)) as Uint8Array;
@@ -301,17 +371,29 @@ export function VideoEditor({
       </header>
 
       <main className="flex min-h-0 items-center justify-center overflow-hidden bg-muted/30 p-3 sm:p-5">
-        <div className="relative flex size-full min-h-0 items-center justify-center overflow-hidden">
-          <video
+        <div className="grid size-full min-h-0 place-items-center overflow-hidden [container-type:size]">
+          <div
+            ref={videoFrameRef}
+            className="relative overflow-hidden shadow-2xl"
+            style={videoSize ? {
+              aspectRatio: `${videoSize.width} / ${videoSize.height}`,
+              width: `min(100cqw, calc(100cqh * ${videoSize.width / videoSize.height}))`,
+              height: `min(100cqh, calc(100cqw * ${videoSize.height / videoSize.width}))`,
+            } : undefined}
+          >
+            <video
             ref={videoRef}
             src={url ?? undefined}
             playsInline
             preload="metadata"
             aria-label="Vídeo em edição"
-            className="block max-h-full max-w-full object-contain shadow-2xl"
+            className="block size-full object-contain"
             onClick={() => void togglePlayback()}
           onLoadedMetadata={(event) => {
             const video = event.currentTarget;
+            if (video.videoWidth > 0 && video.videoHeight > 0) {
+              setVideoSize({ width: video.videoWidth, height: video.videoHeight });
+            }
             const d = video.duration;
             if (Number.isFinite(d) && d > 0) {
               setDuration(d);
@@ -369,10 +451,36 @@ export function VideoEditor({
             video.currentTime = inicio;
             setCurrentTime(inicio);
           }}
-          />
-          <Button type="button" size="icon" aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"} className="absolute bottom-3 left-1/2 size-11 -translate-x-1/2 rounded-full shadow-xl" onClick={() => void togglePlayback()}>
-            {playing ? <Pause /> : <Play />}
-          </Button>
+            />
+            {mode === "crop" && crop && (
+              <div className="absolute inset-0 z-10" aria-label="Moldura de reenquadramento">
+                <div className="pointer-events-none absolute left-0 right-0 top-0 bg-background/70" style={{ height: `${crop.y * 100}%` }} />
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-background/70" style={{ top: `${(crop.y + crop.height) * 100}%` }} />
+                <div className="pointer-events-none absolute left-0 bg-background/70" style={{ top: `${crop.y * 100}%`, width: `${crop.x * 100}%`, height: `${crop.height * 100}%` }} />
+                <div className="pointer-events-none absolute right-0 bg-background/70" style={{ top: `${crop.y * 100}%`, left: `${(crop.x + crop.width) * 100}%`, height: `${crop.height * 100}%` }} />
+                <div
+                  className="absolute touch-none border-2 border-brand-cyan"
+                  style={{ left: `${crop.x * 100}%`, top: `${crop.y * 100}%`, width: `${crop.width * 100}%`, height: `${crop.height * 100}%` }}
+                >
+                  <div role="button" tabIndex={0} aria-label="Arrastar moldura" className="absolute inset-3 cursor-move touch-none" onPointerDown={dragCrop("move")} />
+                  {(["nw", "ne", "sw", "se"] as const).map((corner) => (
+                    <Button
+                      key={corner}
+                      type="button"
+                      size="icon"
+                      variant="secondary"
+                      aria-label={`Redimensionar moldura ${corner}`}
+                      className={`absolute size-8 touch-none rounded-full border-2 border-brand-cyan p-0 ${corner.includes("n") ? "-top-4" : "-bottom-4"} ${corner.includes("w") ? "-left-4" : "-right-4"}`}
+                      onPointerDown={dragCrop(corner)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            <Button type="button" size="icon" aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"} className="absolute bottom-3 left-1/2 z-20 size-11 -translate-x-1/2 rounded-full shadow-xl" onClick={() => void togglePlayback()}>
+              {playing ? <Pause /> : <Play />}
+            </Button>
+          </div>
         </div>
       </main>
 
@@ -391,7 +499,7 @@ export function VideoEditor({
           <p className="text-xs text-muted-foreground">No celular, o processamento pode demorar. Mantenha a tela aberta até terminar.</p>
         )}
 
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1" role="group" aria-label="Ferramenta da timeline">
+        <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1" role="group" aria-label="Ferramenta de edição">
           <Button type="button" size="sm" variant={mode === "trim" ? "default" : "ghost"} aria-pressed={mode === "trim"} onClick={() => setMode("trim")}>
             <RotateCcw /> Aparar pontas
           </Button>
@@ -403,7 +511,29 @@ export function VideoEditor({
           }}>
             <Scissors /> Tesoura
           </Button>
+          <Button type="button" size="sm" variant={mode === "crop" ? "default" : "ghost"} aria-pressed={mode === "crop"} onClick={() => {
+            setMode("crop");
+            if (!crop && videoSize) selectCropRatio("9:16");
+          }}>
+            <CropIcon /> Enquadrar
+          </Button>
         </div>
+
+        {mode === "crop" && (
+          <div className="grid gap-2">
+            <div className="grid grid-cols-4 gap-1" role="group" aria-label="Proporção do enquadramento">
+              {RECORDING_ASPECT_RATIOS.map((ratio) => (
+                <Button key={ratio} type="button" size="sm" variant={crop?.aspectRatio === ratio ? "default" : "outline"} onClick={() => selectCropRatio(ratio)} disabled={!videoSize}>
+                  {ratio}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">Arraste a moldura para mover e use os cantos para redimensionar.</p>
+            {crop && crop.width * crop.height < 0.35 && (
+              <p className="text-xs text-destructive">Esta seleção será ampliada e pode perder nitidez.</p>
+            )}
+          </div>
+        )}
 
         <div className="min-w-0">
           <div className="mb-2 grid grid-cols-3 items-center gap-2 text-xs font-semibold">
@@ -425,12 +555,12 @@ export function VideoEditor({
                 <Button type="button" variant="default" aria-label="Início do trecho" data-trim-handle="start" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(start)}%` }} onPointerDown={dragHandle("start")} />
                 <Button type="button" variant="default" aria-label="Fim do trecho" data-trim-handle="end" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(end)}%` }} onPointerDown={dragHandle("end")} />
               </>
-            ) : (
+            ) : mode === "cut" ? (
               <>
                 <Button type="button" variant="destructive" aria-label="Início do corte interno" data-cut-handle="start" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutStart)}%` }} onPointerDown={dragHandle("cutStart")} />
                 <Button type="button" variant="destructive" aria-label="Fim do corte interno" data-cut-handle="end" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutEnd)}%` }} onPointerDown={dragHandle("cutEnd")} />
               </>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -447,7 +577,7 @@ export function VideoEditor({
           <div className="flex flex-wrap gap-2" aria-label="Cortes internos adicionados">
             {cuts.map((cut, index) => (
             <Button key={`${cut.start}-${cut.end}-${index}`} type="button" size="sm" variant="secondary" aria-label={`Remover corte ${index + 1}`} onClick={() => {
-                setHistory((current) => [...current, { start, end, cuts }]);
+                setHistory((current) => [...current, { start, end, cuts, crop }]);
                 setCuts((current) => current.filter((_, itemIndex) => itemIndex !== index));
               }}>
                 {formatTime(cut.start)}–{formatTime(cut.end)} <Trash2 />
