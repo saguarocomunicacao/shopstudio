@@ -182,6 +182,18 @@ function PipelineContent() {
                     <p className="mt-2 text-xs text-muted-foreground">{productName(job.product_id)}</p>
                     <p className="mt-4 text-[11px] text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
                     <JobCostBadge jobId={job.id} />
+                    {job.formato === "gravacao" ? (
+                      <>
+                        <p className="mt-2 inline-flex rounded-full bg-secondary px-2.5 py-1 text-[11px] font-bold">Gravar eu mesmo</p>
+                        {canEditJob(job) && (
+                          <Button size="sm" className="mt-3 w-full" onClick={(e) => { e.stopPropagation(); setRecording(job); }}>
+                            <Video />
+                            {job.status === "produto_escolhido" ? "Criar roteiro" : "Roteiro e gravação"}
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <>
                     {job.status === "produto_escolhido" && canEditJob(job) && (
                       <Button
                         size="sm"
@@ -239,6 +251,8 @@ function PipelineContent() {
                           <BadgeCheck className="size-3.5" />
                           Na fila de revisão — aprove aqui ou em Rascunhos
                         </p>
+                      </>
+                    )}
                       </>
                     )}
                   </article>
