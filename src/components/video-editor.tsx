@@ -163,7 +163,10 @@ export function VideoEditor({
     ...(aparado ? [{ type: "trim" as const, start, end }] : []),
     ...cuts,
   ];
-  const validResult = duration > 0 && keepRanges(duration, operations).length > 0;
+  /** Trechos que permanecem: o player usa esta lista para pular o que foi cortado. */
+  const ranges = duration > 0 ? keepRanges(duration, operations) : [];
+  rangesRef.current = ranges;
+  const validResult = duration > 0 && ranges.length > 0;
 
   const addCut = () => {
     if (cutEnd - cutStart < 0.2) return;
@@ -172,8 +175,24 @@ export function VideoEditor({
       setErro("O corte não pode remover o vídeo inteiro.");
       return;
     }
+    setHistory((current) => [...current, { start, end, cuts }]);
     setCuts(next);
     setErro(null);
+    // O corte vale na hora: se o cursor estava dentro dele, pula para a continuação.
+    const video = videoRef.current;
+    if (video && video.currentTime >= cutStart && video.currentTime < cutEnd) seek(Math.min(cutEnd, end));
+  };
+
+  const desfazer = () => {
+    setHistory((current) => {
+      const previous = current.at(-1);
+      if (!previous) return current;
+      setStart(previous.start);
+      setEnd(previous.end);
+      setCuts(previous.cuts);
+      setErro(null);
+      return current.slice(0, -1);
+    });
   };
 
   const togglePlayback = async () => {
@@ -183,7 +202,10 @@ export function VideoEditor({
       video.pause();
       return;
     }
-    if (video.currentTime < start || video.currentTime >= end) seek(start);
+    const list = rangesRef.current;
+    const first = list[0];
+    const dentro = list.some((range) => video.currentTime >= range.start && video.currentTime < range.end - 0.05);
+    if (first && !dentro) seek(first.start);
     await video.play().catch(() => undefined);
   };
 
