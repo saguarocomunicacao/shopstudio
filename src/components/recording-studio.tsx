@@ -83,6 +83,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const chunksRef = useRef<Blob[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const scrollPositionRef = useRef(0);
+  const frameRef = useRef(0);
   const mountedRef = useRef(true);
 
   const [supported] = useState(
@@ -155,6 +156,8 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
       const recorder = recorderRef.current;
       if (recorder?.state === "recording") recorder.stop();
       stopStream();
@@ -388,7 +391,8 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     setRecording(true);
     scrollPositionRef.current = 0;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    setRolando(true);
+    setRolando(false);
+    requestAnimationFrame(() => setRolando(true));
   };
 
   const stop = () => {
@@ -604,7 +608,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
               </div>
 
               <div className="mb-3 flex flex-wrap items-center justify-center gap-2 text-white">
-                <Button variant="secondary" size="sm" onClick={() => setRolando((v) => !v)}>
+                <Button variant="secondary" size="sm" onClick={alternarRolagem}>
                   {rolando ? <Pause /> : <Play />}
                   {rolando ? "Pausar texto" : "Rolar texto"}
                 </Button>
