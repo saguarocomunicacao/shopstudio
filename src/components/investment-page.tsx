@@ -260,9 +260,16 @@ function CarteiraCard({
         </div>
         <div className="rounded-xl bg-secondary px-4 py-3">
           <p className="text-xs font-semibold text-muted-foreground">Consumo do mês</p>
-          <p className="mt-1 text-xl font-black">{brl(carteira.consumoMesBrl)}</p>
-          <p className="text-xs text-muted-foreground">acumulado: {brl(carteira.consumoBrl)}</p>
+          <p className="mt-1 text-xl font-black">
+            {def.unidade ? def.unidadeLabel(carteira.consumoCredito) : brl(carteira.consumoMesBrl)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {def.unidade
+              ? `${brl(carteira.consumoMesBrl)} no mês · acumulado ${def.unidadeLabel(carteira.consumoCredito)} (${brl(carteira.consumoBrl)})`
+              : `acumulado: ${brl(carteira.consumoBrl)}`}
+          </p>
         </div>
+
         <div className="rounded-xl bg-secondary px-4 py-3">
           <p className="text-xs font-semibold text-muted-foreground">{assinatura ? "Mensalidade" : "Total aportado"}</p>
           <p className="mt-1 text-xl font-black">
