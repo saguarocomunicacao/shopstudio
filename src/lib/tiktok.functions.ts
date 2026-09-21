@@ -73,8 +73,18 @@ export const startTiktokAuth = createServerFn({ method: "POST" })
     const redirectTo =
       data.redirectTo && data.redirectTo.startsWith("/") ? data.redirectTo : `/app/perfis/${data.profileId}/editar`;
 
+    // Insert com supabaseAdmin (sem sessão): tenant vem do usuário que autorizou.
+    const { data: owner, error: ownerError } = await supabaseAdmin
+      .from("app_users")
+      .select("tenant_id")
+      .eq("id", context.userId)
+      .maybeSingle();
+    if (ownerError) throw new Error(ownerError.message);
+    if (!owner?.tenant_id) throw new Error("Usuário sem tenant definido.");
+
     const { error } = await supabaseAdmin.from("tiktok_oauth_states").insert({
       state,
+      tenant_id: owner.tenant_id,
       profile_id: data.profileId,
       user_id: context.userId,
       redirect_to: redirectTo,

@@ -158,9 +158,13 @@ export async function saveConnection(profileId: string, tokens: TiktokTokens) {
 /** Marca a conexão com erro, preservando o motivo para a tela do perfil. */
 export async function markConnectionError(profileId: string, motivo: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const tenantId = await tenantOfProfile(profileId);
   await supabaseAdmin
     .from("tiktok_connections")
-    .upsert({ profile_id: profileId, status: "error", last_error: motivo.slice(0, 500) }, { onConflict: "profile_id" });
+    .upsert(
+      { tenant_id: tenantId, profile_id: profileId, status: "error", last_error: motivo.slice(0, 500) },
+      { onConflict: "profile_id" },
+    );
 }
 
 /** Renova as conexões cujo access_token expira dentro de `horas` (padrão 48h). */
