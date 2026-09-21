@@ -68,7 +68,7 @@ function usePlansData() {
 
 export function PlansPage() {
   const qc = useQueryClient();
-  const { isSuperAdmin } = useStudio();
+  const { isBackoffice } = useStudio();
   const { plans, prices, tenants } = usePlansData();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [removeId, setRemoveId] = useState<string | null>(null);
@@ -94,7 +94,7 @@ export function PlansPage() {
   return <BackofficeOnly><div>
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div><p className="mb-1 text-xs font-bold uppercase text-primary">Backoffice</p><h1 className="text-2xl font-black sm:text-3xl">Planos</h1><p className="mt-2 text-sm text-muted-foreground">Catálogo de franquias e preços por ação. Não há mensalidade.</p></div>
-      {isSuperAdmin && <Button asChild><Link to="/app/planos/$planId" params={{ planId: "novo" }}><Plus />Novo plano</Link></Button>}
+      {isBackoffice && <Button asChild><Link to="/app/planos/$planId" params={{ planId: "novo" }}><Plus />Novo plano</Link></Button>}
     </div>
     <section className="panel overflow-hidden p-0">
       {loading ? <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando planos...</p> : <Table>
@@ -103,7 +103,7 @@ export function PlansPage() {
           const open = expanded === plan.id;
           const rows = (prices.data ?? []).filter((row) => row.plan_id === plan.id);
           const companies = (tenants.data ?? []).filter((tenant) => tenant.plan_id === plan.id).length;
-          return <PlanRows key={plan.id} plan={plan} rows={rows} companies={companies} open={open} canEdit={isSuperAdmin} onToggle={() => setExpanded(open ? null : plan.id)} onActive={(is_active) => updatePlan.mutate({ id: plan.id, is_active })} onRemove={() => setRemoveId(plan.id)} />;
+          return <PlanRows key={plan.id} plan={plan} rows={rows} companies={companies} open={open} canEdit={isBackoffice} onToggle={() => setExpanded(open ? null : plan.id)} onActive={(is_active) => updatePlan.mutate({ id: plan.id, is_active })} onRemove={() => setRemoveId(plan.id)} />;
         })}</TableBody>
       </Table>}
       {!loading && !(plans.data ?? []).length && <p className="p-8 text-center text-sm text-muted-foreground">Nenhum plano cadastrado.</p>}
@@ -134,7 +134,7 @@ function Summary({ label, value }: { label: string; value: string }) { return <d
 export function PlanDetailPage({ planId }: { planId?: string }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { isBackoffice, isSuperAdmin } = useStudio();
+  const { isBackoffice } = useStudio();
   const editing = !!planId;
   const { data: plan, isLoading: planLoading } = useQuery({
     queryKey: ["plan-detail", planId], enabled: editing,
@@ -168,7 +168,6 @@ export function PlanDetailPage({ planId }: { planId?: string }) {
     onError: (error) => toast.error(errMessage(error)),
   });
   if (!isBackoffice) return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Você não tem acesso a esta página.</div>;
-  if (!isSuperAdmin) return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Só o super administrador altera planos.</div>;
   if (editing && (planLoading || priceLoading)) return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando plano...</p>;
   return <div className="mx-auto max-w-6xl">
     <div className="mb-6"><p className="mb-1 text-xs font-bold uppercase text-primary">Planos</p><h1 className="text-2xl font-black sm:text-3xl">{editing ? "Editar plano" : "Novo plano"}</h1></div>
