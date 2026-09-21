@@ -551,11 +551,8 @@ export function RecordingStudio({
               <div
                 ref={scrollRef}
                 data-teleprompter-scroll
-                className="pointer-events-auto h-full overflow-y-auto px-5 py-8 [scroll-behavior:auto!important]"
-                style={{ scrollbarWidth: "none" }}
-                onScroll={(event) => {
-                  scrollPositionRef.current = event.currentTarget.scrollTop;
-                }}
+                className="pointer-events-auto h-full overflow-y-auto px-5 py-8"
+                style={{ scrollbarWidth: "none", scrollBehavior: "auto" }}
               >
                 <div className="h-[65%]" aria-hidden="true" />
                 {teleprompter.map((item, index) => (
