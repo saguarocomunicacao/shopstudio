@@ -131,9 +131,9 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
 
   useEffect(() => {
     if (!supported) return;
-    void startCamera(facing);
+    void startCamera(facing, reduzirRuido);
     return stopStream;
-  }, [cameraSession, facing, supported, startCamera, stopStream]);
+  }, [cameraSession, facing, reduzirRuido, supported, startCamera, stopStream]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -174,15 +174,49 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
+  /** Grava pela tela do canvas para que o filtro escolhido saia no arquivo salvo. */
+  const buildFilteredStream = (base: MediaStream): MediaStream => {
+    const video = videoRef.current;
+    const track = base.getVideoTracks()[0];
+    if (!filtroCss || !video || !track) return base;
+    const settings = track.getSettings();
+    const canvas = document.createElement("canvas");
+    canvas.width = settings.width ?? video.videoWidth ?? 720;
+    canvas.height = settings.height ?? video.videoHeight ?? 1280;
+    const ctx = canvas.getContext("2d");
+    if (!ctx || typeof ctx.filter !== "string" || typeof canvas.captureStream !== "function") return base;
+    let frame = 0;
+    const draw = () => {
+      ctx.filter = filtroCss;
+      try {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      } catch {
+        // Quadro ainda indisponível; tenta no próximo.
+      }
+      frame = requestAnimationFrame(draw);
+    };
+    draw();
+    const output = canvas.captureStream(30);
+    base.getAudioTracks().forEach((audio) => output.addTrack(audio));
+    canvasCleanupRef.current = () => {
+      cancelAnimationFrame(frame);
+      output.getVideoTracks().forEach((t) => t.stop());
+      canvasCleanupRef.current = () => undefined;
+    };
+    return output;
+  };
+
   const start = () => {
     const stream = streamRef.current;
     if (!stream) return;
     chunksRef.current = [];
     const mimeType = pickMimeType();
+    const recordingStream = buildFilteredStream(stream);
     let recorder: MediaRecorder;
     try {
-      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      recorder = new MediaRecorder(recordingStream, mimeType ? { mimeType } : undefined);
     } catch {
+      canvasCleanupRef.current();
       setError("Este navegador não conseguiu iniciar a gravação. Atualize o Chrome ou Safari e tente novamente.");
       return;
     }
