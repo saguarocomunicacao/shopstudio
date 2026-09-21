@@ -17,6 +17,7 @@ import {
 } from "@/lib/recording.functions";
 import { RecordingStudio } from "./recording-studio";
 import { useStudio } from "./studio-context";
+import { VoiceDictationButton } from "./voice-dictation-button";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
 
