@@ -129,6 +129,9 @@ export type Database = {
           action_type: string | null
           billing_mode: string
           created_at: string
+          credito_consumido: number | null
+          credito_origem: string | null
+          credito_unidade: string | null
           etapa: Database["public"]["Enums"]["etapa_consumo"]
           id: string
           job_id: string | null
@@ -144,6 +147,9 @@ export type Database = {
           action_type?: string | null
           billing_mode?: string
           created_at?: string
+          credito_consumido?: number | null
+          credito_origem?: string | null
+          credito_unidade?: string | null
           etapa: Database["public"]["Enums"]["etapa_consumo"]
           id?: string
           job_id?: string | null
@@ -159,6 +165,9 @@ export type Database = {
           action_type?: string | null
           billing_mode?: string
           created_at?: string
+          credito_consumido?: number | null
+          credito_origem?: string | null
+          credito_unidade?: string | null
           etapa?: Database["public"]["Enums"]["etapa_consumo"]
           id?: string
           job_id?: string | null
@@ -198,6 +207,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenants"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      credito_taxas: {
+        Row: {
+          action_type: string
+          ativo: boolean
+          created_at: string
+          credito_por_unidade: number
+          fornecedor: string
+          id: string
+          regra: string
+          updated_at: string
+          vigente_desde: string
+        }
+        Insert: {
+          action_type: string
+          ativo?: boolean
+          created_at?: string
+          credito_por_unidade?: number
+          fornecedor: string
+          id?: string
+          regra: string
+          updated_at?: string
+          vigente_desde?: string
+        }
+        Update: {
+          action_type?: string
+          ativo?: boolean
+          created_at?: string
+          credito_por_unidade?: number
+          fornecedor?: string
+          id?: string
+          regra?: string
+          updated_at?: string
+          vigente_desde?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credito_taxas_action_type_fkey"
+            columns: ["action_type"]
+            isOneToOne: false
+            referencedRelation: "billable_actions"
+            referencedColumns: ["action_type"]
           },
         ]
       }
