@@ -1,4 +1,5 @@
 import { TarifasCard } from "./tarifas-card";
+import { PlansCard } from "./plans-card";
 import { BudgetCard } from "./budget-card";
 import { CheckCircle2, CircleDollarSign, FileClock, Loader2, MoreHorizontal, Plus, Video } from "lucide-react";
 import { useState } from "react";
