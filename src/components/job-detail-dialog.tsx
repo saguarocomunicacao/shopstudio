@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -144,11 +143,11 @@ export function JobDetailDialog({
 
   return (
     <Dialog open={!!job} onOpenChange={onOpenChange}>
-      <DialogContent className="grid max-h-[88vh] max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
+      <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto [scrollbar-gutter:stable]">
         <DialogHeader>
           <DialogTitle>{job?.title || productName}</DialogTitle>
         </DialogHeader>
-        <div className="-mx-1 grid gap-4 overflow-y-auto px-1 py-2">
+        <div className="-mx-1 grid gap-4 px-1 py-2">
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="rounded-full bg-secondary px-2.5 py-1 font-semibold text-foreground">
               {job ? JOB_STATUS_LABELS[job.status] : ""}
@@ -222,11 +221,11 @@ export function JobDetailDialog({
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="j-hook">Título / gancho</Label>
-                  <Input id="j-hook" value={hook} onChange={(e) => setHook(e.target.value)} disabled={!canEditPostTexts} placeholder="Frase de abertura da publicação" className="border-border bg-background" />
+                  <Textarea id="j-hook" rows={1} value={hook} onChange={(e) => setHook(e.target.value)} disabled={!canEditPostTexts} placeholder="Frase de abertura da publicação" className="border-border bg-background" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="j-post-cta">CTA final</Label>
-                  <Input id="j-post-cta" value={postCta} onChange={(e) => setPostCta(e.target.value)} disabled={!canEditPostTexts} placeholder="Chamada curta para a publicação" className="border-border bg-background" />
+                  <Textarea id="j-post-cta" rows={1} value={postCta} onChange={(e) => setPostCta(e.target.value)} disabled={!canEditPostTexts} placeholder="Chamada curta para a publicação" className="border-border bg-background" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="j-caption">Legenda sugerida</Label>
@@ -234,7 +233,7 @@ export function JobDetailDialog({
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="j-tags">Hashtags</Label>
-                  <Input id="j-tags" value={hashtags} onChange={(e) => setHashtags(e.target.value)} disabled={!canEditPostTexts} placeholder="tiktokshop achadinhos" className="border-border bg-background" />
+                  <Textarea id="j-tags" rows={1} value={hashtags} onChange={(e) => setHashtags(e.target.value)} disabled={!canEditPostTexts} placeholder="tiktokshop achadinhos" className="border-border bg-background" />
                 </div>
               </section>
               <section className="grid gap-3 rounded-xl border bg-secondary/50 p-4">
@@ -260,7 +259,7 @@ export function JobDetailDialog({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="j-tags">Hashtags</Label>
-                <Input id="j-tags" value={hashtags} onChange={(e) => setHashtags(e.target.value)} disabled={!canEdit} placeholder="tiktokshop achadinhos" />
+                <Textarea id="j-tags" rows={1} value={hashtags} onChange={(e) => setHashtags(e.target.value)} disabled={!canEdit} placeholder="tiktokshop achadinhos" />
               </div>
             </>
           ) : (

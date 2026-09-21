@@ -236,7 +236,7 @@ export function RecordingKitDialog({
                   <Label htmlFor="rec-titulo">Título / tema</Label>
                   <CopyButton value={titulo} label="Título" />
                 </div>
-                <Input id="rec-titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} readOnly={!canEdit} />
+                <Textarea id="rec-titulo" rows={1} value={titulo} onChange={(e) => setTitulo(e.target.value)} readOnly={!canEdit} />
               </div>
 
               <div className="grid gap-2">
@@ -264,12 +264,13 @@ export function RecordingKitDialog({
                           setBlocos((list) => list.map((b, i) => (i === index ? { ...b, tempo: e.target.value } : b)))
                         }
                       />
-                      <Input
+                      <Textarea
                         aria-label="O que mostrar ou fazer"
+                        rows={1}
                         value={bloco.orientacao}
                         readOnly={!canEdit}
                         placeholder="O que mostrar ou fazer"
-                        className="h-8 flex-1 bg-background"
+                        className="min-h-8 flex-1 bg-background py-1.5"
                         onChange={(e) =>
                           setBlocos((list) => list.map((b, i) => (i === index ? { ...b, orientacao: e.target.value } : b)))
                         }
@@ -315,7 +316,7 @@ export function RecordingKitDialog({
                   <Label htmlFor="rec-texto-tela">Texto na tela</Label>
                   <CopyButton value={textoTela} label="Texto na tela" />
                 </div>
-                <Input id="rec-texto-tela" value={textoTela} onChange={(e) => setTextoTela(e.target.value)} readOnly={!canEdit} />
+                <Textarea id="rec-texto-tela" rows={1} value={textoTela} onChange={(e) => setTextoTela(e.target.value)} readOnly={!canEdit} />
               </div>
 
               <div className="grid gap-2">
@@ -323,7 +324,7 @@ export function RecordingKitDialog({
                   <Label htmlFor="rec-cta">CTA final</Label>
                   <CopyButton value={cta} label="CTA" />
                 </div>
-                <Input id="rec-cta" value={cta} onChange={(e) => setCta(e.target.value)} readOnly={!canEdit} />
+                <Textarea id="rec-cta" rows={1} value={cta} onChange={(e) => setCta(e.target.value)} readOnly={!canEdit} />
               </div>
 
               <div className="grid gap-2">
