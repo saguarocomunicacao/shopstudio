@@ -589,9 +589,11 @@ export function RecordingStudio({
               )}
 
               <div className="absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-[1fr_auto_1fr] items-end px-4">
-                <Button variant="secondary" size="icon" aria-label={rolando ? "Pausar texto" : "Rolar texto"} title={rolando ? "Pausar texto" : "Rolar texto"} className="justify-self-start rounded-full bg-black/45 text-white backdrop-blur-md hover:bg-black/65 hover:text-white" onClick={alternarRolagem}>
-                  {rolando ? <Pause /> : <Play />}
-                </Button>
+                {recording ? <span /> : (
+                  <Button variant="secondary" size="icon" aria-label={rolando ? "Pausar texto" : "Rolar texto"} title={rolando ? "Pausar texto" : "Rolar texto"} className="justify-self-start rounded-full bg-black/45 text-white backdrop-blur-md hover:bg-black/65 hover:text-white" onClick={alternarRolagem}>
+                    {rolando ? <Pause /> : <Play />}
+                  </Button>
+                )}
                 <Button size="icon" aria-label={recording ? "Parar gravação" : "Iniciar gravação"} title={recording ? "Parar gravação" : "Iniciar gravação"} className={`size-16 rounded-full border-4 border-white shadow-xl ${recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`} disabled={!!error} onClick={() => (recording ? stop() : start())}>
                   {recording ? <Square className="size-6 fill-current" /> : <span className="size-7 rounded-full bg-current" />}
                 </Button>
