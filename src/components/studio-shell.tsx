@@ -97,7 +97,8 @@ function UserMenu() {
   const { access, isAdmin } = useStudio();
   const signOut = useSignOut();
   const label = access?.me?.name || access?.me?.email || "Usuário";
-  return <DropdownMenu><DropdownMenuTrigger asChild><button className="grid h-9 w-9 place-items-center rounded-full bg-foreground text-xs font-bold text-background" aria-label="Conta">{initialsOf(label)}</button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-60 rounded-xl p-1.5"><DropdownMenuLabel className="truncate">{label}<p className="truncate text-xs font-normal text-muted-foreground">{isAdmin ? "Administrador" : "Membro"}</p></DropdownMenuLabel><DropdownMenuSeparator/><DropdownMenuItem onClick={signOut}><LogOut className="h-4 w-4"/>Sair</DropdownMenuItem></DropdownMenuContent></DropdownMenu>;
+  const { data: avatarUrl } = useAvatarUrl(access?.me?.avatar_url);
+  return <DropdownMenu><DropdownMenuTrigger asChild><button className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-foreground text-xs font-bold text-background" aria-label="Conta">{avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : initialsOf(label)}</button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-60 rounded-xl p-1.5"><DropdownMenuLabel className="truncate">{label}<p className="truncate text-xs font-normal text-muted-foreground">{isAdmin ? "Administrador" : "Membro"}</p></DropdownMenuLabel><DropdownMenuSeparator/><DropdownMenuItem asChild><Link to="/app/conta"><UserCog className="h-4 w-4"/>Minha conta</Link></DropdownMenuItem><DropdownMenuItem onClick={signOut}><LogOut className="h-4 w-4"/>Sair</DropdownMenuItem></DropdownMenuContent></DropdownMenu>;
 }
 
 function PendingAccess() {
