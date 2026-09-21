@@ -55,8 +55,8 @@ export function JobChampionRefs({ refs }: { refs?: ChampionRef[] | null | undefi
               className="flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{ref.title}</p>
-                <p className="mt-0.5 truncate text-[11px] text-muted-foreground tabular-nums">
+                <p className="whitespace-pre-wrap break-words text-sm font-semibold">{ref.title}</p>
+                <p className="mt-0.5 whitespace-pre-wrap break-words text-[11px] text-muted-foreground tabular-nums">
                   {compact(ref.views)} views · {brl(ref.revenue)}
                   {ref.creator ? ` · @${ref.creator}` : ""}
                 </p>

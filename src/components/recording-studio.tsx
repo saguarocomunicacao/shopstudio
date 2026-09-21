@@ -189,7 +189,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
       <div className="flex items-center justify-between gap-3 px-4 py-3 text-white">
-        <p className="truncate text-sm font-bold">{job.title || "Gravar vídeo"}</p>
+        <p className="min-w-0 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Gravar vídeo"}</p>
         <button type="button" aria-label="Fechar estúdio" className="rounded-md p-1.5 hover:bg-white/10" onClick={onClose}>
           <X className="size-5" />
         </button>

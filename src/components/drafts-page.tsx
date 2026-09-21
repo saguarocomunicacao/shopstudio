@@ -140,8 +140,8 @@ function DraftsContent() {
                     </div>
                   )}
                 </button>
-                <p className="mt-3 truncate text-sm font-bold">{job.title || "Sem título"}</p>
-                <p className="mt-1 truncate text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
+                <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>
+                <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
                 <div className="mt-2 flex items-center gap-2">
                   <span
                     className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${gravar ? "status-violet" : current!.badge}`}
@@ -211,7 +211,7 @@ function CopyBlock({
       <div className="mb-2 flex items-center justify-between gap-3">
         <p className="text-sm font-bold">{title}</p>
       </div>
-      <p className={`whitespace-pre-wrap break-words text-sm text-muted-foreground ${multiline ? "" : "truncate"}`}>
+      <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
         {value}
       </p>
       {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
@@ -259,24 +259,14 @@ function PostTextField({
           {copied ? "Copiado" : "Copiar"}
         </Button>
       </div>
-      {multiline ? (
-        <Textarea
-          id={id}
-          rows={title === "Legenda sugerida" ? 4 : 3}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          readOnly={readOnly}
-          className={readOnly ? "border-border bg-background text-muted-foreground" : "border-border bg-background"}
-        />
-      ) : (
-        <Input
-          id={id}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          readOnly={readOnly}
-          className={readOnly ? "border-border bg-background text-muted-foreground" : "border-border bg-background"}
-        />
-      )}
+      <Textarea
+        id={id}
+        rows={multiline ? (title === "Legenda sugerida" ? 4 : 3) : 1}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        readOnly={readOnly}
+        className={readOnly ? "border-border bg-background text-muted-foreground" : "border-border bg-background"}
+      />
     </div>
   );
 }
