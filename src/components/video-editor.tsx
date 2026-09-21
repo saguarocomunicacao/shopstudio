@@ -402,7 +402,10 @@ export function VideoEditor({
         {cuts.length > 0 && (
           <div className="flex flex-wrap gap-2" aria-label="Cortes internos adicionados">
             {cuts.map((cut, index) => (
-              <Button key={`${cut.start}-${cut.end}-${index}`} type="button" size="sm" variant="secondary" aria-label={`Remover corte ${index + 1}`} onClick={() => setCuts((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
+            <Button key={`${cut.start}-${cut.end}-${index}`} type="button" size="sm" variant="secondary" aria-label={`Remover corte ${index + 1}`} onClick={() => {
+                setHistory((current) => [...current, { start, end, cuts }]);
+                setCuts((current) => current.filter((_, itemIndex) => itemIndex !== index));
+              }}>
                 {formatTime(cut.start)}–{formatTime(cut.end)} <Trash2 />
               </Button>
             ))}
