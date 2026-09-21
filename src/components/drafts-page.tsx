@@ -39,6 +39,7 @@ import {
   saveDraftPostTexts,
 } from "@/lib/drafts.functions";
 import { ProfileGate } from "./profile-gate";
+import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { SharePanel } from "./share-panel";
 import { useStudio } from "./studio-context";
 
