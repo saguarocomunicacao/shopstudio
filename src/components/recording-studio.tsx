@@ -60,6 +60,22 @@ const FILTROS = [
 
 type FiltroId = (typeof FILTROS)[number]["id"];
 
+/** Saída sempre vertical 9:16, pronta para o TikTok. */
+const OUT_W = 1080;
+const OUT_H = 1920;
+
+/** Recorte central "cover" da câmera para preencher o quadro 9:16 sem tarjas. */
+function cropCover(sourceW: number, sourceH: number) {
+  const target = OUT_W / OUT_H;
+  const source = sourceW / sourceH;
+  if (source > target) {
+    const sw = sourceH * target;
+    return { sx: (sourceW - sw) / 2, sy: 0, sw, sh: sourceH };
+  }
+  const sh = sourceW / target;
+  return { sx: 0, sy: (sourceH - sh) / 2, sw: sourceW, sh };
+}
+
 function pickMimeType() {
   const candidates = [
     "video/mp4;codecs=h264,aac",
@@ -106,12 +122,15 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const [intensidade, setIntensidade] = useState<SkinIntensity>("leve");
   const [suavizarStatus, setSuavizarStatus] = useState<"off" | "carregando" | "ativo">("off");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const smootherRef = useRef<SkinSmoother | null>(null);
+  const suavizarRef = useRef(false);
   const recordingRef = useRef(false);
   const canvasCleanupRef = useRef<() => void>(() => undefined);
   const filtroCss = FILTROS.find((f) => f.id === filtro)?.css ?? "";
 
   const teleprompter = teleprompterItems(job);
   recordingRef.current = recording;
+  suavizarRef.current = suavizar && suavizarStatus === "ativo";
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -219,66 +238,94 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     });
   }, []);
 
-  // Pipeline de suavização de pele (beta): roda em canvas e alimenta preview e gravação.
+  // Pipeline de imagem: recorta o quadro da câmera em 9:16, aplica filtros e alimenta preview e gravação.
   useEffect(() => {
-    if (!suavizar || previewUrl || !supported) {
-      setSuavizarStatus("off");
-      return;
-    }
+    if (previewUrl || !supported) return;
     let cancelled = false;
     let frame = 0;
-    let smoother: SkinSmoother | null = null;
     let frames = 0;
     let janela = performance.now();
 
     const loop = () => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      if (video && canvas && video.videoWidth) {
-        if (canvas.width !== video.videoWidth) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
+      const smoother = smootherRef.current;
+      if (video && canvas && video.videoWidth && video.videoHeight) {
+        if (canvas.width !== OUT_W) {
+          canvas.width = OUT_W;
+          canvas.height = OUT_H;
         }
         const ctx = canvas.getContext("2d");
         if (ctx) {
-          ctx.filter = filtroCss || "none";
-          try {
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          } catch {
-            // quadro ainda indisponível
-          }
-          ctx.filter = "none";
-          try {
-            smoother?.render(ctx, video, intensidade, performance.now(), filtroCss);
-          } catch {
-            // segue mostrando o quadro sem suavização
+          const crop = cropCover(video.videoWidth, video.videoHeight);
+          const drawSource = (target: CanvasRenderingContext2D) => {
+            target.filter = filtroCss || "none";
+            try {
+              target.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, OUT_W, OUT_H);
+            } catch {
+              // quadro ainda indisponível
+            }
+            target.filter = "none";
+          };
+          drawSource(ctx);
+          if (smoother && suavizarRef.current) {
+            try {
+              smoother.render(ctx, video, {
+                intensity: intensidade,
+                timestamp: performance.now(),
+                drawSource,
+                project: (x, y) => ({
+                  x: (x * video.videoWidth - crop.sx) * (OUT_W / crop.sw),
+                  y: (y * video.videoHeight - crop.sy) * (OUT_H / crop.sh),
+                }),
+              });
+            } catch {
+              // segue mostrando o quadro sem suavização
+            }
           }
         }
-        frames += 1;
-        const elapsed = performance.now() - janela;
-        if (elapsed > 5000) {
-          const fps = (frames * 1000) / elapsed;
+        if (suavizarRef.current) {
+          frames += 1;
+          const elapsed = performance.now() - janela;
+          if (elapsed > 5000) {
+            const fps = (frames * 1000) / elapsed;
+            frames = 0;
+            janela = performance.now();
+            if (fps < 10 && !recordingRef.current) {
+              toast.warning("Suavizar pele foi desligado: ficou pesado neste aparelho. A gravação segue normal.");
+              setSuavizar(false);
+            }
+          }
+        } else {
           frames = 0;
           janela = performance.now();
-          if (fps < 10 && !recordingRef.current) {
-            toast.warning("Suavizar pele foi desligado: ficou pesado neste aparelho. A gravação segue normal.");
-            setSuavizar(false);
-            return;
-          }
         }
       }
       if (!cancelled) frame = requestAnimationFrame(loop);
     };
 
-    setSuavizarStatus("carregando");
     frame = requestAnimationFrame(loop);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [filtroCss, intensidade, previewUrl, supported]);
+
+  // Carrega a suavização de pele só quando a pessoa liga o recurso.
+  useEffect(() => {
+    if (!suavizar || previewUrl || !supported) {
+      setSuavizarStatus("off");
+      return;
+    }
+    let cancelled = false;
+    setSuavizarStatus("carregando");
     createSkinSmoother()
       .then((s) => {
         if (cancelled) {
           s.close();
           return;
         }
-        smoother = s;
+        smootherRef.current = s;
         setSuavizarStatus("ativo");
       })
       .catch(() => {
@@ -286,52 +333,23 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
         toast.error("Não foi possível carregar a suavização de pele. Você pode gravar normalmente sem ela.");
         setSuavizar(false);
       });
-
     return () => {
       cancelled = true;
-      cancelAnimationFrame(frame);
-      smoother?.close();
+      smootherRef.current?.close();
+      smootherRef.current = null;
     };
-  }, [suavizar, intensidade, filtroCss, previewUrl, supported]);
+  }, [suavizar, previewUrl, supported]);
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
-  /** Grava pela tela do canvas para que o filtro escolhido saia no arquivo salvo. */
+  /** Grava sempre pelo canvas 9:16, então o arquivo salvo tem o mesmo enquadramento e filtros do preview. */
   const buildFilteredStream = (base: MediaStream): MediaStream => {
-    const video = videoRef.current;
-    const track = base.getVideoTracks()[0];
-    const suave = canvasRef.current;
-    if (suavizar && suave && typeof suave.captureStream === "function") {
-      const output = suave.captureStream(30);
-      base.getAudioTracks().forEach((audio) => output.addTrack(audio));
-      canvasCleanupRef.current = () => {
-        output.getVideoTracks().forEach((t) => t.stop());
-        canvasCleanupRef.current = () => undefined;
-      };
-      return output;
-    }
-    if (!filtroCss || !video || !track) return base;
-    const settings = track.getSettings();
-    const canvas = document.createElement("canvas");
-    canvas.width = settings.width ?? video.videoWidth ?? 720;
-    canvas.height = settings.height ?? video.videoHeight ?? 1280;
-    const ctx = canvas.getContext("2d");
-    if (!ctx || typeof ctx.filter !== "string" || typeof canvas.captureStream !== "function") return base;
-    let frame = 0;
-    const draw = () => {
-      ctx.filter = filtroCss;
-      try {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      } catch {
-        // Quadro ainda indisponível; tenta no próximo.
-      }
-      frame = requestAnimationFrame(draw);
-    };
-    draw();
+    const canvas = canvasRef.current;
+    if (!canvas || typeof canvas.captureStream !== "function") return base;
     const output = canvas.captureStream(30);
+    if (!output.getVideoTracks().length) return base;
     base.getAudioTracks().forEach((audio) => output.addTrack(audio));
     canvasCleanupRef.current = () => {
-      cancelAnimationFrame(frame);
       output.getVideoTracks().forEach((t) => t.stop());
       canvasCleanupRef.current = () => undefined;
     };
@@ -446,7 +464,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
           computador, para usar o estúdio.
         </div>
       ) : (
-        <div className="relative mx-auto w-full max-w-[520px] flex-1 overflow-hidden">
+        <div className="relative mx-auto aspect-[9/16] max-h-full w-auto max-w-full flex-1 overflow-hidden bg-black">
           {previewUrl ? (
             <video
               src={previewUrl}
@@ -454,25 +472,21 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
               playsInline
               preload="metadata"
               aria-label="Revisão do vídeo gravado"
-              className="size-full bg-black object-contain"
+              className="size-full bg-black object-cover"
             />
           ) : (
             <>
+              {/* Fonte da câmera: fica oculta, o que aparece é o quadro 9:16 desenhado no canvas. */}
               <video
                 ref={videoRef}
                 muted
                 playsInline
-                style={filtroCss && !suavizar ? { filter: filtroCss } : undefined}
-                className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""} ${
-                  suavizar ? "invisible absolute inset-0" : ""
-                }`}
+                className="pointer-events-none absolute inset-0 size-full opacity-0"
               />
-              {suavizar && (
-                <canvas
-                  ref={canvasRef}
-                  className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
-                />
-              )}
+              <canvas
+                ref={canvasRef}
+                className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
+              />
             </>
           )}
 
