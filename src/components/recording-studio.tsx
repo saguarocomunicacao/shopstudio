@@ -328,6 +328,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
               ref={videoRef}
               muted
               playsInline
+              style={filtroCss ? { filter: filtroCss } : undefined}
               className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
             />
           )}
@@ -335,7 +336,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
           {error && (
             <div className="absolute inset-x-4 top-4 rounded-xl bg-black/80 p-4 text-sm text-white">
               {error}
-              <Button variant="secondary" size="sm" className="mt-3" onClick={() => void startCamera(facing)}>
+              <Button variant="secondary" size="sm" className="mt-3" onClick={() => void startCamera(facing, reduzirRuido)}>
                 <RefreshCw />
                 Tentar de novo
               </Button>
