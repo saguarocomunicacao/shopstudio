@@ -400,11 +400,15 @@ function AlertaConfig({ alertaPercent, bloqueio }: { alertaPercent: number; bloq
 }
 
 export function InvestmentPage() {
-  const { isBackoffice } = useStudio();
-  // Aportes, planos e saldos são dados internos da operação: backoffice apenas.
-  const podeVer = isBackoffice;
-  const podeEditar = isBackoffice;
-  const { data, isLoading } = useInvestimento();
+  const { isBackoffice, can, userId } = useStudio();
+  // Cada empresa vê e lança os próprios aportes; o backoffice escolhe a empresa.
+  const podeVer = isBackoffice || can("investimento", "visualizar");
+  const podeEditar = podeVer;
+  const { data: tenants } = useTenants();
+  const { data: meuTenantId } = useMeuTenantId(userId);
+  const [tenantSel, setTenantSel] = useState<string | null>(null);
+  const tenantId = isBackoffice ? tenantSel ?? meuTenantId ?? null : meuTenantId ?? null;
+  const { data, isLoading } = useInvestimento(tenantId, isBackoffice ? "api" : "consolidado");
   useAppConfig();
 
   const saldoGeral = useMemo(() => {
