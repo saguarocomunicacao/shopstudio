@@ -204,6 +204,13 @@
       "when": 1789992645175,
       "tag": "0028_tarifa_transcricao_audio",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1789999463839,
+      "tag": "0029_add_recording_aspect_ratio",
+      "breakpoints": true
     }
   ]
 }
