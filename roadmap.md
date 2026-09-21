@@ -12,3 +12,10 @@
 - [x] Sincronizar reinício, velocidade e tamanho do texto em tempo real
 - [x] Isolar a proporção de gravação do layout dos ajustes e controles
 - [x] Validar as quatro correções no mobile sem regressão no desktop
+
+## Editor de vídeo (parte 1 — aparar)
+- [x] Original preservado no armazenamento; versão editada salva em paralelo
+- [x] Botão "Editar" na revisão, com linha do tempo, barra de progresso e aviso no celular
+- [x] "Restaurar original" na fila de rascunhos
+- [x] Corte real testado (6,1s → 3,3s)
+- [ ] Partes 2 e 3: recorte de quadro e tesoura (remover trecho do meio)
