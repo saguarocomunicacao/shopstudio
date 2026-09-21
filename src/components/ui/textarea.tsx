@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"textarea">>(
-  ({ className, ...props }, ref) => {
+  ({ className, onInput, value, defaultValue, ...props }, ref) => {
     const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
     const resize = React.useCallback(() => {
@@ -13,7 +13,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
       textarea.style.height = `${textarea.scrollHeight}px`;
     }, []);
 
-    React.useEffect(resize, [props.value, props.defaultValue, resize]);
+    React.useEffect(resize, [value, defaultValue, resize]);
 
     const setRefs = React.useCallback(
       (node: HTMLTextAreaElement | null) => {
@@ -33,8 +33,10 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, React.ComponentProps<"tex
         ref={setRefs}
         onInput={(event) => {
           resize();
-          props.onInput?.(event);
+          onInput?.(event);
         }}
+        value={value}
+        defaultValue={defaultValue}
         {...props}
       />
     );

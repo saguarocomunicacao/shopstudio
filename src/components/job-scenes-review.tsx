@@ -160,12 +160,12 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
       ))}
 
       <Dialog open={lightboxIndex !== null} onOpenChange={(open) => !open && setLightboxIndex(null)}>
-        <DialogContent className="h-dvh w-screen max-w-none grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-hidden rounded-none border-0 bg-foreground/95 p-3 text-background sm:p-6">
+        <DialogContent className="max-h-dvh w-screen max-w-none gap-3 overflow-y-auto rounded-none border-0 bg-foreground/95 p-3 text-background sm:p-6 [scrollbar-gutter:stable]">
           <DialogTitle className="pr-12 text-sm font-semibold text-background">
             {lightboxIndex === null ? "Cenas do job" : `Cena ${lightboxIndex + 1} de ${scenes.length}`}
           </DialogTitle>
           {lightboxIndex !== null && scenes[lightboxIndex] && (
-            <div className="grid min-h-0 grid-rows-[minmax(280px,1fr)_auto] gap-4 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1 lg:overflow-hidden">
+            <div className="grid min-h-0 grid-rows-[minmax(280px,1fr)_auto] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:grid-rows-1">
               <div className="relative flex min-h-0 items-center justify-center px-11">
                 <Button
                   type="button"
@@ -193,7 +193,7 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
                   <ChevronRight />
                 </Button>
               </div>
-              <div className="grid content-start gap-3 overflow-y-auto rounded-xl bg-background p-4 text-foreground">
+              <div className="grid content-start gap-3 rounded-xl bg-background p-4 text-foreground">
                 <div>
                   <p className="text-xs font-bold uppercase text-muted-foreground">Cena {lightboxIndex + 1} de {scenes.length}</p>
                   <p className="mt-2 text-sm">{scenes[lightboxIndex].narration}</p>

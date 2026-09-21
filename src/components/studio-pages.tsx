@@ -34,7 +34,7 @@ function DashboardContent() {
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{stats.map(({ icon: Icon, value, label }) => <div className="panel metric-card" key={label}><div className="mb-8 flex items-start justify-between"><span className="icon-box"><Icon /></span></div><strong className="text-2xl font-black">{value}</strong><p className="mt-1 text-sm text-muted-foreground">{label}</p></div>)}</div>
     <section className="mt-6 panel">
       <div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="icon"><MoreHorizontal /></Button></div>
-      <div className="divide-y divide-border">{scoped.slice(0, 5).map((job) => <div key={job.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{job.title || "Sem título"}</p><p className="truncate text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p></div><Badge>{JOB_STATUS_LABELS[job.status]}</Badge></div>)}{!scoped.length && <Empty>Nenhum job ainda. Escolha um produto para começar.</Empty>}</div>
+      <div className="divide-y divide-border">{scoped.slice(0, 5).map((job) => <div key={job.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3"><div className="min-w-0"><p className="whitespace-pre-wrap break-words text-sm font-semibold">{job.title || "Sem título"}</p><p className="whitespace-pre-wrap break-words text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p></div><Badge>{JOB_STATUS_LABELS[job.status]}</Badge></div>)}{!scoped.length && <Empty>Nenhum job ainda. Escolha um produto para começar.</Empty>}</div>
     </section>
   </>;
 }
@@ -61,8 +61,8 @@ function VideosContent() {
         {videos.map((job) => (
           <article className="panel" key={job.id}>
             <video src={job.video_url!} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="aspect-[9/16] w-full rounded-xl bg-black object-cover" />
-            <p className="mt-3 truncate text-sm font-bold">{job.title || "Sem título"}</p>
-            <p className="mt-1 truncate text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
+            <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>
+            <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
           </article>
         ))}
       </div>

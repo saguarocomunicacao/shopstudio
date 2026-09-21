@@ -143,11 +143,11 @@ export function JobDetailDialog({
 
   return (
     <Dialog open={!!job} onOpenChange={onOpenChange}>
-      <DialogContent className="grid max-h-[88vh] max-w-2xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
+      <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto [scrollbar-gutter:stable]">
         <DialogHeader>
           <DialogTitle>{job?.title || productName}</DialogTitle>
         </DialogHeader>
-        <div className="-mx-1 grid gap-4 overflow-y-auto px-1 py-2">
+        <div className="-mx-1 grid gap-4 px-1 py-2">
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="rounded-full bg-secondary px-2.5 py-1 font-semibold text-foreground">
               {job ? JOB_STATUS_LABELS[job.status] : ""}
