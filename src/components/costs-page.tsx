@@ -314,13 +314,10 @@ export function CostsPage() {
             <span className="mx-auto mb-5 grid h-12 w-12 place-items-center rounded-full bg-secondary text-primary">
               <UserSquare2 className="h-5 w-5" />
             </span>
-            <h2 className="text-xl font-black">Selecione um perfil</h2>
+            <h2 className="text-xl font-black">Selecione uma empresa</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Escolha um perfil no seletor acima, ou use "Todos os perfis" para a visão consolidada.
+              Escolha a empresa no seletor acima para ver o consumo dela.
             </p>
-            <div className="mt-6 flex justify-center">
-              <Button onClick={openProfilePicker}>Escolher perfil</Button>
-            </div>
           </div>
         </div>
       ) : isLoading || !data ? (
