@@ -8,8 +8,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { DbJob, RoteiroBloco } from "@/lib/content";
+import { useVideoSettings, type DbJob, type RoteiroBloco } from "@/lib/content";
 import { withoutDuplicatedHook } from "@/lib/recording-script";
+import { DEFAULT_RECORDING_ASPECT_RATIO, RECORDING_FORMATS, normalizeRecordingAspectRatio } from "@/lib/recording-format";
 import {
   createOwnVideoJob,
   generateRecordingScript,
@@ -136,6 +137,7 @@ export function RecordingKitDialog({
   const generate = useServerFn(generateRecordingScript);
   const save = useServerFn(saveRecordingScript);
   const videoUrl = useServerFn(getRecordingVideoUrl);
+  const { data: videoSettings } = useVideoSettings(job.profile_id);
 
   const [titulo, setTitulo] = useState(job.title ?? "");
   const [gancho, setGancho] = useState(job.hook ?? "");
@@ -157,6 +159,7 @@ export function RecordingKitDialog({
   }, [job]);
 
   const gravado = !!job.video_path && !!job.recorded_at;
+  const recordingAspectRatio = normalizeRecordingAspectRatio(videoSettings?.recording_aspect_ratio ?? DEFAULT_RECORDING_ASPECT_RATIO);
 
   const download = useQuery({
     queryKey: ["recording-url", job.id, job.video_path],
@@ -220,7 +223,7 @@ export function RecordingKitDialog({
                   <p className="mb-2 text-sm font-bold">Vídeo gravado</p>
                   {download.data?.url ? (
                     <>
-                      <video src={download.data.url} controls playsInline className="aspect-[9/16] w-full rounded-xl bg-black object-contain" />
+                      <video src={download.data.url} controls playsInline className={`${RECORDING_FORMATS[recordingAspectRatio].mediaClass} w-full rounded-xl bg-black object-contain`} />
                       <Button asChild size="lg" className="mt-3 w-full">
                         <a
                           href={download.data.url}
@@ -379,6 +382,7 @@ export function RecordingKitDialog({
       {studioOpen && (
         <RecordingStudio
           job={job}
+          aspectRatio={recordingAspectRatio}
           onClose={() => setStudioOpen(false)}
           onSaved={onClose}
         />

@@ -1,6 +1,6 @@
 # Roadmap
 
-- [x] Reorganizar as abas e a classificação da fila de Rascunhos
-- [x] Criar o cartão informativo de gravação pendente
-- [x] Separar as ações Gravar vídeo e Ver roteiro
-- [x] Validar a transição para Aguardando revisão, permissões e visual responsivo
+- [x] Adicionar formato de gravação às configurações por perfil
+- [x] Generalizar preview, recorte e gravação para quatro proporções
+- [x] Preservar filtros, suavização, áudio e revisão
+- [x] Validar 9:16 e 1:1, permissões e compilação

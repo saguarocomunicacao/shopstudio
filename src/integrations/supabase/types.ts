@@ -673,6 +673,7 @@ export type Database = {
           created_at: string
           gemini_model: string
           profile_id: string
+          recording_aspect_ratio: string
           require_review: boolean
           take_duration: number
           takes_count: number
@@ -687,6 +688,7 @@ export type Database = {
           created_at?: string
           gemini_model?: string
           profile_id: string
+          recording_aspect_ratio?: string
           require_review?: boolean
           take_duration?: number
           takes_count?: number
@@ -701,6 +703,7 @@ export type Database = {
           created_at?: string
           gemini_model?: string
           profile_id?: string
+          recording_aspect_ratio?: string
           require_review?: boolean
           take_duration?: number
           takes_count?: number

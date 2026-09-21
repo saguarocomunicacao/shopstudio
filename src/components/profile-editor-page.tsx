@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TONE_OPTIONS } from "@/lib/content";
 import { generateAvatarReference, saveAvatarReferences } from "@/lib/video.functions";
 import { seedProfilePrompts } from "@/lib/prompts.functions";
+import { DEFAULT_RECORDING_ASPECT_RATIO, RECORDING_FORMATS, normalizeRecordingAspectRatio, type RecordingAspectRatio } from "@/lib/recording-format";
 import { CategorySelect } from "./category-select";
 import { LanguageSelect } from "./language-select";
 import { ProfilePrompts } from "./profile-prompts";
@@ -85,13 +86,13 @@ const readFile = (file: File) =>
 type FormState = {
   name: string; handle: string; niche: string; categoryId: string; followers: string; status: string;
   tone: string; language: string; notes: string;
-  avatarMode: string; takes: string; duration: string; geminiModel: string; veoModel: string; voiceRef: string | null;
+  avatarMode: string; takes: string; duration: string; geminiModel: string; veoModel: string; recordingAspectRatio: RecordingAspectRatio; voiceRef: string | null;
   requireReview: boolean;
 };
 const emptyForm: FormState = {
   name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo",
   tone: "descontraido", language: "pt-BR", notes: "",
-  avatarMode: "livre", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value, voiceRef: null,
+  avatarMode: "livre", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value, recordingAspectRatio: DEFAULT_RECORDING_ASPECT_RATIO, voiceRef: null,
   requireReview: true,
 };
 
@@ -112,7 +113,7 @@ const TABS: { key: TabKey; label: string; hint: string }[] = [
 const TAB_FIELDS: Partial<Record<TabKey, (keyof FormState)[]>> = {
   dados: ["name", "handle", "categoryId", "niche", "followers", "status"],
   identidade: ["tone", "language", "notes"],
-  video: ["takes", "duration", "geminiModel", "veoModel"],
+  video: ["takes", "duration", "geminiModel", "veoModel", "recordingAspectRatio"],
   pessoa: ["avatarMode"],
   voz: ["voiceRef"],
   publicacao: ["requireReview"],
@@ -181,7 +182,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
       });
     void supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration, voice_ref, require_review")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration, recording_aspect_ratio, voice_ref, require_review")
       .eq("profile_id", profile.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -198,6 +199,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           duration: String(data.take_duration),
           geminiModel: data.gemini_model,
           veoModel: data.veo_model,
+          recordingAspectRatio: normalizeRecordingAspectRatio(data.recording_aspect_ratio),
           voiceRef: data.voice_ref ?? null,
           requireReview: data.require_review ?? true,
         };
@@ -255,6 +257,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           take_duration: Number(values.duration),
           gemini_model: values.geminiModel,
           veo_model: values.veoModel,
+          recording_aspect_ratio: values.recordingAspectRatio,
           voice_ref: values.voiceRef,
           require_review: values.requireReview,
         },
@@ -486,6 +489,21 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                     <SelectTrigger id="p-veo"><SelectValue /></SelectTrigger>
                     <SelectContent>{VEO_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
                   </Select>
+                </div>
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label htmlFor="p-recording-aspect-ratio">Formato de gravação</Label>
+                  <Select
+                    value={form.recordingAspectRatio}
+                    onValueChange={(value: RecordingAspectRatio) => setForm({ ...form, recordingAspectRatio: value })}
+                  >
+                    <SelectTrigger id="p-recording-aspect-ratio"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.entries(RECORDING_FORMATS) as [RecordingAspectRatio, (typeof RECORDING_FORMATS)[RecordingAspectRatio]][]).map(([value, option]) => (
+                        <SelectItem key={value} value={value}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Usado no preview e no arquivo salvo pelo estúdio. O padrão é vertical 9:16.</p>
                 </div>
               </div>
             </div>
