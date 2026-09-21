@@ -371,17 +371,29 @@ export function VideoEditor({
       </header>
 
       <main className="flex min-h-0 items-center justify-center overflow-hidden bg-muted/30 p-3 sm:p-5">
-        <div className="relative flex size-full min-h-0 items-center justify-center overflow-hidden">
-          <video
+        <div className="grid size-full min-h-0 place-items-center overflow-hidden [container-type:size]">
+          <div
+            ref={videoFrameRef}
+            className="relative overflow-hidden shadow-2xl"
+            style={videoSize ? {
+              aspectRatio: `${videoSize.width} / ${videoSize.height}`,
+              width: `min(100cqw, calc(100cqh * ${videoSize.width / videoSize.height}))`,
+              height: `min(100cqh, calc(100cqw * ${videoSize.height / videoSize.width}))`,
+            } : undefined}
+          >
+            <video
             ref={videoRef}
             src={url ?? undefined}
             playsInline
             preload="metadata"
             aria-label="Vídeo em edição"
-            className="block max-h-full max-w-full object-contain shadow-2xl"
+            className="block size-full object-contain"
             onClick={() => void togglePlayback()}
           onLoadedMetadata={(event) => {
             const video = event.currentTarget;
+            if (video.videoWidth > 0 && video.videoHeight > 0) {
+              setVideoSize({ width: video.videoWidth, height: video.videoHeight });
+            }
             const d = video.duration;
             if (Number.isFinite(d) && d > 0) {
               setDuration(d);
@@ -439,10 +451,36 @@ export function VideoEditor({
             video.currentTime = inicio;
             setCurrentTime(inicio);
           }}
-          />
-          <Button type="button" size="icon" aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"} className="absolute bottom-3 left-1/2 size-11 -translate-x-1/2 rounded-full shadow-xl" onClick={() => void togglePlayback()}>
-            {playing ? <Pause /> : <Play />}
-          </Button>
+            />
+            {mode === "crop" && crop && (
+              <div className="absolute inset-0 z-10" aria-label="Moldura de reenquadramento">
+                <div className="pointer-events-none absolute left-0 right-0 top-0 bg-background/70" style={{ height: `${crop.y * 100}%` }} />
+                <div className="pointer-events-none absolute bottom-0 left-0 right-0 bg-background/70" style={{ top: `${(crop.y + crop.height) * 100}%` }} />
+                <div className="pointer-events-none absolute left-0 bg-background/70" style={{ top: `${crop.y * 100}%`, width: `${crop.x * 100}%`, height: `${crop.height * 100}%` }} />
+                <div className="pointer-events-none absolute right-0 bg-background/70" style={{ top: `${crop.y * 100}%`, left: `${(crop.x + crop.width) * 100}%`, height: `${crop.height * 100}%` }} />
+                <div
+                  className="absolute touch-none border-2 border-brand-cyan"
+                  style={{ left: `${crop.x * 100}%`, top: `${crop.y * 100}%`, width: `${crop.width * 100}%`, height: `${crop.height * 100}%` }}
+                >
+                  <div role="button" tabIndex={0} aria-label="Arrastar moldura" className="absolute inset-3 cursor-move touch-none" onPointerDown={dragCrop("move")} />
+                  {(["nw", "ne", "sw", "se"] as const).map((corner) => (
+                    <Button
+                      key={corner}
+                      type="button"
+                      size="icon"
+                      variant="secondary"
+                      aria-label={`Redimensionar moldura ${corner}`}
+                      className={`absolute size-8 touch-none rounded-full border-2 border-brand-cyan p-0 ${corner.includes("n") ? "-top-4" : "-bottom-4"} ${corner.includes("w") ? "-left-4" : "-right-4"}`}
+                      onPointerDown={dragCrop(corner)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            <Button type="button" size="icon" aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"} className="absolute bottom-3 left-1/2 z-20 size-11 -translate-x-1/2 rounded-full shadow-xl" onClick={() => void togglePlayback()}>
+              {playing ? <Pause /> : <Play />}
+            </Button>
+          </div>
         </div>
       </main>
 
@@ -461,7 +499,7 @@ export function VideoEditor({
           <p className="text-xs text-muted-foreground">No celular, o processamento pode demorar. Mantenha a tela aberta até terminar.</p>
         )}
 
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1" role="group" aria-label="Ferramenta da timeline">
+        <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1" role="group" aria-label="Ferramenta de edição">
           <Button type="button" size="sm" variant={mode === "trim" ? "default" : "ghost"} aria-pressed={mode === "trim"} onClick={() => setMode("trim")}>
             <RotateCcw /> Aparar pontas
           </Button>
@@ -473,7 +511,29 @@ export function VideoEditor({
           }}>
             <Scissors /> Tesoura
           </Button>
+          <Button type="button" size="sm" variant={mode === "crop" ? "default" : "ghost"} aria-pressed={mode === "crop"} onClick={() => {
+            setMode("crop");
+            if (!crop && videoSize) selectCropRatio("9:16");
+          }}>
+            <Crop /> Enquadrar
+          </Button>
         </div>
+
+        {mode === "crop" && (
+          <div className="grid gap-2">
+            <div className="grid grid-cols-4 gap-1" role="group" aria-label="Proporção do enquadramento">
+              {RECORDING_ASPECT_RATIOS.map((ratio) => (
+                <Button key={ratio} type="button" size="sm" variant={crop?.aspectRatio === ratio ? "default" : "outline"} onClick={() => selectCropRatio(ratio)} disabled={!videoSize}>
+                  {ratio}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">Arraste a moldura para mover e use os cantos para redimensionar.</p>
+            {crop && crop.width * crop.height < 0.35 && (
+              <p className="text-xs text-destructive">Esta seleção será ampliada e pode perder nitidez.</p>
+            )}
+          </div>
+        )}
 
         <div className="min-w-0">
           <div className="mb-2 grid grid-cols-3 items-center gap-2 text-xs font-semibold">
@@ -495,12 +555,12 @@ export function VideoEditor({
                 <Button type="button" variant="default" aria-label="Início do trecho" data-trim-handle="start" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(start)}%` }} onPointerDown={dragHandle("start")} />
                 <Button type="button" variant="default" aria-label="Fim do trecho" data-trim-handle="end" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(end)}%` }} onPointerDown={dragHandle("end")} />
               </>
-            ) : (
+            ) : mode === "cut" ? (
               <>
                 <Button type="button" variant="destructive" aria-label="Início do corte interno" data-cut-handle="start" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutStart)}%` }} onPointerDown={dragHandle("cutStart")} />
                 <Button type="button" variant="destructive" aria-label="Fim do corte interno" data-cut-handle="end" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutEnd)}%` }} onPointerDown={dragHandle("cutEnd")} />
               </>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -517,7 +577,7 @@ export function VideoEditor({
           <div className="flex flex-wrap gap-2" aria-label="Cortes internos adicionados">
             {cuts.map((cut, index) => (
             <Button key={`${cut.start}-${cut.end}-${index}`} type="button" size="sm" variant="secondary" aria-label={`Remover corte ${index + 1}`} onClick={() => {
-                setHistory((current) => [...current, { start, end, cuts }]);
+                setHistory((current) => [...current, { start, end, cuts, crop }]);
                 setCuts((current) => current.filter((_, itemIndex) => itemIndex !== index));
               }}>
                 {formatTime(cut.start)}–{formatTime(cut.end)} <Trash2 />
