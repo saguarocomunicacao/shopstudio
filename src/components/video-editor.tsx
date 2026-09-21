@@ -394,7 +394,7 @@ export function VideoEditor({
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
             <p className="min-w-0 text-xs text-muted-foreground">Trecho a remover: {formatTime(cutStart)}–{formatTime(cutEnd)}</p>
             <Button type="button" size="sm" variant="destructive" onClick={addCut} disabled={cutEnd - cutStart < 0.2}>
-              <Plus /> Adicionar corte
+              <Scissors /> Cortar
             </Button>
           </div>
         )}
