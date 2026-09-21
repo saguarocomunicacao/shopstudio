@@ -11,12 +11,23 @@ import {
   RefreshCw,
   Save,
   Send,
+  Trash2,
   Undo2,
   Video,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +41,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { relativeTime, useJobs, type DbJob } from "@/lib/content";
+import { deleteRecordingJob } from "@/lib/recording.functions";
 import {
   approveDraft,
   getDraftKit,
@@ -72,13 +84,28 @@ function DraftsContent() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [recordingId, setRecordingId] = useState<string | null>(null);
   const [novoOpen, setNovoOpen] = useState(false);
+  const [deleting, setDeleting] = useState<DbJob | null>(null);
+  const qc = useQueryClient();
+  const removeRecording = useServerFn(deleteRecordingJob);
 
   const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
+  const canRemove = (job: DbJob) =>
+    can("pipeline", "criar", job.profile_id) || can("pipeline", "editar", job.profile_id);
   const gravarList = jobs.filter(paraGravar);
   const current = QUEUES.find((q) => q.key === queue);
   const list = queue === "gravar" ? gravarList : jobs.filter((j) => j.status === current!.status);
   const countOf = (status: DbJob["status"]) => jobs.filter((j) => j.status === status).length;
   const recordingJob = jobs.find((j) => j.id === recordingId) ?? null;
+  const removeRecordingMut = useMutation({
+    mutationFn: (jobId: string) => removeRecording({ data: { jobId } }),
+    onSuccess: () => {
+      toast.success("Vídeo excluído.");
+      setDeleting(null);
+      setRecordingId(null);
+      void qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
 
   return (
     <>
@@ -155,9 +182,24 @@ function DraftsContent() {
                     </span>
                   )}
                 </div>
-                <Button className="mt-3 w-full" onClick={abrir}>
-                  {gravar ? "Abrir roteiro e gravar" : "Abrir kit de postagem"}
-                </Button>
+                <div className="mt-3 flex gap-2">
+                  <Button className="min-w-0 flex-1" onClick={abrir}>
+                    {gravar ? "Abrir roteiro e gravar" : "Abrir kit de postagem"}
+                  </Button>
+                  {gravar && canRemove(job) && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0 text-destructive hover:text-destructive"
+                      aria-label={`Excluir ${job.title || "vídeo"}`}
+                      title="Excluir vídeo"
+                      onClick={() => setDeleting(job)}
+                    >
+                      <Trash2 />
+                    </Button>
+                  )}
+                </div>
               </article>
             );
           })}
@@ -179,6 +221,31 @@ function DraftsContent() {
         <RecordingKitDialog job={recordingJob} canEdit={canCreate} onClose={() => setRecordingId(null)} />
       )}
       <NewOwnVideoDialog open={novoOpen} onOpenChange={setNovoOpen} onCreated={(jobId) => setRecordingId(jobId)} />
+
+      <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir vídeo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              “{deleting?.title || "Sem título"}” será removido permanentemente, incluindo o roteiro e a gravação. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={removeRecordingMut.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                if (deleting) removeRecordingMut.mutate(deleting.id);
+              }}
+            >
+              {removeRecordingMut.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+              Excluir vídeo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
