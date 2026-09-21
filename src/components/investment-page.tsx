@@ -287,7 +287,7 @@ function CarteiraCard({
       )}
 
       {assinatura ? (
-        podeEditar && <PlanoForm carteira={carteira} />
+        podeEditar && <PlanoForm carteira={carteira} tenantId={tenantId} />
       ) : (
         <div className="grid gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Histórico de aportes</p>
