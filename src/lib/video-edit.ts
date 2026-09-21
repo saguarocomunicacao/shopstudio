@@ -2,9 +2,9 @@
  * Pipeline de edição do vídeo gravado.
  *
  * O arquivo original nunca é alterado: as operações abaixo descrevem o que
- * aplicar sobre ele para gerar uma versão nova. Hoje só o corte de início/fim
- * (trim) está disponível; a lista já está preparada para receber o recorte de
- * quadro (crop) e a remoção de um trecho do meio (tesoura).
+ * aplicar sobre ele para gerar uma versão nova. Aparar pontas (trim) e remover
+ * trechos internos (cut) já estão disponíveis; crop permanece preparado para
+ * a próxima etapa.
  */
 
 export type TrimOperation = { type: "trim"; start: number; end: number };
@@ -78,9 +78,8 @@ export function resultingDuration(duration: number, operations: VideoEditOperati
 /**
  * Monta a lista de argumentos do ffmpeg para as operações pedidas.
  *
- * Trim isolado usa cópia direta das faixas (rápido, sem recodificar). Assim que
- * crop ou tesoura entrarem na lista, o vídeo precisa ser recodificado, e o
- * builder já trata esse caminho.
+ * Trim isolado usa cópia direta das faixas (rápido, sem recodificar). Crop e
+ * tesoura recodificam e concatenam todos os intervalos preservados.
  */
 export function buildFfmpegArgs(
   operations: VideoEditOperation[],

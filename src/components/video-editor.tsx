@@ -193,7 +193,13 @@ export function VideoEditor({
     try {
       const { fetchFile } = await import("@ffmpeg/util");
       await ffmpeg.writeFile(input, await fetchFile(source));
-      const exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration));
+      let exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration, true));
+      // Alguns vídeos importados não têm faixa de áudio. Nesse caso, repete o
+      // mesmo pipeline apenas com vídeo em vez de tornar a edição indisponível.
+      if (exitCode !== 0 && cuts.length) {
+        await ffmpeg.deleteFile(output).catch(() => undefined);
+        exitCode = await ffmpeg.exec(buildFfmpegArgs(operations, input, output, duration, false));
+      }
       if (exitCode !== 0) throw new Error(`ffmpeg ${exitCode}`);
       const data = (await ffmpeg.readFile(output)) as Uint8Array;
       if (!data?.length) throw new Error("vazio");
@@ -281,7 +287,7 @@ export function VideoEditor({
             }
           }}
           />
-          <Button type="button" size="icon" aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"} className="absolute bottom-3 left-3 size-11 rounded-full shadow-xl" onClick={() => void togglePlayback()}>
+          <Button type="button" size="icon" aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"} className="absolute bottom-3 left-1/2 size-11 -translate-x-1/2 rounded-full shadow-xl" onClick={() => void togglePlayback()}>
             {playing ? <Pause /> : <Play />}
           </Button>
         </div>
@@ -391,7 +397,7 @@ export function VideoEditor({
           </Button>
           <Button size="lg" disabled={processando || engine !== "pronto" || !operations.length || !validResult} onClick={() => void aplicar()}>
             {processando ? <Loader2 className="animate-spin" /> : operations.length ? <Scissors /> : <Check />}
-            {processando ? "Processando..." : "Aplicar corte"}
+            {processando ? "Processando..." : "Aplicar edição"}
           </Button>
         </div>
         </div>
