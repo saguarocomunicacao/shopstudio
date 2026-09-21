@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as EntrarRouteImport } from './routes/entrar'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as SegurancaRouteImport } from './routes/seguranca'
 import { Route as VTokenRouteImport } from './routes/v.$token'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
@@ -23,6 +24,7 @@ import { Route as AuthenticatedAppAprovacoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
 import { Route as AuthenticatedAppContaRouteImport } from './routes/_authenticated/app/conta'
 import { Route as AuthenticatedAppCustosRouteImport } from './routes/_authenticated/app/custos'
+import { Route as AuthenticatedAppEmpresasRouteImport } from './routes/_authenticated/app/empresas'
 import { Route as AuthenticatedAppEquipeRouteImport } from './routes/_authenticated/app/equipe'
 import { Route as AuthenticatedAppInvestimentoRouteImport } from './routes/_authenticated/app/investimento'
 import { Route as AuthenticatedAppMetricasRouteImport } from './routes/_authenticated/app/metricas'
@@ -34,6 +36,8 @@ import { Route as AuthenticatedAppVideosRouteImport } from './routes/_authentica
 import { Route as AuthTiktokCallbackRouteImport } from './routes/auth_.tiktok.callback'
 import { Route as AuthenticatedAppPerfisIndexRouteImport } from './routes/_authenticated/app/perfis.index'
 import { Route as AuthenticatedAppPerfisNovoRouteImport } from './routes/_authenticated/app/perfis.novo'
+import { Route as AuthenticatedAppPlanosIndexRouteImport } from './routes/_authenticated/app/planos.index'
+import { Route as AuthenticatedAppPlanosPlanIdRouteImport } from './routes/_authenticated/app/planos.$planId'
 import { Route as ApiPublicCronStoreVideosRouteImport } from './routes/api/public/cron/store-videos'
 import { Route as ApiPublicCronTiktokRefreshRouteImport } from './routes/api/public/cron/tiktok-refresh'
 import { Route as ApiPublicJson2videoWebhookTokenRouteImport } from './routes/api/public/json2video-webhook.$token'
@@ -66,6 +70,11 @@ const LoginRoute = LoginRouteImport.update({
 const PrivacidadeRoute = PrivacidadeRouteImport.update({
   id: '/privacidade',
   path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SegurancaRoute = SegurancaRouteImport.update({
@@ -110,6 +119,12 @@ const AuthenticatedAppCustosRoute = AuthenticatedAppCustosRouteImport.update({
   path: '/app/custos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAppEmpresasRoute =
+  AuthenticatedAppEmpresasRouteImport.update({
+    id: '/app/empresas',
+    path: '/app/empresas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAppEquipeRoute = AuthenticatedAppEquipeRouteImport.update({
   id: '/app/equipe',
   path: '/app/equipe',
@@ -172,6 +187,18 @@ const AuthenticatedAppPerfisNovoRoute =
     path: '/app/perfis/novo',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAppPlanosIndexRoute =
+  AuthenticatedAppPlanosIndexRouteImport.update({
+    id: '/app/planos/',
+    path: '/app/planos/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppPlanosPlanIdRoute =
+  AuthenticatedAppPlanosPlanIdRouteImport.update({
+    id: '/app/planos/$planId',
+    path: '/app/planos/$planId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicCronStoreVideosRoute =
   ApiPublicCronStoreVideosRouteImport.update({
     id: '/api/public/cron/store-videos',
@@ -203,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/seguranca': typeof SegurancaRoute
   '/v/$token': typeof VTokenRoute
   '/app/apis': typeof AuthenticatedAppApisRoute
@@ -210,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/conta': typeof AuthenticatedAppContaRoute
   '/app/custos': typeof AuthenticatedAppCustosRoute
+  '/app/empresas': typeof AuthenticatedAppEmpresasRoute
   '/app/equipe': typeof AuthenticatedAppEquipeRoute
   '/app/investimento': typeof AuthenticatedAppInvestimentoRoute
   '/app/metricas': typeof AuthenticatedAppMetricasRoute
@@ -221,10 +250,12 @@ export interface FileRoutesByFullPath {
   '/auth/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
+  '/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
+  '/app/planos/': typeof AuthenticatedAppPlanosIndexRoute
   '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
 }
 export interface FileRoutesByTo {
@@ -233,6 +264,7 @@ export interface FileRoutesByTo {
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/seguranca': typeof SegurancaRoute
   '/v/$token': typeof VTokenRoute
   '/app/apis': typeof AuthenticatedAppApisRoute
@@ -240,6 +272,7 @@ export interface FileRoutesByTo {
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/conta': typeof AuthenticatedAppContaRoute
   '/app/custos': typeof AuthenticatedAppCustosRoute
+  '/app/empresas': typeof AuthenticatedAppEmpresasRoute
   '/app/equipe': typeof AuthenticatedAppEquipeRoute
   '/app/investimento': typeof AuthenticatedAppInvestimentoRoute
   '/app/metricas': typeof AuthenticatedAppMetricasRoute
@@ -251,10 +284,12 @@ export interface FileRoutesByTo {
   '/auth/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
+  '/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/app/perfis': typeof AuthenticatedAppPerfisIndexRoute
+  '/app/planos': typeof AuthenticatedAppPlanosIndexRoute
   '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
 }
 export interface FileRoutesById {
@@ -265,6 +300,7 @@ export interface FileRoutesById {
   '/entrar': typeof EntrarRoute
   '/login': typeof LoginRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/seguranca': typeof SegurancaRoute
   '/v/$token': typeof VTokenRoute
   '/_authenticated/app/apis': typeof AuthenticatedAppApisRoute
@@ -272,6 +308,7 @@ export interface FileRoutesById {
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/_authenticated/app/conta': typeof AuthenticatedAppContaRoute
   '/_authenticated/app/custos': typeof AuthenticatedAppCustosRoute
+  '/_authenticated/app/empresas': typeof AuthenticatedAppEmpresasRoute
   '/_authenticated/app/equipe': typeof AuthenticatedAppEquipeRoute
   '/_authenticated/app/investimento': typeof AuthenticatedAppInvestimentoRoute
   '/_authenticated/app/metricas': typeof AuthenticatedAppMetricasRoute
@@ -283,10 +320,12 @@ export interface FileRoutesById {
   '/auth_/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
+  '/_authenticated/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/_authenticated/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
+  '/_authenticated/app/planos/': typeof AuthenticatedAppPlanosIndexRoute
   '/_authenticated/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
 }
 export interface FileRouteTypes {
@@ -297,6 +336,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/login'
     | '/privacidade'
+    | '/redefinir-senha'
     | '/seguranca'
     | '/v/$token'
     | '/app/apis'
@@ -304,6 +344,7 @@ export interface FileRouteTypes {
     | '/app/configuracoes'
     | '/app/conta'
     | '/app/custos'
+    | '/app/empresas'
     | '/app/equipe'
     | '/app/investimento'
     | '/app/metricas'
@@ -315,10 +356,12 @@ export interface FileRouteTypes {
     | '/auth/tiktok/callback'
     | '/app/'
     | '/app/perfis/novo'
+    | '/app/planos/$planId'
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
     | '/app/perfis/'
+    | '/app/planos/'
     | '/app/perfis/$id/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -327,6 +370,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/login'
     | '/privacidade'
+    | '/redefinir-senha'
     | '/seguranca'
     | '/v/$token'
     | '/app/apis'
@@ -334,6 +378,7 @@ export interface FileRouteTypes {
     | '/app/configuracoes'
     | '/app/conta'
     | '/app/custos'
+    | '/app/empresas'
     | '/app/equipe'
     | '/app/investimento'
     | '/app/metricas'
@@ -345,10 +390,12 @@ export interface FileRouteTypes {
     | '/auth/tiktok/callback'
     | '/app'
     | '/app/perfis/novo'
+    | '/app/planos/$planId'
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
     | '/app/perfis'
+    | '/app/planos'
     | '/app/perfis/$id/editar'
   id:
     | '__root__'
@@ -358,6 +405,7 @@ export interface FileRouteTypes {
     | '/entrar'
     | '/login'
     | '/privacidade'
+    | '/redefinir-senha'
     | '/seguranca'
     | '/v/$token'
     | '/_authenticated/app/apis'
@@ -365,6 +413,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/configuracoes'
     | '/_authenticated/app/conta'
     | '/_authenticated/app/custos'
+    | '/_authenticated/app/empresas'
     | '/_authenticated/app/equipe'
     | '/_authenticated/app/investimento'
     | '/_authenticated/app/metricas'
@@ -376,10 +425,12 @@ export interface FileRouteTypes {
     | '/auth_/tiktok/callback'
     | '/_authenticated/app/'
     | '/_authenticated/app/perfis/novo'
+    | '/_authenticated/app/planos/$planId'
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
     | '/_authenticated/app/perfis/'
+    | '/_authenticated/app/planos/'
     | '/_authenticated/app/perfis/$id/editar'
   fileRoutesById: FileRoutesById
 }
@@ -390,6 +441,7 @@ export interface RootRouteChildren {
   EntrarRoute: typeof EntrarRoute
   LoginRoute: typeof LoginRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   SegurancaRoute: typeof SegurancaRoute
   VTokenRoute: typeof VTokenRoute
   AuthTiktokCallbackRoute: typeof AuthTiktokCallbackRoute
@@ -440,6 +492,13 @@ declare module '@tanstack/react-router' {
       path: '/privacidade'
       fullPath: '/privacidade'
       preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/seguranca': {
@@ -496,6 +555,13 @@ declare module '@tanstack/react-router' {
       path: '/app/custos'
       fullPath: '/app/custos'
       preLoaderRoute: typeof AuthenticatedAppCustosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/empresas': {
+      id: '/_authenticated/app/empresas'
+      path: '/app/empresas'
+      fullPath: '/app/empresas'
+      preLoaderRoute: typeof AuthenticatedAppEmpresasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/app/equipe': {
@@ -575,6 +641,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppPerfisNovoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/app/planos/': {
+      id: '/_authenticated/app/planos/'
+      path: '/app/planos'
+      fullPath: '/app/planos/'
+      preLoaderRoute: typeof AuthenticatedAppPlanosIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/planos/$planId': {
+      id: '/_authenticated/app/planos/$planId'
+      path: '/app/planos/$planId'
+      fullPath: '/app/planos/$planId'
+      preLoaderRoute: typeof AuthenticatedAppPlanosPlanIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/cron/store-videos': {
       id: '/api/public/cron/store-videos'
       path: '/api/public/cron/store-videos'
@@ -612,6 +692,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
   AuthenticatedAppContaRoute: typeof AuthenticatedAppContaRoute
   AuthenticatedAppCustosRoute: typeof AuthenticatedAppCustosRoute
+  AuthenticatedAppEmpresasRoute: typeof AuthenticatedAppEmpresasRoute
   AuthenticatedAppEquipeRoute: typeof AuthenticatedAppEquipeRoute
   AuthenticatedAppInvestimentoRoute: typeof AuthenticatedAppInvestimentoRoute
   AuthenticatedAppMetricasRoute: typeof AuthenticatedAppMetricasRoute
@@ -622,7 +703,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppVideosRoute: typeof AuthenticatedAppVideosRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppPerfisNovoRoute: typeof AuthenticatedAppPerfisNovoRoute
+  AuthenticatedAppPlanosPlanIdRoute: typeof AuthenticatedAppPlanosPlanIdRoute
   AuthenticatedAppPerfisIndexRoute: typeof AuthenticatedAppPerfisIndexRoute
+  AuthenticatedAppPlanosIndexRoute: typeof AuthenticatedAppPlanosIndexRoute
   AuthenticatedAppPerfisIdEditarRoute: typeof AuthenticatedAppPerfisIdEditarRoute
 }
 
@@ -632,6 +715,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
   AuthenticatedAppContaRoute: AuthenticatedAppContaRoute,
   AuthenticatedAppCustosRoute: AuthenticatedAppCustosRoute,
+  AuthenticatedAppEmpresasRoute: AuthenticatedAppEmpresasRoute,
   AuthenticatedAppEquipeRoute: AuthenticatedAppEquipeRoute,
   AuthenticatedAppInvestimentoRoute: AuthenticatedAppInvestimentoRoute,
   AuthenticatedAppMetricasRoute: AuthenticatedAppMetricasRoute,
@@ -642,7 +726,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppVideosRoute: AuthenticatedAppVideosRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppPerfisNovoRoute: AuthenticatedAppPerfisNovoRoute,
+  AuthenticatedAppPlanosPlanIdRoute: AuthenticatedAppPlanosPlanIdRoute,
   AuthenticatedAppPerfisIndexRoute: AuthenticatedAppPerfisIndexRoute,
+  AuthenticatedAppPlanosIndexRoute: AuthenticatedAppPlanosIndexRoute,
   AuthenticatedAppPerfisIdEditarRoute: AuthenticatedAppPerfisIdEditarRoute,
 }
 
@@ -656,6 +742,7 @@ const rootRouteChildren: RootRouteChildren = {
   EntrarRoute: EntrarRoute,
   LoginRoute: LoginRoute,
   PrivacidadeRoute: PrivacidadeRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   SegurancaRoute: SegurancaRoute,
   VTokenRoute: VTokenRoute,
   AuthTiktokCallbackRoute: AuthTiktokCallbackRoute,

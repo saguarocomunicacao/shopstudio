@@ -1,6 +1,5 @@
 import { TarifasCard } from "./tarifas-card";
 import { CreditoTaxasCard } from "./credito-taxas-card";
-import { PlansCard } from "./plans-card";
 import { BudgetCard } from "./budget-card";
 import { CheckCircle2, CircleDollarSign, FileClock, Loader2, MoreHorizontal, Plus, Video } from "lucide-react";
 import { useState } from "react";
@@ -102,7 +101,6 @@ export function SettingsPage() {
             <TabsTrigger value="tarifas">Tarifas de custo</TabsTrigger>
             <TabsTrigger value="orcamento">Orçamento</TabsTrigger>
             <TabsTrigger value="prompts">Prompts padrão do sistema</TabsTrigger>
-            <TabsTrigger value="planos">Planos</TabsTrigger>
           </TabsList>
         </div>
 
@@ -136,7 +134,6 @@ export function SettingsPage() {
           </div>
           <GlobalPromptsSettings />
         </TabsContent>
-        <TabsContent value="planos"><PlansCard /></TabsContent>
       </Tabs>
     </>
   );

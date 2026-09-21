@@ -109,17 +109,22 @@ export function CreditoTaxasCard() {
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
         ) : (
-          <div className="grid gap-2">
+          <div className="overflow-x-auto rounded-lg border">
+            <div className="grid min-w-[760px] grid-cols-[minmax(180px,1fr)_140px_220px_100px_90px] gap-2 border-b bg-secondary/40 px-3 py-2 text-xs font-semibold text-muted-foreground">
+              <span>Ação / fornecedor</span><span>Créditos</span><span>Regra</span><span>Status</span><span className="text-right">Ação</span>
+            </div>
             {taxas.map((t) => {
               const edit = rascunho[t.id];
               if (!edit) return null;
               return (
-                <div key={t.id} className="grid items-end gap-2 rounded-xl bg-secondary p-3 sm:grid-cols-[1fr_120px_200px_auto_auto]">
+                <div key={t.id} className="grid min-w-[760px] grid-cols-[minmax(180px,1fr)_140px_220px_100px_90px] items-center gap-2 border-b px-3 py-3 last:border-b-0">
                   <div>
                     <p className="text-sm font-bold">{ACAO_LABELS[t.action_type as keyof typeof ACAO_LABELS] ?? t.action_type}</p>
                     <p className="text-xs text-muted-foreground">{t.fornecedor}</p>
                   </div>
                   <Input
+                    aria-label={`Créditos para ${ACAO_LABELS[t.action_type as keyof typeof ACAO_LABELS] ?? t.action_type}`}
+                    className="border border-border bg-background"
                     value={edit.credito}
                     onChange={(e) => setRascunho((r) => ({ ...r, [t.id]: { ...edit, credito: e.target.value } }))}
                     inputMode="decimal"
@@ -128,7 +133,7 @@ export function CreditoTaxasCard() {
                     value={edit.regra}
                     onValueChange={(v) => setRascunho((r) => ({ ...r, [t.id]: { ...edit, regra: v as Regra } }))}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="border border-border bg-background"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {REGRAS.map((r) => (
                         <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
@@ -142,7 +147,7 @@ export function CreditoTaxasCard() {
                     />
                     <span className="text-xs text-muted-foreground">ativa</span>
                   </div>
-                  <Button size="sm" onClick={() => salvar.mutate(t)} disabled={salvar.isPending}>
+                  <Button className="justify-self-end" size="sm" onClick={() => salvar.mutate(t)} disabled={salvar.isPending}>
                     Salvar
                   </Button>
                 </div>
