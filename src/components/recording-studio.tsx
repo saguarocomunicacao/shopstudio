@@ -174,9 +174,20 @@ export function RecordingStudio({
   }, []);
 
   const resetScrolling = useCallback(() => {
+    scrollingRef.current = false;
+    if (mountedRef.current) setRolando(false);
     scrollPositionRef.current = 0;
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
     lastFrameRef.current = 0;
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: 0, behavior: "auto" });
+    // Cancela também qualquer rolagem/momento ainda pendente do navegador móvel.
+    requestAnimationFrame(() => {
+      if (!mountedRef.current || scrollRef.current !== el) return;
+      scrollPositionRef.current = 0;
+      el.scrollTop = 0;
+      lastFrameRef.current = 0;
+    });
   }, []);
 
   const releaseWakeLock = useCallback(() => {
@@ -256,6 +267,11 @@ export function RecordingStudio({
     const timer = window.setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => window.clearInterval(timer);
   }, [recording]);
+
+  // Mantém o ciclo único sincronizado com ajustes feitos enquanto ele já está rodando.
+  useEffect(() => {
+    velocidadeRef.current = velocidade;
+  }, [velocidade]);
 
   // Descarta timestamps antigos quando a aba volta e garante um único ciclo ativo.
   useEffect(() => {
@@ -517,33 +533,37 @@ export function RecordingStudio({
           computador, para usar o estúdio.
         </div>
       ) : (
-        <div className={`relative shrink-0 overflow-hidden bg-black ${outputFormat.frameClass} ${outputFormat.mediaClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
-          {previewUrl ? (
-            <video
-              src={previewUrl}
-              controls
-              playsInline
-              preload="metadata"
-              aria-label="Revisão do vídeo gravado"
-              className="size-full bg-black object-cover"
-            />
-          ) : (
-            <>
-              {/* Fonte oculta: o canvas mostra exatamente o quadro na proporção configurada. */}
-              <video
-                ref={videoRef}
-                muted
-                playsInline
-                className="pointer-events-none absolute inset-0 size-full opacity-0"
-              />
-              <canvas
-                ref={canvasRef}
-                width={outWidth}
-                height={outHeight}
-                className={`block size-full bg-black ${facing === "user" ? "-scale-x-100" : ""}`}
-              />
-            </>
-          )}
+        <div className={`relative shrink-0 overflow-hidden bg-black ${RECORDING_FORMATS["9:16"].frameClass} ${RECORDING_FORMATS["9:16"].mediaClass}`}>
+          <div className="absolute inset-0 grid place-items-center overflow-hidden bg-black">
+            <div className={`relative w-full max-h-full overflow-hidden bg-black ${outputFormat.mediaClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
+              {previewUrl ? (
+                <video
+                  src={previewUrl}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  aria-label="Revisão do vídeo gravado"
+                  className="size-full bg-black object-cover"
+                />
+              ) : (
+                <>
+                  {/* Fonte oculta: o canvas mostra exatamente o quadro na proporção configurada. */}
+                  <video
+                    ref={videoRef}
+                    muted
+                    playsInline
+                    className="pointer-events-none absolute inset-0 size-full opacity-0"
+                  />
+                  <canvas
+                    ref={canvasRef}
+                    width={outWidth}
+                    height={outHeight}
+                    className={`block size-full bg-black ${facing === "user" ? "-scale-x-100" : ""}`}
+                  />
+                </>
+              )}
+            </div>
+          </div>
 
           <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/70 to-transparent px-3 pb-10 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
             <p className="min-w-0 truncate pt-2 text-sm font-bold">{job.title || "Gravar vídeo"}</p>
@@ -569,6 +589,9 @@ export function RecordingStudio({
                 data-teleprompter-scroll
                 className="pointer-events-auto h-full overflow-y-auto px-5 py-8"
                 style={{ scrollbarWidth: "none", scrollBehavior: "auto" }}
+                onScroll={(event) => {
+                  if (!scrollingRef.current) scrollPositionRef.current = event.currentTarget.scrollTop;
+                }}
               >
                 <div className="h-[65%]" aria-hidden="true" />
                 {teleprompter.map((item, index) => (
@@ -613,28 +636,17 @@ export function RecordingStudio({
                 </Button>
               </div>
 
-              {recording && (
-                <div className="absolute inset-x-3 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] z-20 flex items-center justify-center gap-2">
-                  <div className="flex items-center gap-1 rounded-full bg-black/55 p-1.5 text-white shadow-xl backdrop-blur-md">
-                    <Button variant="ghost" size="icon" aria-label="Diminuir velocidade do texto" title="Diminuir velocidade" className="size-11 rounded-full text-white hover:bg-white/15 hover:text-white" onClick={() => setVelocidade((v) => Math.max(8, v - 6))}><Minus /></Button>
-                    <span className="min-w-10 text-center text-xs font-bold" aria-live="polite">{velocidade}</span>
-                    <Button variant="ghost" size="icon" aria-label="Aumentar velocidade do texto" title="Aumentar velocidade" className="size-11 rounded-full text-white hover:bg-white/15 hover:text-white" onClick={() => setVelocidade((v) => Math.min(90, v + 6))}><Plus /></Button>
-                    <Button variant="ghost" size="icon" aria-label={rolando ? "Pausar texto" : "Continuar texto"} title={rolando ? "Pausar texto" : "Continuar texto"} className="size-11 rounded-full text-white hover:bg-white/15 hover:text-white" onClick={alternarRolagem}>{rolando ? <Pause /> : <Play />}</Button>
-                    <Button variant="ghost" size="icon" aria-label="Voltar texto ao início" title="Voltar ao início" className="size-11 rounded-full text-white hover:bg-white/15 hover:text-white" onClick={resetScrolling}><ArrowUpToLine /></Button>
-                  </div>
+              <div className="absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 sm:px-4">
+                <div className="flex min-w-0 items-center gap-0.5 justify-self-start rounded-full bg-black/55 p-1 text-white shadow-xl backdrop-blur-md sm:gap-1 sm:p-1.5">
+                  <Button variant="ghost" size="icon" aria-label={rolando ? "Pausar texto" : "Rolar texto"} title={rolando ? "Pausar texto" : "Rolar texto"} className="size-10 shrink-0 rounded-full text-white hover:bg-white/15 hover:text-white sm:size-11" onClick={alternarRolagem}>{rolando ? <Pause /> : <Play />}</Button>
+                  <Button variant="ghost" size="icon" aria-label="Diminuir velocidade do texto" title="Diminuir velocidade" className="size-10 shrink-0 rounded-full text-white hover:bg-white/15 hover:text-white sm:size-11" onClick={() => setVelocidade((v) => Math.max(8, v - 6))}><Minus /></Button>
+                  <span className="min-w-7 shrink-0 text-center text-xs font-bold" aria-live="polite">{velocidade}</span>
+                  <Button variant="ghost" size="icon" aria-label="Aumentar velocidade do texto" title="Aumentar velocidade" className="size-10 shrink-0 rounded-full text-white hover:bg-white/15 hover:text-white sm:size-11" onClick={() => setVelocidade((v) => Math.min(90, v + 6))}><Plus /></Button>
+                  <Button variant="ghost" size="icon" aria-label="Voltar texto ao início" title="Voltar ao início" className="size-10 shrink-0 rounded-full text-white hover:bg-white/15 hover:text-white sm:size-11" onClick={resetScrolling}><ArrowUpToLine /></Button>
                 </div>
-              )}
-
-              <div className="absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-[1fr_auto_1fr] items-end px-4">
-                {recording ? <span /> : (
-                  <Button variant="secondary" size="icon" aria-label={rolando ? "Pausar texto" : "Rolar texto"} title={rolando ? "Pausar texto" : "Rolar texto"} className="justify-self-start rounded-full bg-black/45 text-white backdrop-blur-md hover:bg-black/65 hover:text-white" onClick={alternarRolagem}>
-                    {rolando ? <Pause /> : <Play />}
-                  </Button>
-                )}
-                <Button size="icon" aria-label={recording ? "Parar gravação" : "Iniciar gravação"} title={recording ? "Parar gravação" : "Iniciar gravação"} className={`size-16 rounded-full border-4 border-white shadow-xl ${recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`} disabled={!!error} onClick={() => (recording ? stop() : start())}>
+                <Button size="icon" aria-label={recording ? "Parar gravação" : "Iniciar gravação"} title={recording ? "Parar gravação" : "Iniciar gravação"} className={`size-14 shrink-0 justify-self-end rounded-full border-4 border-white shadow-xl sm:size-16 ${recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`} disabled={!!error} onClick={() => (recording ? stop() : start())}>
                   {recording ? <Square className="size-6 fill-current" /> : <span className="size-7 rounded-full bg-current" />}
                 </Button>
-                <span />
               </div>
 
               {painel && (
