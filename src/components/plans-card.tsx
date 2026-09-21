@@ -213,7 +213,7 @@ function TenantPlans({ plans }: { plans: Plan[] }) {
           {tenants.map((t) => (
             <div key={t.id} className="grid gap-3 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,320px)] sm:items-center">
               <p className="truncate text-sm font-semibold">{t.name}</p>
-              <Select value={t.plan_id ?? undefined} onValueChange={(v) => atribuir.mutate({ id: t.id, plan_id: v })}>
+              <Select {...(t.plan_id ? { value: t.plan_id } : {})} onValueChange={(v) => atribuir.mutate({ id: t.id, plan_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Sem plano" /></SelectTrigger>
                 <SelectContent>
                   {plans.map((p) => (
