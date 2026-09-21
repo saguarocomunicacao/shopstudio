@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useProducts, type DbProduct } from "@/lib/content";
@@ -294,7 +295,7 @@ function ProductsContent() {
       </div>
 
       <Dialog open={!!details} onOpenChange={(open) => { if (!open) { setDetails(null); setEditing(false); } }}>
-        <DialogContent>
+        <DialogContent className="max-h-[92vh] overflow-y-auto [scrollbar-gutter:stable]">
           <DialogHeader><DialogTitle className="pr-6 text-left">{details?.name}</DialogTitle></DialogHeader>
           {details && (
             <div className="grid gap-4 py-2">
@@ -342,11 +343,11 @@ function ProductsContent() {
                   </div>
                   {editing ? (
                     <div className="grid gap-2">
-                      <textarea
+                      <Textarea
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         rows={6}
-                        className="w-full rounded-lg border-0 bg-input p-3 text-sm font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="border-0 bg-input font-normal"
                         placeholder="Cole aqui a descrição real do TikTok Shop ou ajuste o texto."
                       />
                       <div className="flex gap-2">
@@ -355,7 +356,7 @@ function ProductsContent() {
                       </div>
                     </div>
                   ) : details.description ? (
-                    <p className="max-h-40 overflow-y-auto whitespace-pre-line text-sm font-normal text-muted-foreground">{details.description}</p>
+                    <p className="whitespace-pre-wrap break-words text-sm font-normal text-muted-foreground">{details.description}</p>
                   ) : (
                     <span className="text-muted-foreground">Sem descrição. A IA só conhece o nome e a foto principal deste produto.</span>
                   )}
