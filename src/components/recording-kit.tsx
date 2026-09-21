@@ -22,6 +22,7 @@ import { RecordingStudio } from "./recording-studio";
 import { useStudio } from "./studio-context";
 import { VoiceDictationButton } from "./voice-dictation-button";
 import { actionError } from "@/lib/api-keys";
+import { enterMobileFullscreen, isMobileViewport } from "@/lib/mobile-fullscreen";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
@@ -427,7 +428,10 @@ export function RecordingKitDialog({
               )}
 
               {canEdit && (
-                <Button size="lg" disabled={!temRoteiro} onClick={() => setStudioOpen(true)}>
+                <Button size="lg" disabled={!temRoteiro} onClick={() => {
+                  void enterMobileFullscreen();
+                  setStudioOpen(true);
+                }}>
                   <Video />
                   {gravado ? "Gravar de novo" : "Gravar vídeo"}
                 </Button>
@@ -441,7 +445,13 @@ export function RecordingKitDialog({
         <RecordingStudio
           job={job}
           aspectRatio={recordingAspectRatio}
-          onClose={() => setStudioOpen(false)}
+          onClose={() => {
+            if (isMobileViewport()) {
+              onClose();
+              return;
+            }
+            setStudioOpen(false);
+          }}
           onSaved={onClose}
         />
       )}
