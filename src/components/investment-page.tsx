@@ -440,6 +440,22 @@ export function InvestmentPage() {
 
   return (
     <div className="grid gap-6">
+      {isBackoffice && (
+        <div className="panel flex flex-wrap items-end gap-3">
+          <div className="grid gap-1">
+            <label className="text-xs font-semibold text-muted-foreground">Empresa</label>
+            <Select value={tenantId ?? ""} onValueChange={(v) => setTenantSel(v)}>
+              <SelectTrigger className="w-56"><SelectValue placeholder="Selecione a empresa" /></SelectTrigger>
+              <SelectContent>
+                {(tenants ?? []).map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
       {baixos.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3 text-sm">
           <span className="flex items-center gap-2 font-semibold text-primary">
