@@ -7,4 +7,4 @@
 - [x] Validar tipos, build automático e interface mobile
 - [x] Diagnosticar a distorção do preview e do arquivo gravado no mobile
 - [x] Preservar o stream nativo e aplicar recorte central no canvas
-- [ ] Validar proporção dos pixels no preview e no arquivo gravado
+- [x] Validar proporção dos pixels no preview e no arquivo gravado
