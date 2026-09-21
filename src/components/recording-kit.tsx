@@ -376,7 +376,13 @@ export function RecordingKitDialog({
         </DialogContent>
       </Dialog>
 
-      {studioOpen && <RecordingStudio job={job} onClose={() => setStudioOpen(false)} />}
+      {studioOpen && (
+        <RecordingStudio
+          job={job}
+          onClose={() => setStudioOpen(false)}
+          onSaved={onClose}
+        />
+      )}
     </>
   );
 }
