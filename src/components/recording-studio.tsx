@@ -34,7 +34,7 @@ import { createSkinSmoother, type SkinIntensity, type SkinSmoother } from "@/lib
 import { actionError } from "@/lib/api-keys";
 import { VideoEditor } from "@/components/video-editor";
 import type { VideoEditOperation } from "@/lib/video-edit";
-import { exitMobileFullscreen, isMobileViewport } from "@/lib/mobile-fullscreen";
+import { isMobileViewport } from "@/lib/mobile-fullscreen";
 
 const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
   { id: "leve", label: "Leve" },
@@ -155,6 +155,23 @@ export function RecordingStudio({
   const outputFormat = RECORDING_FORMATS[selectedAspectRatio];
   const outWidth = outputFormat.width;
   const outHeight = outputFormat.height;
+
+  useEffect(() => {
+    if (!isMobileViewport()) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousOverscroll = body.style.overscrollBehavior;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    return () => {
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      body.style.overscrollBehavior = previousOverscroll;
+    };
+  }, []);
 
   const teleprompter = teleprompterItems(job);
   recordingRef.current = recording;
@@ -536,7 +553,7 @@ export function RecordingStudio({
       toast.success("Gravação salva. O vídeo está na fila de rascunhos.");
       void qc.invalidateQueries({ queryKey: ["jobs"] });
       void qc.invalidateQueries({ queryKey: ["draft-kit", job.id] });
-      void exitMobileFullscreen().finally(() => (onSaved ?? onClose)());
+      (onSaved ?? onClose)();
     },
     onError: (e) => toast.error(`Não foi possível salvar. Seu vídeo continua aqui para tentar novamente. ${errMessage(e)}`),
   });
@@ -554,13 +571,12 @@ export function RecordingStudio({
     await video.play().catch(() => undefined);
   };
 
-  const closeStudio = async () => {
-    await exitMobileFullscreen();
+  const closeStudio = () => {
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-black">
+    <div className="fixed inset-0 z-50 grid h-screen w-screen place-items-center overflow-hidden bg-black supports-[height:100dvh]:h-[100dvh] max-sm:box-border max-sm:pl-[env(safe-area-inset-left)] max-sm:pr-[env(safe-area-inset-right)]">
       {!supported ? (
         <div className="m-6 rounded-xl bg-white/10 p-6 text-center text-sm text-white">
           Este navegador não permite gravar vídeo. Abra o Shop Studio pelo Chrome ou Safari atualizado, no celular ou no
@@ -605,7 +621,7 @@ export function RecordingStudio({
 
           <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/70 to-transparent px-3 pb-10 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
             <p className="min-w-0 truncate pt-2 text-sm font-bold">{job.title || "Gravar vídeo"}</p>
-            <Button type="button" variant="ghost" size="icon" aria-label="Fechar estúdio" title="Fechar estúdio" className="pointer-events-auto shrink-0 bg-black/30 text-white backdrop-blur-md hover:bg-black/50 hover:text-white" onClick={() => void closeStudio()}>
+            <Button type="button" variant="ghost" size="icon" aria-label="Fechar estúdio" title="Fechar estúdio" className="pointer-events-auto shrink-0 bg-black/30 text-white backdrop-blur-md hover:bg-black/50 hover:text-white" onClick={closeStudio}>
               <X className="size-5" />
             </Button>
           </div>
@@ -836,7 +852,7 @@ export function RecordingStudio({
           initialOperations={operations}
           onCancel={() => {
             if (isMobileViewport()) {
-              void closeStudio();
+              closeStudio();
               return;
             }
             setEditorAberto(false);

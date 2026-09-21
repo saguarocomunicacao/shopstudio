@@ -28,3 +28,4 @@
 - [x] Testar crop 9:16 + tesoura com áudio e validar o layout responsivo
 - [x] Manter crop e cortes visíveis no preview em todas as ferramentas
 - [x] Abrir o fluxo de gravação em tela cheia no mobile e voltar à fila ao fechar
+- [x] Substituir Fullscreen API por layout fixo compatível com Safari no iPhone

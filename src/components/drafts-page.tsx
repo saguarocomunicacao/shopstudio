@@ -57,7 +57,6 @@ import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { SharePanel } from "./share-panel";
 import { useStudio } from "./studio-context";
 import { actionError } from "@/lib/api-keys";
-import { enterMobileFullscreen } from "@/lib/mobile-fullscreen";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
@@ -111,7 +110,6 @@ function DraftsContent() {
   };
   const recordingJob = jobs.find((j) => j.id === recordingId) ?? null;
   const openRecordingKit = (jobId: string, studio: boolean) => {
-    if (studio) void enterMobileFullscreen();
     setOpenStudioDirectly(studio);
     setRecordingId(jobId);
   };

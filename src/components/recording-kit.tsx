@@ -22,7 +22,7 @@ import { RecordingStudio } from "./recording-studio";
 import { useStudio } from "./studio-context";
 import { VoiceDictationButton } from "./voice-dictation-button";
 import { actionError } from "@/lib/api-keys";
-import { enterMobileFullscreen, isMobileViewport } from "@/lib/mobile-fullscreen";
+import { isMobileViewport } from "@/lib/mobile-fullscreen";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
@@ -429,7 +429,6 @@ export function RecordingKitDialog({
 
               {canEdit && (
                 <Button size="lg" disabled={!temRoteiro} onClick={() => {
-                  void enterMobileFullscreen();
                   setStudioOpen(true);
                 }}>
                   <Video />

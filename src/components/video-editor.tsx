@@ -347,7 +347,7 @@ export function VideoEditor({
     const progressOffset = circumference * (1 - progresso / 100);
 
     return (
-      <div className="dark fixed inset-0 z-[80] grid place-items-center overflow-hidden bg-background px-6 text-foreground">
+      <div className="dark fixed inset-0 z-[80] grid h-screen w-screen place-items-center overflow-hidden bg-background pb-[env(safe-area-inset-bottom)] pl-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-[env(safe-area-inset-top)] text-foreground supports-[height:100dvh]:h-[100dvh]">
         <div className="grid justify-items-center gap-7 text-center" role="status" aria-live="polite" aria-label={`Aplicando edição, ${progresso}% concluído`}>
           <div className="relative grid size-36 place-items-center">
             <svg className="absolute inset-0 size-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
@@ -376,7 +376,7 @@ export function VideoEditor({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-background text-foreground">
+    <div className="fixed inset-0 z-[70] grid h-screen w-screen min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-background text-foreground supports-[height:100dvh]:h-[100dvh] max-sm:box-border max-sm:pl-[env(safe-area-inset-left)] max-sm:pr-[env(safe-area-inset-right)]">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-6">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold sm:text-base">Editar vídeo</p>
