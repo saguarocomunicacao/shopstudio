@@ -209,6 +209,9 @@ export function CostsPage() {
     );
   }
 
+  // Cliente comum: visão consolidada do próprio consumo, sem divisão interna.
+  if (!isBackoffice) return <TenantCostsView />;
+
   if (!profiles.length) {
     return (
       <div className="grid min-h-[60vh] place-items-center">
