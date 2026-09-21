@@ -404,3 +404,36 @@ export const getRecordingVideoUrl = createServerFn({ method: "POST" })
     const { data: signed } = await supabaseAdmin.storage.from("job-media").createSignedUrl(path, 60 * 60 * 6);
     return { url: signed?.signedUrl ?? null };
   });
+
+/** Exclui permanentemente um job de gravação e limpa o arquivo privado associado. */
+export const deleteRecordingJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ jobId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: job, error: readError } = await context.supabase
+      .from("jobs")
+      .select("id, profile_id, formato, video_path")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!job) throw new Error("Vídeo não encontrado ou sem permissão de acesso.");
+    if (job.formato !== "gravacao") throw new Error("Somente vídeos do formato Gravar eu mesmo podem ser removidos por esta ação.");
+
+    const { data: deleted, error: deleteError } = await context.supabase
+      .from("jobs")
+      .delete()
+      .eq("id", job.id)
+      .eq("profile_id", job.profile_id)
+      .select("id")
+      .maybeSingle();
+    if (deleteError) throw new Error(deleteError.message);
+    if (!deleted) throw new Error("Você não tem permissão para remover conteúdo deste perfil.");
+
+    if (job.video_path) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: storageError } = await supabaseAdmin.storage.from("job-media").remove([job.video_path]);
+      if (storageError) console.error("Falha ao limpar gravação excluída", { jobId: job.id, message: storageError.message });
+    }
+
+    return { ok: true };
+  });
