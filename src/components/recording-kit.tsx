@@ -4,6 +4,7 @@ import { Check, Copy, Download, Loader2, Plus, RefreshCw, Save, Sparkles, Trash2
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -147,6 +148,31 @@ export function RecordingKitDialog({
   const [caption, setCaption] = useState(job.caption ?? "");
   const [hashtags, setHashtags] = useState((job.hashtags ?? []).join(" "));
   const [studioOpen, setStudioOpen] = useState(openStudioInitially);
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+
+  // Snapshot "salvo" dos campos, usado para detectar alterações não salvas (dirty state).
+  const savedSnapshot = () =>
+    JSON.stringify({
+      titulo: (job.title ?? "").trim(),
+      gancho: (job.hook ?? "").trim(),
+      blocos: (job.roteiro_blocos ?? []).map((b) => ({ tempo: b.tempo.trim(), orientacao: b.orientacao.trim(), fala: b.fala.trim() })),
+      textoTela: (job.texto_tela ?? "").trim(),
+      cta: (job.post_cta ?? "").trim(),
+      caption: (job.caption ?? "").trim(),
+      hashtags: (job.hashtags ?? []).join(" ").trim(),
+    });
+  const [savedKey, setSavedKey] = useState(savedSnapshot);
+
+  const currentKey = JSON.stringify({
+    titulo: titulo.trim(),
+    gancho: gancho.trim(),
+    blocos: blocos.map((b) => ({ tempo: b.tempo.trim(), orientacao: b.orientacao.trim(), fala: b.fala.trim() })),
+    textoTela: textoTela.trim(),
+    cta: cta.trim(),
+    caption: caption.trim(),
+    hashtags: hashtags.trim(),
+  });
+  const isDirty = canEdit && currentKey !== savedKey;
 
   useEffect(() => {
     setTitulo(job.title ?? "");
@@ -156,7 +182,15 @@ export function RecordingKitDialog({
     setCta(job.post_cta ?? "");
     setCaption(job.caption ?? "");
     setHashtags((job.hashtags ?? []).join(" "));
+    setSavedKey(savedSnapshot());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job]);
+
+  /** Tenta fechar o modal: se há alterações não salvas, pede confirmação; senão, fecha direto. */
+  const attemptClose = () => {
+    if (isDirty) setConfirmCloseOpen(true);
+    else onClose();
+  };
 
   const gravado = !!job.video_path && !!job.recorded_at;
   const recordingAspectRatio = normalizeRecordingAspectRatio(videoSettings?.recording_aspect_ratio ?? DEFAULT_RECORDING_ASPECT_RATIO);
@@ -194,6 +228,8 @@ export function RecordingKitDialog({
       }),
     onSuccess: () => {
       toast.success("Roteiro salvo.");
+      // Zera o dirty state: o snapshot salvo passa a refletir o que está nos campos agora.
+      setSavedKey(currentKey);
       refresh();
     },
     onError: (e) => toast.error(errMessage(e)),
@@ -207,8 +243,22 @@ export function RecordingKitDialog({
 
   return (
     <>
-      <Dialog open={!studioOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-h-[92vh] max-w-lg overflow-hidden p-0">
+      <Dialog open={!studioOpen && !confirmCloseOpen} onOpenChange={(open) => !open && attemptClose()}>
+        <DialogContent
+          className="max-h-[92vh] max-w-lg overflow-hidden p-0"
+          onPointerDownOutside={(e) => {
+            if (isDirty) {
+              e.preventDefault();
+              setConfirmCloseOpen(true);
+            }
+          }}
+          onEscapeKeyDown={(e) => {
+            if (isDirty) {
+              e.preventDefault();
+              setConfirmCloseOpen(true);
+            }
+          }}
+        >
           <div className="max-h-[92vh] overflow-y-auto p-6 [scrollbar-gutter:stable]">
             <DialogHeader>
               <DialogTitle>Gravar eu mesmo</DialogTitle>
@@ -361,9 +411,14 @@ export function RecordingKitDialog({
                     {gerar.isPending ? <Loader2 className="animate-spin" /> : temRoteiro ? <RefreshCw /> : <Sparkles />}
                     {gerar.isPending ? "Gerando..." : temRoteiro ? "Regenerar roteiro" : "Gerar roteiro"}
                   </Button>
-                  <Button variant="secondary" disabled={salvar.isPending} onClick={() => salvar.mutate()}>
+                  <Button
+                    variant="secondary"
+                    disabled={salvar.isPending}
+                    onClick={() => salvar.mutate()}
+                    className={`bg-[#25F4EE] text-[#0A0A0A] hover:bg-[#25F4EE]/90${isDirty ? " ring-2 ring-[#25F4EE] ring-offset-2 ring-offset-background animate-pulse" : ""}`}
+                  >
                     {salvar.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-                    Salvar textos
+                    Salvar alterações
                   </Button>
                 </div>
               )}
@@ -387,6 +442,35 @@ export function RecordingKitDialog({
           onSaved={onClose}
         />
       )}
+
+      <AlertDialog open={confirmCloseOpen} onOpenChange={setConfirmCloseOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sair sem salvar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você tem alterações não salvas. Deseja sair sem salvar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setConfirmCloseOpen(false);
+              }}
+            >
+              Continuar editando
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                setConfirmCloseOpen(false);
+                onClose();
+              }}
+            >
+              Sair sem salvar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
