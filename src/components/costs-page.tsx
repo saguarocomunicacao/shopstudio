@@ -231,7 +231,7 @@ export function CostsPage() {
     );
   }
 
-  const semSelecao = !todosPerfis && perfisEfetivos.length === 0;
+  const semSelecao = !tenantId;
   const teto = gasto?.tetoPerfil ?? gasto?.tetoGlobal ?? null;
   const consumidoMes = gasto ? (gasto.tetoPerfil ? gasto.perfilBrl : gasto.globalBrl) : 0;
 
