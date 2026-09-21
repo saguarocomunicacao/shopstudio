@@ -150,7 +150,11 @@ function PipelineContent() {
               </div>
               <div className="space-y-2">
                 {items.map((job) => (
-                  <article className="job-card relative cursor-pointer" key={job.id} onClick={() => setDetail(job)}>
+                  <article
+                    className="job-card relative cursor-pointer"
+                    key={job.id}
+                    onClick={() => (job.formato === "gravacao" ? setRecording(job) : setDetail(job))}
+                  >
                     <div className="absolute right-2 top-2 flex items-center gap-0.5">
                       {canStepBack(job) && (
                         <button
