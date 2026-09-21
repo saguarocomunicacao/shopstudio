@@ -65,14 +65,14 @@ export function VideoEditor({
     let cancelled = false;
     (async () => {
       try {
-        const [{ FFmpeg }, { toBlobURL }] = await Promise.all([import("@ffmpeg/ffmpeg"), import("@ffmpeg/util")]);
+        const { FFmpeg } = await import("@ffmpeg/ffmpeg");
         const instance = new FFmpeg() as unknown as FFmpegLike;
         instance.on("progress", ({ progress }) => {
           if (!cancelled) setProgresso(Math.max(0, Math.min(100, Math.round(progress * 100))));
         });
         await instance.load({
-          coreURL: await toBlobURL(coreJsAsset.url, "text/javascript"),
-          wasmURL: await toBlobURL(coreWasmAsset.url, "application/wasm"),
+          coreURL: new URL(coreJsAsset.url, window.location.origin).href,
+          wasmURL: new URL(coreWasmAsset.url, window.location.origin).href,
         });
         if (cancelled) {
           instance.terminate();
