@@ -30,7 +30,9 @@ function teleprompterItems(job: DbJob) {
   const items: TeleprompterItem[] = [];
   if (job.hook) items.push({ fala: job.hook });
   for (const bloco of withoutDuplicatedHook(job.hook, job.roteiro_blocos ?? [])) {
-    if (bloco.fala) items.push({ fala: bloco.fala, orientacao: bloco.orientacao || undefined });
+    if (bloco.fala) {
+      items.push(bloco.orientacao ? { fala: bloco.fala, orientacao: bloco.orientacao } : { fala: bloco.fala });
+    }
   }
   if (!items.length && job.script) items.push({ fala: job.script });
   return items;
