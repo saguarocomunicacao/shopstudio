@@ -528,7 +528,7 @@ export function RecordingStudio({
               <div
                 ref={scrollRef}
                 data-teleprompter-scroll
-                className="pointer-events-auto h-full overflow-y-auto px-5 py-8"
+                className="pointer-events-auto h-full scroll-auto overflow-y-auto px-5 py-8"
                 style={{ scrollbarWidth: "none" }}
                 onScroll={(event) => {
                   scrollPositionRef.current = event.currentTarget.scrollTop;
