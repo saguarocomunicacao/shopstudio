@@ -160,7 +160,27 @@ export const cloneVoice = createServerFn({ method: "POST" })
     const voiceId = json.voice_id;
     if (!voiceId) throw new Error("A ElevenLabs não devolveu o identificador da voz clonada.");
 
+    // Criação da voz em si: a ElevenLabs consome um slot da assinatura, não
+    // caracteres, então o evento fica com consumo zero mas sempre registrado.
+    const bytesAmostras = data.samples.reduce((soma, s) => soma + Math.round((s.base64.length * 3) / 4), 0);
+    const { recordConsumo: registrarClonagem } = await import("./consumo.server");
+    await registrarClonagem({
+      profileId: data.profileId,
+      etapa: "narracao_elevenlabs",
+      acao: "clonagem_voz",
+      modelo: "elevenlabs-voice-clone",
+      quantidade: 0,
+      unidade: "mil_caracteres",
+      metadados: {
+        tipo: "criacao_voz_clonada",
+        voice_id: voiceId,
+        amostras: data.samples.length,
+        bytes_amostras: bytesAmostras,
+      },
+    });
+
     const { PREVIEW_PHRASE } = await import("./voices");
+
     let previewUrl: string | null = null;
     try {
       previewUrl = await buildPreview(voiceId, PREVIEW_PHRASE, data.profileId, "clonagem_voz");
