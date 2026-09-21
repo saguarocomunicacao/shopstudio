@@ -317,25 +317,14 @@ export function RecordingKitDialog({
                 </div>
                 {blocosVisiveis.map(({ bloco, originalIndex }) => (
                   <div key={originalIndex} className="grid gap-2 rounded-lg bg-secondary/50 p-3">
-                    <div className="flex items-center gap-2">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                       <Input
                         aria-label="Tempo do bloco"
                         value={bloco.tempo}
                         readOnly={!canEdit}
-                        className="h-8 w-24 bg-background"
+                        className="h-10 min-w-0 bg-background sm:max-w-28"
                         onChange={(e) =>
                           setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, tempo: e.target.value } : b)))
-                        }
-                      />
-                      <Textarea
-                        aria-label="O que mostrar ou fazer"
-                        rows={1}
-                        value={bloco.orientacao}
-                        readOnly={!canEdit}
-                        placeholder="O que mostrar ou fazer"
-                        className="min-h-8 flex-1 bg-background py-1.5"
-                        onChange={(e) =>
-                          setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, orientacao: e.target.value } : b)))
                         }
                       />
                       {canEdit && (
@@ -344,6 +333,8 @@ export function RecordingKitDialog({
                           variant="ghost"
                           size="icon"
                           aria-label="Remover bloco"
+                          title="Remover bloco"
+                          className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => setBlocos((list) => list.filter((_, i) => i !== originalIndex))}
                         >
                           <Trash2 />
@@ -351,11 +342,22 @@ export function RecordingKitDialog({
                       )}
                     </div>
                     <Textarea
+                      aria-label="O que mostrar ou fazer"
+                      rows={1}
+                      value={bloco.orientacao}
+                      readOnly={!canEdit}
+                      placeholder="O que mostrar ou fazer"
+                      className="w-full bg-background"
+                      onChange={(e) =>
+                        setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, orientacao: e.target.value } : b)))
+                      }
+                    />
+                    <Textarea
                       aria-label="Fala do bloco"
                       rows={2}
                       value={bloco.fala}
                       readOnly={!canEdit}
-                      className="bg-background"
+                      className="w-full bg-background"
                       onChange={(e) => setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, fala: e.target.value } : b)))}
                     />
                   </div>
