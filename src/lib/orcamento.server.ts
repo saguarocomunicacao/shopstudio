@@ -61,7 +61,7 @@ export type OrcamentoStatus = {
 };
 
 /** Situação do orçamento do mês corrente para um perfil. */
-export async function getOrcamentoStatus(profileId: string): Promise<OrcamentoStatus> {
+export async function getOrcamentoStatus(profileId: string | null): Promise<OrcamentoStatus> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const inicio = new Date();
   const desde = new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), 1)).toISOString();
@@ -94,7 +94,7 @@ export async function getOrcamentoStatus(profileId: string): Promise<OrcamentoSt
 
   const pos = (v: number | undefined) => (v && Number.isFinite(v) && v > 0 ? v : null);
   const tetoGlobal = pos(config.get("orcamento_mensal_global"));
-  const tetoPerfil = pos(config.get(`orcamento_perfil:${profileId}`));
+  const tetoPerfil = profileId ? pos(config.get(`orcamento_perfil:${profileId}`)) : null;
   const bloqueado =
     (tetoGlobal !== null && globalBrl >= tetoGlobal) || (tetoPerfil !== null && perfilBrl >= tetoPerfil);
 
@@ -115,7 +115,7 @@ const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
  * `apenasEtapaCara` marca ações baratas, que só travam se o admin escolher
  * bloquear tudo ao estourar o orçamento.
  */
-export async function assertOrcamento(profileId: string, opts: { barata?: boolean } = {}) {
+export async function assertOrcamento(profileId: string | null, opts: { barata?: boolean } = {}) {
   const status = await getOrcamentoStatus(profileId);
   if (!status.bloqueado) return status;
   if (opts.barata && !status.bloqueiaTudo) return status;
