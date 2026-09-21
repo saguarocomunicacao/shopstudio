@@ -70,7 +70,7 @@ export function VideoEditor({
           if (!cancelled) setProgresso(Math.max(0, Math.min(100, Math.round(progress * 100))));
         });
         await instance.load({
-          coreURL: new URL("/ffmpeg/ffmpeg-core.js", window.location.origin).href,
+          coreURL: new URL("/ffmpeg/ffmpeg-core.esm.js", window.location.origin).href,
           wasmURL: new URL(coreWasmAsset.url, window.location.origin).href,
         });
         if (cancelled) {
