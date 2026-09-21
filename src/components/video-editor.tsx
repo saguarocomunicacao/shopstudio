@@ -309,11 +309,21 @@ export function VideoEditor({
               }
               return;
             }
-            if (video.currentTime >= end) {
-              video.pause();
-              video.currentTime = start;
-              setCurrentTime(start);
+            // Reprodução já com os cortes: pula os trechos removidos na hora.
+            const list = rangesRef.current;
+            if (!list.length) return;
+            const t = video.currentTime;
+            const dentro = list.some((range) => t >= range.start - 0.02 && t < range.end);
+            if (dentro) return;
+            const proximo = list.find((range) => range.start > t);
+            if (proximo) {
+              video.currentTime = proximo.start;
+              setCurrentTime(proximo.start);
+              return;
             }
+            video.pause();
+            video.currentTime = list[0].start;
+            setCurrentTime(list[0].start);
           }}
           />
           <Button type="button" size="icon" aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"} className="absolute bottom-3 left-1/2 size-11 -translate-x-1/2 rounded-full shadow-xl" onClick={() => void togglePlayback()}>
