@@ -122,6 +122,10 @@ export function VideoEditor({
     event.preventDefault();
     if (!trackRef.current || duration <= 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
+    if (handle === "start" || handle === "end") {
+      const snapshot = { start, end, cuts };
+      setHistory((current) => [...current, snapshot]);
+    }
     const move = (clientX: number) => {
       const time = timeFromPointer(clientX);
       if (handle === "start") {
