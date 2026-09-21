@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   AlertTriangle,
+  Camera,
   Check,
   CheckCircle2,
   Copy,
@@ -40,7 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { relativeTime, useJobs, type DbJob } from "@/lib/content";
+import { relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
 import { deleteRecordingJob } from "@/lib/recording.functions";
 import {
   approveDraft,
@@ -57,17 +58,18 @@ import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
 
-type QueueKey = "gravar" | "revisao" | "aprovado" | "publicado";
+type QueueKey = "roteiros" | "revisao" | "aprovado" | "publicado";
 
-const QUEUES: { key: QueueKey; label: string; status: DbJob["status"]; badge: string }[] = [
+const QUEUES: { key: QueueKey; label: string; status?: DbJob["status"]; badge: string }[] = [
+  { key: "roteiros", label: "Roteiros prontos", badge: "status-violet" },
   { key: "revisao", label: "Aguardando revisão", status: "video_pronto", badge: "status-lime" },
   { key: "aprovado", label: "Aprovados", status: "rascunho_enviado", badge: "status-orange" },
   { key: "publicado", label: "Publicados", status: "publicado", badge: "status-pink" },
 ];
 
-/** Vídeos do formato "Gravar eu mesmo" que ainda não foram gravados. */
-const paraGravar = (job: DbJob) =>
-  job.formato === "gravacao" && (job.status === "produto_escolhido" || job.status === "roteiro_pronto");
+/** Roteiros concluídos do formato de gravação que ainda aguardam a pessoa gravar. */
+const roteiroPronto = (job: DbJob) =>
+  job.formato === "gravacao" && job.status === "roteiro_pronto" && !job.recorded_at && !job.video_path;
 
 export function DraftsPage() {
   return (
@@ -80,9 +82,12 @@ export function DraftsPage() {
 function DraftsContent() {
   const { activeProfileId, can } = useStudio();
   const { data: jobs = [], isLoading } = useJobs(activeProfileId);
-  const [queue, setQueue] = useState<QueueKey>("revisao");
+  const canViewProducts = can("produtos", "visualizar");
+  const { data: products = [] } = useProducts(activeProfileId, canViewProducts);
+  const [queue, setQueue] = useState<QueueKey>("roteiros");
   const [openId, setOpenId] = useState<string | null>(null);
   const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [openStudioDirectly, setOpenStudioDirectly] = useState(false);
   const [novoOpen, setNovoOpen] = useState(false);
   const [deleting, setDeleting] = useState<DbJob | null>(null);
   const qc = useQueryClient();
@@ -91,11 +96,21 @@ function DraftsContent() {
   const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
   const canRemove = (job: DbJob) =>
     can("pipeline", "criar", job.profile_id) || can("pipeline", "editar", job.profile_id);
-  const gravarList = jobs.filter(paraGravar);
+  const roteirosList = jobs.filter(roteiroPronto);
   const current = QUEUES.find((q) => q.key === queue);
-  const list = queue === "gravar" ? gravarList : jobs.filter((j) => j.status === current!.status);
+  const list = queue === "roteiros" ? roteirosList : jobs.filter((j) => j.status === current?.status);
   const countOf = (status: DbJob["status"]) => jobs.filter((j) => j.status === status).length;
+  const countQueue = (item: (typeof QUEUES)[number]) =>
+    item.key === "roteiros" ? roteirosList.length : item.status ? countOf(item.status) : 0;
+  const productName = (job: DbJob) => {
+    if (!job.product_id) return "Tema próprio • sem produto";
+    return products.find((product) => product.id === job.product_id)?.name ?? "Produto associado";
+  };
   const recordingJob = jobs.find((j) => j.id === recordingId) ?? null;
+  const openRecordingKit = (jobId: string, studio: boolean) => {
+    setOpenStudioDirectly(studio);
+    setRecordingId(jobId);
+  };
   const removeRecordingMut = useMutation({
     mutationFn: (jobId: string) => removeRecording({ data: { jobId } }),
     onSuccess: () => {
@@ -130,10 +145,9 @@ function DraftsContent() {
           <TabsList className="h-auto min-w-max justify-start">
             {QUEUES.map((q) => (
               <TabsTrigger key={q.key} value={q.key}>
-                {q.label} ({countOf(q.status)})
+                {q.label} ({countQueue(q)})
               </TabsTrigger>
             ))}
-            <TabsTrigger value="gravar">Gravar eu mesmo ({gravarList.length})</TabsTrigger>
           </TabsList>
         </div>
       </Tabs>
@@ -146,16 +160,34 @@ function DraftsContent() {
       ) : list.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {list.map((job) => {
-            const gravar = queue === "gravar";
-            const abrir = () => (gravar ? setRecordingId(job.id) : setOpenId(job.id));
+            const pendente = queue === "roteiros";
+            const abrir = () => (pendente ? openRecordingKit(job.id, false) : setOpenId(job.id));
             return (
               <article key={job.id} className="panel">
-                <button
-                  type="button"
-                  onClick={abrir}
-                  className="block w-full overflow-hidden rounded-xl bg-black"
-                >
-                  {job.video_thumbnail_url ? (
+                {pendente ? (
+                  <section className="flex aspect-[9/16] w-full flex-col justify-between rounded-xl border border-primary/30 bg-primary/5 p-5">
+                    <div>
+                      <span className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                        <Camera className="size-5" />
+                      </span>
+                      <p className="mt-4 text-xs font-black uppercase text-primary">Pendente de gravação</p>
+                      <h2 className="mt-2 whitespace-pre-wrap break-words text-lg font-black leading-snug">
+                        {job.title || "Vídeo próprio"}
+                      </h2>
+                      <p className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold text-foreground/75">
+                        {productName(job)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-background/80 p-3 shadow-sm">
+                      <p className="text-sm font-bold">Roteiro pronto. Falta gravar este vídeo.</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        Abra o roteiro, leia no teleprompter e grave pelo celular.
+                      </p>
+                    </div>
+                  </section>
+                ) : (
+                  <button type="button" onClick={abrir} className="block w-full overflow-hidden rounded-xl bg-black">
+                    {job.video_thumbnail_url ? (
                     <img
                       src={job.video_thumbnail_url}
                       alt={job.title || "Rascunho"}
@@ -163,35 +195,46 @@ function DraftsContent() {
                     />
                   ) : (
                     <div className="grid aspect-[9/16] w-full place-items-center px-4 text-center text-xs text-white/70">
-                      {gravar ? "Você grava este vídeo" : "Sem miniatura"}
+                      Sem miniatura
                     </div>
                   )}
-                </button>
-                <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>
+                  </button>
+                )}
+                {!pendente && <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>}
                 <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
                 <div className="mt-2 flex items-center gap-2">
                   <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${gravar ? "status-violet" : current!.badge}`}
+                    className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${current?.badge ?? "status-violet"}`}
                   >
-                    {gravar ? (job.status === "produto_escolhido" ? "Sem roteiro" : "Pronto para gravar") : current!.label}
+                    {pendente ? "Pendente de gravação" : current?.label}
                   </span>
-                  {!gravar && !job.video_path && (
+                  {!pendente && !job.video_path && (
                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
                       <AlertTriangle className="size-3" />
                       não salvo
                     </span>
                   )}
                 </div>
-                <div className="mt-3 flex gap-2">
-                  <Button className="min-w-0 flex-1" onClick={abrir}>
-                    {gravar ? "Abrir roteiro e gravar" : "Abrir kit de postagem"}
-                  </Button>
-                  {gravar && canRemove(job) && (
+                <div className={`mt-3 grid gap-2 ${pendente ? "grid-cols-2" : "grid-cols-[minmax(0,1fr)_auto]"}`}>
+                  {pendente ? (
+                    <>
+                      <Button className="min-w-0" onClick={() => openRecordingKit(job.id, true)}>
+                        <Camera />
+                        Gravar vídeo
+                      </Button>
+                      <Button variant="secondary" className="min-w-0" onClick={abrir}>
+                        Ver roteiro
+                      </Button>
+                    </>
+                  ) : (
+                    <Button className="min-w-0" onClick={abrir}>Abrir kit de postagem</Button>
+                  )}
+                  {pendente && canRemove(job) && (
                     <Button
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="shrink-0 text-destructive hover:text-destructive"
+                      className="col-span-2 justify-self-end text-destructive hover:text-destructive"
                       aria-label={`Excluir ${job.title || "vídeo"}`}
                       title="Excluir vídeo"
                       onClick={() => setDeleting(job)}
@@ -210,15 +253,23 @@ function DraftsContent() {
             ? "Nenhum rascunho aguardando revisão. Quando um vídeo ficar pronto, ele aparece aqui."
             : queue === "aprovado"
               ? "Nenhum rascunho aprovado no momento."
-              : queue === "gravar"
-                ? "Nenhum vídeo para gravar. Crie um vídeo próprio ou escolha o formato “Gravar eu mesmo” ao usar um produto."
+              : queue === "roteiros"
+                ? "Nenhum roteiro pronto para gravar. Crie um vídeo próprio ou gere o roteiro de um produto nesse formato."
                 : "Nenhum vídeo publicado ainda."}
         </div>
       )}
 
       {openId && <DraftKitDialog jobId={openId} onClose={() => setOpenId(null)} />}
       {recordingJob && (
-        <RecordingKitDialog job={recordingJob} canEdit={canCreate} onClose={() => setRecordingId(null)} />
+        <RecordingKitDialog
+          job={recordingJob}
+          canEdit={canRemove(recordingJob)}
+          openStudioInitially={openStudioDirectly}
+          onClose={() => {
+            setRecordingId(null);
+            setOpenStudioDirectly(false);
+          }}
+        />
       )}
       <NewOwnVideoDialog open={novoOpen} onOpenChange={setNovoOpen} onCreated={(jobId) => setRecordingId(jobId)} />
 

@@ -125,10 +125,12 @@ export function RecordingKitDialog({
   job,
   canEdit,
   onClose,
+  openStudioInitially = false,
 }: {
   job: DbJob;
   canEdit: boolean;
   onClose: () => void;
+  openStudioInitially?: boolean;
 }) {
   const qc = useQueryClient();
   const generate = useServerFn(generateRecordingScript);
@@ -142,7 +144,7 @@ export function RecordingKitDialog({
   const [cta, setCta] = useState(job.post_cta ?? "");
   const [caption, setCaption] = useState(job.caption ?? "");
   const [hashtags, setHashtags] = useState((job.hashtags ?? []).join(" "));
-  const [studioOpen, setStudioOpen] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(openStudioInitially);
 
   useEffect(() => {
     setTitulo(job.title ?? "");
