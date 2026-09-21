@@ -12,6 +12,7 @@ import {
   Save,
   Send,
   Undo2,
+  Video,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
