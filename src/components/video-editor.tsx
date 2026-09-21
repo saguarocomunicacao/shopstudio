@@ -1,4 +1,4 @@
-import { Check, Loader2, Pause, Play, Plus, RotateCcw, Scissors, Trash2, X } from "lucide-react";
+import { Check, Loader2, Pause, Play, RotateCcw, Scissors, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -57,6 +57,9 @@ export function VideoEditor({
   const [cutStart, setCutStart] = useState(0);
   const [cutEnd, setCutEnd] = useState(0);
   const [cuts, setCuts] = useState<CutOperation[]>([]);
+  /** Pilha de estados anteriores: cada corte/aparo entra aqui para o "Desfazer". */
+  const [history, setHistory] = useState<{ start: number; end: number; cuts: CutOperation[] }[]>([]);
+  const rangesRef = useRef<{ start: number; end: number }[]>([]);
   const [engine, setEngine] = useState<"carregando" | "pronto" | "erro">("carregando");
   const [processando, setProcessando] = useState(false);
   const [progresso, setProgresso] = useState(0);
@@ -119,6 +122,10 @@ export function VideoEditor({
     event.preventDefault();
     if (!trackRef.current || duration <= 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
+    if (handle === "start" || handle === "end") {
+      const snapshot = { start, end, cuts };
+      setHistory((current) => [...current, snapshot]);
+    }
     const move = (clientX: number) => {
       const time = timeFromPointer(clientX);
       if (handle === "start") {
@@ -156,7 +163,10 @@ export function VideoEditor({
     ...(aparado ? [{ type: "trim" as const, start, end }] : []),
     ...cuts,
   ];
-  const validResult = duration > 0 && keepRanges(duration, operations).length > 0;
+  /** Trechos que permanecem: o player usa esta lista para pular o que foi cortado. */
+  const ranges = duration > 0 ? keepRanges(duration, operations) : [];
+  rangesRef.current = ranges;
+  const validResult = duration > 0 && ranges.length > 0;
 
   const addCut = () => {
     if (cutEnd - cutStart < 0.2) return;
@@ -165,8 +175,24 @@ export function VideoEditor({
       setErro("O corte não pode remover o vídeo inteiro.");
       return;
     }
+    setHistory((current) => [...current, { start, end, cuts }]);
     setCuts(next);
     setErro(null);
+    // O corte vale na hora: se o cursor estava dentro dele, pula para a continuação.
+    const video = videoRef.current;
+    if (video && video.currentTime >= cutStart && video.currentTime < cutEnd) seek(Math.min(cutEnd, end));
+  };
+
+  const desfazer = () => {
+    setHistory((current) => {
+      const previous = current.at(-1);
+      if (!previous) return current;
+      setStart(previous.start);
+      setEnd(previous.end);
+      setCuts(previous.cuts);
+      setErro(null);
+      return current.slice(0, -1);
+    });
   };
 
   const togglePlayback = async () => {
@@ -176,7 +202,10 @@ export function VideoEditor({
       video.pause();
       return;
     }
-    if (video.currentTime < start || video.currentTime >= end) seek(start);
+    const list = rangesRef.current;
+    const first = list[0];
+    const dentro = list.some((range) => video.currentTime >= range.start && video.currentTime < range.end - 0.05);
+    if (first && !dentro) seek(first.start);
     await video.play().catch(() => undefined);
   };
 
@@ -280,11 +309,22 @@ export function VideoEditor({
               }
               return;
             }
-            if (video.currentTime >= end) {
-              video.pause();
-              video.currentTime = start;
-              setCurrentTime(start);
+            // Reprodução já com os cortes: pula os trechos removidos na hora.
+            const list = rangesRef.current;
+            if (!list.length) return;
+            const t = video.currentTime;
+            const dentro = list.some((range) => t >= range.start - 0.02 && t < range.end);
+            if (dentro) return;
+            const proximo = list.find((range) => range.start > t);
+            if (proximo) {
+              video.currentTime = proximo.start;
+              setCurrentTime(proximo.start);
+              return;
             }
+            video.pause();
+            const inicio = list[0]?.start ?? 0;
+            video.currentTime = inicio;
+            setCurrentTime(inicio);
           }}
           />
           <Button type="button" size="icon" aria-label={playing ? "Pausar vídeo" : "Reproduzir vídeo"} className="absolute bottom-3 left-1/2 size-11 -translate-x-1/2 rounded-full shadow-xl" onClick={() => void togglePlayback()}>
@@ -355,7 +395,7 @@ export function VideoEditor({
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
             <p className="min-w-0 text-xs text-muted-foreground">Trecho a remover: {formatTime(cutStart)}–{formatTime(cutEnd)}</p>
             <Button type="button" size="sm" variant="destructive" onClick={addCut} disabled={cutEnd - cutStart < 0.2}>
-              <Plus /> Adicionar corte
+              <Scissors /> Cortar
             </Button>
           </div>
         )}
@@ -363,7 +403,10 @@ export function VideoEditor({
         {cuts.length > 0 && (
           <div className="flex flex-wrap gap-2" aria-label="Cortes internos adicionados">
             {cuts.map((cut, index) => (
-              <Button key={`${cut.start}-${cut.end}-${index}`} type="button" size="sm" variant="secondary" aria-label={`Remover corte ${index + 1}`} onClick={() => setCuts((current) => current.filter((_, itemIndex) => itemIndex !== index))}>
+            <Button key={`${cut.start}-${cut.end}-${index}`} type="button" size="sm" variant="secondary" aria-label={`Remover corte ${index + 1}`} onClick={() => {
+                setHistory((current) => [...current, { start, end, cuts }]);
+                setCuts((current) => current.filter((_, itemIndex) => itemIndex !== index));
+              }}>
                 {formatTime(cut.start)}–{formatTime(cut.end)} <Trash2 />
               </Button>
             ))}
@@ -382,15 +425,8 @@ export function VideoEditor({
           <Button
             variant="secondary"
             size="lg"
-            disabled={processando || !operations.length}
-            onClick={() => {
-              setStart(0);
-              setEnd(duration);
-              setCuts([]);
-              setCutStart(duration * 0.35);
-              setCutEnd(duration * 0.65);
-              seek(0);
-            }}
+            disabled={processando || history.length === 0}
+            onClick={desfazer}
           >
             <RotateCcw />
             Desfazer
