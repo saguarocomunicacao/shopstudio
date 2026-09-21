@@ -12,7 +12,7 @@ export const RECORDING_FORMATS: Record<
     label: "9:16 (vertical, TikTok/Reels/Shorts)",
     width: 1080,
     height: 1920,
-    frameClass: "h-[100dvh] w-[min(100vw,56.25dvh)]",
+    frameClass: "h-[min(100dvh,177.78vw)] w-[min(100vw,56.25dvh)]",
     mediaClass: "aspect-[9/16]",
   },
   "1:1": {
