@@ -15,6 +15,56 @@ export type VideoEditOperation = TrimOperation | CropOperation | CutOperation;
 
 export const EDIT_INPUT = "entrada";
 export const EDIT_OUTPUT = "saida";
+const MIN_SEGMENT_SECONDS = 0.08;
+
+export type TimeRange = { start: number; end: number };
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+/** Ordena, limita ao trim e une cortes internos sobrepostos. */
+export function normalizeCuts(cuts: CutOperation[], trimStart: number, trimEnd: number): CutOperation[] {
+  const valid = cuts
+    .map((cut) => ({
+      type: "cut" as const,
+      start: clamp(cut.start, trimStart, trimEnd),
+      end: clamp(cut.end, trimStart, trimEnd),
+    }))
+    .filter((cut) => cut.end - cut.start >= MIN_SEGMENT_SECONDS)
+    .sort((a, b) => a.start - b.start);
+
+  const merged: CutOperation[] = [];
+  for (const cut of valid) {
+    const previous = merged.at(-1);
+    if (previous && cut.start <= previous.end + MIN_SEGMENT_SECONDS) {
+      previous.end = Math.max(previous.end, cut.end);
+    } else {
+      merged.push({ ...cut });
+    }
+  }
+  return merged;
+}
+
+/** Intervalos do original que permanecem depois do trim e das tesouras. */
+export function keepRanges(duration: number, operations: VideoEditOperation[]): TimeRange[] {
+  const trim = operations.find((op): op is TrimOperation => op.type === "trim");
+  const start = clamp(trim?.start ?? 0, 0, duration);
+  const end = clamp(trim?.end ?? duration, start, duration);
+  const cuts = normalizeCuts(
+    operations.filter((op): op is CutOperation => op.type === "cut"),
+    start,
+    end,
+  );
+  const ranges: TimeRange[] = [];
+  let cursor = start;
+  for (const cut of cuts) {
+    if (cut.start - cursor >= MIN_SEGMENT_SECONDS) ranges.push({ start: cursor, end: cut.start });
+    cursor = Math.max(cursor, cut.end);
+  }
+  if (end - cursor >= MIN_SEGMENT_SECONDS) ranges.push({ start: cursor, end });
+  return ranges;
+}
 
 export function hasOperations(operations: VideoEditOperation[]) {
   return operations.some((op) => (op.type === "trim" ? op.end - op.start > 0.05 : true));
@@ -22,12 +72,7 @@ export function hasOperations(operations: VideoEditOperation[]) {
 
 /** Duração final estimada depois de aplicar as operações. */
 export function resultingDuration(duration: number, operations: VideoEditOperation[]) {
-  let total = duration;
-  for (const op of operations) {
-    if (op.type === "trim") total = Math.max(0, op.end - op.start);
-    if (op.type === "cut") total = Math.max(0, total - (op.end - op.start));
-  }
-  return total;
+  return keepRanges(duration, operations).reduce((total, range) => total + range.end - range.start, 0);
 }
 
 /**
@@ -41,6 +86,8 @@ export function buildFfmpegArgs(
   operations: VideoEditOperation[],
   input = EDIT_INPUT,
   output = EDIT_OUTPUT,
+  duration = 0,
+  hasAudio = true,
 ): string[] {
   const trim = operations.find((op): op is TrimOperation => op.type === "trim");
   const crop = operations.find((op): op is CropOperation => op.type === "crop");
@@ -57,9 +104,23 @@ export function buildFfmpegArgs(
     return args;
   }
 
-  const filters: string[] = [];
-  if (crop) filters.push(`crop=${Math.round(crop.width)}:${Math.round(crop.height)}:${Math.round(crop.x)}:${Math.round(crop.y)}`);
-  if (filters.length) args.push("-vf", filters.join(","));
-  args.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "24", "-c:a", "aac", "-movflags", "+faststart", output);
+  const ranges = keepRanges(duration, operations);
+  if (!ranges.length) throw new Error("A edição removeria o vídeo inteiro.");
+
+  const graph: string[] = [];
+  ranges.forEach((range, index) => {
+    const cropFilter = crop
+      ? `,crop=${Math.round(crop.width)}:${Math.round(crop.height)}:${Math.round(crop.x)}:${Math.round(crop.y)}`
+      : "";
+    graph.push(`[0:v]trim=start=${range.start.toFixed(3)}:end=${range.end.toFixed(3)},setpts=PTS-STARTPTS${cropFilter}[v${index}]`);
+    if (hasAudio) graph.push(`[0:a]atrim=start=${range.start.toFixed(3)}:end=${range.end.toFixed(3)},asetpts=PTS-STARTPTS[a${index}]`);
+  });
+  const inputs = ranges.map((_, index) => `[v${index}]${hasAudio ? `[a${index}]` : ""}`).join("");
+  graph.push(`${inputs}concat=n=${ranges.length}:v=1:a=${hasAudio ? 1 : 0}[vout]${hasAudio ? "[aout]" : ""}`);
+  args.push("-filter_complex", graph.join(";"), "-map", "[vout]");
+  if (hasAudio) args.push("-map", "[aout]");
+  args.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "24");
+  if (hasAudio) args.push("-c:a", "aac");
+  args.push("-movflags", "+faststart", output);
   return args;
 }
