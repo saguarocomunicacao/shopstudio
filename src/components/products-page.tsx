@@ -397,6 +397,22 @@ function ProductsContent() {
           <DialogHeader><DialogTitle>Usar “{useTarget?.name}”</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
             <p className="text-sm text-muted-foreground">O job nasce na etapa “Produto escolhido” dentro do perfil <strong className="text-foreground">{activeProfile?.name}</strong>.</p>
+            <div className="grid gap-2">
+              {([
+                { value: "completo", title: "Completo", hint: "A inteligência artificial cria o vídeo inteiro." },
+                { value: "gravacao", title: "Gravar eu mesmo", hint: "A IA escreve só os textos e você grava lendo o teleprompter." },
+              ] as const).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setFormato(option.value)}
+                  className={`rounded-xl border p-3 text-left transition-colors ${formato === option.value ? "border-primary bg-primary/5" : "hover:bg-secondary"}`}
+                >
+                  <p className="text-sm font-bold">{option.title}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{option.hint}</p>
+                </button>
+              ))}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setUseTarget(null)}>Cancelar</Button>
