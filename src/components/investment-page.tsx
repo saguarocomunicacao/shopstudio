@@ -26,6 +26,8 @@ import {
   type FornecedorKey,
 } from "@/lib/investimento";
 import { useAppConfig } from "@/lib/orcamento";
+import { useMeuTenantId, useTenants } from "@/lib/tenants";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStudio } from "./studio-context";
 
 const hoje = () => new Date().toISOString().slice(0, 10);
