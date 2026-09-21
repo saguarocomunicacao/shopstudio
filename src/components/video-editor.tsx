@@ -1,4 +1,4 @@
-import { Check, Crop, Loader2, Pause, Play, RotateCcw, Scissors, Trash2, X } from "lucide-react";
+import { Check, Crop as CropIcon, Loader2, Pause, Play, RotateCcw, Scissors, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -515,7 +515,7 @@ export function VideoEditor({
             setMode("crop");
             if (!crop && videoSize) selectCropRatio("9:16");
           }}>
-            <Crop /> Enquadrar
+            <CropIcon /> Enquadrar
           </Button>
         </div>
 

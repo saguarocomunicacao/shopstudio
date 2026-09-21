@@ -90,6 +90,10 @@ function evenFloor(value: number) {
   return Math.max(2, Math.floor(value / 2) * 2);
 }
 
+function evenCoordinate(value: number) {
+  return Math.max(0, Math.floor(value / 2) * 2);
+}
+
 /** Converte o crop relativo em pixels pares, limitados ao quadro original. */
 export function cropPixels(crop: CropOperation, source: VideoSourceSize) {
   if (source.width <= 0 || source.height <= 0) throw new Error("Dimensões inválidas do vídeo original.");
@@ -97,8 +101,8 @@ export function cropPixels(crop: CropOperation, source: VideoSourceSize) {
   const height = evenFloor(clamp(crop.height, 0.01, 1) * source.height);
   const maxX = Math.max(0, source.width - width);
   const maxY = Math.max(0, source.height - height);
-  const x = Math.min(evenFloor(clamp(crop.x, 0, 1) * source.width), evenFloor(maxX));
-  const y = Math.min(evenFloor(clamp(crop.y, 0, 1) * source.height), evenFloor(maxY));
+  const x = Math.min(evenCoordinate(clamp(crop.x, 0, 1) * source.width), evenCoordinate(maxX));
+  const y = Math.min(evenCoordinate(clamp(crop.y, 0, 1) * source.height), evenCoordinate(maxY));
   return { x, y, width, height };
 }
 
