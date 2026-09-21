@@ -40,13 +40,19 @@ function DashboardContent() {
 export function VideosPage() { return <ProfileGate><VideosContent /></ProfileGate>; }
 
 function VideosContent() {
-  const { activeProfileId, profiles } = useStudio();
+  const { activeProfileId, profiles, can } = useStudio();
   const { data: scoped = [] } = useJobs(activeProfileId);
   const videos = scoped.filter((j) => !!j.video_url);
   const rendering = scoped.filter((j) => j.status === "gerando_video");
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
+  const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+  const recordingJob = scoped.find((j) => j.id === recordingId) ?? null;
   return <>
-    <Heading eyebrow={`${videos.length} ${videos.length === 1 ? "peça" : "peças"}`} title="Biblioteca de vídeos" action={<Button disabled><Plus />Novo vídeo</Button>} />
+    <Heading eyebrow={`${videos.length} ${videos.length === 1 ? "peça" : "peças"}`} title="Biblioteca de vídeos" action={<Button disabled={!canCreate} onClick={() => setNovoOpen(true)}><Plus />Novo vídeo próprio</Button>} />
+    <NewOwnVideoDialog open={novoOpen} onOpenChange={setNovoOpen} onCreated={(jobId) => setRecordingId(jobId)} />
+    {recordingJob && <RecordingKitDialog job={recordingJob} canEdit={canCreate} onClose={() => setRecordingId(null)} />}
     {rendering.length > 0 && <p className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{rendering.length} vídeo(s) renderizando...</p>}
     {videos.length ? (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
