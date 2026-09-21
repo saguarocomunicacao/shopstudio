@@ -536,7 +536,7 @@ export function RecordingStudio({
       toast.success("Gravação salva. O vídeo está na fila de rascunhos.");
       void qc.invalidateQueries({ queryKey: ["jobs"] });
       void qc.invalidateQueries({ queryKey: ["draft-kit", job.id] });
-      (onSaved ?? onClose)();
+      void exitMobileFullscreen().finally(() => (onSaved ?? onClose)());
     },
     onError: (e) => toast.error(`Não foi possível salvar. Seu vídeo continua aqui para tentar novamente. ${errMessage(e)}`),
   });
