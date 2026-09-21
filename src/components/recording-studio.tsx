@@ -23,17 +23,19 @@ import { withoutDuplicatedHook } from "@/lib/recording-script";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
 
-/** Linhas do teleprompter: gancho, falas dos blocos e CTA. */
-function teleprompterLines(job: DbJob, comTextoTela: boolean) {
-  const lines: string[] = [];
-  if (job.hook) lines.push(job.hook);
+type TeleprompterItem = { fala: string; orientacao?: string };
+
+/** Somente o conteúdo falado: gancho e falas dos blocos, com suas dicas de ação. */
+function teleprompterItems(job: DbJob) {
+  const items: TeleprompterItem[] = [];
+  if (job.hook) items.push({ fala: job.hook });
   for (const bloco of withoutDuplicatedHook(job.hook, job.roteiro_blocos ?? [])) {
-    if (bloco.fala) lines.push(bloco.fala);
+    if (bloco.fala) {
+      items.push(bloco.orientacao ? { fala: bloco.fala, orientacao: bloco.orientacao } : { fala: bloco.fala });
+    }
   }
-  if (comTextoTela && job.texto_tela) lines.push(`(texto na tela) ${job.texto_tela}`);
-  if (job.post_cta) lines.push(job.post_cta);
-  if (!lines.length && job.script) lines.push(job.script);
-  return lines;
+  if (!items.length && job.script) items.push({ fala: job.script });
+  return items;
 }
 
 function pickMimeType() {
@@ -72,12 +74,11 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const [velocidade, setVelocidade] = useState(28); // pixels por segundo
   const [fonte, setFonte] = useState(30);
   const [espelhado, setEspelhado] = useState(false);
-  const [comTextoTela, setComTextoTela] = useState(true);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cameraSession, setCameraSession] = useState(0);
 
-  const lines = teleprompterLines(job, comTextoTela);
+  const teleprompter = teleprompterItems(job);
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -297,14 +298,24 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
                 }}
               >
                 <div className="h-[65%]" aria-hidden="true" />
-                {lines.map((line, index) => (
-                  <p
+                {teleprompter.map((item, index) => (
+                  <div
                     key={index}
-                    className="mb-5 font-bold leading-snug text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]"
-                    style={{ fontSize: `${fonte}px`, transform: espelhado ? "scaleX(-1)" : undefined }}
+                    className="mb-7"
+                    style={{ transform: espelhado ? "scaleX(-1)" : undefined }}
                   >
-                    {line}
-                  </p>
+                    {item.orientacao && (
+                      <p className="mb-2 text-sm font-medium leading-relaxed text-white/60">
+                        Dica: {item.orientacao}
+                      </p>
+                    )}
+                    <p
+                      className="font-bold leading-snug text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]"
+                      style={{ fontSize: `${fonte}px` }}
+                    >
+                      {item.fala}
+                    </p>
+                  </div>
                 ))}
                 <div className="h-[70%]" aria-hidden="true" />
               </div>
@@ -348,9 +359,6 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
                 <Button variant="secondary" size="sm" onClick={() => setEspelhado((v) => !v)}>
                   <FlipHorizontal />
                   Espelhar texto
-                </Button>
-                <Button variant="secondary" size="sm" onClick={() => setComTextoTela((v) => !v)}>
-                  {comTextoTela ? "Ocultar texto na tela" : "Incluir texto na tela"}
                 </Button>
                 <Button
                   variant="secondary"
