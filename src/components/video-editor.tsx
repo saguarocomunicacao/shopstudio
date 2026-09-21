@@ -78,7 +78,11 @@ export function VideoEditor({
         const { FFmpeg } = await import("@ffmpeg/ffmpeg");
         const instance = new FFmpeg() as unknown as FFmpegLike;
         instance.on("progress", ({ progress }) => {
-          if (!cancelled) setProgresso(Math.max(0, Math.min(100, Math.round(progress * 100))));
+          if (!cancelled && Number.isFinite(progress)) {
+            // O FFmpeg pode reportar 100% antes de finalizar a escrita do arquivo.
+            // Reservamos 100% para depois da leitura e validação da saída.
+            setProgresso(Math.max(0, Math.min(99, Math.round(progress * 100))));
+          }
         });
         await instance.load({
           coreURL: new URL("/ffmpeg/ffmpeg-core.esm.js", window.location.origin).href,
@@ -234,6 +238,13 @@ export function VideoEditor({
       const edited = new Blob([data.slice().buffer as ArrayBuffer], { type: `video/${outputExtension}` });
       await ffmpeg.deleteFile(input).catch(() => undefined);
       await ffmpeg.deleteFile(output).catch(() => undefined);
+      setProgresso(100);
+      // Mantém o estado concluído visível antes de retornar à revisão.
+      await new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => window.setTimeout(resolve, 250));
+        });
+      });
       onApply(edited, operations);
     } catch {
       setErro("Não foi possível aplicar o corte neste aparelho. Tente novamente ou salve o vídeo sem editar.");
@@ -265,7 +276,6 @@ export function VideoEditor({
                 strokeDashoffset={progressOffset}
                 className="stroke-brand-cyan transition-[stroke-dashoffset] duration-300"
               />
-              <circle cx="60" cy="12" r="4" className="fill-primary" />
             </svg>
             <span className="text-2xl font-bold tabular-nums">{progresso}%</span>
           </div>
