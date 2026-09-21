@@ -111,6 +111,9 @@ export type CustoEvento = {
   evento: ConsumoEventoRow;
   /** Quantidade efetivamente tarifada (pontos, no caso da busca). */
   unidadesTarifadas: number;
+  /** Consumo na unidade nativa do fornecedor (pontos/créditos), quando existe. */
+  credito: CreditoEvento;
+
   valorOriginal: number;
   moeda: "USD" | "BRL";
   cotacaoUsada: number;
