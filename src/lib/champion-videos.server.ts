@@ -168,6 +168,7 @@ export async function getChampionVideos(
       jobId: null,
       profileId,
       etapa: "busca_kalodata",
+      acao: "videos_campeoes",
       modelo: "kalodata-video-rank",
       quantidade: videos.length,
       unidade: "bloco_linhas_kalodata",
