@@ -30,11 +30,33 @@ export type ConsumoEvento = {
   metadados?: Record<string, unknown>;
 };
 
+/** Tenant da plataforma, usado apenas em consumo global (sem job e sem perfil). */
+const PLATFORM_TENANT_ID = "f7192d96-160f-4157-8599-eced5990bf8b";
+
 /** Grava um evento de consumo. Nunca derruba a geração se o log falhar. */
 export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // O insert roda com supabaseAdmin (sem sessão), então o tenant vem sempre da
+    // entidade-pai: job -> perfil -> tenant da plataforma (consumo global).
+    let tenantId: string | null = null;
+    if (evento.jobId) {
+      const { data } = await supabaseAdmin.from("jobs").select("tenant_id").eq("id", evento.jobId).maybeSingle();
+      tenantId = data?.tenant_id ?? null;
+    }
+    if (!tenantId && evento.profileId) {
+      const { data } = await supabaseAdmin
+        .from("profiles")
+        .select("tenant_id")
+        .eq("id", evento.profileId)
+        .maybeSingle();
+      tenantId = data?.tenant_id ?? null;
+    }
+    if (!tenantId) tenantId = PLATFORM_TENANT_ID;
+
     const { error } = await supabaseAdmin.from("consumo_eventos").insert({
+      tenant_id: tenantId,
       job_id: evento.jobId ?? null,
       profile_id: evento.profileId ?? null,
       etapa: evento.etapa as never,

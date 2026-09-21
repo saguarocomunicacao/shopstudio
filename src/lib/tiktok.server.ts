@@ -123,11 +123,22 @@ export function refreshTokens(refreshToken: string) {
   return callTokenEndpoint(TOKEN_REFRESH_URL, { refresh_token: refreshToken, grant_type: "refresh_token" });
 }
 
+/** Tenant do perfil dono da conexão (o insert roda sem sessão). */
+async function tenantOfProfile(profileId: string): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.from("profiles").select("tenant_id").eq("id", profileId).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data?.tenant_id) throw new Error("Perfil sem tenant definido.");
+  return data.tenant_id;
+}
+
 /** Grava (ou atualiza) a conexão do perfil. */
 export async function saveConnection(profileId: string, tokens: TiktokTokens) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const tenantId = await tenantOfProfile(profileId);
   const { error } = await supabaseAdmin.from("tiktok_connections").upsert(
     {
+      tenant_id: tenantId,
       profile_id: profileId,
       open_id: tokens.openId,
       user_type: tokens.userType,
