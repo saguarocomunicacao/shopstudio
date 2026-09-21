@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   computeEventoCusto,
+  precoFerramentaBrl,
   useTarifas,
   type ConsumoEventoRow,
   type EtapaConsumo,
@@ -68,6 +69,8 @@ export type LinhaEtapa = {
   quantidade: number;
   eventos: number;
   valorBrl: number;
+  /** Preço cobrado do cliente (snapshot do plano) nos eventos desta etapa. */
+  precoClienteBrl: number;
   percentual: number;
   estimado: boolean;
   semTarifa: boolean;
@@ -95,6 +98,8 @@ export type LinhaBusca = {
 
 export type CustoPeriodo = {
   totalBrl: number;
+  /** Soma do preço cobrado do cliente (snapshot) no período. */
+  totalPrecoClienteBrl: number;
   jobsComCusto: number;
   buscasCount: number;
   custoMedioPorJob: number;
@@ -129,17 +134,21 @@ export function agregarPeriodo(
   const jobs = new Map<string, LinhaJob>();
   const buscas: LinhaBusca[] = [];
   let totalBrl = 0;
+  let totalPrecoClienteBrl = 0;
 
   for (const evento of filtrados) {
     const custo = computeEventoCusto(evento, tarifas, cotacao, evento.job_id ? segundosPorJob.get(evento.job_id) ?? 0 : 0);
     const etapa = etapaVisualDe(evento);
+    const precoCliente = precoFerramentaBrl(evento);
     totalBrl += custo.valorBrl;
+    totalPrecoClienteBrl += precoCliente;
 
     const atual = porEtapa.get(etapa) ?? {
       etapa,
       quantidade: 0,
       eventos: 0,
       valorBrl: 0,
+      precoClienteBrl: 0,
       percentual: 0,
       estimado: false,
       semTarifa: false,
@@ -147,6 +156,7 @@ export function agregarPeriodo(
     atual.quantidade += quantidadeBruta(evento, custo.unidadesTarifadas);
     atual.eventos += 1;
     atual.valorBrl += custo.valorBrl;
+    atual.precoClienteBrl += precoCliente;
     atual.estimado = atual.estimado || custo.estimado;
     atual.semTarifa = atual.semTarifa || custo.semTarifa;
     porEtapa.set(etapa, atual);
@@ -206,6 +216,7 @@ export function agregarPeriodo(
 
   return {
     totalBrl,
+    totalPrecoClienteBrl,
     jobsComCusto: listaJobs.length,
     buscasCount: buscas.length,
     custoMedioPorJob: listaJobs.length ? totalBrl / listaJobs.length : 0,
@@ -216,13 +227,19 @@ export function agregarPeriodo(
   };
 }
 
-const selectEventos = "id, job_id, profile_id, etapa, modelo, quantidade, unidade, metadados, created_at";
+const selectEventos =
+  "id, job_id, profile_id, tenant_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, tool_price_cents";
 
 /** Eventos de consumo do intervalo; profileId nulo traz todos os perfis acessíveis. */
-export function useEventosPeriodo(desde: string, ate: string, profileIds: string[] | null) {
+export function useEventosPeriodo(
+  desde: string,
+  ate: string,
+  profileIds: string[] | null,
+  tenantId?: string | null,
+) {
   const chavePerfis = profileIds ? [...profileIds].sort().join(",") : "todos";
   return useQuery({
-    queryKey: ["custo-periodo", desde, ate, chavePerfis],
+    queryKey: ["custo-periodo", desde, ate, chavePerfis, tenantId ?? "todos-tenants"],
     staleTime: 30_000,
     queryFn: async () => {
       if (profileIds && profileIds.length === 0) return [] as ConsumoEventoRow[];
@@ -232,6 +249,7 @@ export function useEventosPeriodo(desde: string, ate: string, profileIds: string
         .gte("created_at", desde)
         .lte("created_at", ate)
         .order("created_at", { ascending: true });
+      if (tenantId) query = query.eq("tenant_id", tenantId);
       if (profileIds && profileIds.length === 1) query = query.eq("profile_id", profileIds[0]!);
       else if (profileIds && profileIds.length > 1) query = query.in("profile_id", profileIds);
       const { data, error } = await query;
@@ -247,9 +265,10 @@ export function useCustoPeriodo(
   ate: string,
   profileIds: string[] | null,
   etapas: EtapaVisual[],
+  tenantId?: string | null,
 ) {
   const { data: precos } = useTarifas();
-  const { data: eventos, isLoading } = useEventosPeriodo(desde, ate, profileIds);
+  const { data: eventos, isLoading } = useEventosPeriodo(desde, ate, profileIds, tenantId);
   const chaveEtapas = [...etapas].sort().join(",");
   const pronto = !!precos && !!eventos;
   return {

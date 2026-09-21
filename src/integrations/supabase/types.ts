@@ -206,6 +206,7 @@ export type Database = {
           fornecedor: string
           id: string
           observacao: string | null
+          tenant_id: string
           unidade: string | null
           unidades: number | null
           valor_brl: number
@@ -217,6 +218,7 @@ export type Database = {
           fornecedor: string
           id?: string
           observacao?: string | null
+          tenant_id?: string
           unidade?: string | null
           unidades?: number | null
           valor_brl?: number
@@ -228,11 +230,20 @@ export type Database = {
           fornecedor?: string
           id?: string
           observacao?: string | null
+          tenant_id?: string
           unidade?: string | null
           unidades?: number | null
           valor_brl?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fornecedor_aportes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fornecedor_planos: {
         Row: {
@@ -240,6 +251,7 @@ export type Database = {
           creditos_mes: number
           dia_renovacao: number
           fornecedor: string
+          tenant_id: string
           updated_at: string
           valor_mensal: number
         }
@@ -248,6 +260,7 @@ export type Database = {
           creditos_mes?: number
           dia_renovacao?: number
           fornecedor: string
+          tenant_id?: string
           updated_at?: string
           valor_mensal?: number
         }
@@ -256,10 +269,19 @@ export type Database = {
           creditos_mes?: number
           dia_renovacao?: number
           fornecedor?: string
+          tenant_id?: string
           updated_at?: string
           valor_mensal?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fornecedor_planos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       job_shares: {
         Row: {
