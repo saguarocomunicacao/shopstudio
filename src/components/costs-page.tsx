@@ -339,6 +339,16 @@ export function CostsPage() {
             <Card label="Buscas de produto" value={String(data.buscasCount)} hint="inclui atualizações de categorias" />
           </div>
 
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Card label="Preço ao cliente" value={brl(data.totalPrecoClienteBrl)} hint="preço da ferramenta cobrado" />
+            <Card label="Custo de API" value={brl(data.totalBrl)} hint="custo estimado dos fornecedores" />
+            <Card
+              label="Margem"
+              value={brl(data.totalPrecoClienteBrl - data.totalBrl)}
+              hint="preço ao cliente menos custo de API"
+            />
+          </div>
+
           {podeVerGlobal && teto && (
             <div className="panel grid gap-2">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
