@@ -139,6 +139,9 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
     const tenantId = await tenantIdOfUser(supabase, context.userId);
     // No plano BYOK a atualização de produto exige a chave do Kalodata.
     await assertTenantKeys(tenantId, ["kalodata"]);
+    const { assertOrcamento } = await import("./orcamento.server");
+    await assertOrcamento(pending[0]?.profile_id ?? null, { barata: true });
+
     const { recordConsumo } = await import("./consumo.server");
     let enriched = 0;
     let failed = 0;
@@ -165,7 +168,8 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
         etapa: "busca_kalodata",
         acao: "atualizacao_produto",
         modelo: "kalodata-product-detail",
-        quantidade: 0.1,
+        // A quantidade em pontos vem da taxa configurada (credito_taxas), não daqui.
+        quantidade: null,
         unidade: "bloco_linhas_kalodata",
         metadados: { tipo: "detalhe_produto", produto: row.id, encontrado: !!detail },
       });

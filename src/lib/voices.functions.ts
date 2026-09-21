@@ -46,6 +46,9 @@ async function buildPreview(
   profileId: string | null,
   acao: "narracao" | "clonagem_voz" = "narracao",
 ) {
+  const { assertOrcamento } = await import("./orcamento.server");
+  await assertOrcamento(profileId, { barata: true });
+
   const res = await fetch(`${API}/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
     method: "POST",
     headers: { "xi-api-key": await apiKey(), "Content-Type": "application/json" },

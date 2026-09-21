@@ -15,6 +15,9 @@ export const syncCategories = createServerFn({ method: "POST" })
       : { data: [] };
     if (!(adminRoles ?? []).length) throw new Error("Apenas administradores podem atualizar as categorias.");
 
+    const { assertOrcamento } = await import("./orcamento.server");
+    await assertOrcamento(null, { barata: true });
+
     const { fetchOfficialCategories } = await import("./product-source.server");
     const { withTenantKeys, tenantIdOfUser } = await import("./api-keys.server");
     const tenantId = await tenantIdOfUser(context.supabase, context.userId);
@@ -38,12 +41,14 @@ export const syncCategories = createServerFn({ method: "POST" })
     await recordConsumo({
       jobId: null,
       profileId: null,
+      // A ação é global (não tem perfil), mas o custo é de quem disparou.
+      tenantId,
       etapa: "busca_kalodata",
       acao: "atualizacao_categorias",
       modelo: "kalodata-product-rank",
       unidade: "bloco_linhas_kalodata",
       quantidade: categories.length,
-      metadados: { tipo: "atualizacao_categorias", linhas: categories.length },
+      metadados: { tipo: "atualizacao_categorias", linhas: categories.length, disparado_por: context.userId },
     });
 
     return { count: categories.length };

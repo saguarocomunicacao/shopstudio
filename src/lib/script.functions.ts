@@ -186,6 +186,9 @@ export const generateJobScript = createServerFn({ method: "POST" })
     const prompt = `${basePrompt}${championPromptBlock(campeoes)}`;
 
 
+    const { assertOrcamento } = await import("./orcamento.server");
+    await assertOrcamento(job.profile_id, { barata: true });
+
     const { script: generated, usage } = await callLovableAi(prompt);
 
     // Consumo de tokens do roteiro (inclusive regenerações).
