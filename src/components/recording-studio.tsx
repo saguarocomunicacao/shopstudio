@@ -38,6 +38,18 @@ function teleprompterItems(job: DbJob) {
   return items;
 }
 
+const FILTROS = [
+  { id: "nenhum", label: "Nenhum", css: "" },
+  { id: "natural", label: "Natural", css: "brightness(1.06) contrast(1.06)" },
+  { id: "quente", label: "Quente", css: "sepia(0.25) saturate(1.2) brightness(1.04)" },
+  { id: "frio", label: "Frio", css: "hue-rotate(15deg) saturate(1.1) brightness(1.03)" },
+  { id: "vivido", label: "Vívido", css: "saturate(1.45) contrast(1.1)" },
+  { id: "suave", label: "Suave", css: "blur(0.7px) brightness(1.08) saturate(1.05)" },
+  { id: "pb", label: "P&B", css: "grayscale(1) contrast(1.12)" },
+] as const;
+
+type FiltroId = (typeof FILTROS)[number]["id"];
+
 function pickMimeType() {
   const candidates = [
     "video/mp4;codecs=h264,aac",
