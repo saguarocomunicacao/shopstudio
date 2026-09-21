@@ -13,7 +13,8 @@ export type EtapaConsumo =
   | "montagem_json2video"
   | "busca_kalodata"
   | "roteiro_texto"
-  | "narracao_elevenlabs";
+  | "narracao_elevenlabs"
+  | "transcricao_audio";
 export type UnidadeTarifa =
   | "imagem"
   | "segundo_video"
@@ -21,7 +22,8 @@ export type UnidadeTarifa =
   | "bloco_linhas_kalodata"
   | "token_input"
   | "token_output"
-  | "mil_caracteres";
+  | "mil_caracteres"
+  | "minuto_audio";
 
 export type ConsumoEventoRow = {
   id: string;
