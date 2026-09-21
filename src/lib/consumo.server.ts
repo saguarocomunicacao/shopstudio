@@ -114,11 +114,16 @@ export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
     }
     if (!tenantId) tenantId = PLATFORM_TENANT_ID;
 
+    const acao = evento.acao ?? ACAO_POR_ETAPA[evento.etapa];
+    const toolPrice = await toolPriceCents(supabaseAdmin as never, tenantId, acao);
+
     const { error } = await supabaseAdmin.from("consumo_eventos").insert({
       tenant_id: tenantId,
       job_id: evento.jobId ?? null,
       profile_id: evento.profileId ?? null,
       etapa: evento.etapa as never,
+      action_type: acao,
+      tool_price_cents: toolPrice,
       modelo: evento.modelo,
       quantidade: evento.quantidade,
       unidade: evento.unidade as never,
