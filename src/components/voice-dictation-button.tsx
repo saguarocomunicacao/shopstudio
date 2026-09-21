@@ -5,11 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { transcribeAudio } from "@/lib/transcription.functions";
+import { actionError } from "@/lib/api-keys";
 
 /** Tempo máximo de um ditado, para não gerar áudio gigante nem custo à toa. */
 const MAX_SEGUNDOS = 120;
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível transcrever o áudio.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível transcrever o áudio.");
 
 async function blobToBase64(blob: Blob) {
   const bytes = new Uint8Array(await blob.arrayBuffer());

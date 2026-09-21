@@ -21,8 +21,9 @@ import {
 import { RecordingStudio } from "./recording-studio";
 import { useStudio } from "./studio-context";
 import { VoiceDictationButton } from "./voice-dictation-button";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
+const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);

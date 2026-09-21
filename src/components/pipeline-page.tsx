@@ -18,6 +18,7 @@ import { SupplierBalanceBanner } from "./supplier-balance-banner";
 import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
 import { useDragScroll } from "./use-drag-scroll";
+import { actionError } from "@/lib/api-keys";
 
 const statusClass: Record<string, string> = {
   novo: "status-neutral",
@@ -31,7 +32,7 @@ const statusClass: Record<string, string> = {
 };
 
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 export function PipelinePage() { return <ProfileGate><PipelineContent /></ProfileGate>; }
 

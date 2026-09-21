@@ -7,8 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/custo";
 import { CONFIG_KEYS, useAppConfig, useGastoMes } from "@/lib/orcamento";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível salvar.");
 
 function useSaveConfig() {
   const qc = useQueryClient();

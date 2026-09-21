@@ -9,8 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { restoreProfilePrompt, seedProfilePrompts } from "@/lib/prompts.functions";
 import { usePromptOverrides, usePromptTemplates, type PromptOverride, type PromptTemplate } from "@/lib/prompts";
 import { PlaceholderList } from "./prompts-page";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 function PromptRow({
   profileId,

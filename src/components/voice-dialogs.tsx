@@ -20,13 +20,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { VoicePlayButton } from "@/components/voice-play-button";
 import { GENERO_LABELS, type VoiceGenero, type VoiceRow } from "@/lib/voices";
 import { cloneVoice, listElevenLabsVoices } from "@/lib/voices.functions";
+import { actionError } from "@/lib/api-keys";
 
 /**
  * Diálogos compartilhados de cadastro de vozes (catálogo ElevenLabs e
  * clonagem). As vozes criadas aqui ficam disponíveis para todos os perfis.
  */
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir.");
 
 const fileToBase64 = (file: File) =>
   new Promise<string>((resolve, reject) => {

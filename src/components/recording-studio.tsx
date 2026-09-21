@@ -28,6 +28,7 @@ import { createRecordingUploadUrl, finishRecording } from "@/lib/recording.funct
 import { withoutDuplicatedHook } from "@/lib/recording-script";
 import { RECORDING_FORMATS, cropCover, type RecordingAspectRatio } from "@/lib/recording-format";
 import { createSkinSmoother, type SkinIntensity, type SkinSmoother } from "@/lib/skin-smoothing";
+import { actionError } from "@/lib/api-keys";
 
 const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
   { id: "leve", label: "Leve" },
@@ -35,7 +36,7 @@ const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
   { id: "forte", label: "Forte" },
 ];
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
+const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
 type TeleprompterItem = { fala: string; orientacao?: string };
 

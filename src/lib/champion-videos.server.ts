@@ -85,7 +85,8 @@ export async function productCategoryId(
 }
 
 async function fetchFromKalodata(categoryId: string): Promise<ChampionVideo[]> {
-  const apiKey = process.env["KALODATA_API_KEY"];
+  const { providerKey } = await import("./api-keys.server");
+  const apiKey = await providerKey("kalodata");
   if (!apiKey) return [];
 
   const response = await fetch(VIDEO_RANK_ENDPOINT, {

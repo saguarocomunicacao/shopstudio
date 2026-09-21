@@ -5,8 +5,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getVideoStorageState, retryDraftVideoStorage } from "@/lib/drafts.functions";
 import { SharePanel } from "./share-panel";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
+const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
 /** Dias sem cópia local a partir dos quais o vídeo corre risco real de sumir. */
 const RISCO_DIAS = 3;

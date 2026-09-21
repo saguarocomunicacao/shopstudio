@@ -175,7 +175,14 @@ export const generateJobScript = createServerFn({ method: "POST" })
     const categoriaCampeoes = (await championRefsEnabled())
       ? await productCategoryId(supabase as never, job.product_id ?? null)
       : null;
-    const campeoes = categoriaCampeoes ? await getChampionVideos(categoriaCampeoes, job.profile_id) : [];
+    // Sem chave do Kalodata (plano BYOK) a referência é apenas ignorada: o
+    // roteiro roda na plataforma e nunca é bloqueado.
+    const { withTenantKeys, tenantIdOfProfile } = await import("./api-keys.server");
+    const campeoes = categoriaCampeoes
+      ? await tenantIdOfProfile(supabase as never, job.profile_id)
+          .then((tenantId) => withTenantKeys(tenantId, () => getChampionVideos(categoriaCampeoes, job.profile_id)))
+          .catch(() => [])
+      : [];
     const prompt = `${basePrompt}${championPromptBlock(campeoes)}`;
 
 

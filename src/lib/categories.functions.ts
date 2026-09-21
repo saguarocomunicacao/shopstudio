@@ -16,7 +16,9 @@ export const syncCategories = createServerFn({ method: "POST" })
     if (!(adminRoles ?? []).length) throw new Error("Apenas administradores podem atualizar as categorias.");
 
     const { fetchOfficialCategories } = await import("./product-source.server");
-    const categories = await fetchOfficialCategories(1);
+    const { withTenantKeys, tenantIdOfUser } = await import("./api-keys.server");
+    const tenantId = await tenantIdOfUser(context.supabase, context.userId);
+    const categories = await withTenantKeys(tenantId, () => fetchOfficialCategories(1));
     if (!categories.length) return { count: 0 };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

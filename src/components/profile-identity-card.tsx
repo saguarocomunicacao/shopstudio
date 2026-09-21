@@ -10,8 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { TONE_OPTIONS, useProfileIdentity } from "@/lib/content";
 import { LanguageSelect } from "./language-select";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível salvar.");
 
 export function ProfileIdentityCard() {
   const { activeProfile, activeProfileId, can } = useStudio();
