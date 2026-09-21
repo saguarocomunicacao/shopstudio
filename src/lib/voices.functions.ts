@@ -11,10 +11,17 @@ const API = "https://api.elevenlabs.io/v1";
 export const PREVIEW_MODEL = "eleven_flash_v2_5";
 export const PREVIEW_TARIFA_MODELO = "elevenlabs-flash-v2-5";
 
-function apiKey(): string {
-  const key = process.env["ELEVENLABS_API_KEY"];
-  if (!key) throw new Error("A chave da ElevenLabs não está configurada.");
-  return key;
+/** Chave da ElevenLabs do cliente atual (plataforma ou BYOK). */
+async function apiKey(): Promise<string> {
+  const { providerKey } = await import("./api-keys.server");
+  return providerKey("elevenlabs");
+}
+
+/** Contexto da conta do usuário logado para resolver a chave certa. */
+async function withUserTenant<T>(context: { supabase: any; userId: string }, fn: () => Promise<T>): Promise<T> {
+  const { withTenantKeys, tenantIdOfUser } = await import("./api-keys.server");
+  const tenantId = await tenantIdOfUser(context.supabase, context.userId);
+  return withTenantKeys(tenantId, fn);
 }
 
 const bytesFromBase64 = (base64: string) => Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
@@ -36,7 +43,7 @@ const generoFrom = (value: unknown): "masculino" | "feminino" | "neutro" | null 
 async function buildPreview(voiceId: string, texto: string, profileId: string | null) {
   const res = await fetch(`${API}/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
     method: "POST",
-    headers: { "xi-api-key": apiKey(), "Content-Type": "application/json" },
+    headers: { "xi-api-key": await apiKey(), "Content-Type": "application/json" },
     body: JSON.stringify({ text: texto, model_id: PREVIEW_MODEL }),
   });
   if (!res.ok) throw new Error(await readError(res));
@@ -61,10 +68,12 @@ async function buildPreview(voiceId: string, texto: string, profileId: string | 
 /** Vozes disponíveis na conta ElevenLabs (catálogo + clonadas). */
 export const listElevenLabsVoices = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    const res = await fetch(`${API}/voices`, { headers: { "xi-api-key": apiKey() } });
-    if (!res.ok) throw new Error(await readError(res));
-    const json = (await res.json()) as { voices?: Record<string, unknown>[] };
+  .handler(async ({ context }) => {
+    const json = await withUserTenant(context as any, async () => {
+      const res = await fetch(`${API}/voices`, { headers: { "xi-api-key": await apiKey() } });
+      if (!res.ok) throw new Error(await readError(res));
+      return (await res.json()) as { voices?: Record<string, unknown>[] };
+    });
     return {
       voices: (json.voices ?? []).map((v) => ({
         voiceId: String(v["voice_id"] ?? ""),
@@ -128,6 +137,7 @@ export const cloneVoice = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
+    return withUserTenant(context as any, async () => {
     const form = new FormData();
     form.append("name", data.nome);
     form.append("description", "Voz clonada no Shop Studio com consentimento da pessoa.");
@@ -135,7 +145,7 @@ export const cloneVoice = createServerFn({ method: "POST" })
       form.append("files", new Blob([bytesFromBase64(sample.base64)], { type: sample.mimeType }), sample.filename);
     }
 
-    const res = await fetch(`${API}/voices/add`, { method: "POST", headers: { "xi-api-key": apiKey() }, body: form });
+    const res = await fetch(`${API}/voices/add`, { method: "POST", headers: { "xi-api-key": await apiKey() }, body: form });
     if (!res.ok) throw new Error(await readError(res));
     const json = (await res.json()) as { voice_id?: string };
     const voiceId = json.voice_id;
@@ -162,6 +172,7 @@ export const cloneVoice = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     return { voiceId, previewUrl };
+    });
   });
 
 /** Gera (ou regera) o preview de uma voz já cadastrada. */
@@ -181,7 +192,7 @@ export const generateVoicePreview = createServerFn({ method: "POST" })
     const url =
       voice.fonte === "azure_padrao"
         ? await buildAzurePreview(voice.voice_id, PREVIEW_PHRASE)
-        : await buildPreview(voice.voice_id, PREVIEW_PHRASE, voice.profile_id);
+        : await withUserTenant(context as any, () => buildPreview(voice.voice_id, PREVIEW_PHRASE, voice.profile_id));
 
     const { error: upError } = await context.supabase.from("voices").update({ preview_url: url }).eq("id", voice.id);
     if (upError) throw new Error(upError.message);

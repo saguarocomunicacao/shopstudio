@@ -17,8 +17,9 @@ import { RisingRadarPanel } from "./rising-radar-panel";
 import { ProductDataTable } from "./product-data-table";
 import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) {
   return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>;

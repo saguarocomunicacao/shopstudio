@@ -32,8 +32,9 @@ import { ProfilePrompts } from "./profile-prompts";
 import { TiktokIntegrationCard } from "./tiktok-integration-card";
 import { VoiceSelect } from "./voice-select";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 const slugify = (value: string) =>
   value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `perfil-${Date.now()}`;

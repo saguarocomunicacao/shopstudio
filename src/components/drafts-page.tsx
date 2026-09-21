@@ -55,8 +55,9 @@ import { ProfileGate } from "./profile-gate";
 import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { SharePanel } from "./share-panel";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
+const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
 type QueueKey = "roteiros" | "revisao" | "aprovado" | "publicado";
 

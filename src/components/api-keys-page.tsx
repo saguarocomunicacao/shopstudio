@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteTenantApiKey, saveTenantApiKey, testTenantApiKey } from "@/lib/tenant-keys.functions";
+import { useTenantKeys } from "@/lib/api-keys";
 import { useStudio } from "./studio-context";
 
 type Provider = "gemini" | "json2video" | "elevenlabs" | "kalodata";
@@ -33,7 +34,7 @@ function useKeys() {
   });
 }
 
-function ProviderCard({ meta, row }: { meta: (typeof PROVIDERS)[number]; row: KeyRow | undefined }) {
+function ProviderCard({ meta, row, byok }: { meta: (typeof PROVIDERS)[number]; row: KeyRow | undefined; byok: boolean }) {
   const qc = useQueryClient();
   const [value, setValue] = useState("");
   const save = useServerFn(saveTenantApiKey);
@@ -68,8 +69,8 @@ function ProviderCard({ meta, row }: { meta: (typeof PROVIDERS)[number]; row: Ke
           <h2 className="font-bold">{meta.nome}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{meta.descricao}</p>
         </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${configurada ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"}`}>
-          {configurada ? "••••• configurada" : "não configurada"}
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${configurada ? "bg-primary/15 text-primary" : byok ? "bg-destructive/15 text-destructive" : "bg-secondary text-muted-foreground"}`}>
+          {configurada ? "••••• configurada" : byok ? "Pendente · obrigatória no seu plano" : "não configurada"}
         </span>
       </div>
 
@@ -110,6 +111,8 @@ function ProviderCard({ meta, row }: { meta: (typeof PROVIDERS)[number]; row: Ke
 export function ApiKeysPage() {
   const { isAdmin, isSuperAdmin } = useStudio();
   const { data, isLoading } = useKeys();
+  const { data: tenantKeys } = useTenantKeys();
+  const byok = !!tenantKeys?.byok;
 
   if (!isAdmin && !isSuperAdmin) {
     return <div className="panel"><h1 className="font-bold">Acesso restrito</h1><p className="mt-1 text-sm text-muted-foreground">Apenas o administrador da conta pode ver as chaves de API.</p></div>;
@@ -133,7 +136,7 @@ export function ApiKeysPage() {
         <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</p>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
-          {PROVIDERS.map((meta) => <ProviderCard key={meta.id} meta={meta} row={byProvider.get(meta.id)} />)}
+          {PROVIDERS.map((meta) => <ProviderCard key={meta.id} meta={meta} row={byProvider.get(meta.id)} byok={byok} />)}
         </div>
       )}
     </>

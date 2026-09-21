@@ -14,6 +14,7 @@ import { useCategories, type DbProduct } from "@/lib/content";
 import { ascensionScore } from "@/lib/radar";
 import { ProductDataTable } from "./product-data-table";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
 type Found = {
   externalId: string; source: string; name: string; price: number; commission: number;
@@ -24,7 +25,7 @@ type Found = {
 type Scored = Found & { risingScore: number };
 
 const numeric = (value: string) => value.replace(/[^\d.]/g, "");
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a busca.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a busca.");
 
 // Quantas páginas do Kalodata puxamos para montar o pool antes de pontuar.
 const POOL_PAGES = 3;

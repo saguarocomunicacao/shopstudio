@@ -10,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbJob } from "@/lib/content";
 import { regenerateJobScene } from "@/lib/video.functions";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 /** Revisão humana das cenas geradas (imagens baratas) antes de animar no Veo. */
 export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean }) {

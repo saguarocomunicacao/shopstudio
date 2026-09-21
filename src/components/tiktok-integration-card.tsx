@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, Link2, Loader2, RefreshCw, Unlink } from "
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { actionError } from "@/lib/api-keys";
 import {
   disconnectTiktok,
   getTiktokConnection,
@@ -12,7 +13,7 @@ import {
   type TiktokConnectionView,
 } from "@/lib/tiktok.functions";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 function formatDate(value: string | null) {
   if (!value) return "—";

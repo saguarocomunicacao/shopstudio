@@ -9,8 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePromptOverrides, usePromptTemplates, type PromptTemplate } from "@/lib/prompts";
 import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 function Heading({ eyebrow, title }: { eyebrow: string; title: string }) {
   return <div className="mb-6"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>;

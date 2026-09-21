@@ -38,8 +38,9 @@ export const transcribeAudio = createServerFn({ method: "POST" })
     if (permError) throw new Error(permError.message);
     if (!canEdit) throw new Error("Você não tem permissão para criar conteúdo neste perfil.");
 
-    const key = process.env["GEMINI_API_KEY"];
-    if (!key) throw new Error("A transcrição por voz não está configurada. Falta a chave do Google.");
+    const { resolveApiKey, tenantIdOfProfile } = await import("./api-keys.server");
+    const tenantId = await tenantIdOfProfile(context.supabase, data.profileId);
+    const key = await resolveApiKey(tenantId, "gemini");
 
     if (data.durationSeconds && data.durationSeconds < 1) {
       throw new Error("O áudio ficou muito curto. Segure o microfone e fale por alguns segundos.");

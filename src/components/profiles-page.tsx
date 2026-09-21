@@ -12,6 +12,7 @@ import { LANGUAGE_OPTIONS, TONE_OPTIONS, formatPrice, useCategories } from "@/li
 import { ETAPA_VISUAL_ORDEM, useCustoPeriodo } from "@/lib/custo-periodo";
 import { formatFollowers } from "@/lib/studio-data";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
 const statusClass: Record<string, string> = { Ativo: "status-lime", Pausado: "status-neutral" };
 function StatusBadge({ children }: { children: string }) {
@@ -21,7 +22,7 @@ function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; a
   return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>;
 }
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 const toneLabel = (value: string) => TONE_OPTIONS.find((t) => t.value === value)?.label ?? value;
 const languageLabel = (value: string) => LANGUAGE_OPTIONS.find((l) => l.value === value)?.label ?? value;

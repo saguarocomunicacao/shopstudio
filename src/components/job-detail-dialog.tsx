@@ -22,8 +22,9 @@ import { JobVideoStorage } from "./job-video-storage";
 import { JobChampionRefs } from "./job-champion-refs";
 import { brl } from "@/lib/custo";
 import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a ação.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 /** A partir de "vídeo pronto" o job já pode ser compartilhado por link público. */
 const SHAREABLE_STATUS: DbJob["status"][] = ["video_pronto", "rascunho_enviado", "publicado"];

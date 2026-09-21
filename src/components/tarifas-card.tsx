@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { actionError } from "@/lib/api-keys";
 
 type Unidade =
   | "imagem"
@@ -39,7 +40,7 @@ const UNIDADES: { value: Unidade; label: string }[] = [
   { value: "minuto_audio", label: "Por minuto de áudio (ditado por voz)" },
 ];
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível salvar.");
 
 export function TarifasCard() {
   const qc = useQueryClient();

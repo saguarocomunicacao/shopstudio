@@ -32,6 +32,7 @@ type JobRow = {
   gemini_images_count: number;
   veo_takes_count: number;
   voice_ref: string | null;
+  tenant_id: string;
 };
 
 /** Quebra o roteiro salvo (GANCHO / CORPO / CTA) nos blocos narrados. */
@@ -90,11 +91,26 @@ async function resolveElevenLabsVoice(
   return { id: data.id, nome: data.nome, voice_id: data.voice_id };
 }
 
+/**
+ * No plano BYOK confere, ANTES de começar, se o cliente tem as chaves que
+ * este vídeo vai usar. ElevenLabs só é exigida quando a voz do perfil é dela.
+ */
+async function assertVideoKeys(supabase: any, job: JobRow) {
+  const { data: settingsRow } = await supabase
+    .from("profile_video_settings")
+    .select("voice_ref")
+    .eq("profile_id", job.profile_id)
+    .maybeSingle();
+  const voice = await resolveElevenLabsVoice(supabase, job.voice_ref ?? settingsRow?.voice_ref ?? null);
+  const { assertTenantKeys, providersForFullVideo } = await import("./api-keys.server");
+  await assertTenantKeys(job.tenant_id, providersForFullVideo(!!voice));
+}
+
 /** Carrega o job, valida permissão de pipeline e devolve os dados. */
 async function loadJob(supabase: any, jobId: string): Promise<JobRow> {
   const { data: job, error } = await supabase
     .from("jobs")
-    .select("id, product_id, profile_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato")
+    .select("id, product_id, profile_id, tenant_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato")
     .eq("id", jobId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -124,9 +140,7 @@ export const generateJobScenes = createServerFn({ method: "POST" })
     if (!splitScript(job.script ?? "").length) {
       throw new Error("Este job ainda não tem roteiro para narrar.");
     }
-    if (!process.env["GEMINI_API_KEY"]) {
-      throw new Error("A geração de cenas ainda não está configurada. Falta a chave do Google (Gemini/Veo).");
-    }
+    await assertVideoKeys(supabase, job);
 
     // Etapa barata: só trava se o admin optar por bloquear tudo ao estourar o teto.
     const { assertOrcamento: assertOrcamentoCenas } = await import("./orcamento.server");
@@ -170,9 +184,7 @@ export const approveJobScenes = createServerFn({ method: "POST" })
     if (!scenes.length || scenes.some((s) => !s.image_url)) {
       throw new Error("Ainda há cenas sem imagem gerada.");
     }
-    if (!process.env["JSON2VIDEO_API_KEY"]) {
-      throw new Error("A montagem do vídeo ainda não está configurada. Falta a chave do JSON2Video.");
-    }
+    await assertVideoKeys(supabase, job);
 
     // Etapa cara: respeita o teto de orçamento do mês.
     const { assertOrcamento, assertSaldoFornecedor } = await import("./orcamento.server");
@@ -241,11 +253,14 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : "";
     const referenceGuide = pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
 
-    const generated = await pipeline.generateSceneImage({
-      model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
-      prompt: `${identityRequirement}${referenceGuide}\n\nSCENE: ${imagePrompt} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
-      references,
-    });
+    const { withTenantKeys } = await import("./api-keys.server");
+    const generated = await withTenantKeys(job.tenant_id, () =>
+      pipeline.generateSceneImage({
+        model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
+        prompt: `${identityRequirement}${referenceGuide}\n\nSCENE: ${imagePrompt} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
+        references,
+      }),
+    );
     const stored = await pipeline.storeMedia(
       `${job.id}/cena-${data.index + 1}-${Date.now()}.jpg`,
       Uint8Array.from(atob(generated.base64), (c) => c.charCodeAt(0)),
@@ -307,8 +322,9 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
 
     const pipeline = await import("./video-pipeline.server");
 
+    const { withTenantKeys } = await import("./api-keys.server");
     try {
-      return await runStep(supabase, job, pipeline);
+      return await withTenantKeys(job.tenant_id, () => runStep(supabase, job, pipeline));
     } catch (e) {
       const base = e instanceof Error ? e.message : "A geração do vídeo falhou.";
       const feitas = (Array.isArray(job.scenes) ? job.scenes : []).filter(
@@ -596,9 +612,10 @@ async function runStep(
 
   // ---------- Etapa 3: montar no JSON2Video ----------
   if (job.render_stage === "montagem") {
-    const apiKey = process.env["JSON2VIDEO_API_KEY"];
+    const { providerKey } = await import("./api-keys.server");
+    const apiKey = await providerKey("json2video");
     const token = process.env["JSON2VIDEO_WEBHOOK_TOKEN"];
-    if (!apiKey || !token) throw new Error("A montagem do vídeo não está configurada corretamente.");
+    if (!token) throw new Error("A montagem do vídeo não está configurada corretamente.");
 
     const assemblyTemplate = await prompts.resolvePrompt(supabase, job.profile_id, "montagem");
     const movieSettings = prompts.parseMovieSettings(prompts.renderPrompt(assemblyTemplate, promptVars));
@@ -679,11 +696,15 @@ export const generateAvatarReference = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const pipeline = await import("./video-pipeline.server");
-    const generated = await pipeline.generateSceneImage({
-      model: settings?.gemini_model ?? "gemini-3.1-flash-image",
-      prompt: `Photorealistic vertical 9:16 portrait of ${data.description}. Natural lighting, neutral background, looking at the camera, social media creator look. No text.`,
-      references: [],
-    });
+    const { withTenantKeys, tenantIdOfProfile } = await import("./api-keys.server");
+    const tenantId = await tenantIdOfProfile(supabase, data.profileId);
+    const generated = await withTenantKeys(tenantId, () =>
+      pipeline.generateSceneImage({
+        model: settings?.gemini_model ?? "gemini-3.1-flash-image",
+        prompt: `Photorealistic vertical 9:16 portrait of ${data.description}. Natural lighting, neutral background, looking at the camera, social media creator look. No text.`,
+        references: [],
+      }),
+    );
 
     const stored = await pipeline.storeMedia(
       `avatars/${data.profileId}.jpg`,

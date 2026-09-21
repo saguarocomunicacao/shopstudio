@@ -74,10 +74,10 @@ export const SUBTITLE_LANGUAGES = new Set([
   "pt-BR", "pt", "en", "en-US", "es", "fr", "de", "it", "ja", "ko", "id", "ms", "th", "vi", "ru",
 ]);
 
-const geminiKey = () => {
-  const key = process.env["GEMINI_API_KEY"];
-  if (!key) throw new Error("A geração de cenas não está configurada. Falta a chave do Google (Gemini/Veo).");
-  return key;
+/** Chave do Google do cliente atual (plataforma ou BYOK). */
+const geminiKey = async () => {
+  const { providerKey } = await import("./api-keys.server");
+  return providerKey("gemini");
 };
 
 /** Erro do Google com marcação de "instabilidade temporária" (vale tentar de novo). */
@@ -154,7 +154,7 @@ async function requestSceneImage(opts: {
   try {
     res = await fetch(`${GEMINI_BASE}/interactions`, {
       method: "POST",
-      headers: { "x-goog-api-key": geminiKey(), "Content-Type": "application/json" },
+      headers: { "x-goog-api-key": await geminiKey(), "Content-Type": "application/json" },
       body: JSON.stringify({
         model: opts.model,
         input: [
@@ -248,7 +248,7 @@ export async function startVeoTake(opts: {
 }): Promise<string> {
   const res = await fetch(`${GEMINI_BASE}/models/${opts.model}:predictLongRunning`, {
     method: "POST",
-    headers: { "x-goog-api-key": geminiKey(), "Content-Type": "application/json" },
+    headers: { "x-goog-api-key": await geminiKey(), "Content-Type": "application/json" },
     body: JSON.stringify({
       instances: [
         {
@@ -351,7 +351,7 @@ function findVeoDuration(node: unknown, depth = 0): number | null {
 export async function pollVeoTake(
   operation: string,
 ): Promise<{ done: boolean; video?: VeoVideo; durationSeconds?: number }> {
-  const res = await fetch(`${GEMINI_BASE}/${operation}`, { headers: { "x-goog-api-key": geminiKey() } });
+  const res = await fetch(`${GEMINI_BASE}/${operation}`, { headers: { "x-goog-api-key": await geminiKey() } });
   const text = await res.text();
   if (!res.ok) throw googleError(res.status, text);
   const payload = JSON.parse(text) as { done?: boolean; error?: { message?: string }; response?: unknown };
@@ -382,7 +382,7 @@ export async function pollVeoTake(
 
 /** Baixa o MP4 do Veo: da URI (Files API, exige a chave) ou do base64 devolvido na operação. */
 export async function downloadVeoVideo(video: VeoVideo) {
-  if (video.uri) return fetchAsBase64(video.uri, { "x-goog-api-key": geminiKey() });
+  if (video.uri) return fetchAsBase64(video.uri, { "x-goog-api-key": await geminiKey() });
   if (!video.base64) throw new Error("A animação terminou sem gerar vídeo.");
   const binary = atob(video.base64);
   const bytes = new Uint8Array(binary.length);
@@ -502,8 +502,8 @@ export async function synthesizeNarration(opts: {
   model?: string;
   language?: string;
 }): Promise<{ bytes: Uint8Array; durationSeconds: number | null }> {
-  const key = process.env["ELEVENLABS_API_KEY"];
-  if (!key) throw new Error("A narração não está configurada. Falta a chave da ElevenLabs.");
+  const { providerKey } = await import("./api-keys.server");
+  const key = await providerKey("elevenlabs");
 
   const body: Record<string, unknown> = { text: opts.text, model_id: opts.model || ELEVENLABS_MODEL };
   const lang = opts.language?.split("-")[0];

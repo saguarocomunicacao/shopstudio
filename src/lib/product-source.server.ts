@@ -99,8 +99,8 @@ const kalodata: ProductSource = {
   label: "Kalodata",
   search: (query) =>
     serialize(async () => {
-      const apiKey = process.env["KALODATA_API_KEY"];
-      if (!apiKey) throw new Error("A chave da fonte de produtos não está configurada.");
+      const { providerKey } = await import("./api-keys.server");
+      const apiKey = await providerKey("kalodata");
 
       const body: Record<string, unknown> = {
         region: "BR",
@@ -173,8 +173,8 @@ export type OfficialCategory = { categoryId: string; categoryName: string; level
 /** Categorias oficiais do TikTok Shop (nível 1) vindas do Kalodata. */
 export function fetchOfficialCategories(level = 1): Promise<OfficialCategory[]> {
   return serialize(async () => {
-    const apiKey = process.env["KALODATA_API_KEY"];
-    if (!apiKey) throw new Error("A chave da fonte de produtos não está configurada.");
+    const { providerKey } = await import("./api-keys.server");
+    const apiKey = await providerKey("kalodata");
 
     const response = await fetch(KALODATA_CATEGORY_ENDPOINT, {
       method: "POST",
@@ -267,7 +267,8 @@ function collectBlocks(node: unknown, texts: string[], images: string[], depth =
  */
 export function fetchProductDetail(productId: string, dateRange = "last30Day"): Promise<ProductDetail | null> {
   return serialize(async () => {
-    const apiKey = process.env["KALODATA_API_KEY"];
+    const { providerKey } = await import("./api-keys.server");
+    const apiKey = await providerKey("kalodata").catch(() => null);
     if (!apiKey) return null;
     try {
       const response = await fetch(KALODATA_DETAIL_ENDPOINT, {

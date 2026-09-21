@@ -3,9 +3,10 @@ import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAppConfig } from "@/lib/orcamento";
+import { actionError } from "@/lib/api-keys";
 
 const CONFIG_KEY = "roteiro_usar_campeoes";
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível salvar.");
 
 /** Liga/desliga a referência de vídeos campeões usada pelo roteirista. */
 export function ChampionRefsToggle() {

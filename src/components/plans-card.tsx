@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
 type Plan = {
   id: string;
@@ -33,7 +34,7 @@ const BILLING: { value: Plan["billing_model"]; label: string }[] = [
 
 const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const toCents = (v: string) => Math.max(0, Math.round(Number(v.replace(",", ".")) * 100) || 0);
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível salvar.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível salvar.");
 
 function usePlans() {
   return useQuery({

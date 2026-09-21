@@ -15,6 +15,7 @@ import { useCategories, type DbProduct } from "@/lib/content";
 import { ProductDataTable } from "./product-data-table";
 import { SearchCostHistory } from "./search-cost-history";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
 type Found = {
   externalId: string; source: string; name: string; price: number; commission: number;
@@ -90,7 +91,7 @@ function readFilters(): Filters {
   };
 }
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível concluir a busca.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a busca.");
 
 const ORDER_OPTIONS: [string, string][] = [
   ["revenue", "Receita"],

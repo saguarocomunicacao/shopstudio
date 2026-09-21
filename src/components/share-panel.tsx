@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createJobShare, listJobShares, setJobShareActive } from "@/lib/share.functions";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
+const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
 const shareUrl = (token: string) =>
   `${typeof window === "undefined" ? "" : window.location.origin}/v/${token}`;

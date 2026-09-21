@@ -60,8 +60,10 @@ export const discoverProducts = createServerFn({ method: "POST" })
     }
 
     const { activeProductSource } = await import("./product-source.server");
+    const { withTenantKeys, tenantIdOfUser } = await import("./api-keys.server");
+    const tenantId = await tenantIdOfUser(context.supabase, context.userId);
     const source = activeProductSource();
-    const result = await source.search({
+    const result = await withTenantKeys(tenantId, () => source.search({
       dateRange: data.dateRange,
       sortField: data.sortField,
       sortType: data.sortType,
@@ -74,7 +76,7 @@ export const discoverProducts = createServerFn({ method: "POST" })
       ...(data.launchDate ? { launchDate: data.launchDate } : {}),
       ...(data.categoryIds?.length ? { categoryIds: data.categoryIds } : {}),
       ...(data.deliveryType ? { deliveryType: data.deliveryType } : {}),
-    });
+    }));
     // Consumo real da busca: uma linha por evento, com o termo buscado.
     if (data.profileId) {
       const rows = Array.isArray((result as { items?: unknown[] }).items)
@@ -132,6 +134,10 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
     if (!pending.length) return { enriched: 0, failed: 0 };
 
     const { fetchProductDetail, hypeScore } = await import("./product-source.server");
+    const { withTenantKeys, assertTenantKeys, tenantIdOfUser } = await import("./api-keys.server");
+    const tenantId = await tenantIdOfUser(supabase, context.userId);
+    // No plano BYOK a atualização de produto exige a chave do Kalodata.
+    await assertTenantKeys(tenantId, ["kalodata"]);
     const { recordConsumo } = await import("./consumo.server");
     let enriched = 0;
     let failed = 0;
@@ -151,7 +157,7 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
       growth_rate: number | string;
       revenue: number | string;
     }[]) {
-      const detail = await fetchProductDetail(row.external_id);
+      const detail = await withTenantKeys(tenantId, () => fetchProductDetail(row.external_id));
       await recordConsumo({
         jobId: null,
         profileId: row.profile_id,

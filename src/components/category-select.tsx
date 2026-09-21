@@ -10,8 +10,9 @@ import { syncCategories } from "@/lib/categories.functions";
 import { useCategories } from "@/lib/content";
 import { cn } from "@/lib/utils";
 import { useStudio } from "./studio-context";
+import { actionError } from "@/lib/api-keys";
 
-const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Não foi possível atualizar as categorias.");
+const errMessage = (e: unknown) => actionError(e, "Não foi possível atualizar as categorias.");
 
 /** Sincroniza as categorias oficiais do TikTok Shop (somente admin). */
 export function useSyncCategories() {
