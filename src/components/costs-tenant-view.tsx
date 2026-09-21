@@ -117,7 +117,7 @@ export function TenantCostsView() {
             <Card
               label="Tipo de ação mais cara"
               value={data.porAcao[0]?.label ?? "—"}
-              hint={data.porAcao[0] ? brl(data.porAcao[0].valorBrl) : undefined}
+              hint={data.porAcao[0] ? brl(data.porAcao[0].valorBrl) : ""}
             />
           </div>
 
