@@ -424,15 +424,8 @@ export function VideoEditor({
           <Button
             variant="secondary"
             size="lg"
-            disabled={processando || !operations.length}
-            onClick={() => {
-              setStart(0);
-              setEnd(duration);
-              setCuts([]);
-              setCutStart(duration * 0.35);
-              setCutEnd(duration * 0.65);
-              seek(0);
-            }}
+            disabled={processando || history.length === 0}
+            onClick={desfazer}
           >
             <RotateCcw />
             Desfazer
