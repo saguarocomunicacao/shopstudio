@@ -153,6 +153,9 @@ export async function getChampionVideos(
       return ((cached.videos as unknown as ChampionVideo[]) ?? []).filter((v) => v?.videoId && v?.title);
     }
 
+    const { assertOrcamento } = await import("./orcamento.server");
+    await assertOrcamento(profileId, { barata: true });
+
     const videos = await fetchFromKalodata(categoryId);
     if (!videos.length) return ((cached?.videos as unknown as ChampionVideo[]) ?? []).filter((v) => v?.videoId && v?.title);
 

@@ -309,6 +309,13 @@
       "when": 1790014312235,
       "tag": "0043_plans_billing_model_default",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1790016488080,
+      "tag": "0044_credito_taxas_e_credito_no_consumo",
+      "breakpoints": true
     }
   ]
 }

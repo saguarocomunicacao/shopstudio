@@ -38,6 +38,9 @@ export const transcribeAudio = createServerFn({ method: "POST" })
     if (permError) throw new Error(permError.message);
     if (!canEdit) throw new Error("Você não tem permissão para criar conteúdo neste perfil.");
 
+    const { assertOrcamento } = await import("./orcamento.server");
+    await assertOrcamento(data.profileId, { barata: true });
+
     const { resolveApiKey, tenantIdOfProfile } = await import("./api-keys.server");
     const tenantId = await tenantIdOfProfile(context.supabase, data.profileId);
     const key = await resolveApiKey(tenantId, "gemini");

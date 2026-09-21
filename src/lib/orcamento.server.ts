@@ -1,41 +1,54 @@
 /**
- * Guarda de orçamento no servidor: impede que a etapa cara (Veo) rode quando
- * o teto mensal configurado já foi atingido. O cálculo repete a mesma regra
- * do cliente (evento × tarifa vigente × cotação), sem depender da UI.
+ * Guarda de orçamento no servidor: impede que novas ações rodem quando o teto
+ * mensal configurado já foi atingido. O cálculo usa exatamente a mesma função
+ * das telas (custo-core), para tela e bloqueio nunca discordarem.
  */
+import {
+  computeEventoCusto,
+  type ConsumoEventoRow,
+  type CreditoTaxaRow,
+  type TarifaRow,
+} from "./custo-core";
 
-type Evento = {
-  profile_id: string | null;
-  modelo: string;
-  quantidade: number | null;
-  unidade: string;
-  etapa: string;
-  metadados: Record<string, unknown> | null;
-  created_at: string;
-};
+const SELECT_EVENTOS =
+  "id, job_id, profile_id, tenant_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, tool_price_cents, credito_consumido, credito_unidade, credito_origem";
 
-type Tarifa = {
-  tipo_unidade: string;
-  modelo: string;
-  preco_unitario: number | string;
-  moeda: "USD" | "BRL";
-  vigente_desde: string;
-  ativo: boolean;
-};
+const normalizarTarifas = (rows: unknown) =>
+  ((rows ?? []) as Array<Record<string, unknown>>).map((t) => ({
+    ...t,
+    preco_unitario: Number(t["preco_unitario"]),
+  })) as unknown as TarifaRow[];
 
-function custoEvento(evento: Evento, tarifas: Tarifa[], cotacao: number) {
-  let unidades = Number(evento.quantidade ?? 0);
-  if (evento.etapa === "busca_kalodata") {
-    const linhas = Number((evento.metadados ?? {})["linhas"] ?? evento.quantidade ?? 0);
-    unidades = 0.1 * Math.ceil(linhas / 100);
+const normalizarTaxas = (rows: unknown) =>
+  ((rows ?? []) as Array<Record<string, unknown>>).map((t) => ({
+    ...t,
+    credito_por_unidade: Number(t["credito_por_unidade"]),
+  })) as unknown as CreditoTaxaRow[];
+
+/** Segundos de vídeo por job, usados para estimar créditos de montagem. */
+function segundosPorJobDe(eventos: ConsumoEventoRow[]) {
+  const mapa = new Map<string, number>();
+  for (const e of eventos) {
+    if (e.etapa !== "animacao_veo" || !e.job_id) continue;
+    mapa.set(e.job_id, (mapa.get(e.job_id) ?? 0) + (e.quantidade ?? 0));
   }
-  const dia = evento.created_at.slice(0, 10);
-  const tarifa = tarifas
-    .filter((t) => t.ativo && t.modelo === evento.modelo && t.tipo_unidade === evento.unidade && t.vigente_desde <= dia)
-    .sort((a, b) => (a.vigente_desde < b.vigente_desde ? 1 : -1))[0];
-  if (!tarifa) return 0;
-  const valor = unidades * Number(tarifa.preco_unitario);
-  return tarifa.moeda === "USD" ? valor * cotacao : valor;
+  return mapa;
+}
+
+function custoEvento(
+  evento: ConsumoEventoRow,
+  tarifas: TarifaRow[],
+  taxas: CreditoTaxaRow[],
+  cotacao: number,
+  segundos: Map<string, number>,
+) {
+  return computeEventoCusto(
+    evento,
+    tarifas,
+    cotacao,
+    evento.job_id ? segundos.get(evento.job_id) ?? 0 : 0,
+    taxas,
+  ).valorBrl;
 }
 
 export type OrcamentoStatus = {
@@ -48,22 +61,24 @@ export type OrcamentoStatus = {
 };
 
 /** Situação do orçamento do mês corrente para um perfil. */
-export async function getOrcamentoStatus(profileId: string): Promise<OrcamentoStatus> {
+export async function getOrcamentoStatus(profileId: string | null): Promise<OrcamentoStatus> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const inicio = new Date();
   const desde = new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), 1)).toISOString();
 
-  const [eventosRes, tarifasRes, configRes] = await Promise.all([
-    supabaseAdmin
-      .from("consumo_eventos")
-      .select("profile_id, modelo, quantidade, unidade, etapa, metadados, created_at")
-      .gte("created_at", desde),
+  const [eventosRes, tarifasRes, taxasRes, configRes] = await Promise.all([
+    supabaseAdmin.from("consumo_eventos").select(SELECT_EVENTOS).gte("created_at", desde),
     supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    supabaseAdmin
+      .from("credito_taxas")
+      .select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
     supabaseAdmin.from("app_config").select("key, value_num"),
   ]);
 
-  const eventos = (eventosRes.data ?? []) as unknown as Evento[];
-  const tarifas = (tarifasRes.data ?? []) as unknown as Tarifa[];
+  const eventos = (eventosRes.data ?? []) as unknown as ConsumoEventoRow[];
+  const tarifas = normalizarTarifas(tarifasRes.data);
+  const taxas = normalizarTaxas(taxasRes.data);
+  const segundos = segundosPorJobDe(eventos);
   const config = new Map(
     ((configRes.data ?? []) as { key: string; value_num: number | null }[]).map((r) => [r.key, Number(r.value_num ?? 0)]),
   );
@@ -72,14 +87,14 @@ export async function getOrcamentoStatus(profileId: string): Promise<OrcamentoSt
   let globalBrl = 0;
   let perfilBrl = 0;
   for (const evento of eventos) {
-    const valor = custoEvento(evento, tarifas, cotacao);
+    const valor = custoEvento(evento, tarifas, taxas, cotacao, segundos);
     globalBrl += valor;
     if (evento.profile_id === profileId) perfilBrl += valor;
   }
 
   const pos = (v: number | undefined) => (v && Number.isFinite(v) && v > 0 ? v : null);
   const tetoGlobal = pos(config.get("orcamento_mensal_global"));
-  const tetoPerfil = pos(config.get(`orcamento_perfil:${profileId}`));
+  const tetoPerfil = profileId ? pos(config.get(`orcamento_perfil:${profileId}`)) : null;
   const bloqueado =
     (tetoGlobal !== null && globalBrl >= tetoGlobal) || (tetoPerfil !== null && perfilBrl >= tetoPerfil);
 
@@ -100,7 +115,7 @@ const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curren
  * `apenasEtapaCara` marca ações baratas, que só travam se o admin escolher
  * bloquear tudo ao estourar o orçamento.
  */
-export async function assertOrcamento(profileId: string, opts: { barata?: boolean } = {}) {
+export async function assertOrcamento(profileId: string | null, opts: { barata?: boolean } = {}) {
   const status = await getOrcamentoStatus(profileId);
   if (!status.bloqueado) return status;
   if (opts.barata && !status.bloqueiaTudo) return status;
@@ -117,9 +132,12 @@ export async function assertOrcamento(profileId: string, opts: { barata?: boolea
  */
 export async function assertSaldoFornecedor(etapa: "animacao_veo") {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const [eventosRes, tarifasRes, configRes, aportesRes] = await Promise.all([
-    supabaseAdmin.from("consumo_eventos").select("profile_id, modelo, quantidade, unidade, etapa, metadados, created_at"),
+  const [eventosRes, tarifasRes, taxasRes, configRes, aportesRes] = await Promise.all([
+    supabaseAdmin.from("consumo_eventos").select(SELECT_EVENTOS),
     supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    supabaseAdmin
+      .from("credito_taxas")
+      .select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
     supabaseAdmin.from("app_config").select("key, value_num"),
     supabaseAdmin.from("fornecedor_aportes").select("fornecedor, valor_brl"),
   ]);
@@ -131,14 +149,16 @@ export async function assertSaldoFornecedor(etapa: "animacao_veo") {
 
   const cotacao = config.get("cotacao_usd_brl") || 1;
   const limitePercent = config.get("investimento_alerta_percent") || 20;
-  const tarifas = (tarifasRes.data ?? []) as unknown as Tarifa[];
-  const eventos = (eventosRes.data ?? []) as unknown as Evento[];
+  const tarifas = normalizarTarifas(tarifasRes.data);
+  const taxas = normalizarTaxas(taxasRes.data);
+  const eventos = (eventosRes.data ?? []) as unknown as ConsumoEventoRow[];
+  const segundos = segundosPorJobDe(eventos);
 
   const googleEtapas = new Set(["roteiro_texto", "cena_gemini", "animacao_veo"]);
   let consumo = 0;
   for (const evento of eventos) {
     if (!googleEtapas.has(evento.etapa)) continue;
-    consumo += custoEvento(evento, tarifas, cotacao);
+    consumo += custoEvento(evento, tarifas, taxas, cotacao, segundos);
   }
   const aportado = ((aportesRes.data ?? []) as { fornecedor: string; valor_brl: number | string }[])
     .filter((a) => a.fornecedor === "google")

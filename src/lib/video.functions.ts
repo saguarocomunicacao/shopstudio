@@ -221,6 +221,9 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     const scene = scenes[data.index];
     if (!scene) throw new Error("Cena não encontrada.");
 
+    const { assertOrcamento: assertOrcamentoRegen } = await import("./orcamento.server");
+    await assertOrcamentoRegen(job.profile_id, { barata: true });
+
     // Cenas prontas podem ser regeradas na revisão; uma cena que FALHOU (ficou
     // sem imagem) também pode ser refeita sozinha, sem descartar as que deram certo.
     const retryFailed = job.status === "roteiro_pronto" && !job.render_stage && !scene.image_url;
@@ -319,6 +322,9 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
       !!job.render_stage &&
       job.render_stage !== "render";
     if (!running) return { stage: job.render_stage, done: true, progress: null };
+
+    const { assertOrcamento: assertOrcamentoEtapa } = await import("./orcamento.server");
+    await assertOrcamentoEtapa(job.profile_id, { barata: true });
 
     const pipeline = await import("./video-pipeline.server");
 

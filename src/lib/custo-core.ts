@@ -64,6 +64,10 @@ export type ConsumoEventoRow = {
   tenant_id?: string | null;
   action_type?: BillableAction | null;
   tool_price_cents?: number | null;
+  /** Consumo em crédito/ponto nativo do fornecedor (null quando não se aplica). */
+  credito_consumido?: number | null;
+  credito_unidade?: string | null;
+  credito_origem?: "real" | "estimado" | null;
 };
 
 export type TarifaRow = {
@@ -75,10 +79,41 @@ export type TarifaRow = {
   ativo: boolean;
 };
 
+export type CreditoRegra = "por_chamada" | "por_bloco_100_linhas" | "por_segundo";
+
+export type CreditoTaxaRow = {
+  action_type: BillableAction;
+  fornecedor: string;
+  credito_por_unidade: number;
+  regra: CreditoRegra;
+  vigente_desde: string;
+  ativo: boolean;
+};
+
+/** Unidade nativa de crédito por unidade tarifada do evento. */
+export const CREDITO_UNIDADE: Partial<Record<UnidadeTarifa, string>> = {
+  bloco_linhas_kalodata: "pontos",
+  credito_montagem: "créditos",
+  mil_caracteres: "mil caracteres",
+};
+
+export type CreditoEvento = {
+  /** Crédito/ponto consumido do fornecedor; null quando o fornecedor cobra só em dinheiro. */
+  credito: number | null;
+  unidade: string | null;
+  origem: "real" | "estimado" | null;
+  /** Não existe taxa cadastrada para a ação: não dá para estimar o crédito. */
+  semTaxa: boolean;
+};
+
+
 export type CustoEvento = {
   evento: ConsumoEventoRow;
   /** Quantidade efetivamente tarifada (pontos, no caso da busca). */
   unidadesTarifadas: number;
+  /** Consumo na unidade nativa do fornecedor (pontos/créditos), quando existe. */
+  credito: CreditoEvento;
+
   valorOriginal: number;
   moeda: "USD" | "BRL";
   cotacaoUsada: number;
@@ -121,6 +156,85 @@ export function findTarifa(tarifas: TarifaRow[], modelo: string, unidade: Unidad
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
+/** Taxa de crédito vigente para a ação (tabela credito_taxas, configurável no backoffice). */
+export function findCreditoTaxa(taxas: CreditoTaxaRow[], acao: BillableAction, quando: string) {
+  const dia = quando.slice(0, 10);
+  return (
+    taxas
+      .filter((t) => t.ativo && t.action_type === acao && t.vigente_desde <= dia)
+      .sort((a, b) => (a.vigente_desde < b.vigente_desde ? 1 : -1))[0] ?? null
+  );
+}
+
+/**
+ * Consumo em crédito/ponto nativo do fornecedor.
+ * Quando a API devolve o crédito real, ele é preferido e marcado como "real";
+ * caso contrário aplicamos a taxa configurada e marcamos como "estimado".
+ * Google (tokens, imagens, segundos) e ditado por voz não têm crédito nativo.
+ */
+export function computeCreditoEvento(
+  evento: ConsumoEventoRow,
+  taxas: CreditoTaxaRow[],
+  segundosDoJob = 0,
+): CreditoEvento {
+  const unidadeCredito = CREDITO_UNIDADE[evento.unidade] ?? null;
+  if (!unidadeCredito) return { credito: null, unidade: null, origem: null, semTaxa: false };
+
+  // Valor já congelado no evento (gravado na hora do consumo ou pelo backfill).
+  if (evento.credito_consumido !== null && evento.credito_consumido !== undefined) {
+    return {
+      credito: Number(evento.credito_consumido),
+      unidade: evento.credito_unidade ?? unidadeCredito,
+      origem: evento.credito_origem ?? "estimado",
+      semTaxa: false,
+    };
+  }
+
+  const meta = evento.metadados ?? {};
+
+  // ElevenLabs: medimos os caracteres do nosso lado, é o consumo real.
+  if (evento.unidade === "mil_caracteres") {
+    return { credito: evento.quantidade ?? 0, unidade: unidadeCredito, origem: "real", semTaxa: false };
+  }
+
+  // JSON2Video: crédito real quando a API devolve; senão a taxa por segundo.
+  if (evento.unidade === "credito_montagem") {
+    if (evento.quantidade !== null && evento.quantidade !== undefined) {
+      return { credito: Number(evento.quantidade), unidade: unidadeCredito, origem: "real", semTaxa: false };
+    }
+    const taxa = findCreditoTaxa(taxas, acaoDoEvento(evento), evento.created_at);
+    if (!taxa) return { credito: null, unidade: unidadeCredito, origem: null, semTaxa: true };
+    return {
+      credito: Number(taxa.credito_por_unidade) * segundosDoJob,
+      unidade: unidadeCredito,
+      origem: "estimado",
+      semTaxa: false,
+    };
+  }
+
+  // Kalodata: pontos reais quando a API expuser; senão a taxa da ação.
+  const creditosApi = num(meta["creditos_api"]);
+  if (creditosApi !== null) {
+    return { credito: creditosApi, unidade: unidadeCredito, origem: "real", semTaxa: false };
+  }
+  const taxa = findCreditoTaxa(taxas, acaoDoEvento(evento), evento.created_at);
+  if (!taxa) return { credito: null, unidade: unidadeCredito, origem: null, semTaxa: true };
+  const porUnidade = Number(taxa.credito_por_unidade);
+  if (taxa.regra === "por_chamada") {
+    return { credito: porUnidade, unidade: unidadeCredito, origem: "estimado", semTaxa: false };
+  }
+  if (taxa.regra === "por_segundo") {
+    return { credito: porUnidade * segundosDoJob, unidade: unidadeCredito, origem: "estimado", semTaxa: false };
+  }
+  const linhas = num(meta["linhas"]) ?? evento.quantidade ?? 0;
+  return {
+    credito: porUnidade * Math.ceil(linhas / 100),
+    unidade: unidadeCredito,
+    origem: "estimado",
+    semTaxa: false,
+  };
+}
+
 /** Custo de um evento, já convertido para reais. */
 export function computeEventoCusto(
   evento: ConsumoEventoRow,
@@ -128,20 +242,18 @@ export function computeEventoCusto(
   cotacao: number,
   /** Segundos totais de vídeo do job, usado para estimar créditos de montagem. */
   segundosDoJob = 0,
+  /** Taxas de crédito por ação (credito_taxas). */
+  taxas: CreditoTaxaRow[] = [],
 ): CustoEvento {
   const meta = evento.metadados ?? {};
   let estimado = Boolean(meta["duracao_estimada"]);
   let unidades = evento.quantidade ?? 0;
 
-  if (evento.etapa === "busca_kalodata") {
-    const linhas = num(meta["linhas"]) ?? evento.quantidade ?? 0;
-    unidades = 0.1 * Math.ceil(linhas / 100);
-  }
-
-  if (evento.etapa === "montagem_json2video" && evento.quantidade === null) {
-    // Créditos não retornados: ~1 crédito por segundo de vídeo montado.
-    unidades = segundosDoJob;
-    estimado = true;
+  // Fornecedores que cobram em crédito/ponto são tarifados sobre o crédito consumido.
+  const credito = computeCreditoEvento(evento, taxas, segundosDoJob);
+  if (evento.unidade === "bloco_linhas_kalodata" || evento.unidade === "credito_montagem") {
+    unidades = credito.credito ?? 0;
+    if (credito.origem === "estimado") estimado = true;
   }
 
   const tarifa = findTarifa(tarifas, evento.modelo, evento.unidade, evento.created_at);
@@ -149,6 +261,7 @@ export function computeEventoCusto(
     return {
       evento,
       unidadesTarifadas: unidades,
+      credito,
       valorOriginal: 0,
       moeda: "BRL",
       cotacaoUsada: cotacao,
@@ -163,6 +276,7 @@ export function computeEventoCusto(
   return {
     evento,
     unidadesTarifadas: unidades,
+    credito,
     valorOriginal,
     moeda: tarifa.moeda,
     cotacaoUsada: cotacao,
@@ -170,4 +284,5 @@ export function computeEventoCusto(
     semTarifa: false,
     estimado,
   };
+
 }

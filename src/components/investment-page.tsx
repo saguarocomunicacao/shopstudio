@@ -260,9 +260,16 @@ function CarteiraCard({
         </div>
         <div className="rounded-xl bg-secondary px-4 py-3">
           <p className="text-xs font-semibold text-muted-foreground">Consumo do mês</p>
-          <p className="mt-1 text-xl font-black">{brl(carteira.consumoMesBrl)}</p>
-          <p className="text-xs text-muted-foreground">acumulado: {brl(carteira.consumoBrl)}</p>
+          <p className="mt-1 text-xl font-black">
+            {def.unidade ? def.unidadeLabel(carteira.consumoCredito) : brl(carteira.consumoMesBrl)}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {def.unidade
+              ? `${brl(carteira.consumoMesBrl)} no mês · acumulado ${def.unidadeLabel(carteira.consumoCredito)} (${brl(carteira.consumoBrl)})`
+              : `acumulado: ${brl(carteira.consumoBrl)}`}
+          </p>
         </div>
+
         <div className="rounded-xl bg-secondary px-4 py-3">
           <p className="text-xs font-semibold text-muted-foreground">{assinatura ? "Mensalidade" : "Total aportado"}</p>
           <p className="mt-1 text-xl font-black">
@@ -285,6 +292,30 @@ function CarteiraCard({
           <p className="text-xs text-muted-foreground">{pct}% ainda disponível</p>
         </div>
       )}
+
+      {def.unidade && carteira.extratoCredito.length > 0 && (
+        <div className="grid gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Extrato de consumo ({def.unidade})
+          </p>
+          <ul className="grid gap-1 text-sm">
+            {carteira.extratoCredito.slice(0, 12).map((linha) => (
+              <li key={linha.id} className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-muted-foreground">
+                  {linha.label} · {new Date(linha.created_at).toLocaleDateString("pt-BR")}
+                  {linha.origem === "estimado" && " · estimado"}
+                </span>
+                <span className="font-semibold">
+                  {linha.credito === null ? "—" : `−${def.unidadeLabel(linha.credito)}`}
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">{brl(linha.valorBrl)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+
 
       {assinatura ? (
         podeEditar && <PlanoForm carteira={carteira} tenantId={tenantId} />
