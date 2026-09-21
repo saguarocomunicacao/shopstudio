@@ -60,6 +60,7 @@ function PipelineContent() {
   const { data: jobs = [], isLoading } = useJobs(activeProfileId, can("pipeline", "visualizar"));
   const { data: products = [] } = useProducts(activeProfileId, can("produtos", "visualizar"));
   const [detail, setDetail] = useState<DbJob | null>(null);
+  const [recording, setRecording] = useState<DbJob | null>(null);
   const generate = useServerFn(generateJobScript);
   const generateScenes = useServerFn(generateJobScenes);
   useVideoDriver(jobs);
