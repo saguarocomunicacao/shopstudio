@@ -215,7 +215,7 @@ function DraftsContent() {
                     </span>
                   )}
                 </div>
-                <div className={`mt-3 grid gap-2 ${pendente ? "grid-cols-2" : "grid-cols-[minmax(0,1fr)_auto]"}`}>
+                <div className={`mt-3 grid gap-2 ${pendente ? "grid-cols-1" : "grid-cols-[minmax(0,1fr)_auto]"}`}>
                   {pendente ? (
                     <>
                       <Button className="min-w-0" onClick={() => openRecordingKit(job.id, true)}>
@@ -234,7 +234,7 @@ function DraftsContent() {
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="col-span-2 justify-self-end text-destructive hover:text-destructive"
+                      className="justify-self-end text-destructive hover:text-destructive"
                       aria-label={`Excluir ${job.title || "vídeo"}`}
                       title="Excluir vídeo"
                       onClick={() => setDeleting(job)}
