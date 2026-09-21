@@ -415,7 +415,7 @@ export function RecordingKitDialog({
                     variant="secondary"
                     disabled={salvar.isPending}
                     onClick={() => salvar.mutate()}
-                    className={isDirty ? "ring-2 ring-[#25F4EE] ring-offset-2 ring-offset-background animate-pulse" : "bg-[#25F4EE] text-[#0A0A0A] hover:bg-[#25F4EE]/90"}
+                    className={`bg-[#25F4EE] text-[#0A0A0A] hover:bg-[#25F4EE]/90${isDirty ? " ring-2 ring-[#25F4EE] ring-offset-2 ring-offset-background animate-pulse" : ""}`}
                   >
                     {salvar.isPending ? <Loader2 className="animate-spin" /> : <Save />}
                     Salvar alterações
