@@ -81,6 +81,8 @@ function ProductsContent() {
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  /** Formato do job: vídeo inteiro com IA ou roteiro para a pessoa gravar. */
+  const [formato, setFormato] = useState<"completo" | "gravacao">("completo");
 
   const canCreateJob = can("pipeline", "criar", activeProfileId);
 
