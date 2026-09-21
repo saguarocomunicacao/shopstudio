@@ -95,6 +95,8 @@ export async function createSkinSmoother(): Promise<SkinSmoother> {
   const blurCanvas = document.createElement("canvas");
   const blurCtx = blurCanvas.getContext("2d");
   let lastTs = -1;
+  let lastDetectionAt = -Infinity;
+  let lastLandmarks: Landmark[] | undefined;
 
   const tracePath = (
     target: CanvasRenderingContext2D,
@@ -120,12 +122,18 @@ export async function createSkinSmoother(): Promise<SkinSmoother> {
       if (!blurCtx || !w || !h) return false;
       const ts = timestamp <= lastTs ? lastTs + 1 : timestamp;
       lastTs = ts;
-      let landmarks: Landmark[] | undefined;
-      try {
-        landmarks = landmarker.detectForVideo(video, ts)?.faceLandmarks?.[0];
-      } catch {
-        return false;
+      // A detecção facial é a parte mais pesada. Executá-la em ~12 FPS e
+      // reutilizar os últimos pontos mantém o efeito contínuo sem disputar
+      // cada quadro com a gravação e o teleprompter na thread principal.
+      if (ts - lastDetectionAt >= 80) {
+        lastDetectionAt = ts;
+        try {
+          lastLandmarks = landmarker.detectForVideo(video, ts)?.faceLandmarks?.[0];
+        } catch {
+          lastLandmarks = undefined;
+        }
       }
+      const landmarks = lastLandmarks;
       if (!landmarks?.length) return false;
 
       const { blur, alpha } = INTENSIDADE[intensity];
