@@ -288,6 +288,13 @@
       "when": 1790012108439,
       "tag": "0040_investimento_por_tenant",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1790013167274,
+      "tag": "0041_restrict_plan_action_prices_select",
+      "breakpoints": true
     }
   ]
 }
