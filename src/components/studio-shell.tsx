@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import type { ModuleKey } from "@/lib/access";
 import { OPEN_PROFILE_PICKER_EVENT } from "./profile-gate";
+import { useAvatarUrl } from "./account-page";
 import { StudioProvider, useStudio } from "./studio-context";
 import { UpdateGate } from "./update-gate";
 import { SessionExpiredDialog } from "./session-expired-dialog";
