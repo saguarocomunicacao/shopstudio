@@ -204,8 +204,10 @@ export function VideoEditor({
     setHistory((current) => [...current, { start, end, cuts, crop }]);
 
     const onMove = (moveEvent: PointerEvent) => {
-      const dx = (moveEvent.clientX - originX) / rect.width;
-      const dy = (moveEvent.clientY - originY) / rect.height;
+      // O quadro exibido já representa a área recortada. Convertemos o gesto
+      // de volta para as coordenadas normalizadas do vídeo original.
+      const dx = ((moveEvent.clientX - originX) / rect.width) * original.width;
+      const dy = ((moveEvent.clientY - originY) / rect.height) * original.height;
       if (kind === "move") {
         setCrop({
           ...original,
