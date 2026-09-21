@@ -89,6 +89,10 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const [blob, setBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cameraSession, setCameraSession] = useState(0);
+  const [filtro, setFiltro] = useState<FiltroId>("nenhum");
+  const [reduzirRuido, setReduzirRuido] = useState(true);
+  const canvasCleanupRef = useRef<() => void>(() => undefined);
+  const filtroCss = FILTROS.find((f) => f.id === filtro)?.css ?? "";
 
   const teleprompter = teleprompterItems(job);
 
@@ -99,12 +103,14 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   }, []);
 
   const startCamera = useCallback(
-    async (mode: "user" | "environment") => {
+    async (mode: "user" | "environment", limparRuido: boolean) => {
       try {
         stopStream();
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: mode, width: { ideal: 1080 }, height: { ideal: 1920 } },
-          audio: true,
+          audio: limparRuido
+            ? { noiseSuppression: true, echoCancellation: true, autoGainControl: true }
+            : { noiseSuppression: false, echoCancellation: false, autoGainControl: false },
         });
         streamRef.current = stream;
         if (videoRef.current) {
