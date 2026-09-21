@@ -1,4 +1,4 @@
-import { Check, Loader2, Pause, Play, Plus, RotateCcw, Scissors, Trash2, X } from "lucide-react";
+import { Check, Loader2, Pause, Play, RotateCcw, Scissors, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
