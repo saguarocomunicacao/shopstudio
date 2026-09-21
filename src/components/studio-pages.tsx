@@ -1,6 +1,7 @@
 import { TarifasCard } from "./tarifas-card";
 import { BudgetCard } from "./budget-card";
 import { CheckCircle2, CircleDollarSign, FileClock, Loader2, MoreHorizontal, Plus, Video } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JOB_STATUS_LABELS, relativeTime, useJobs } from "@/lib/content";
@@ -8,6 +9,7 @@ import { GlobalPromptsSettings } from "./prompts-page";
 import { SyncCategoriesButton } from "./category-select";
 import { ChampionRefsToggle } from "./champion-refs-toggle";
 import { ProfileGate } from "./profile-gate";
+import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { useStudio } from "./studio-context";
 
 const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-lime", "Rascunho enviado": "status-orange", "Publicado": "status-pink", "Ativo": "status-lime", "Pausado": "status-neutral" };
