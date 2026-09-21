@@ -12,6 +12,7 @@ import {
   Play,
   Plus,
   RefreshCw,
+  RotateCcw,
   Scissors,
   Sparkles,
   Square,
@@ -798,7 +799,26 @@ export function RecordingStudio({
                   Regravar
                 </Button>
               </div>
-              {editedBlob && <p className="text-center text-xs text-white/70">Mostrando a versão editada. O vídeo original continua guardado.</p>}
+              {editedBlob && (
+                <>
+                  <p className="text-center text-xs text-white/70">Mostrando a versão editada. O vídeo original continua guardado.</p>
+                  <Button
+                    variant="ghost"
+                    size="lg"
+                    disabled={salvar.isPending}
+                    className="text-white hover:bg-white/10 hover:text-white"
+                    onClick={() => {
+                      if (editedUrl) URL.revokeObjectURL(editedUrl);
+                      setEditedBlob(null);
+                      setEditedUrl(null);
+                      setReviewPlaying(false);
+                    }}
+                  >
+                    <RotateCcw />
+                    Voltar ao original
+                  </Button>
+                </>
+              )}
               </div>
             </>
           )}
@@ -807,6 +827,7 @@ export function RecordingStudio({
       {editorAberto && blob && (
         <VideoEditor
           source={blob}
+          initialOperations={operations}
           onCancel={() => setEditorAberto(false)}
           onApply={(resultado, ops) => {
             if (editedUrl) URL.revokeObjectURL(editedUrl);
