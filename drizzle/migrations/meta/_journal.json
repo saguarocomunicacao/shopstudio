@@ -323,6 +323,13 @@
       "when": 1790017649393,
       "tag": "0045_backoffice_manage_plans_companies",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1790018358261,
+      "tag": "0046_restrict_plan_catalog_reads",
+      "breakpoints": true
     }
   ]
 }

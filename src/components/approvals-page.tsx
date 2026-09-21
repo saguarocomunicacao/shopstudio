@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Check, ChevronDown, ChevronRight, KeyRound, Loader2, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -7,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { SUPER_ADMIN_EMAIL } from "@/lib/access";
+import { sendCompanyPasswordReset } from "@/lib/company-admin.functions";
 import { useStudio } from "./studio-context";
 
 type CompanyUser = { id: string; email: string; name: string; status: string; created_at: string; tenant_id: string };
@@ -21,6 +23,7 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2
 export function ApprovalsPage() {
   const { isBackoffice } = useStudio();
   const qc = useQueryClient();
+  const sendPasswordReset = useServerFn(sendCompanyPasswordReset);
   const [filter, setFilter] = useState<Filter>("todos");
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -52,7 +55,7 @@ export function ApprovalsPage() {
   });
 
   const resetPassword = useMutation({
-    mutationFn: async (email: string) => { const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/redefinir-senha` }); if (error) throw error; },
+    mutationFn: async (userId: string) => sendPasswordReset({ data: { userId, redirectTo: `${window.location.origin}/redefinir-senha` } }),
     onSuccess: () => toast.success("E-mail de redefinição enviado."),
     onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível enviar o e-mail."),
   });
@@ -71,7 +74,7 @@ export function ApprovalsPage() {
         const open = expanded === user.id;
         const protectedAccount = user.email.toLowerCase() === SUPER_ADMIN_EMAIL;
         const Icon = open ? ChevronDown : ChevronRight;
-        return <CompanyRows key={user.id} user={user} tenant={tenant} plan={plan} plans={data.plans} open={open} protectedAccount={protectedAccount} busy={review.isPending || assignPlan.isPending || resetPassword.isPending} onToggle={() => setExpanded(open ? null : user.id)} onReview={(status) => review.mutate({ id: user.id, status })} onPlan={(planId) => tenant && assignPlan.mutate({ tenantId: tenant.id, planId })} onReset={() => resetPassword.mutate(user.email)} />;
+        return <CompanyRows key={user.id} user={user} tenant={tenant} plan={plan} plans={data.plans} open={open} protectedAccount={protectedAccount} busy={review.isPending || assignPlan.isPending || resetPassword.isPending} onToggle={() => setExpanded(open ? null : user.id)} onReview={(status) => review.mutate({ id: user.id, status })} onPlan={(planId) => tenant && assignPlan.mutate({ tenantId: tenant.id, planId })} onReset={() => resetPassword.mutate(user.id)} />;
       })}</TableBody></Table>}
       {!companies.isLoading && !rows.length && <p className="p-8 text-center text-sm text-muted-foreground">Nenhuma empresa neste filtro.</p>}
     </section>
