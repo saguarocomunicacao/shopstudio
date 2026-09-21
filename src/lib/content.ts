@@ -78,12 +78,19 @@ export const PREVIOUS_STATUS: Partial<Record<JobStatusKey, JobStatusKey>> = {
   roteiro_pronto: "produto_escolhido",
 };
 
+export type RoteiroBloco = { tempo: string; orientacao: string; fala: string };
+
 export type DbJob = {
   id: string;
   product_id: string | null;
   profile_id: string;
   status: JobStatusKey;
   title: string;
+  /** "completo" = vídeo inteiro com IA. "gravacao" = a pessoa grava lendo o teleprompter. */
+  formato: "completo" | "gravacao";
+  roteiro_blocos?: RoteiroBloco[] | null;
+  texto_tela?: string | null;
+  recorded_at?: string | null;
   created_at: string;
   script: string | null;
   hook: string | null;
