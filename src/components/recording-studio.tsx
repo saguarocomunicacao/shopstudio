@@ -105,13 +105,11 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const [intensidade, setIntensidade] = useState<SkinIntensity>("leve");
   const [suavizarStatus, setSuavizarStatus] = useState<"off" | "carregando" | "ativo">("off");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const suavizarAtivoRef = useRef(false);
   const recordingRef = useRef(false);
   const canvasCleanupRef = useRef<() => void>(() => undefined);
   const filtroCss = FILTROS.find((f) => f.id === filtro)?.css ?? "";
 
   const teleprompter = teleprompterItems(job);
-  suavizarAtivoRef.current = suavizar && suavizarStatus === "ativo";
   recordingRef.current = recording;
 
   const stopStream = useCallback(() => {
