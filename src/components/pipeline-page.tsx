@@ -12,6 +12,7 @@ import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
 import { useVideoDriver } from "@/lib/video-driver";
 import { sweepProfileVideos } from "@/lib/drafts.functions";
 import { JobDetailDialog } from "./job-detail-dialog";
+import { RecordingKitDialog } from "./recording-kit";
 import { JobCostBadge } from "./job-cost";
 import { SupplierBalanceBanner } from "./supplier-balance-banner";
 import { ProfileGate } from "./profile-gate";
