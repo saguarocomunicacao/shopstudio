@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { DbJob } from "@/lib/content";
 import { createRecordingUploadUrl, finishRecording } from "@/lib/recording.functions";
 import { withoutDuplicatedHook } from "@/lib/recording-script";
+import { RECORDING_FORMATS, cropCover, type RecordingAspectRatio } from "@/lib/recording-format";
 import { createSkinSmoother, type SkinIntensity, type SkinSmoother } from "@/lib/skin-smoothing";
 
 const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
@@ -63,22 +64,6 @@ const FILTROS = [
 
 type FiltroId = (typeof FILTROS)[number]["id"];
 
-/** Saída sempre vertical 9:16, pronta para o TikTok. */
-const OUT_W = 1080;
-const OUT_H = 1920;
-
-/** Recorte central "cover" da câmera para preencher o quadro 9:16 sem tarjas. */
-function cropCover(sourceW: number, sourceH: number) {
-  const target = OUT_W / OUT_H;
-  const source = sourceW / sourceH;
-  if (source > target) {
-    const sw = sourceH * target;
-    return { sx: (sourceW - sw) / 2, sy: 0, sw, sh: sourceH };
-  }
-  const sh = sourceW / target;
-  return { sx: 0, sy: (sourceH - sh) / 2, sw: sourceW, sh };
-}
-
 function pickMimeType() {
   const candidates = [
     "video/mp4;codecs=h264,aac",
@@ -93,10 +78,12 @@ function pickMimeType() {
 
 export function RecordingStudio({
   job,
+  aspectRatio,
   onClose,
   onSaved,
 }: {
   job: DbJob;
+  aspectRatio: RecordingAspectRatio;
   onClose: () => void;
   onSaved?: () => void;
 }) {
@@ -143,6 +130,9 @@ export function RecordingStudio({
   const recordingRef = useRef(false);
   const canvasCleanupRef = useRef<() => void>(() => undefined);
   const filtroCss = FILTROS.find((f) => f.id === filtro)?.css ?? "";
+  const outputFormat = RECORDING_FORMATS[aspectRatio];
+  const outWidth = outputFormat.width;
+  const outHeight = outputFormat.height;
 
   const teleprompter = teleprompterItems(job);
   recordingRef.current = recording;
@@ -214,7 +204,7 @@ export function RecordingStudio({
       try {
         stopStream();
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: mode, width: { ideal: 1080 }, height: { ideal: 1920 } },
+          video: { facingMode: mode, width: { ideal: outWidth }, height: { ideal: outHeight } },
           audio: limparRuido
             ? { noiseSuppression: true, echoCancellation: true, autoGainControl: true }
             : { noiseSuppression: false, echoCancellation: false, autoGainControl: false },
@@ -233,7 +223,7 @@ export function RecordingStudio({
         );
       }
     },
-    [stopStream],
+    [outHeight, outWidth, stopStream],
   );
 
   useEffect(() => {
@@ -278,7 +268,7 @@ export function RecordingStudio({
     else startScrolling();
   }, [startScrolling, stopScrolling]);
 
-  // Pipeline de imagem: recorta o quadro da câmera em 9:16, aplica filtros e alimenta preview e gravação.
+  // Pipeline de imagem: recorta a câmera na proporção configurada e alimenta preview e gravação.
   useEffect(() => {
     if (previewUrl || !supported) return;
     let cancelled = false;
@@ -297,17 +287,17 @@ export function RecordingStudio({
       const canvas = canvasRef.current;
       const smoother = smootherRef.current;
       if (video && canvas && video.videoWidth && video.videoHeight) {
-        if (canvas.width !== OUT_W) {
-          canvas.width = OUT_W;
-          canvas.height = OUT_H;
+        if (canvas.width !== outWidth || canvas.height !== outHeight) {
+          canvas.width = outWidth;
+          canvas.height = outHeight;
         }
         const ctx = canvas.getContext("2d");
         if (ctx) {
-          const crop = cropCover(video.videoWidth, video.videoHeight);
+          const crop = cropCover(video.videoWidth, video.videoHeight, outWidth, outHeight);
           const drawSource = (target: CanvasRenderingContext2D) => {
             target.filter = filtroCss || "none";
             try {
-              target.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, OUT_W, OUT_H);
+              target.drawImage(video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, outWidth, outHeight);
             } catch {
               // quadro ainda indisponível
             }
@@ -321,8 +311,8 @@ export function RecordingStudio({
                 timestamp: now,
                 drawSource,
                 project: (x, y) => ({
-                  x: (x * video.videoWidth - crop.sx) * (OUT_W / crop.sw),
-                  y: (y * video.videoHeight - crop.sy) * (OUT_H / crop.sh),
+                  x: (x * video.videoWidth - crop.sx) * (outWidth / crop.sw),
+                  y: (y * video.videoHeight - crop.sy) * (outHeight / crop.sh),
                 }),
               });
             } catch {
@@ -355,7 +345,7 @@ export function RecordingStudio({
       cancelled = true;
       cancelAnimationFrame(frame);
     };
-  }, [filtroCss, intensidade, previewUrl, supported]);
+  }, [filtroCss, intensidade, outHeight, outWidth, previewUrl, supported]);
 
   // Carrega a suavização de pele só quando a pessoa liga o recurso.
   useEffect(() => {
@@ -388,7 +378,7 @@ export function RecordingStudio({
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
-  /** Grava sempre pelo canvas 9:16, então o arquivo salvo tem o mesmo enquadramento e filtros do preview. */
+  /** Grava pelo canvas configurado, então o arquivo salvo replica enquadramento e filtros do preview. */
   const buildFilteredStream = (base: MediaStream): MediaStream => {
     const canvas = canvasRef.current;
     if (!canvas || typeof canvas.captureStream !== "function") return base;
@@ -502,7 +492,7 @@ export function RecordingStudio({
           computador, para usar o estúdio.
         </div>
       ) : (
-        <div className="relative aspect-[9/16] h-full max-h-[100dvh] w-auto max-w-full overflow-hidden bg-black">
+        <div className={`relative overflow-hidden bg-black ${outputFormat.frameClass}`} data-recording-aspect-ratio={aspectRatio}>
           {previewUrl ? (
             <video
               src={previewUrl}
@@ -514,7 +504,7 @@ export function RecordingStudio({
             />
           ) : (
             <>
-              {/* Fonte da câmera: fica oculta, o que aparece é o quadro 9:16 desenhado no canvas. */}
+              {/* Fonte oculta: o canvas mostra exatamente o quadro na proporção configurada. */}
               <video
                 ref={videoRef}
                 muted
