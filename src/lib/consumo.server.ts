@@ -21,6 +21,8 @@ export type BillableAction =
 
 export type ConsumoEvento = {
   jobId?: string | null;
+  /** Força o cliente (tenant) dono do consumo quando não há job nem perfil. */
+  tenantId?: string | null;
   /** Nulo em consumo global, como a atualização de categorias oficiais. */
   profileId: string | null;
   etapa:
@@ -116,15 +118,78 @@ async function toolPriceCents(
 }
 
 
+/**
+ * Tarifa vigente e taxa de crédito da ação, lidas do banco (nada fixo no código).
+ * Devolve também o crédito/ponto nativo consumido do fornecedor.
+ */
+async function resolverCreditoETarifa(
+  supabaseAdmin: { from: (t: string) => any },
+  evento: ConsumoEvento,
+  acao: BillableAction,
+  agora: string,
+) {
+  const { computeCreditoEvento, findTarifa, CREDITO_UNIDADE } = await import("./custo-core");
+
+  // Segundos do job, só necessários para estimar créditos de montagem.
+  let segundosDoJob = 0;
+  if (evento.unidade === "credito_montagem" && evento.quantidade === null && evento.jobId) {
+    const { data } = await supabaseAdmin
+      .from("consumo_eventos")
+      .select("quantidade")
+      .eq("job_id", evento.jobId)
+      .eq("etapa", "animacao_veo");
+    segundosDoJob = ((data ?? []) as { quantidade: number | null }[]).reduce(
+      (soma, row) => soma + Number(row.quantidade ?? 0),
+      0,
+    );
+  }
+
+  const [tarifasRes, taxasRes] = await Promise.all([
+    supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    supabaseAdmin
+      .from("credito_taxas")
+      .select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
+  ]);
+  const tarifas = ((tarifasRes.data ?? []) as Array<Record<string, unknown>>).map((t) => ({
+    ...t,
+    preco_unitario: Number(t["preco_unitario"]),
+  })) as never[];
+  const taxas = ((taxasRes.data ?? []) as Array<Record<string, unknown>>).map((t) => ({
+    ...t,
+    credito_por_unidade: Number(t["credito_por_unidade"]),
+  })) as never[];
+
+  const linha = {
+    id: "",
+    job_id: evento.jobId ?? null,
+    profile_id: evento.profileId,
+    etapa: evento.etapa,
+    modelo: evento.modelo,
+    quantidade: evento.quantidade,
+    unidade: evento.unidade,
+    metadados: evento.metadados ?? {},
+    created_at: agora,
+    action_type: acao,
+  } as never;
+
+  const credito = computeCreditoEvento(linha, taxas, segundosDoJob);
+  const tarifa = findTarifa(tarifas, evento.modelo, evento.unidade as never, agora);
+  return {
+    credito,
+    semTarifa: !tarifa,
+    unidadeCredito: (CREDITO_UNIDADE as Record<string, string | undefined>)[evento.unidade] ?? null,
+  };
+}
+
 /** Grava um evento de consumo. Nunca derruba a geração se o log falhar. */
 export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // O insert roda com supabaseAdmin (sem sessão), então o tenant vem sempre da
-    // entidade-pai: job -> perfil -> tenant da plataforma (consumo global).
-    let tenantId: string | null = null;
-    if (evento.jobId) {
+    // entidade-pai: tenant informado -> job -> perfil -> tenant da plataforma.
+    let tenantId: string | null = evento.tenantId ?? null;
+    if (!tenantId && evento.jobId) {
       const { data } = await supabaseAdmin.from("jobs").select("tenant_id").eq("id", evento.jobId).maybeSingle();
       tenantId = data?.tenant_id ?? null;
     }
@@ -136,10 +201,33 @@ export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
         .maybeSingle();
       tenantId = data?.tenant_id ?? null;
     }
-    if (!tenantId) tenantId = PLATFORM_TENANT_ID;
+    if (!tenantId) {
+      console.error("[consumo] evento sem tenant identificado; usando o tenant da plataforma", {
+        etapa: evento.etapa,
+        modelo: evento.modelo,
+      });
+      tenantId = PLATFORM_TENANT_ID;
+    }
 
     const acao = evento.acao ?? ACAO_POR_ETAPA[evento.etapa];
+    const agora = new Date().toISOString();
     const toolPrice = await toolPriceCents(supabaseAdmin as never, tenantId, acao);
+    const { credito, semTarifa } = await resolverCreditoETarifa(supabaseAdmin as never, evento, acao, agora);
+
+    if (semTarifa) {
+      console.error("[consumo] evento sem tarifa cadastrada (custo ficaria zerado)", {
+        modelo: evento.modelo,
+        unidade: evento.unidade,
+        acao,
+      });
+    }
+    if (credito.semTaxa) {
+      console.error("[consumo] evento sem taxa de crédito cadastrada", { acao, unidade: evento.unidade });
+    }
+
+    const metadados: Record<string, unknown> = { ...(evento.metadados ?? {}) };
+    if (semTarifa) metadados["sem_tarifa"] = true;
+    if (credito.semTaxa) metadados["sem_taxa_credito"] = true;
 
     const { error } = await supabaseAdmin.from("consumo_eventos").insert({
       tenant_id: tenantId,
@@ -152,7 +240,10 @@ export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
       modelo: evento.modelo,
       quantidade: evento.quantidade,
       unidade: evento.unidade as never,
-      metadados: (evento.metadados ?? {}) as never,
+      credito_consumido: credito.credito,
+      credito_unidade: credito.unidade,
+      credito_origem: credito.origem,
+      metadados: metadados as never,
     });
     if (error) console.error("[consumo] falha ao registrar evento", error.message);
   } catch (e) {
