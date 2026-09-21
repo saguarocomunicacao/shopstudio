@@ -475,6 +475,8 @@ export type Database = {
           title: string
           updated_at: string
           veo_takes_count: number
+          video_edits: Json | null
+          video_original_path: string | null
           video_path: string | null
           video_storage_attempts: number
           video_storage_error: string | null
@@ -517,6 +519,8 @@ export type Database = {
           title?: string
           updated_at?: string
           veo_takes_count?: number
+          video_edits?: Json | null
+          video_original_path?: string | null
           video_path?: string | null
           video_storage_attempts?: number
           video_storage_error?: string | null
@@ -559,6 +563,8 @@ export type Database = {
           title?: string
           updated_at?: string
           veo_takes_count?: number
+          video_edits?: Json | null
+          video_original_path?: string | null
           video_path?: string | null
           video_storage_attempts?: number
           video_storage_error?: string | null

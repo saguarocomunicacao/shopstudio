@@ -10,6 +10,7 @@ import {
   Loader2,
   LockKeyhole,
   RefreshCw,
+  RotateCcw,
   Save,
   Send,
   Trash2,
@@ -42,7 +43,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
-import { deleteRecordingJob } from "@/lib/recording.functions";
+import { deleteRecordingJob, restoreOriginalRecording } from "@/lib/recording.functions";
 import {
   approveDraft,
   getDraftKit,
@@ -481,6 +482,16 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
     onError: (e) => toast.error(errMessage(e)),
   });
 
+  const restoreOriginal = useServerFn(restoreOriginalRecording);
+  const restaurar = useMutation({
+    mutationFn: () => restoreOriginal({ data: { jobId } }),
+    onSuccess: () => {
+      toast.success("Edição descartada. O vídeo original voltou.");
+      refresh();
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
   const data = kit.data;
 
   return (
@@ -520,6 +531,21 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
                     Baixar vídeo
                   </a>
                 </Button>
+                {data.edited && (
+                  <div className="mt-3 grid gap-2">
+                    <p className="text-xs text-muted-foreground">Você está vendo a versão editada. A gravação original continua guardada.</p>
+                    <Button
+                      variant="secondary"
+                      size="lg"
+                      disabled={restaurar.isPending}
+                      onClick={() => restaurar.mutate()}
+                      className="w-full"
+                    >
+                      {restaurar.isPending ? <Loader2 className="animate-spin" /> : <RotateCcw />}
+                      Restaurar original
+                    </Button>
+                  </div>
+                )}
               </section>
             ) : (
               <section className="rounded-xl border border-dashed p-4">

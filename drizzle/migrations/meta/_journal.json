@@ -330,6 +330,13 @@
       "when": 1790018358261,
       "tag": "0046_restrict_plan_catalog_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1790022953853,
+      "tag": "0047_add_video_original_and_edits",
+      "breakpoints": true
     }
   ]
 }
