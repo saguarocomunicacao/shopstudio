@@ -26,8 +26,9 @@ import {
 } from "@/lib/custo-periodo";
 import type { DbJob } from "@/lib/content";
 import { useGastoMes } from "@/lib/orcamento";
-import { openProfilePicker } from "./profile-gate";
+import { useMeuTenantId, useTenants } from "@/lib/tenants";
 import { JobDetailDialog } from "./job-detail-dialog";
+import { TenantCostsView } from "./costs-tenant-view";
 import { useStudio } from "./studio-context";
 
 type PeriodoKey = "hoje" | "7d" | "30d" | "mes" | "custom";
