@@ -65,6 +65,7 @@ const FILTROS = [
 ] as const;
 
 type FiltroId = (typeof FILTROS)[number]["id"];
+type WakeLockSentinelLike = { release: () => Promise<void>; released?: boolean };
 
 function pickMimeType() {
   const candidates = [
@@ -104,6 +105,7 @@ export function RecordingStudio({
   const scrollingRef = useRef(false);
   const velocidadeRef = useRef(28);
   const mountedRef = useRef(true);
+  const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
 
   const [supported] = useState(
     () => typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined",
@@ -171,6 +173,22 @@ export function RecordingStudio({
     lastFrameRef.current = 0;
   }, []);
 
+  const releaseWakeLock = useCallback(() => {
+    const wakeLock = wakeLockRef.current;
+    wakeLockRef.current = null;
+    if (wakeLock && !wakeLock.released) void wakeLock.release().catch(() => undefined);
+  }, []);
+
+  const requestWakeLock = useCallback(async () => {
+    const wakeLockApi = (navigator as Navigator & { wakeLock?: { request: (type: "screen") => Promise<WakeLockSentinelLike> } }).wakeLock;
+    if (!wakeLockApi || wakeLockRef.current) return;
+    try {
+      wakeLockRef.current = await wakeLockApi.request("screen");
+    } catch {
+      // O estúdio continua funcionando quando o aparelho não oferece Wake Lock.
+    }
+  }, []);
+
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
@@ -216,11 +234,12 @@ export function RecordingStudio({
       mountedRef.current = false;
       scrollingRef.current = false;
       cancelAnimationLoop();
+      releaseWakeLock();
       const recorder = recorderRef.current;
       if (recorder?.state === "recording") recorder.stop();
       stopStream();
     };
-  }, [cancelAnimationLoop, stopStream]);
+  }, [cancelAnimationLoop, releaseWakeLock, stopStream]);
 
   useEffect(() => {
     if (!recording) return;
@@ -232,10 +251,11 @@ export function RecordingStudio({
   useEffect(() => {
     const onVisibilityChange = () => {
       lastFrameRef.current = 0;
+      if (document.visibilityState === "visible" && recordingRef.current) void requestWakeLock();
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, []);
+  }, [requestWakeLock]);
 
   /** Liga/desliga a rolagem. Se o texto já terminou, recomeça do topo em vez de ficar inerte. */
   const alternarRolagem = useCallback(() => {
@@ -400,6 +420,7 @@ export function RecordingStudio({
     };
     recorder.onerror = () => {
       canvasCleanupRef.current();
+      releaseWakeLock();
       stopStream();
       setRecording(false);
       stopScrolling();
@@ -409,6 +430,7 @@ export function RecordingStudio({
       const type = recorder.mimeType || "video/webm";
       const recorded = new Blob(chunksRef.current, { type });
       canvasCleanupRef.current();
+      releaseWakeLock();
       stopStream();
       setRecording(false);
       stopScrolling();
@@ -432,6 +454,7 @@ export function RecordingStudio({
     setPreviewUrl(null);
     setSeconds(0);
     setRecording(true);
+    void requestWakeLock();
     resetScrolling();
     startScrolling();
   };
@@ -528,7 +551,7 @@ export function RecordingStudio({
               <div
                 ref={scrollRef}
                 data-teleprompter-scroll
-                className="pointer-events-auto h-full scroll-auto overflow-y-auto px-5 py-8"
+                className="pointer-events-auto h-full overflow-y-auto px-5 py-8 [scroll-behavior:auto!important]"
                 style={{ scrollbarWidth: "none" }}
                 onScroll={(event) => {
                   scrollPositionRef.current = event.currentTarget.scrollTop;
