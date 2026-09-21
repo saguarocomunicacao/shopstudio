@@ -403,7 +403,7 @@ export function VideoEditor({
             const d = video.duration;
             if (Number.isFinite(d) && d > 0) {
               setDuration(d);
-              setEnd(d);
+              setEnd(trimEndRef.current ?? d);
               return;
             }
             // Gravações do navegador costumam vir sem duração: forçamos o cálculo.
@@ -413,7 +413,7 @@ export function VideoEditor({
             const d = event.currentTarget.duration;
             if (Number.isFinite(d) && d > 0) {
               setDuration((atual) => (atual > 0 ? atual : d));
-              setEnd((atual) => (atual > 0 ? atual : d));
+              setEnd((atual) => (atual > 0 ? atual : (trimEndRef.current ?? d)));
               if (event.currentTarget.currentTime > d) event.currentTarget.currentTime = 0;
             }
           }}
@@ -421,7 +421,7 @@ export function VideoEditor({
             const d = event.currentTarget.duration;
             if (duration <= 0 && Number.isFinite(d) && d > 0) {
               setDuration(d);
-              setEnd(d);
+              setEnd(trimEndRef.current ?? d);
               event.currentTarget.currentTime = 0;
             }
           }}
@@ -435,7 +435,7 @@ export function VideoEditor({
             if (duration <= 0) {
               if (Number.isFinite(d) && d > 0) {
                 setDuration(d);
-                setEnd(d);
+                setEnd(trimEndRef.current ?? d);
                 video.currentTime = 0;
               }
               return;
