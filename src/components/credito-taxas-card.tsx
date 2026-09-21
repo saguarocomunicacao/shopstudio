@@ -22,6 +22,8 @@ type Taxa = {
   ativo: boolean;
 };
 
+const EMPTY_TAXAS: Taxa[] = [];
+
 const REGRAS: { value: Regra; label: string }[] = [
   { value: "por_chamada", label: "Por chamada" },
   { value: "por_bloco_100_linhas", label: "Por bloco de 100 linhas" },
@@ -32,7 +34,7 @@ export function CreditoTaxasCard() {
   const qc = useQueryClient();
   const [rascunho, setRascunho] = useState<Record<string, { credito: string; regra: Regra; ativo: boolean }>>({});
 
-  const { data: taxas = [], isLoading } = useQuery({
+  const { data: taxas = EMPTY_TAXAS, isLoading } = useQuery({
     queryKey: ["credito-taxas-admin"],
     queryFn: async () => {
       const { data, error } = await supabase
