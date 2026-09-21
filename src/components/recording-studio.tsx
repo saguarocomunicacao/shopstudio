@@ -83,6 +83,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const chunksRef = useRef<Blob[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const scrollPositionRef = useRef(0);
+  const frameRef = useRef(0);
   const mountedRef = useRef(true);
 
   const [supported] = useState(
@@ -155,6 +156,8 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
       const recorder = recorderRef.current;
       if (recorder?.state === "recording") recorder.stop();
       stopStream();
@@ -167,26 +170,54 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     return () => window.clearInterval(timer);
   }, [recording]);
 
-  // Rolagem suave do teleprompter.
+  // Rolagem suave do teleprompter: um único loop, sempre cancelado antes de recomeçar.
   useEffect(() => {
-    if (!rolando) return;
-    let frame = 0;
+    if (!rolando) {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
+      return;
+    }
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
     let last = performance.now();
     const step = (now: number) => {
+      frameRef.current = 0;
       const el = scrollRef.current;
-      const delta = (now - last) / 1000;
+      // Limita o salto quando o navegador pausa a animação (aba em segundo plano).
+      const delta = Math.min(0.1, Math.max(0, (now - last) / 1000));
       last = now;
       if (el) {
         const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
         scrollPositionRef.current = Math.min(maxScroll, scrollPositionRef.current + velocidade * delta);
         el.scrollTop = scrollPositionRef.current;
-        if (scrollPositionRef.current >= maxScroll) setRolando(false);
+        if (scrollPositionRef.current >= maxScroll) {
+          setRolando(false);
+          return;
+        }
       }
-      if (mountedRef.current) frame = requestAnimationFrame(step);
+      frameRef.current = requestAnimationFrame(step);
     };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
+    frameRef.current = requestAnimationFrame(step);
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      frameRef.current = 0;
+    };
   }, [rolando, velocidade]);
+
+  /** Liga/desliga a rolagem. Se o texto já terminou, recomeça do topo em vez de ficar inerte. */
+  const alternarRolagem = useCallback(() => {
+    setRolando((atual) => {
+      if (atual) return false;
+      const el = scrollRef.current;
+      if (el) {
+        const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+        if (scrollPositionRef.current >= maxScroll - 2) {
+          scrollPositionRef.current = 0;
+          el.scrollTop = 0;
+        }
+      }
+      return true;
+    });
+  }, []);
 
   // Pipeline de suavização de pele (beta): roda em canvas e alimenta preview e gravação.
   useEffect(() => {
@@ -360,7 +391,8 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     setRecording(true);
     scrollPositionRef.current = 0;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    setRolando(true);
+    setRolando(false);
+    requestAnimationFrame(() => setRolando(true));
   };
 
   const stop = () => {
@@ -576,7 +608,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
               </div>
 
               <div className="mb-3 flex flex-wrap items-center justify-center gap-2 text-white">
-                <Button variant="secondary" size="sm" onClick={() => setRolando((v) => !v)}>
+                <Button variant="secondary" size="sm" onClick={alternarRolagem}>
                   {rolando ? <Pause /> : <Play />}
                   {rolando ? "Pausar texto" : "Rolar texto"}
                 </Button>
