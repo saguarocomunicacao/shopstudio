@@ -640,7 +640,7 @@ export type Database = {
           price_cents: number
         }
         Insert: {
-          billing_model: string
+          billing_model?: string
           created_at?: string
           fallback_cap_cents?: number
           id?: string

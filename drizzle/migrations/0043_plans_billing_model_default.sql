@@ -1,0 +1,1 @@
+ALTER TABLE public.plans ALTER COLUMN billing_model SET DEFAULT 'por_video';

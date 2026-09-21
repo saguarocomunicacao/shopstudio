@@ -302,6 +302,13 @@
       "when": 1790014202020,
       "tag": "0042_plan_franquia_excedente",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1790014312235,
+      "tag": "0043_plans_billing_model_default",
+      "breakpoints": true
     }
   ]
 }
