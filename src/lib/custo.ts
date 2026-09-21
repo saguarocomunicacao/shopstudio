@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   computeEventoCusto,
   type ConsumoEventoRow,
+  type CreditoTaxaRow,
   type EtapaConsumo,
   type TarifaRow,
   type UnidadeTarifa,
@@ -19,11 +20,16 @@ export {
   acaoDoEvento,
   brl,
   computeEventoCusto,
+  computeCreditoEvento,
+  findCreditoTaxa,
   findTarifa,
   precoFerramentaBrl,
+  CREDITO_UNIDADE,
 } from "./custo-core";
 export type {
   BillableAction,
+  CreditoEvento,
+  CreditoTaxaRow,
   ConsumoEventoRow,
   CustoEvento,
   EtapaConsumo,
@@ -73,7 +79,12 @@ export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
 /** Resumo de custo de um job, quebrado por etapa. */
-export function computeJobCusto(eventos: ConsumoEventoRow[], tarifas: TarifaRow[], cotacao: number): CustoJob {
+export function computeJobCusto(
+  eventos: ConsumoEventoRow[],
+  tarifas: TarifaRow[],
+  cotacao: number,
+  taxas: CreditoTaxaRow[] = [],
+): CustoJob {
   const segundosDoJob = eventos
     .filter((e) => e.etapa === "animacao_veo")
     .reduce((acc, e) => acc + (e.quantidade ?? 0), 0);
@@ -88,7 +99,7 @@ export function computeJobCusto(eventos: ConsumoEventoRow[], tarifas: TarifaRow[
     if (meta["origem"] === "regeneracao") regeneracoes += 1;
     if (meta["descartado"] === true) takesDescartados += 1;
 
-    const custo = computeEventoCusto(evento, tarifas, cotacao, segundosDoJob);
+    const custo = computeEventoCusto(evento, tarifas, cotacao, segundosDoJob, taxas);
     total += custo.valorBrl;
 
     const atual = porEtapa.get(evento.etapa) ?? {
@@ -134,8 +145,11 @@ export function useTarifas() {
     queryKey: ["custo-tarifas"],
     staleTime: 60_000,
     queryFn: async () => {
-      const [tarifasRes, cotacaoRes] = await Promise.all([
+      const [tarifasRes, taxasRes, cotacaoRes] = await Promise.all([
         supabase.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+        supabase
+          .from("credito_taxas")
+          .select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
         supabase.from("app_config").select("value_num").eq("key", "cotacao_usd_brl").maybeSingle(),
       ]);
       if (tarifasRes.error) throw new Error(tarifasRes.error.message);
@@ -143,12 +157,17 @@ export function useTarifas() {
         ...t,
         preco_unitario: Number(t.preco_unitario),
       })) as TarifaRow[];
-      return { tarifas, cotacao: Number(cotacaoRes.data?.value_num ?? 1) };
+      const taxas = ((taxasRes.data ?? []) as Array<Record<string, unknown>>).map((t) => ({
+        ...t,
+        credito_por_unidade: Number(t["credito_por_unidade"]),
+      })) as unknown as CreditoTaxaRow[];
+      return { tarifas, taxas, cotacao: Number(cotacaoRes.data?.value_num ?? 1) };
     },
   });
 }
 
-const selectEventos = "id, job_id, profile_id, etapa, modelo, quantidade, unidade, metadados, created_at";
+const selectEventos =
+  "id, job_id, profile_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, credito_consumido, credito_unidade, credito_origem";
 
 /** Custo de todos os jobs do perfil ativo, indexado por job. */
 export function useJobCustos(profileId: string | null) {
@@ -174,7 +193,7 @@ export function useJobCustos(profileId: string | null) {
       }
       const result = new Map<string, CustoJob>();
       for (const [jobId, list] of porJob) {
-        result.set(jobId, computeJobCusto(list, precos!.tarifas, precos!.cotacao));
+        result.set(jobId, computeJobCusto(list, precos!.tarifas, precos!.cotacao, precos!.taxas));
       }
       return result;
     },
@@ -207,7 +226,7 @@ export function useBuscaCustos(profileId: string | null, limit = 12) {
       if (error) throw new Error(error.message);
       const eventos = (data ?? []) as unknown as ConsumoEventoRow[];
       return eventos.map((evento) => {
-        const custo = computeEventoCusto(evento, precos!.tarifas, precos!.cotacao);
+        const custo = computeEventoCusto(evento, precos!.tarifas, precos!.cotacao, 0, precos!.taxas);
         const meta = evento.metadados ?? {};
         return {
           id: evento.id,
