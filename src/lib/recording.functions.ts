@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withoutDuplicatedHook } from "@/lib/recording-script";
 
 /**
  * Modo "Gravar eu mesmo": a IA gera só o conteúdo textual (roteiro em blocos de
@@ -211,7 +212,7 @@ export const generateRecordingScript = createServerFn({ method: "POST" })
     const tone = TONE_LABELS[identity?.tone ?? "descontraido"] ?? (identity?.tone ?? "descontraído");
     const { resolvePrompt, renderPrompt } = await import("./prompts.server");
     const template = await resolvePrompt(supabase, job.profile_id, "roteiro_gravacao");
-    const prompt = renderPrompt(template, {
+    const renderedPrompt = renderPrompt(template, {
       idioma: identity?.language || "pt-BR",
       tom_de_voz: tone,
       perfil: profile?.name ?? "",
@@ -224,8 +225,13 @@ export const generateRecordingScript = createServerFn({ method: "POST" })
       observacoes_estilo: identity?.style_notes?.trim() ?? "",
       tipo_cta: product ? CTA_VENDA : CTA_COMUNIDADE,
     });
+    const prompt = `${renderedPrompt}\n\nREGRA OBRIGATÓRIA DE CONTINUIDADE: A fala do gancho (0-3s) já é o início do vídeo. Não repita a fala do gancho, nem uma paráfrase dela, em nenhum bloco de tempo. O primeiro bloco começa em 3s com fala nova e dá continuidade ao gancho.`;
 
-    const { roteiro, usage } = await callLovableAi(prompt);
+    const { roteiro: generatedRoteiro, usage } = await callLovableAi(prompt);
+    const roteiro = {
+      ...generatedRoteiro,
+      blocos: withoutDuplicatedHook(generatedRoteiro.gancho, generatedRoteiro.blocos),
+    };
 
     const { recordConsumo } = await import("./consumo.server");
     for (const [unidade, quantidade] of [
@@ -337,7 +343,7 @@ export const createRecordingUploadUrl = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("jobs")
-      .select("id, profile_id, formato")
+      .select("id, profile_id, formato, video_path")
       .eq("id", data.jobId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -363,7 +369,7 @@ export const finishRecording = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("jobs")
-      .select("id, profile_id, formato")
+      .select("id, profile_id, formato, video_path")
       .eq("id", data.jobId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -384,6 +390,11 @@ export const finishRecording = createServerFn({ method: "POST" })
       })
       .eq("id", data.jobId);
     if (updateError) throw new Error(updateError.message);
+    if (job.video_path && job.video_path !== data.path) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: cleanupError } = await supabaseAdmin.storage.from("job-media").remove([job.video_path]);
+      if (cleanupError) console.error("Falha ao limpar gravação substituída", { jobId: job.id, message: cleanupError.message });
+    }
     return { ok: true };
   });
 

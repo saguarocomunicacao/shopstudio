@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbJob } from "@/lib/content";
 import { createRecordingUploadUrl, finishRecording } from "@/lib/recording.functions";
+import { withoutDuplicatedHook } from "@/lib/recording-script";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
 
@@ -26,7 +27,7 @@ const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu e
 function teleprompterLines(job: DbJob, comTextoTela: boolean) {
   const lines: string[] = [];
   if (job.hook) lines.push(job.hook);
-  for (const bloco of job.roteiro_blocos ?? []) {
+  for (const bloco of withoutDuplicatedHook(job.hook, job.roteiro_blocos ?? [])) {
     if (bloco.fala) lines.push(bloco.fala);
   }
   if (comTextoTela && job.texto_tela) lines.push(`(texto na tela) ${job.texto_tela}`);
@@ -57,6 +58,8 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollPositionRef = useRef(0);
+  const mountedRef = useRef(true);
 
   const [supported] = useState(
     () => typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined",
@@ -72,13 +75,20 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const [comTextoTela, setComTextoTela] = useState(true);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [cameraSession, setCameraSession] = useState(0);
 
   const lines = teleprompterLines(job, comTextoTela);
+
+  const stopStream = useCallback(() => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+  }, []);
 
   const startCamera = useCallback(
     async (mode: "user" | "environment") => {
       try {
-        streamRef.current?.getTracks().forEach((t) => t.stop());
+        stopStream();
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: mode, width: { ideal: 1080 }, height: { ideal: 1920 } },
           audio: true,
@@ -97,16 +107,24 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
         );
       }
     },
-    [],
+    [stopStream],
   );
 
   useEffect(() => {
     if (!supported) return;
     void startCamera(facing);
+    return stopStream;
+  }, [cameraSession, facing, supported, startCamera, stopStream]);
+
+  useEffect(() => {
+    mountedRef.current = true;
     return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      mountedRef.current = false;
+      const recorder = recorderRef.current;
+      if (recorder?.state === "recording") recorder.stop();
+      stopStream();
     };
-  }, [facing, supported, startCamera]);
+  }, [stopStream]);
 
   useEffect(() => {
     if (!recording) return;
@@ -124,10 +142,12 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
       const delta = (now - last) / 1000;
       last = now;
       if (el) {
-        el.scrollTop += velocidade * delta;
-        if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) setRolando(false);
+        const maxScroll = Math.max(0, el.scrollHeight - el.clientHeight);
+        scrollPositionRef.current = Math.min(maxScroll, scrollPositionRef.current + velocidade * delta);
+        el.scrollTop = scrollPositionRef.current;
+        if (scrollPositionRef.current >= maxScroll) setRolando(false);
       }
-      frame = requestAnimationFrame(step);
+      if (mountedRef.current) frame = requestAnimationFrame(step);
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
@@ -140,29 +160,64 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     if (!stream) return;
     chunksRef.current = [];
     const mimeType = pickMimeType();
-    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    let recorder: MediaRecorder;
+    try {
+      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    } catch {
+      setError("Este navegador não conseguiu iniciar a gravação. Atualize o Chrome ou Safari e tente novamente.");
+      return;
+    }
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) chunksRef.current.push(event.data);
+    };
+    recorder.onerror = () => {
+      stopStream();
+      setRecording(false);
+      setRolando(false);
+      setError("A gravação foi interrompida pelo navegador. Tente gravar novamente.");
     };
     recorder.onstop = () => {
       const type = recorder.mimeType || "video/webm";
       const recorded = new Blob(chunksRef.current, { type });
-      setBlob(recorded);
-      setPreviewUrl(URL.createObjectURL(recorded));
+      stopStream();
       setRecording(false);
       setRolando(false);
+      if (!mountedRef.current) return;
+      if (recorded.size === 0) {
+        setError("O navegador não gerou o arquivo do vídeo. Tente gravar novamente.");
+        return;
+      }
+      setBlob(recorded);
+      setPreviewUrl(URL.createObjectURL(recorded));
     };
     recorderRef.current = recorder;
-    recorder.start(1000);
+    try {
+      recorder.start(1000);
+    } catch {
+      setError("Não foi possível iniciar a gravação neste aparelho. Verifique as permissões e tente novamente.");
+      return;
+    }
     setBlob(null);
     setPreviewUrl(null);
     setSeconds(0);
     setRecording(true);
+    scrollPositionRef.current = 0;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
     setRolando(true);
   };
 
-  const stop = () => recorderRef.current?.state !== "inactive" && recorderRef.current?.stop();
+  const stop = () => {
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state === "inactive") return;
+    if (recorder.state === "recording") {
+      try {
+        recorder.requestData();
+      } catch {
+        // Alguns navegadores entregam o último trecho apenas no evento stop.
+      }
+    }
+    recorder.stop();
+  };
 
   const salvar = useMutation({
     mutationFn: async () => {
@@ -176,12 +231,13 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
       await finish({ data: { jobId: job.id, path } });
     },
     onSuccess: () => {
+      stopStream();
       toast.success("Gravação salva. O vídeo está na fila de rascunhos.");
       void qc.invalidateQueries({ queryKey: ["jobs"] });
       void qc.invalidateQueries({ queryKey: ["draft-kit", job.id] });
       onClose();
     },
-    onError: (e) => toast.error(errMessage(e)),
+    onError: (e) => toast.error(`Não foi possível salvar. Seu vídeo continua aqui para tentar novamente. ${errMessage(e)}`),
   });
 
   const tempo = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
@@ -190,9 +246,9 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
       <div className="flex items-center justify-between gap-3 px-4 py-3 text-white">
         <p className="min-w-0 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Gravar vídeo"}</p>
-        <button type="button" aria-label="Fechar estúdio" className="rounded-md p-1.5 hover:bg-white/10" onClick={onClose}>
+        <Button type="button" variant="ghost" size="icon" aria-label="Fechar estúdio" className="text-white hover:bg-white/10 hover:text-white" onClick={onClose}>
           <X className="size-5" />
-        </button>
+        </Button>
       </div>
 
       {!supported ? (
@@ -203,7 +259,14 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
       ) : (
         <div className="relative mx-auto w-full max-w-[520px] flex-1 overflow-hidden">
           {previewUrl ? (
-            <video src={previewUrl} controls playsInline className="size-full bg-black object-contain" />
+            <video
+              src={previewUrl}
+              controls
+              playsInline
+              preload="metadata"
+              aria-label="Revisão do vídeo gravado"
+              className="size-full bg-black object-contain"
+            />
           ) : (
             <video
               ref={videoRef}
@@ -229,8 +292,11 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
                 ref={scrollRef}
                 className="pointer-events-auto h-full overflow-y-auto px-5 py-8"
                 style={{ scrollbarWidth: "none" }}
+                onScroll={(event) => {
+                  scrollPositionRef.current = event.currentTarget.scrollTop;
+                }}
               >
-                <div className="h-24" />
+                <div className="h-[65%]" aria-hidden="true" />
                 {lines.map((line, index) => (
                   <p
                     key={index}
@@ -240,7 +306,7 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
                     {line}
                   </p>
                 ))}
-                <div className="h-40" />
+                <div className="h-[70%]" aria-hidden="true" />
               </div>
             </div>
           )}
@@ -308,9 +374,10 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
             </>
           ) : (
             <div className="grid gap-2">
+              <p className="text-center text-sm font-semibold text-white">Revise sua gravação</p>
               <Button size="lg" disabled={salvar.isPending} onClick={() => salvar.mutate()}>
                 {salvar.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
-                {salvar.isPending ? "Salvando..." : "Salvar gravação"}
+                {salvar.isPending ? "Salvando..." : "Salvar"}
               </Button>
               <Button
                 variant="secondary"
@@ -321,11 +388,13 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
                   setPreviewUrl(null);
                   setBlob(null);
                   setSeconds(0);
-                  void startCamera(facing);
+                  scrollPositionRef.current = 0;
+                  setError(null);
+                  setCameraSession((session) => session + 1);
                 }}
               >
                 <RefreshCw />
-                Gravar de novo
+                Regravar
               </Button>
             </div>
           )}
