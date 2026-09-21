@@ -243,8 +243,22 @@ export function RecordingKitDialog({
 
   return (
     <>
-      <Dialog open={!studioOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-h-[92vh] max-w-lg overflow-hidden p-0">
+      <Dialog open={!studioOpen && !confirmCloseOpen} onOpenChange={(open) => !open && attemptClose()}>
+        <DialogContent
+          className="max-h-[92vh] max-w-lg overflow-hidden p-0"
+          onPointerDownOutside={(e) => {
+            if (isDirty) {
+              e.preventDefault();
+              setConfirmCloseOpen(true);
+            }
+          }}
+          onEscapeKeyDown={(e) => {
+            if (isDirty) {
+              e.preventDefault();
+              setConfirmCloseOpen(true);
+            }
+          }}
+        >
           <div className="max-h-[92vh] overflow-y-auto p-6 [scrollbar-gutter:stable]">
             <DialogHeader>
               <DialogTitle>Gravar eu mesmo</DialogTitle>
