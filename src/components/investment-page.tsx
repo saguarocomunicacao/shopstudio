@@ -208,7 +208,11 @@ function PlanoForm({ carteira, tenantId }: { carteira: CarteiraFornecedor; tenan
   );
 }
 
-function CarteiraCard({ carteira, podeEditar }: { carteira: CarteiraFornecedor; podeEditar: boolean }) {
+function CarteiraCard({
+  carteira,
+  podeEditar,
+  tenantId,
+}: { carteira: CarteiraFornecedor; podeEditar: boolean; tenantId: string | null }) {
   const { def } = carteira;
   const remover = useRemoverAporte();
   const assinatura = def.tipo === "assinatura";
