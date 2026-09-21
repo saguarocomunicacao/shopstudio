@@ -232,6 +232,13 @@
       "when": 1790002004824,
       "tag": "0032_tenant_signup_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790002067887,
+      "tag": "0033_roles_unique_per_tenant",
+      "breakpoints": true
     }
   ]
 }
