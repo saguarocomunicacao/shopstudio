@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import {
   Camera,
   Loader2,
+  Mic,
+  MicOff,
   Minus,
   Pause,
   Play,
@@ -391,6 +393,41 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
         <div className="mx-auto w-full max-w-[520px] px-4 pb-6 pt-3">
           {!previewUrl ? (
             <>
+              <div className="mb-3">
+                <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-white/60">Filtro de imagem</p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {FILTROS.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      aria-pressed={filtro === f.id}
+                      onClick={() => setFiltro(f.id)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                        filtro === f.id ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-3 flex flex-col items-center gap-1">
+                <Button
+                  variant={reduzirRuido ? "default" : "secondary"}
+                  size="sm"
+                  disabled={recording}
+                  aria-pressed={reduzirRuido}
+                  onClick={() => setReduzirRuido((v) => !v)}
+                >
+                  {reduzirRuido ? <Mic /> : <MicOff />}
+                  {reduzirRuido ? "Reduzir ruído: ligado" : "Reduzir ruído: desligado"}
+                </Button>
+                <p className="text-center text-[11px] leading-snug text-white/60">
+                  Reduz ruídos de fundo na captação do microfone. Não remove o ruído por completo.
+                </p>
+              </div>
+
               <div className="mb-3 flex flex-wrap items-center justify-center gap-2 text-white">
                 <Button variant="secondary" size="sm" onClick={() => setRolando((v) => !v)}>
                   {rolando ? <Pause /> : <Play />}
