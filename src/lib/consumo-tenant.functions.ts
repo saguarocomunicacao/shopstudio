@@ -160,10 +160,29 @@ const FORNECEDOR_DE: Record<EtapaConsumo, "google" | "kalodata" | "json2video" |
   narracao_elevenlabs: "elevenlabs",
 };
 
-export type ConsumoFornecedor = { brl: number; unidades: number; mesBrl: number; cicloUnidades: number };
+export type ConsumoFornecedor = {
+  brl: number;
+  unidades: number;
+  mesBrl: number;
+  cicloUnidades: number;
+  /** Consumo na unidade nativa do fornecedor (pontos/créditos/mil caracteres). */
+  credito: number;
+  creditoUnidade: string | null;
+};
+export type ExtratoCredito = {
+  id: string;
+  created_at: string;
+  fornecedor: "google" | "kalodata" | "json2video" | "elevenlabs";
+  label: string;
+  credito: number | null;
+  unidade: string | null;
+  origem: "real" | "estimado" | null;
+  valorBrl: number;
+};
 export type ConsumoFornecedores = {
   totalBrl: number;
   fornecedores: Record<"google" | "kalodata" | "json2video" | "elevenlabs", ConsumoFornecedor>;
+  extrato: ExtratoCredito[];
 };
 
 /** Consumo consolidado por fornecedor (desde sempre), usado na tela Investimento. */
@@ -188,7 +207,15 @@ export const consumoPorFornecedor = createServerFn({ method: "POST" })
     const cicloInicio = data.cicloInicio ? new Date(data.cicloInicio) : null;
     const cicloFim = data.cicloFim ? new Date(data.cicloFim) : null;
 
-    const vazio = (): ConsumoFornecedor => ({ brl: 0, unidades: 0, mesBrl: 0, cicloUnidades: 0 });
+    const vazio = (): ConsumoFornecedor => ({
+      brl: 0,
+      unidades: 0,
+      mesBrl: 0,
+      cicloUnidades: 0,
+      credito: 0,
+      creditoUnidade: null,
+    });
+    const extrato: ExtratoCredito[] = [];
     const fornecedores: ConsumoFornecedores["fornecedores"] = {
       google: vazio(),
       kalodata: vazio(),
@@ -198,17 +225,33 @@ export const consumoPorFornecedor = createServerFn({ method: "POST" })
     let totalBrl = 0;
 
     for (const evento of eventos) {
-      const { valorBrl, unidades } = valorConsolidado(
+      const { valorBrl, unidades, credito } = valorConsolidado(
         evento,
         tarifas,
         cotacao,
         evento.job_id ? segundos.get(evento.job_id) ?? 0 : 0,
         taxas,
       );
-      const alvo = fornecedores[FORNECEDOR_DE[evento.etapa]];
+      const fornecedor = FORNECEDOR_DE[evento.etapa];
+      const alvo = fornecedores[fornecedor];
       const quando = new Date(evento.created_at);
       alvo.brl += valorBrl;
       alvo.unidades += unidades;
+      if (credito.credito !== null) {
+        alvo.credito += credito.credito;
+        alvo.creditoUnidade = credito.unidade;
+      }
+      const acaoEvento = acaoDoEvento(evento);
+      extrato.push({
+        id: evento.id,
+        created_at: evento.created_at,
+        fornecedor,
+        label: ACAO_LABELS[acaoEvento],
+        credito: credito.credito,
+        unidade: credito.unidade,
+        origem: credito.origem,
+        valorBrl,
+      });
       if (quando >= inicioMes) alvo.mesBrl += valorBrl;
       if (
         FORNECEDOR_DE[evento.etapa] === "json2video" &&
@@ -222,5 +265,6 @@ export const consumoPorFornecedor = createServerFn({ method: "POST" })
       totalBrl += valorBrl;
     }
 
-    return { totalBrl, fornecedores };
+    extrato.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    return { totalBrl, fornecedores, extrato: extrato.slice(0, 200) };
   });
