@@ -10,6 +10,7 @@ import {
   Play,
   Plus,
   RefreshCw,
+  Sparkles,
   Square,
   Upload,
   X,
@@ -22,6 +23,13 @@ import { supabase } from "@/integrations/supabase/client";
 import type { DbJob } from "@/lib/content";
 import { createRecordingUploadUrl, finishRecording } from "@/lib/recording.functions";
 import { withoutDuplicatedHook } from "@/lib/recording-script";
+import { createSkinSmoother, type SkinIntensity, type SkinSmoother } from "@/lib/skin-smoothing";
+
+const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
+  { id: "leve", label: "Leve" },
+  { id: "medio", label: "Médio" },
+  { id: "forte", label: "Forte" },
+];
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
 
@@ -93,10 +101,16 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
   const [cameraSession, setCameraSession] = useState(0);
   const [filtro, setFiltro] = useState<FiltroId>("nenhum");
   const [reduzirRuido, setReduzirRuido] = useState(true);
+  const [suavizar, setSuavizar] = useState(false);
+  const [intensidade, setIntensidade] = useState<SkinIntensity>("leve");
+  const [suavizarStatus, setSuavizarStatus] = useState<"off" | "carregando" | "ativo">("off");
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const recordingRef = useRef(false);
   const canvasCleanupRef = useRef<() => void>(() => undefined);
   const filtroCss = FILTROS.find((f) => f.id === filtro)?.css ?? "";
 
   const teleprompter = teleprompterItems(job);
+  recordingRef.current = recording;
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -174,12 +188,97 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
     return () => cancelAnimationFrame(frame);
   }, [rolando, velocidade]);
 
+  // Pipeline de suavização de pele (beta): roda em canvas e alimenta preview e gravação.
+  useEffect(() => {
+    if (!suavizar || previewUrl || !supported) {
+      setSuavizarStatus("off");
+      return;
+    }
+    let cancelled = false;
+    let frame = 0;
+    let smoother: SkinSmoother | null = null;
+    let frames = 0;
+    let janela = performance.now();
+
+    const loop = () => {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (video && canvas && video.videoWidth) {
+        if (canvas.width !== video.videoWidth) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        }
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.filter = filtroCss || "none";
+          try {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          } catch {
+            // quadro ainda indisponível
+          }
+          ctx.filter = "none";
+          try {
+            smoother?.render(ctx, video, intensidade, performance.now(), filtroCss);
+          } catch {
+            // segue mostrando o quadro sem suavização
+          }
+        }
+        frames += 1;
+        const elapsed = performance.now() - janela;
+        if (elapsed > 5000) {
+          const fps = (frames * 1000) / elapsed;
+          frames = 0;
+          janela = performance.now();
+          if (fps < 10 && !recordingRef.current) {
+            toast.warning("Suavizar pele foi desligado: ficou pesado neste aparelho. A gravação segue normal.");
+            setSuavizar(false);
+            return;
+          }
+        }
+      }
+      if (!cancelled) frame = requestAnimationFrame(loop);
+    };
+
+    setSuavizarStatus("carregando");
+    frame = requestAnimationFrame(loop);
+    createSkinSmoother()
+      .then((s) => {
+        if (cancelled) {
+          s.close();
+          return;
+        }
+        smoother = s;
+        setSuavizarStatus("ativo");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        toast.error("Não foi possível carregar a suavização de pele. Você pode gravar normalmente sem ela.");
+        setSuavizar(false);
+      });
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      smoother?.close();
+    };
+  }, [suavizar, intensidade, filtroCss, previewUrl, supported]);
+
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
   /** Grava pela tela do canvas para que o filtro escolhido saia no arquivo salvo. */
   const buildFilteredStream = (base: MediaStream): MediaStream => {
     const video = videoRef.current;
     const track = base.getVideoTracks()[0];
+    const suave = canvasRef.current;
+    if (suavizar && suave && typeof suave.captureStream === "function") {
+      const output = suave.captureStream(30);
+      base.getAudioTracks().forEach((audio) => output.addTrack(audio));
+      canvasCleanupRef.current = () => {
+        output.getVideoTracks().forEach((t) => t.stop());
+        canvasCleanupRef.current = () => undefined;
+      };
+      return output;
+    }
     if (!filtroCss || !video || !track) return base;
     const settings = track.getSettings();
     const canvas = document.createElement("canvas");
@@ -326,13 +425,23 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
               className="size-full bg-black object-contain"
             />
           ) : (
-            <video
-              ref={videoRef}
-              muted
-              playsInline
-              style={filtroCss ? { filter: filtroCss } : undefined}
-              className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
-            />
+            <>
+              <video
+                ref={videoRef}
+                muted
+                playsInline
+                style={filtroCss && !suavizar ? { filter: filtroCss } : undefined}
+                className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""} ${
+                  suavizar ? "invisible absolute inset-0" : ""
+                }`}
+              />
+              {suavizar && (
+                <canvas
+                  ref={canvasRef}
+                  className={`size-full bg-black object-cover ${facing === "user" ? "-scale-x-100" : ""}`}
+                />
+              )}
+            </>
           )}
 
           {error && (
@@ -410,6 +519,44 @@ export function RecordingStudio({ job, onClose }: { job: DbJob; onClose: () => v
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div className="mb-3 flex flex-col items-center gap-2">
+                <Button
+                  variant={suavizar ? "default" : "secondary"}
+                  size="sm"
+                  disabled={recording}
+                  aria-pressed={suavizar}
+                  onClick={() => setSuavizar((v) => !v)}
+                >
+                  {suavizarStatus === "carregando" ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                  {suavizar
+                    ? suavizarStatus === "carregando"
+                      ? "Suavizar pele (beta): preparando..."
+                      : "Suavizar pele (beta): ligado"
+                    : "Suavizar pele (beta)"}
+                </Button>
+                {suavizar && (
+                  <div className="flex items-center justify-center gap-2">
+                    {INTENSIDADES.map((i) => (
+                      <button
+                        key={i.id}
+                        type="button"
+                        aria-pressed={intensidade === i.id}
+                        disabled={recording}
+                        onClick={() => setIntensidade(i.id)}
+                        className={`rounded-full px-3 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
+                          intensidade === i.id ? "bg-white text-black" : "bg-white/15 text-white hover:bg-white/25"
+                        }`}
+                      >
+                        {i.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="text-center text-[11px] leading-snug text-white/60">
+                  Beta. Pode deixar a gravação mais lenta em celulares mais simples. Se travar, desligue.
+                </p>
               </div>
 
               <div className="mb-3 flex flex-col items-center gap-1">
