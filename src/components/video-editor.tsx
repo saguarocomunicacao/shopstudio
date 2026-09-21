@@ -50,11 +50,17 @@ export function VideoEditor({
   source,
   onCancel,
   onApply,
+  initialOperations,
 }: {
   source: Blob;
   onCancel: () => void;
   onApply: (edited: Blob, operations: VideoEditOperation[]) => void;
+  /** Edições anteriores: ao reabrir, o editor volta com os mesmos ajustes. */
+  initialOperations?: VideoEditOperation[];
 }) {
+  const initialRef = useRef(initialOperations);
+  const initialTrim = initialRef.current?.find((op): op is { type: "trim"; start: number; end: number } => op.type === "trim");
+  const trimEndRef = useRef<number | null>(initialTrim?.end ?? null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const videoFrameRef = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -65,13 +71,13 @@ export function VideoEditor({
   const [currentTime, setCurrentTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [videoSize, setVideoSize] = useState<VideoSourceSize | null>(null);
-  const [start, setStart] = useState(0);
+  const [start, setStart] = useState(initialTrim?.start ?? 0);
   const [end, setEnd] = useState(0);
   const [mode, setMode] = useState<"trim" | "cut" | "crop">("trim");
   const [cutStart, setCutStart] = useState(0);
   const [cutEnd, setCutEnd] = useState(0);
-  const [cuts, setCuts] = useState<CutOperation[]>([]);
-  const [crop, setCrop] = useState<CropOperation | null>(null);
+  const [cuts, setCuts] = useState<CutOperation[]>(() => initialRef.current?.filter((op): op is CutOperation => op.type === "cut") ?? []);
+  const [crop, setCrop] = useState<CropOperation | null>(() => initialRef.current?.find((op): op is CropOperation => op.type === "crop") ?? null);
   /** Pilha de estados anteriores: cada corte/aparo entra aqui para o "Desfazer". */
   const [history, setHistory] = useState<EditorSnapshot[]>([]);
   const rangesRef = useRef<{ start: number; end: number }[]>([]);
