@@ -298,6 +298,7 @@ export type Database = {
           caption: string | null
           created_at: string
           created_by: string | null
+          formato: string
           gemini_images_count: number
           hashtags: string[] | null
           hook: string | null
@@ -308,15 +309,18 @@ export type Database = {
           profile_id: string
           published_at: string | null
           published_url: string | null
+          recorded_at: string | null
           rejection_reason: string | null
           render_error: string | null
           render_id: string | null
           render_stage: string | null
           render_started_at: string | null
+          roteiro_blocos: Json
           scenes: Json
           script: string | null
           script_refs: Json
           status: Database["public"]["Enums"]["job_status"]
+          texto_tela: string | null
           title: string
           updated_at: string
           veo_takes_count: number
@@ -335,6 +339,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           created_by?: string | null
+          formato?: string
           gemini_images_count?: number
           hashtags?: string[] | null
           hook?: string | null
@@ -345,15 +350,18 @@ export type Database = {
           profile_id: string
           published_at?: string | null
           published_url?: string | null
+          recorded_at?: string | null
           rejection_reason?: string | null
           render_error?: string | null
           render_id?: string | null
           render_stage?: string | null
           render_started_at?: string | null
+          roteiro_blocos?: Json
           scenes?: Json
           script?: string | null
           script_refs?: Json
           status?: Database["public"]["Enums"]["job_status"]
+          texto_tela?: string | null
           title?: string
           updated_at?: string
           veo_takes_count?: number
@@ -372,6 +380,7 @@ export type Database = {
           caption?: string | null
           created_at?: string
           created_by?: string | null
+          formato?: string
           gemini_images_count?: number
           hashtags?: string[] | null
           hook?: string | null
@@ -382,15 +391,18 @@ export type Database = {
           profile_id?: string
           published_at?: string | null
           published_url?: string | null
+          recorded_at?: string | null
           rejection_reason?: string | null
           render_error?: string | null
           render_id?: string | null
           render_stage?: string | null
           render_started_at?: string | null
+          roteiro_blocos?: Json
           scenes?: Json
           script?: string | null
           script_refs?: Json
           status?: Database["public"]["Enums"]["job_status"]
+          texto_tela?: string | null
           title?: string
           updated_at?: string
           veo_takes_count?: number

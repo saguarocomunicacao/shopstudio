@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BadgeCheck, Clapperboard, Images, Loader2, Sparkles, Trash2, Undo2 } from "lucide-react";
+import { BadgeCheck, Clapperboard, Images, Loader2, Sparkles, Trash2, Undo2, Video } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -12,6 +12,7 @@ import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
 import { useVideoDriver } from "@/lib/video-driver";
 import { sweepProfileVideos } from "@/lib/drafts.functions";
 import { JobDetailDialog } from "./job-detail-dialog";
+import { RecordingKitDialog } from "./recording-kit";
 import { JobCostBadge } from "./job-cost";
 import { SupplierBalanceBanner } from "./supplier-balance-banner";
 import { ProfileGate } from "./profile-gate";
@@ -59,6 +60,7 @@ function PipelineContent() {
   const { data: jobs = [], isLoading } = useJobs(activeProfileId, can("pipeline", "visualizar"));
   const { data: products = [] } = useProducts(activeProfileId, can("produtos", "visualizar"));
   const [detail, setDetail] = useState<DbJob | null>(null);
+  const [recording, setRecording] = useState<DbJob | null>(null);
   const generate = useServerFn(generateJobScript);
   const generateScenes = useServerFn(generateJobScenes);
   useVideoDriver(jobs);
@@ -148,7 +150,11 @@ function PipelineContent() {
               </div>
               <div className="space-y-2">
                 {items.map((job) => (
-                  <article className="job-card relative cursor-pointer" key={job.id} onClick={() => setDetail(job)}>
+                  <article
+                    className="job-card relative cursor-pointer"
+                    key={job.id}
+                    onClick={() => (job.formato === "gravacao" ? setRecording(job) : setDetail(job))}
+                  >
                     <div className="absolute right-2 top-2 flex items-center gap-0.5">
                       {canStepBack(job) && (
                         <button
@@ -176,6 +182,18 @@ function PipelineContent() {
                     <p className="mt-2 text-xs text-muted-foreground">{productName(job.product_id)}</p>
                     <p className="mt-4 text-[11px] text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
                     <JobCostBadge jobId={job.id} />
+                    {job.formato === "gravacao" ? (
+                      <>
+                        <p className="mt-2 inline-flex rounded-full bg-secondary px-2.5 py-1 text-[11px] font-bold">Gravar eu mesmo</p>
+                        {canEditJob(job) && (
+                          <Button size="sm" className="mt-3 w-full" onClick={(e) => { e.stopPropagation(); setRecording(job); }}>
+                            <Video />
+                            {job.status === "produto_escolhido" ? "Criar roteiro" : "Roteiro e gravação"}
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <>
                     {job.status === "produto_escolhido" && canEditJob(job) && (
                       <Button
                         size="sm"
@@ -235,6 +253,8 @@ function PipelineContent() {
                         </p>
                       </>
                     )}
+                      </>
+                    )}
                   </article>
                 ))}
                 {stage === "novo" && !filtered.length && !isLoading && (
@@ -256,6 +276,14 @@ function PipelineContent() {
         onStepBack={() => current && setReverting(current)}
         onOpenChange={(open) => !open && setDetail(null)}
       />
+
+      {recording && (
+        <RecordingKitDialog
+          job={jobs.find((j) => j.id === recording.id) ?? recording}
+          canEdit={canEditJob(recording)}
+          onClose={() => setRecording(null)}
+        />
+      )}
 
       <AlertDialog open={!!reverting} onOpenChange={(open) => !open && setReverting(null)}>
         <AlertDialogContent>

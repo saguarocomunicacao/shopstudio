@@ -78,12 +78,19 @@ export const PREVIOUS_STATUS: Partial<Record<JobStatusKey, JobStatusKey>> = {
   roteiro_pronto: "produto_escolhido",
 };
 
+export type RoteiroBloco = { tempo: string; orientacao: string; fala: string };
+
 export type DbJob = {
   id: string;
   product_id: string | null;
   profile_id: string;
   status: JobStatusKey;
   title: string;
+  /** "completo" = vídeo inteiro com IA. "gravacao" = a pessoa grava lendo o teleprompter. */
+  formato: "completo" | "gravacao";
+  roteiro_blocos?: RoteiroBloco[] | null;
+  texto_tela?: string | null;
+  recorded_at?: string | null;
   created_at: string;
   script: string | null;
   hook: string | null;
@@ -233,7 +240,7 @@ export function useJobs(profileId: string | null, enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, published_url, approved_at, published_at, rejection_reason, script_refs",
+          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at",
         )
         .eq("profile_id", profileId!)
         .order("created_at", { ascending: false });

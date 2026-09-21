@@ -81,6 +81,8 @@ function ProductsContent() {
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  /** Formato do job: vídeo inteiro com IA ou roteiro para a pessoa gravar. */
+  const [formato, setFormato] = useState<"completo" | "gravacao">("completo");
 
   const canCreateJob = can("pipeline", "criar", activeProfileId);
 
@@ -116,10 +118,15 @@ function ProductsContent() {
         status: "produto_escolhido",
         title: product.name,
         created_by: userId,
+        formato,
       });
       if (error) throw new Error(error.message);
     },
-    onSuccess: () => { toast.success("Job criado no pipeline."); setUseTarget(null); qc.invalidateQueries({ queryKey: ["jobs", activeProfileId] }); },
+    onSuccess: () => {
+      toast.success(formato === "gravacao" ? "Vídeo criado. Gere o roteiro e grave você mesmo." : "Job criado no pipeline.");
+      setUseTarget(null);
+      qc.invalidateQueries({ queryKey: ["jobs", activeProfileId] });
+    },
     onError: (e) => toast.error(errMessage(e)),
   });
 
@@ -390,6 +397,22 @@ function ProductsContent() {
           <DialogHeader><DialogTitle>Usar “{useTarget?.name}”</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
             <p className="text-sm text-muted-foreground">O job nasce na etapa “Produto escolhido” dentro do perfil <strong className="text-foreground">{activeProfile?.name}</strong>.</p>
+            <div className="grid gap-2">
+              {([
+                { value: "completo", title: "Completo", hint: "A inteligência artificial cria o vídeo inteiro." },
+                { value: "gravacao", title: "Gravar eu mesmo", hint: "A IA escreve só os textos e você grava lendo o teleprompter." },
+              ] as const).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setFormato(option.value)}
+                  className={`rounded-xl border p-3 text-left transition-colors ${formato === option.value ? "border-primary bg-primary/5" : "hover:bg-secondary"}`}
+                >
+                  <p className="text-sm font-bold">{option.title}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{option.hint}</p>
+                </button>
+              ))}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="secondary" onClick={() => setUseTarget(null)}>Cancelar</Button>

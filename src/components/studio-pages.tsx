@@ -1,6 +1,7 @@
 import { TarifasCard } from "./tarifas-card";
 import { BudgetCard } from "./budget-card";
 import { CheckCircle2, CircleDollarSign, FileClock, Loader2, MoreHorizontal, Plus, Video } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JOB_STATUS_LABELS, relativeTime, useJobs } from "@/lib/content";
@@ -8,6 +9,7 @@ import { GlobalPromptsSettings } from "./prompts-page";
 import { SyncCategoriesButton } from "./category-select";
 import { ChampionRefsToggle } from "./champion-refs-toggle";
 import { ProfileGate } from "./profile-gate";
+import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { useStudio } from "./studio-context";
 
 const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-lime", "Rascunho enviado": "status-orange", "Publicado": "status-pink", "Ativo": "status-lime", "Pausado": "status-neutral" };
@@ -40,13 +42,19 @@ function DashboardContent() {
 export function VideosPage() { return <ProfileGate><VideosContent /></ProfileGate>; }
 
 function VideosContent() {
-  const { activeProfileId, profiles } = useStudio();
+  const { activeProfileId, profiles, can } = useStudio();
   const { data: scoped = [] } = useJobs(activeProfileId);
   const videos = scoped.filter((j) => !!j.video_url);
   const rendering = scoped.filter((j) => j.status === "gerando_video");
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
+  const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
+  const [novoOpen, setNovoOpen] = useState(false);
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+  const recordingJob = scoped.find((j) => j.id === recordingId) ?? null;
   return <>
-    <Heading eyebrow={`${videos.length} ${videos.length === 1 ? "peça" : "peças"}`} title="Biblioteca de vídeos" action={<Button disabled><Plus />Novo vídeo</Button>} />
+    <Heading eyebrow={`${videos.length} ${videos.length === 1 ? "peça" : "peças"}`} title="Biblioteca de vídeos" action={<Button disabled={!canCreate} onClick={() => setNovoOpen(true)}><Plus />Novo vídeo próprio</Button>} />
+    <NewOwnVideoDialog open={novoOpen} onOpenChange={setNovoOpen} onCreated={(jobId) => setRecordingId(jobId)} />
+    {recordingJob && <RecordingKitDialog job={recordingJob} canEdit={canCreate} onClose={() => setRecordingId(null)} />}
     {rendering.length > 0 && <p className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{rendering.length} vídeo(s) renderizando...</p>}
     {videos.length ? (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

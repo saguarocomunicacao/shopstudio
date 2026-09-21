@@ -12,6 +12,7 @@ import {
   Save,
   Send,
   Undo2,
+  Video,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -38,18 +39,23 @@ import {
   saveDraftPostTexts,
 } from "@/lib/drafts.functions";
 import { ProfileGate } from "./profile-gate";
+import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { SharePanel } from "./share-panel";
 import { useStudio } from "./studio-context";
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
 
-type QueueKey = "revisao" | "aprovado" | "publicado";
+type QueueKey = "gravar" | "revisao" | "aprovado" | "publicado";
 
 const QUEUES: { key: QueueKey; label: string; status: DbJob["status"]; badge: string }[] = [
   { key: "revisao", label: "Aguardando revisão", status: "video_pronto", badge: "status-lime" },
   { key: "aprovado", label: "Aprovados", status: "rascunho_enviado", badge: "status-orange" },
   { key: "publicado", label: "Publicados", status: "publicado", badge: "status-pink" },
 ];
+
+/** Vídeos do formato "Gravar eu mesmo" que ainda não foram gravados. */
+const paraGravar = (job: DbJob) =>
+  job.formato === "gravacao" && (job.status === "produto_escolhido" || job.status === "roteiro_pronto");
 
 export function DraftsPage() {
   return (
@@ -60,23 +66,36 @@ export function DraftsPage() {
 }
 
 function DraftsContent() {
-  const { activeProfileId } = useStudio();
+  const { activeProfileId, can } = useStudio();
   const { data: jobs = [], isLoading } = useJobs(activeProfileId);
   const [queue, setQueue] = useState<QueueKey>("revisao");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [novoOpen, setNovoOpen] = useState(false);
 
-  const current = QUEUES.find((q) => q.key === queue)!;
-  const list = jobs.filter((j) => j.status === current.status);
+  const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
+  const gravarList = jobs.filter(paraGravar);
+  const current = QUEUES.find((q) => q.key === queue);
+  const list = queue === "gravar" ? gravarList : jobs.filter((j) => j.status === current!.status);
   const countOf = (status: DbJob["status"]) => jobs.filter((j) => j.status === status).length;
+  const recordingJob = jobs.find((j) => j.id === recordingId) ?? null;
 
   return (
     <>
-      <div className="mb-6">
-        <p className="mb-1 text-xs font-bold uppercase text-primary">Última etapa da esteira</p>
-        <h1 className="text-2xl font-black sm:text-3xl">Fila de rascunhos</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Cada vídeo pronto vira um kit de postagem: baixe o vídeo, copie os textos e publique no TikTok pelo celular.
-        </p>
+      <div className="mb-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <div>
+          <p className="mb-1 text-xs font-bold uppercase text-primary">Última etapa da esteira</p>
+          <h1 className="text-2xl font-black sm:text-3xl">Fila de rascunhos</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Cada vídeo pronto vira um kit de postagem: baixe o vídeo, copie os textos e publique no TikTok pelo celular.
+          </p>
+        </div>
+        {canCreate && (
+          <Button onClick={() => setNovoOpen(true)}>
+            <Video />
+            Novo vídeo próprio
+          </Button>
+        )}
       </div>
 
       <Tabs value={queue} onValueChange={(v) => setQueue(v as QueueKey)} className="min-w-0">
@@ -87,6 +106,7 @@ function DraftsContent() {
                 {q.label} ({countOf(q.status)})
               </TabsTrigger>
             ))}
+            <TabsTrigger value="gravar">Gravar eu mesmo ({gravarList.length})</TabsTrigger>
           </TabsList>
         </div>
       </Tabs>
@@ -98,43 +118,49 @@ function DraftsContent() {
         </p>
       ) : list.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {list.map((job) => (
-            <article key={job.id} className="panel">
-              <button
-                type="button"
-                onClick={() => setOpenId(job.id)}
-                className="block w-full overflow-hidden rounded-xl bg-black"
-              >
-                {job.video_thumbnail_url ? (
-                  <img
-                    src={job.video_thumbnail_url}
-                    alt={job.title || "Rascunho"}
-                    className="aspect-[9/16] w-full object-cover"
-                  />
-                ) : (
-                  <div className="grid aspect-[9/16] w-full place-items-center text-xs text-white/70">
-                    Sem miniatura
-                  </div>
-                )}
-              </button>
-              <p className="mt-3 truncate text-sm font-bold">{job.title || "Sem título"}</p>
-              <p className="mt-1 truncate text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
-              <div className="mt-2 flex items-center gap-2">
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${current.badge}`}>
-                  {current.label}
-                </span>
-                {!job.video_path && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
-                    <AlertTriangle className="size-3" />
-                    não salvo
+          {list.map((job) => {
+            const gravar = queue === "gravar";
+            const abrir = () => (gravar ? setRecordingId(job.id) : setOpenId(job.id));
+            return (
+              <article key={job.id} className="panel">
+                <button
+                  type="button"
+                  onClick={abrir}
+                  className="block w-full overflow-hidden rounded-xl bg-black"
+                >
+                  {job.video_thumbnail_url ? (
+                    <img
+                      src={job.video_thumbnail_url}
+                      alt={job.title || "Rascunho"}
+                      className="aspect-[9/16] w-full object-cover"
+                    />
+                  ) : (
+                    <div className="grid aspect-[9/16] w-full place-items-center px-4 text-center text-xs text-white/70">
+                      {gravar ? "Você grava este vídeo" : "Sem miniatura"}
+                    </div>
+                  )}
+                </button>
+                <p className="mt-3 truncate text-sm font-bold">{job.title || "Sem título"}</p>
+                <p className="mt-1 truncate text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${gravar ? "status-violet" : current!.badge}`}
+                  >
+                    {gravar ? (job.status === "produto_escolhido" ? "Sem roteiro" : "Pronto para gravar") : current!.label}
                   </span>
-                )}
-              </div>
-              <Button className="mt-3 w-full" onClick={() => setOpenId(job.id)}>
-                Abrir kit de postagem
-              </Button>
-            </article>
-          ))}
+                  {!gravar && !job.video_path && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                      <AlertTriangle className="size-3" />
+                      não salvo
+                    </span>
+                  )}
+                </div>
+                <Button className="mt-3 w-full" onClick={abrir}>
+                  {gravar ? "Abrir roteiro e gravar" : "Abrir kit de postagem"}
+                </Button>
+              </article>
+            );
+          })}
         </div>
       ) : (
         <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
@@ -142,11 +168,17 @@ function DraftsContent() {
             ? "Nenhum rascunho aguardando revisão. Quando um vídeo ficar pronto, ele aparece aqui."
             : queue === "aprovado"
               ? "Nenhum rascunho aprovado no momento."
-              : "Nenhum vídeo publicado ainda."}
+              : queue === "gravar"
+                ? "Nenhum vídeo para gravar. Crie um vídeo próprio ou escolha o formato “Gravar eu mesmo” ao usar um produto."
+                : "Nenhum vídeo publicado ainda."}
         </div>
       )}
 
       {openId && <DraftKitDialog jobId={openId} onClose={() => setOpenId(null)} />}
+      {recordingJob && (
+        <RecordingKitDialog job={recordingJob} canEdit={canCreate} onClose={() => setRecordingId(null)} />
+      )}
+      <NewOwnVideoDialog open={novoOpen} onOpenChange={setNovoOpen} onCreated={(jobId) => setRecordingId(jobId)} />
     </>
   );
 }
