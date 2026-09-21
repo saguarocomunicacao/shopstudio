@@ -29,3 +29,7 @@
 - [x] Manter crop e cortes visíveis no preview em todas as ferramentas
 - [x] Abrir o fluxo de gravação em tela cheia no mobile e voltar à fila ao fechar
 - [x] Substituir Fullscreen API por layout fixo compatível com Safari no iPhone
+- [ ] Alertar ao fechar gravação/edição não salva com três opções
+- [ ] Salvar rascunho com original, versão ativa e operações
+- [ ] Reabrir rascunho gravado diretamente no estúdio/editor com operações restauradas
+- [ ] Validar gravação, fechamento, salvamento e retomada
