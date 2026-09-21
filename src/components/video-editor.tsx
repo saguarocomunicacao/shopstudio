@@ -10,7 +10,6 @@ import {
 } from "@/lib/video-edit";
 
 /** Núcleo do ffmpeg servido pelo próprio app e carregado só quando o editor abre. */
-import coreJsAsset from "@/assets/ffmpeg-core.js.asset.json";
 import coreWasmAsset from "@/assets/ffmpeg-core.wasm.asset.json";
 
 type FFmpegLike = {
@@ -71,7 +70,7 @@ export function VideoEditor({
           if (!cancelled) setProgresso(Math.max(0, Math.min(100, Math.round(progress * 100))));
         });
         await instance.load({
-          coreURL: new URL(coreJsAsset.url, window.location.origin).href,
+          coreURL: new URL("/ffmpeg/ffmpeg-core.js", window.location.origin).href,
           wasmURL: new URL(coreWasmAsset.url, window.location.origin).href,
         });
         if (cancelled) {
