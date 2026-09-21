@@ -127,6 +127,7 @@ export type Database = {
       consumo_eventos: {
         Row: {
           action_type: string | null
+          billing_mode: string
           created_at: string
           etapa: Database["public"]["Enums"]["etapa_consumo"]
           id: string
@@ -141,6 +142,7 @@ export type Database = {
         }
         Insert: {
           action_type?: string | null
+          billing_mode?: string
           created_at?: string
           etapa: Database["public"]["Enums"]["etapa_consumo"]
           id?: string
@@ -155,6 +157,7 @@ export type Database = {
         }
         Update: {
           action_type?: string | null
+          billing_mode?: string
           created_at?: string
           etapa?: Database["public"]["Enums"]["etapa_consumo"]
           id?: string
@@ -583,20 +586,29 @@ export type Database = {
       plan_action_prices: {
         Row: {
           action_type: string
+          included_qty: number
+          overage_price_cents: number
           plan_id: string
           price_cents: number
+          unit_price_cents: number
           updated_at: string
         }
         Insert: {
           action_type: string
+          included_qty?: number
+          overage_price_cents?: number
           plan_id: string
           price_cents?: number
+          unit_price_cents?: number
           updated_at?: string
         }
         Update: {
           action_type?: string
+          included_qty?: number
+          overage_price_cents?: number
           plan_id?: string
           price_cents?: number
+          unit_price_cents?: number
           updated_at?: string
         }
         Relationships: [

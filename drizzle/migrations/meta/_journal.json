@@ -295,6 +295,13 @@
       "when": 1790013167274,
       "tag": "0041_restrict_plan_action_prices_select",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1790014202020,
+      "tag": "0042_plan_franquia_excedente",
+      "breakpoints": true
     }
   ]
 }
