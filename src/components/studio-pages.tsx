@@ -100,6 +100,7 @@ export function SettingsPage() {
             <TabsTrigger value="tarifas">Tarifas de custo</TabsTrigger>
             <TabsTrigger value="orcamento">Orçamento</TabsTrigger>
             <TabsTrigger value="prompts">Prompts padrão do sistema</TabsTrigger>
+            <TabsTrigger value="planos">Planos</TabsTrigger>
           </TabsList>
         </div>
 
