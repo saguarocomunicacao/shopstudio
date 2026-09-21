@@ -10,13 +10,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  ACAO_LABELS,
+  acaoDoEvento,
   computeEventoCusto,
   precoFerramentaBrl,
   useTarifas,
   type ConsumoEventoRow,
   type EtapaConsumo,
 } from "./custo";
-import { consumoPorFornecedor } from "./consumo-tenant.functions";
+import { consumoPorFornecedor, type ExtratoCredito } from "./consumo-tenant.functions";
 import { useAppConfig } from "./orcamento";
 
 export type FornecedorKey = "google" | "kalodata" | "json2video" | "elevenlabs";
@@ -118,6 +120,11 @@ export type CarteiraFornecedor = {
   /** Consumo acumulado (desde sempre) em reais e na unidade do fornecedor. */
   consumoBrl: number;
   consumoUnidades: number;
+  /** Consumo na unidade nativa do fornecedor (pontos, créditos, mil caracteres). */
+  consumoCredito: number;
+  creditoUnidade: string | null;
+  /** Extrato de desconto por evento, na unidade nativa. */
+  extratoCredito: ExtratoCredito[];
   /** Consumo do mês corrente, em reais. */
   consumoMesBrl: number;
   saldoBrl: number | null;
@@ -207,7 +214,14 @@ function useEventosConsumo(tenantId: string | null, enabled: boolean) {
   });
 }
 
-type UsoFornecedor = { brl: number; unidades: number; mesBrl: number; cicloUnidades: number };
+type UsoFornecedor = {
+  brl: number;
+  unidades: number;
+  mesBrl: number;
+  cicloUnidades: number;
+  credito: number;
+  creditoUnidade: string | null;
+};
 
 /**
  * Visão completa: aportes × consumo por fornecedor, com alertas de saldo baixo.
@@ -251,7 +265,10 @@ export function useInvestimento(
   const bloqueio = Number(config?.get(CONFIG_INVESTIMENTO.bloqueio)?.value_num ?? 0) === 1;
 
   const acc = new Map<FornecedorKey, UsoFornecedor>();
-  for (const f of FORNECEDORES) acc.set(f.key, { brl: 0, unidades: 0, mesBrl: 0, cicloUnidades: 0 });
+  for (const f of FORNECEDORES)
+    acc.set(f.key, { brl: 0, unidades: 0, mesBrl: 0, cicloUnidades: 0, credito: 0, creditoUnidade: null });
+  const extratos = new Map<FornecedorKey, ExtratoCredito[]>();
+  for (const f of FORNECEDORES) extratos.set(f.key, []);
   let totalConsumidoBrl = 0;
 
   if (backoffice) {
@@ -278,6 +295,20 @@ export function useInvestimento(
       const quando = new Date(evento.created_at);
       alvo.brl += custo.valorBrl;
       alvo.unidades += custo.unidadesTarifadas;
+      if (custo.credito.credito !== null) {
+        alvo.credito += custo.credito.credito;
+        alvo.creditoUnidade = custo.credito.unidade;
+      }
+      extratos.get(key)!.push({
+        id: evento.id,
+        created_at: evento.created_at,
+        fornecedor: key,
+        label: ACAO_LABELS[acaoDoEvento(evento)],
+        credito: custo.credito.credito,
+        unidade: custo.credito.unidade,
+        origem: custo.credito.origem,
+        valorBrl: custo.valorBrl,
+      });
       if (quando >= inicioMes) alvo.mesBrl += custo.valorBrl;
       if (key === "json2video" && ciclo && quando >= ciclo.inicio && quando < ciclo.fim) {
         alvo.cicloUnidades += custo.unidadesTarifadas;
@@ -286,6 +317,7 @@ export function useInvestimento(
     }
   } else {
     for (const f of FORNECEDORES) acc.set(f.key, { ...consumoServidor!.fornecedores[f.key] });
+    for (const linha of consumoServidor!.extrato) extratos.get(linha.fornecedor)?.push(linha);
     totalConsumidoBrl = consumoServidor!.totalBrl;
   }
 
@@ -295,6 +327,9 @@ export function useInvestimento(
     const aportadoBrl = meus.reduce((s, a) => s + a.valor_brl, 0);
     const aportadoUnidades = meus.reduce((s, a) => s + (a.unidades ?? 0), 0);
     const plano = planos.find((p) => p.fornecedor === def.key) ?? null;
+    const extrato = [...(extratos.get(def.key) ?? [])]
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      .slice(0, 30);
 
     if (def.tipo === "assinatura") {
       const cota = plano?.creditos_mes ?? 0;
@@ -306,6 +341,9 @@ export function useInvestimento(
         aportadoUnidades,
         consumoBrl: uso.brl,
         consumoUnidades: uso.unidades,
+        consumoCredito: uso.credito,
+        creditoUnidade: uso.creditoUnidade ?? def.unidade,
+        extratoCredito: extrato,
         consumoMesBrl: uso.mesBrl,
         saldoBrl: null,
         saldoUnidades: cota > 0 ? cota - usados : null,
@@ -328,6 +366,9 @@ export function useInvestimento(
       aportadoUnidades,
       consumoBrl: uso.brl,
       consumoUnidades: uso.unidades,
+      consumoCredito: uso.credito,
+      creditoUnidade: uso.creditoUnidade ?? def.unidade,
+      extratoCredito: extrato,
       consumoMesBrl: uso.mesBrl,
       saldoBrl,
       saldoUnidades,
