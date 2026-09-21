@@ -1,4 +1,5 @@
 import { TarifasCard } from "./tarifas-card";
+import { CreditoTaxasCard } from "./credito-taxas-card";
 import { PlansCard } from "./plans-card";
 import { BudgetCard } from "./budget-card";
 import { CheckCircle2, CircleDollarSign, FileClock, Loader2, MoreHorizontal, Plus, Video } from "lucide-react";
@@ -126,7 +127,7 @@ export function SettingsPage() {
             </div>
           </section>
         </TabsContent>
-        <TabsContent value="tarifas"><TarifasCard /></TabsContent>
+        <TabsContent value="tarifas"><div className="grid gap-4"><TarifasCard /><CreditoTaxasCard /></div></TabsContent>
         <TabsContent value="orcamento"><div className="grid gap-4 lg:grid-cols-2"><BudgetCard /></div></TabsContent>
         <TabsContent value="prompts">
           <div className="mb-4">
