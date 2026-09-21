@@ -210,7 +210,6 @@ export function RecordingStudio({
             facingMode: { ideal: mode },
             width: { ideal: CAMERA_IDEAL_WIDTH },
             height: { ideal: CAMERA_IDEAL_HEIGHT },
-            resizeMode: { ideal: "none" },
           },
           audio: limparRuido
             ? { noiseSuppression: true, echoCancellation: true, autoGainControl: true }
