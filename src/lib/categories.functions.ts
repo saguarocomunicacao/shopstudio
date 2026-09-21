@@ -39,6 +39,7 @@ export const syncCategories = createServerFn({ method: "POST" })
       jobId: null,
       profileId: null,
       etapa: "busca_kalodata",
+      acao: "atualizacao_categorias",
       modelo: "kalodata-product-rank",
       unidade: "bloco_linhas_kalodata",
       quantidade: categories.length,

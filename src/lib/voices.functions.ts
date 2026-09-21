@@ -40,7 +40,12 @@ const generoFrom = (value: unknown): "masculino" | "feminino" | "neutro" | null 
 };
 
 /** Gera o mp3 de preview de uma voz e guarda no bucket privado. */
-async function buildPreview(voiceId: string, texto: string, profileId: string | null) {
+async function buildPreview(
+  voiceId: string,
+  texto: string,
+  profileId: string | null,
+  acao: "narracao" | "clonagem_voz" = "narracao",
+) {
   const res = await fetch(`${API}/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
     method: "POST",
     headers: { "xi-api-key": await apiKey(), "Content-Type": "application/json" },
@@ -56,6 +61,7 @@ async function buildPreview(voiceId: string, texto: string, profileId: string | 
   await recordConsumo({
     profileId,
     etapa: "narracao_elevenlabs",
+    acao,
     modelo: PREVIEW_TARIFA_MODELO,
     quantidade: texto.length / 1000,
     unidade: "mil_caracteres",
@@ -154,7 +160,7 @@ export const cloneVoice = createServerFn({ method: "POST" })
     const { PREVIEW_PHRASE } = await import("./voices");
     let previewUrl: string | null = null;
     try {
-      previewUrl = await buildPreview(voiceId, PREVIEW_PHRASE, data.profileId);
+      previewUrl = await buildPreview(voiceId, PREVIEW_PHRASE, data.profileId, "clonagem_voz");
     } catch (e) {
       console.error("[voices] preview da voz clonada falhou", e);
     }

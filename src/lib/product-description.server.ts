@@ -116,6 +116,7 @@ export async function generateAndSaveDescription(
         jobId: null,
         profileId: row.profile_id,
         etapa: "roteiro_texto",
+        acao: "descricao_produto",
         modelo: "gpt-6-astra",
         unidade,
         quantidade,
