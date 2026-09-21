@@ -62,13 +62,18 @@ function Resumo({ label, value, hint, destaque }: { label: string; value: string
   );
 }
 
-function AporteDialog({ fornecedor, unidade, onSaved }: { fornecedor: FornecedorKey; unidade: string | null; onSaved?: () => void }) {
+function AporteDialog({
+  fornecedor,
+  unidade,
+  tenantId,
+  onSaved,
+}: { fornecedor: FornecedorKey; unidade: string | null; tenantId: string | null; onSaved?: () => void }) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState(hoje());
   const [valor, setValor] = useState("");
   const [unidades, setUnidades] = useState("");
   const [obs, setObs] = useState("");
-  const salvar = useSalvarAporte();
+  const salvar = useSalvarAporte(tenantId);
 
   const submit = () => {
     const v = parseNum(valor);
