@@ -445,6 +445,9 @@ export type Database = {
       jobs: {
         Row: {
           approved_at: string | null
+          avatar_description: string | null
+          avatar_id: string | null
+          avatar_reference_urls: Json
           caption: string | null
           created_at: string
           created_by: string | null
@@ -493,6 +496,9 @@ export type Database = {
         }
         Insert: {
           approved_at?: string | null
+          avatar_description?: string | null
+          avatar_id?: string | null
+          avatar_reference_urls?: Json
           caption?: string | null
           created_at?: string
           created_by?: string | null
@@ -541,6 +547,9 @@ export type Database = {
         }
         Update: {
           approved_at?: string | null
+          avatar_description?: string | null
+          avatar_id?: string | null
+          avatar_reference_urls?: Json
           caption?: string | null
           created_at?: string
           created_by?: string | null
@@ -588,6 +597,13 @@ export type Database = {
           voice_ref?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "jobs_avatar_id_fkey"
+            columns: ["avatar_id"]
+            isOneToOne: false
+            referencedRelation: "profile_avatars"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "jobs_product_id_fkey"
             columns: ["product_id"]
@@ -847,6 +863,57 @@ export type Database = {
           },
         ]
       }
+      profile_avatars: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          name: string
+          profile_id: string
+          reference_urls: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          name: string
+          profile_id: string
+          reference_urls?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          name?: string
+          profile_id?: string
+          reference_urls?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_avatars_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_avatars_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_identities: {
         Row: {
           created_at: string
@@ -953,6 +1020,7 @@ export type Database = {
       }
       profile_video_settings: {
         Row: {
+          avatar_description: string
           avatar_mode: string
           avatar_reference_url: string | null
           avatar_reference_urls: Json
@@ -969,6 +1037,7 @@ export type Database = {
           voice_ref: string | null
         }
         Insert: {
+          avatar_description?: string
           avatar_mode?: string
           avatar_reference_url?: string | null
           avatar_reference_urls?: Json
@@ -985,6 +1054,7 @@ export type Database = {
           voice_ref?: string | null
         }
         Update: {
+          avatar_description?: string
           avatar_mode?: string
           avatar_reference_url?: string | null
           avatar_reference_urls?: Json
