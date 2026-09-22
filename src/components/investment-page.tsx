@@ -33,6 +33,13 @@ import { useStudio } from "./studio-context";
 const hoje = () => new Date().toISOString().slice(0, 10);
 const dataCurta = (v: string) => new Date(`${v}T12:00:00`).toLocaleDateString("pt-BR");
 const numero = (v: number) => Number(v.toFixed(2)).toLocaleString("pt-BR");
+const statusConsumo = (origem: string) => (origem === "estimado" ? "Estimado" : "Real");
+const quantidadeConsumo = (credito: number | null, unidade: string | null, unidadePadrao: string | null) => {
+  if (credito === null) return "—";
+  const quantidade = numero(credito);
+  const rotulo = unidade ?? unidadePadrao;
+  return rotulo ? `−${quantidade} ${rotulo}` : `−${quantidade}`;
+};
 const parseNum = (v: string) => {
   const n = Number(v.trim().replace(/\./g, "").replace(",", "."));
   return Number.isFinite(n) ? n : null;
@@ -293,25 +300,43 @@ function CarteiraCard({
         </div>
       )}
 
-      {def.unidade && carteira.extratoCredito.length > 0 && (
+      {carteira.extratoCredito.length > 0 && (
         <div className="grid gap-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Extrato de consumo ({def.unidade})
-          </p>
-          <ul className="grid gap-1 text-sm">
-            {carteira.extratoCredito.slice(0, 12).map((linha) => (
-              <li key={linha.id} className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-muted-foreground">
-                  {linha.label} · {new Date(linha.created_at).toLocaleDateString("pt-BR")}
-                  {linha.origem === "estimado" && " · estimado"}
-                </span>
-                <span className="font-semibold">
-                  {linha.credito === null ? "—" : `−${def.unidadeLabel(linha.credito)}`}
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">{brl(linha.valorBrl)}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Extrato de consumo</p>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[680px] table-fixed">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[34%]">Descrição / ação</TableHead>
+                  <TableHead className="w-[16%]">Data</TableHead>
+                  <TableHead className="w-[14%]">Status</TableHead>
+                  <TableHead className="w-[21%] text-right">Quantidade</TableHead>
+                  <TableHead className="w-[15%] text-right">Valor em R$</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {carteira.extratoCredito.slice(0, 12).map((linha) => (
+                  <TableRow key={linha.id}>
+                    <TableCell className="font-medium">{linha.label}</TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {new Date(linha.created_at).toLocaleDateString("pt-BR")}
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                        {statusConsumo(linha.origem)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right font-bold text-primary tabular-nums">
+                      {quantidadeConsumo(linha.credito, linha.unidade, def.unidade)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right text-sm text-muted-foreground tabular-nums">
+                      {brl(linha.valorBrl)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
 
