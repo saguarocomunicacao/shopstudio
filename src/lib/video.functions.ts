@@ -204,7 +204,7 @@ export const generateJobScenes = createServerFn({ method: "POST" })
     const { supabase } = context;
     const job = await loadJob(supabase, data.jobId);
 
-    if (job.status !== "roteiro_pronto") {
+    if (jobStatus(job) !== "roteiro_pronto") {
       throw new Error("As cenas só podem ser geradas quando o roteiro está pronto.");
     }
     if (!splitScript(job.script ?? "").length) {
@@ -223,17 +223,21 @@ export const generateJobScenes = createServerFn({ method: "POST" })
 
     const { error } = await supabase
       .from("jobs")
-      .update({
-        render_stage: resume ? "cenas" : "planejando",
-        render_started_at: new Date().toISOString(),
-        render_error: null,
-        render_id: null,
-        ...(resume ? {} : { scenes: [], gemini_images_count: 0, veo_takes_count: 0 }),
-        video_url: null,
-        video_thumbnail_url: null,
-      })
+      .update(
+        trackPatch(job, {
+          render_stage: resume ? "cenas" : "planejando",
+          render_started_at: new Date().toISOString(),
+          render_error: null,
+          render_id: null,
+          video_url: null,
+          video_thumbnail_url: null,
+          ...(isAiTrack(job) ? { status: "roteiro_pronto" } : {}),
+        }),
+      )
+      .update(resume ? {} : { scenes: [], gemini_images_count: 0, veo_takes_count: 0 })
       .eq("id", job.id);
     if (error) throw new Error(error.message);
+
 
     return { stage: (resume ? "cenas" : "planejando") as "cenas" | "planejando" };
   });
