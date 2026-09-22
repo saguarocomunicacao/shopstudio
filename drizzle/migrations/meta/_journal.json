@@ -351,6 +351,13 @@
       "when": 1790117100851,
       "tag": "0049_job_roteiro_modo",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1790118231843,
+      "tag": "0050_avatar_library_and_job_override",
+      "breakpoints": true
     }
   ]
 }
