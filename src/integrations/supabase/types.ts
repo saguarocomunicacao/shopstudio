@@ -468,6 +468,8 @@ export type Database = {
           render_stage: string | null
           render_started_at: string | null
           roteiro_blocos: Json
+          roteiro_modo: string
+          roteiro_origem: string | null
           scenes: Json
           script: string | null
           script_refs: Json
@@ -514,6 +516,8 @@ export type Database = {
           render_stage?: string | null
           render_started_at?: string | null
           roteiro_blocos?: Json
+          roteiro_modo?: string
+          roteiro_origem?: string | null
           scenes?: Json
           script?: string | null
           script_refs?: Json
@@ -560,6 +564,8 @@ export type Database = {
           render_stage?: string | null
           render_started_at?: string | null
           roteiro_blocos?: Json
+          roteiro_modo?: string
+          roteiro_origem?: string | null
           scenes?: Json
           script?: string | null
           script_refs?: Json

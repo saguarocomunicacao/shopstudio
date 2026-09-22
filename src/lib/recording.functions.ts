@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { withoutDuplicatedHook } from "@/lib/recording-script";
+import { MAX_TEXT_CHARS, chunkText, recalcularTempos } from "@/lib/script-chunking";
 
 /**
  * Modo "Gravar eu mesmo": a IA gera só o conteúdo textual (roteiro em blocos de
@@ -149,10 +150,131 @@ async function callLovableAi(prompt: string) {
   return { roteiro, usage };
 }
 
+/** Chamada de texto simples (sem schema), usada para condensar pedaços de texto grande. */
+async function callLovableAiPlainText(prompt: string) {
+  const apiKey = process.env["LOVABLE_API_KEY"];
+  if (!apiKey) throw new Error("A inteligência artificial não está configurada.");
+
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "fetch" },
+    body: JSON.stringify({ model: "openai/gpt-6-astra", input: prompt, stream: true, reasoning: { effort: "low" } }),
+  });
+  if (!res.ok || !res.body) {
+    if (res.status === 429) throw new Error("A IA está sobrecarregada no momento. Tente de novo em instantes.");
+    if (res.status === 402) throw new Error("Os créditos de IA do espaço de trabalho acabaram. Adicione créditos para continuar.");
+    throw new Error("Não foi possível processar o texto enviado. Tente novamente.");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let text = "";
+  const usage = { input: 0, output: 0 };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      try {
+        const event = JSON.parse(payload) as {
+          type?: string;
+          delta?: string;
+          response?: { output_text?: string; usage?: { input_tokens?: number; output_tokens?: number } };
+        };
+        if (event.type === "response.output_text.delta" && typeof event.delta === "string") text += event.delta;
+        else if (event.type === "response.completed" && event.response?.output_text) text = event.response.output_text;
+        const u = event.response?.usage;
+        if (u) {
+          if (typeof u.input_tokens === "number") usage.input = u.input_tokens;
+          if (typeof u.output_tokens === "number") usage.output = u.output_tokens;
+        }
+      } catch {
+        // frames parciais / keep-alive
+      }
+    }
+  }
+  return { texto: text.trim(), usage };
+}
+
 /** Roteiro em texto corrido, usado no teleprompter e como referência do job. */
 export function composeRecordingScript(r: RoteiroGravacao) {
   const blocos = r.blocos.map((b) => `${b.tempo} — ${b.orientacao}\n${b.fala}`).join("\n\n");
   return `GANCHO (0-3s)\n${r.gancho}\n\nCORPO\n${blocos}\n\nCTA\n${r.cta}`;
+}
+
+/**
+ * Modo "Organizar meu roteiro": a IA não reescreve o texto do cliente, apenas
+ * distribui a fala nos blocos de tempo. Textos grandes são processados em
+ * pedaços e depois reunidos num roteiro só, com os tempos recalculados aqui.
+ */
+async function organizarRoteiroEnviado(params: {
+  origem: string;
+  idioma: string;
+  tom: string;
+  perfil: string;
+  categoria: string;
+  tipoCta: string;
+  jaDefinido: { gancho: string; cta: string; caption: string; hashtags: string[]; textoTela: string };
+  somarUso: (u: { input: number; output: number }) => void;
+}): Promise<RoteiroGravacao> {
+  const partes = chunkText(params.origem);
+  const resultados: RoteiroGravacao[] = [];
+
+  for (const [i, parte] of partes.entries()) {
+    const prompt = [
+      `Você organiza roteiros de vídeo curto (TikTok) para o perfil "${params.perfil}" (nicho: ${params.categoria}), em ${params.idioma}, tom ${params.tom}.`,
+      "",
+      "REGRA PRINCIPAL: o roteiro abaixo foi escrito pelo próprio criador. Você NÃO reescreve, NÃO resume, NÃO inventa e NÃO troca as palavras dele.",
+      "Sua única tarefa é ORGANIZAR: separar a fala em blocos de tempo em sequência, mantendo as frases originais na mesma ordem.",
+      "Pode apenas: remover marcações do documento (títulos de seção, numeração, anotações entre colchetes), corrigir pontuação evidente e juntar/quebrar frases para encaixar nos blocos.",
+      "",
+      partes.length > 1
+        ? `Este é o pedaço ${i + 1} de ${partes.length} do roteiro. Organize SOMENTE o texto deste pedaço; os outros pedaços são tratados separadamente.`
+        : "Organize o roteiro inteiro.",
+      i > 0 ? "Como não é o primeiro pedaço, deixe o campo gancho vazio." : "",
+      i < partes.length - 1 ? "Como não é o último pedaço, deixe o campo cta vazio." : "",
+      "",
+      "Campos auxiliares (titulo, gancho, cta, caption, hashtags, texto_tela e a orientacao de cada bloco):",
+      "- Se o próprio texto enviado já trouxer esse elemento (ex: uma linha marcada como GANCHO, CTA, LEGENDA, HASHTAGS ou indicações de cena), use exatamente o que veio.",
+      "- Se não trouxer, sugira algo curto e coerente com o roteiro.",
+      `- Para o CTA: ${params.tipoCta}`,
+      "- O campo 'orientacao' é uma dica de cena/ação, nunca a fala.",
+      "- O campo 'tempo' pode ser aproximado; os segundos finais são recalculados depois pelo sistema.",
+      "",
+      "ROTEIRO DO CRIADOR:",
+      parte,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const { roteiro, usage } = await callLovableAi(prompt);
+    params.somarUso(usage);
+    resultados.push(roteiro);
+  }
+
+  const primeiro = resultados[0];
+  const ultimo = resultados[resultados.length - 1];
+  const blocos = resultados.flatMap((r) => r.blocos).filter((b) => b.fala.trim());
+  const gancho = params.jaDefinido.gancho || primeiro?.gancho || "";
+  const hashtags = params.jaDefinido.hashtags.length
+    ? params.jaDefinido.hashtags
+    : [...new Set(resultados.flatMap((r) => r.hashtags))].slice(0, 12);
+
+  return {
+    titulo: primeiro?.titulo ?? "",
+    gancho,
+    blocos: recalcularTempos(withoutDuplicatedHook(gancho, blocos)),
+    texto_tela: params.jaDefinido.textoTela || primeiro?.texto_tela || "",
+    cta: params.jaDefinido.cta || ultimo?.cta || primeiro?.cta || "",
+    caption: params.jaDefinido.caption || resultados.map((r) => r.caption).find(Boolean) || "",
+    hashtags,
+  };
 }
 
 async function assertCanEdit(supabase: any, profileId: string) {
@@ -161,14 +283,50 @@ async function assertCanEdit(supabase: any, profileId: string) {
   if (!canEdit) throw new Error("Você não tem permissão para editar conteúdo neste perfil.");
 }
 
+const TEXTO_GRANDE_DEMAIS =
+  "Esse texto é maior do que conseguimos processar de uma vez. Divida em partes menores e crie um vídeo para cada parte.";
+
+/** Valida textos livres sem mostrar mensagem técnica de limite. */
+const textoLivre = (min: number, rotuloCurto: string) =>
+  z
+    .string()
+    .trim()
+    .superRefine((valor, ctx) => {
+      if (valor.length < min) ctx.addIssue({ code: z.ZodIssueCode.custom, message: rotuloCurto });
+      if (valor.length > MAX_TEXT_CHARS) ctx.addIssue({ code: z.ZodIssueCode.custom, message: TEXTO_GRANDE_DEMAIS });
+    });
+
+/** Título curto derivado do texto, já que o assunto pode ser longo. */
+function tituloProvisorio(texto: string) {
+  const primeira = texto.split(/\n+/).map((l) => l.trim()).find(Boolean) ?? texto.trim();
+  return primeira.length > 180 ? `${primeira.slice(0, 177)}...` : primeira;
+}
+
 /** Origem A: vídeo próprio sobre um assunto livre, sem produto vinculado. */
 export const createOwnVideoJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ profileId: z.string().uuid(), assunto: z.string().trim().min(3).max(300) }).parse(data),
+    z
+      .object({
+        profileId: z.string().uuid(),
+        modo: z.enum(["criar", "organizar"]).default("criar"),
+        assunto: textoLivre(3, "Conte o assunto do vídeo em pelo menos 3 caracteres.").default(""),
+        roteiroOrigem: textoLivre(0, "").optional(),
+      })
+      .superRefine((valor, ctx) => {
+        if (valor.modo === "organizar" && (valor.roteiroOrigem ?? "").trim().length < 30) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Cole, dite ou envie o roteiro que você já tem para a inteligência artificial organizar.",
+          });
+        }
+      })
+      .parse(data),
   )
   .handler(async ({ data, context }) => {
     await assertCanEdit(context.supabase, data.profileId);
+    const origem = (data.modo === "organizar" ? (data.roteiroOrigem ?? "") : data.assunto).trim();
+    const titulo = tituloProvisorio(data.assunto.trim() || origem) || "Vídeo próprio";
     const { data: job, error } = await context.supabase
       .from("jobs")
       .insert({
@@ -176,7 +334,9 @@ export const createOwnVideoJob = createServerFn({ method: "POST" })
         product_id: null,
         status: "produto_escolhido",
         formato: "gravacao",
-        title: data.assunto,
+        title: titulo,
+        roteiro_modo: data.modo,
+        roteiro_origem: origem || null,
         created_by: context.userId,
       })
       .select("id")
@@ -193,7 +353,7 @@ export const generateRecordingScript = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, product_id, profile_id, status, title, formato")
+      .select("id, product_id, profile_id, status, title, formato, roteiro_modo, roteiro_origem, hook, post_cta, caption, hashtags, texto_tela")
       .eq("id", data.jobId)
       .maybeSingle();
     if (jobError) throw new Error(jobError.message);
@@ -210,28 +370,79 @@ export const generateRecordingScript = createServerFn({ method: "POST" })
     ]);
 
     const tone = TONE_LABELS[identity?.tone ?? "descontraido"] ?? (identity?.tone ?? "descontraído");
-    const { resolvePrompt, renderPrompt } = await import("./prompts.server");
-    const template = await resolvePrompt(supabase, job.profile_id, "roteiro_gravacao");
-    const renderedPrompt = renderPrompt(template, {
-      idioma: identity?.language || "pt-BR",
-      tom_de_voz: tone,
-      perfil: profile?.name ?? "",
-      categoria: profile?.niche || "geral",
-      assunto: job.title ?? "",
-      produto: product?.name ?? "",
-      preco: product ? Number(product.price).toFixed(2) : "",
-      categoria_produto: product?.niche || "",
-      descricao_produto: (product?.description ?? "").slice(0, 2000),
-      observacoes_estilo: identity?.style_notes?.trim() ?? "",
-      tipo_cta: product ? CTA_VENDA : CTA_COMUNIDADE,
-    });
-    const prompt = `${renderedPrompt}\n\nREGRA OBRIGATÓRIA DE CONTINUIDADE: A fala do gancho (0-3s) já é o início do vídeo. Não repita a fala do gancho, nem uma paráfrase dela, em nenhum bloco de tempo. O primeiro bloco começa em 3s com fala nova e dá continuidade ao gancho.`;
+    const idioma = identity?.language || "pt-BR";
+    const tipoCta = product ? CTA_VENDA : CTA_COMUNIDADE;
+    const modo = job.roteiro_modo === "organizar" ? "organizar" : "criar";
 
-    const { roteiro: generatedRoteiro, usage } = await callLovableAi(prompt);
-    const roteiro = {
-      ...generatedRoteiro,
-      blocos: withoutDuplicatedHook(generatedRoteiro.gancho, generatedRoteiro.blocos),
+    const usage = { input: 0, output: 0 };
+    const somarUso = (u: { input: number; output: number }) => {
+      usage.input += u.input;
+      usage.output += u.output;
     };
+
+    let roteiro: RoteiroGravacao;
+
+    if (modo === "organizar") {
+      const origem = (job.roteiro_origem ?? "").trim();
+      if (!origem) {
+        throw new Error("Não encontramos o roteiro que você enviou. Cole o texto de novo para organizarmos.");
+      }
+      roteiro = await organizarRoteiroEnviado({
+        origem,
+        idioma,
+        tom: tone,
+        perfil: profile?.name ?? "",
+        categoria: profile?.niche || "geral",
+        tipoCta,
+        jaDefinido: {
+          gancho: (job.hook ?? "").trim(),
+          cta: (job.post_cta ?? "").trim(),
+          caption: (job.caption ?? "").trim(),
+          hashtags: job.hashtags ?? [],
+          textoTela: (job.texto_tela ?? "").trim(),
+        },
+        somarUso,
+      });
+    } else {
+      let assunto = (job.roteiro_origem ?? job.title ?? "").trim();
+      const partes = chunkText(assunto);
+      if (partes.length > 1) {
+        const resumos: string[] = [];
+        for (const [i, parte] of partes.entries()) {
+          const { texto, usage: u } = await callLovableAiPlainText(
+            `Você está condensando a parte ${i + 1} de ${partes.length} de um material enviado por um criador de conteúdo.\n` +
+              `Resuma em tópicos curtos, em ${idioma}, só os pontos úteis para um vídeo curto. Não invente informação.\n\nPARTE:\n${parte}`,
+          );
+          somarUso(u);
+          if (texto) resumos.push(texto);
+        }
+        assunto = resumos.join("\n\n").slice(0, 12000) || assunto.slice(0, 12000);
+      }
+
+      const { resolvePrompt, renderPrompt } = await import("./prompts.server");
+      const template = await resolvePrompt(supabase, job.profile_id, "roteiro_gravacao");
+      const renderedPrompt = renderPrompt(template, {
+        idioma,
+        tom_de_voz: tone,
+        perfil: profile?.name ?? "",
+        categoria: profile?.niche || "geral",
+        assunto,
+        produto: product?.name ?? "",
+        preco: product ? Number(product.price).toFixed(2) : "",
+        categoria_produto: product?.niche || "",
+        descricao_produto: (product?.description ?? "").slice(0, 2000),
+        observacoes_estilo: identity?.style_notes?.trim() ?? "",
+        tipo_cta: tipoCta,
+      });
+      const prompt = `${renderedPrompt}\n\nREGRA OBRIGATÓRIA DE CONTINUIDADE: A fala do gancho (0-3s) já é o início do vídeo. Não repita a fala do gancho, nem uma paráfrase dela, em nenhum bloco de tempo. O primeiro bloco começa em 3s com fala nova e dá continuidade ao gancho.`;
+
+      const { roteiro: generatedRoteiro, usage: u } = await callLovableAi(prompt);
+      somarUso(u);
+      roteiro = {
+        ...generatedRoteiro,
+        blocos: withoutDuplicatedHook(generatedRoteiro.gancho, generatedRoteiro.blocos),
+      };
+    }
 
     const { recordConsumo } = await import("./consumo.server");
     for (const [unidade, quantidade] of [
@@ -246,7 +457,7 @@ export const generateRecordingScript = createServerFn({ method: "POST" })
           modelo: "gpt-6-astra",
           unidade,
           quantidade,
-          metadados: { formato: "gravacao" },
+          metadados: { formato: "gravacao", modo },
         });
       }
     }
@@ -278,20 +489,20 @@ export const saveRecordingScript = createServerFn({ method: "POST" })
     z
       .object({
         jobId: z.string().uuid(),
-        titulo: z.string().trim().max(300),
-        gancho: z.string().trim().max(1000),
+        titulo: z.string().trim().max(500),
+        gancho: z.string().trim().max(3000),
         blocos: z
           .array(
             z.object({
               tempo: z.string().trim().max(40),
-              orientacao: z.string().trim().max(500),
-              fala: z.string().trim().max(2000),
+              orientacao: z.string().trim().max(1000),
+              fala: z.string().trim().max(6000),
             }),
           )
-          .max(12),
-        textoTela: z.string().trim().max(500),
-        cta: z.string().trim().max(500),
-        caption: z.string().trim().max(5000),
+          .max(60),
+        textoTela: z.string().trim().max(1000),
+        cta: z.string().trim().max(2000),
+        caption: z.string().trim().max(10000),
         hashtags: z.array(z.string().trim().min(1).max(100)).max(30),
       })
       .parse(data),

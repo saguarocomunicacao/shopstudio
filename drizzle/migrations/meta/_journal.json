@@ -344,6 +344,13 @@
       "when": 1790102156575,
       "tag": "0048_jobs_soft_delete",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1790117100851,
+      "tag": "0049_job_roteiro_modo",
+      "breakpoints": true
     }
   ]
 }
