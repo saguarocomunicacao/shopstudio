@@ -33,10 +33,51 @@ type JobRow = {
   veo_takes_count: number;
   voice_ref: string | null;
   tenant_id: string;
+  formato?: string | null;
+  ai_status?: string | null;
+  ai_render_stage?: string | null;
   avatar_id?: string | null;
   avatar_reference_urls?: unknown;
   avatar_description?: string | null;
 };
+
+/**
+ * Trilha de IA do vídeo próprio ("Gravar eu mesmo").
+ * O job gravado continua com status/render_stage/vídeo intactos: a geração por
+ * IA acontece em colunas espelhadas (ai_*), então a gravação nunca é perdida.
+ */
+const AI_TRACK_KEYS: Record<string, string> = {
+  status: "ai_status",
+  render_stage: "ai_render_stage",
+  render_id: "ai_render_id",
+  render_error: "ai_render_error",
+  render_started_at: "ai_render_started_at",
+  video_url: "ai_video_url",
+  video_thumbnail_url: "ai_video_thumbnail_url",
+  video_storage_status: "ai_video_storage_status",
+  video_storage_error: "ai_video_storage_error",
+};
+
+export const isAiTrack = (job: { formato?: string | null }) => job.formato === "gravacao";
+
+/** Status efetivo da trilha em execução. */
+function jobStatus(job: JobRow): string {
+  return isAiTrack(job) ? (job.ai_status ?? "roteiro_pronto") : job.status;
+}
+
+/** Etapa efetiva da trilha em execução. */
+function jobStage(job: JobRow): string | null {
+  return isAiTrack(job) ? (job.ai_render_stage ?? null) : job.render_stage;
+}
+
+/** Converte um patch do pipeline para as colunas da trilha certa. */
+export function trackPatch<T extends Record<string, unknown>>(job: { formato?: string | null }, patch: T): T {
+  if (!isAiTrack(job)) return patch;
+  return Object.fromEntries(
+    Object.entries(patch).map(([key, value]) => [AI_TRACK_KEYS[key] ?? key, value]),
+  ) as T;
+}
+
 
 /** Quebra o roteiro salvo (GANCHO / CORPO / CTA) nos blocos narrados. */
 export function splitScript(script: string): string[] {
@@ -144,15 +185,12 @@ async function assertVideoKeys(supabase: any, job: JobRow) {
 async function loadJob(supabase: any, jobId: string): Promise<JobRow> {
   const { data: job, error } = await supabase
     .from("jobs")
-    .select("id, product_id, profile_id, tenant_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato, avatar_id, avatar_reference_urls, avatar_description")
+    .select("id, product_id, profile_id, tenant_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato, ai_status, ai_render_stage, avatar_id, avatar_reference_urls, avatar_description")
     .eq("id", jobId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!job) throw new Error("Job não encontrado ou sem permissão de acesso.");
-  // No formato "Gravar eu mesmo" a pessoa grava o vídeo: nada de cenas, Veo ou montagem.
-  if (job.formato === "gravacao") {
-    throw new Error("Este vídeo é do formato Gravar eu mesmo: ele não usa geração automática de cenas ou vídeo.");
-  }
+
 
   const { data: canEdit, error: permError } = await supabase.rpc("can_edit_pipeline", { _profile_id: job.profile_id });
   if (permError) throw new Error(permError.message);
@@ -168,7 +206,7 @@ export const generateJobScenes = createServerFn({ method: "POST" })
     const { supabase } = context;
     const job = await loadJob(supabase, data.jobId);
 
-    if (job.status !== "roteiro_pronto") {
+    if (jobStatus(job) !== "roteiro_pronto") {
       throw new Error("As cenas só podem ser geradas quando o roteiro está pronto.");
     }
     if (!splitScript(job.script ?? "").length) {
@@ -188,16 +226,21 @@ export const generateJobScenes = createServerFn({ method: "POST" })
     const { error } = await supabase
       .from("jobs")
       .update({
-        render_stage: resume ? "cenas" : "planejando",
-        render_started_at: new Date().toISOString(),
-        render_error: null,
-        render_id: null,
+        ...trackPatch(job, {
+          render_stage: resume ? "cenas" : "planejando",
+          render_started_at: new Date().toISOString(),
+          render_error: null,
+          render_id: null,
+          video_url: null,
+          video_thumbnail_url: null,
+          ...(isAiTrack(job) ? { status: "roteiro_pronto" } : {}),
+        }),
         ...(resume ? {} : { scenes: [], gemini_images_count: 0, veo_takes_count: 0 }),
-        video_url: null,
-        video_thumbnail_url: null,
       })
       .eq("id", job.id);
+
     if (error) throw new Error(error.message);
+
 
     return { stage: (resume ? "cenas" : "planejando") as "cenas" | "planejando" };
   });
@@ -211,7 +254,7 @@ export const approveJobScenes = createServerFn({ method: "POST" })
     const { supabase } = context;
     const job = await loadJob(supabase, data.jobId);
 
-    if (job.status !== "cenas_geradas") {
+    if (jobStatus(job) !== "cenas_geradas") {
       throw new Error("Aprove as cenas quando elas estiverem geradas.");
     }
     const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as { image_url?: string }[];
@@ -227,15 +270,18 @@ export const approveJobScenes = createServerFn({ method: "POST" })
 
     const { error } = await supabase
       .from("jobs")
-      .update({
-        status: "gerando_video",
-        render_stage: "takes",
-        render_started_at: new Date().toISOString(),
-        render_error: null,
-        render_id: null,
-      })
+      .update(
+        trackPatch(job, {
+          status: "gerando_video",
+          render_stage: "takes",
+          render_started_at: new Date().toISOString(),
+          render_error: null,
+          render_id: null,
+        }),
+      )
       .eq("id", job.id);
     if (error) throw new Error(error.message);
+
 
     return { stage: "takes" as const };
   });
@@ -260,13 +306,14 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
 
     // Cenas prontas podem ser regeradas na revisão; uma cena que FALHOU (ficou
     // sem imagem) também pode ser refeita sozinha, sem descartar as que deram certo.
-    const retryFailed = job.status === "roteiro_pronto" && !job.render_stage && !scene.image_url;
-    if (job.status !== "cenas_geradas" && !retryFailed) {
+    const retryFailed = jobStatus(job) === "roteiro_pronto" && !jobStage(job) && !scene.image_url;
+    if (jobStatus(job) !== "cenas_geradas" && !retryFailed) {
       throw new Error("Só é possível regerar cenas nesta etapa.");
     }
 
     // Nova tentativa começando: limpa o erro anterior antes de gerar.
-    await supabase.from("jobs").update({ render_error: null }).eq("id", job.id);
+    await supabase.from("jobs").update(trackPatch(job, { render_error: null })).eq("id", job.id);
+
 
 
     const pipeline = await import("./video-pipeline.server");
@@ -322,8 +369,11 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
       .update({
         scenes,
         gemini_images_count: (job.gemini_images_count ?? 0) + 1,
-        render_error: null,
-        ...(completed ? { status: "cenas_geradas", render_stage: null } : {}),
+        ...trackPatch(job, {
+          render_error: null,
+          ...(completed ? { status: "cenas_geradas", render_stage: null } : {}),
+        }),
+
       })
       .eq("id", job.id);
     if (error) throw new Error(error.message);
@@ -351,11 +401,12 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
     const { supabase } = context;
     const job = await loadJob(supabase, data.jobId);
 
+    const stageAtual = jobStage(job);
     const running =
-      (job.status === "roteiro_pronto" || job.status === "gerando_video") &&
-      !!job.render_stage &&
-      job.render_stage !== "render";
-    if (!running) return { stage: job.render_stage, done: true, progress: null };
+      (jobStatus(job) === "roteiro_pronto" || jobStatus(job) === "gerando_video") &&
+      !!stageAtual &&
+      stageAtual !== "render";
+    if (!running) return { stage: stageAtual, done: true, progress: null };
 
     const { assertOrcamento: assertOrcamentoEtapa } = await import("./orcamento.server");
     await assertOrcamentoEtapa(job.profile_id, { barata: true });
@@ -372,15 +423,16 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
       ).length;
       // Falha nas imagens não descarta o que já ficou pronto.
       const message =
-        job.render_stage === "cenas" && feitas > 0
+        stageAtual === "cenas" && feitas > 0
           ? `${base} As ${feitas} cena(s) já geradas foram mantidas: refaça apenas as que ficaram sem imagem.`
           : base;
       // Falha na fase de imagens volta ao roteiro; depois da aprovação volta às cenas aprovadas.
-      const backTo = job.render_stage === "planejando" || job.render_stage === "cenas" ? "roteiro_pronto" : "cenas_geradas";
+      const backTo = stageAtual === "planejando" || stageAtual === "cenas" ? "roteiro_pronto" : "cenas_geradas";
       await supabase
         .from("jobs")
-        .update({ status: backTo, render_stage: null, render_error: message })
+        .update(trackPatch(job, { status: backTo, render_stage: null, render_error: message }))
         .eq("id", job.id);
+
       throw new Error(message);
 
     }
@@ -393,6 +445,7 @@ async function runStep(
   pipeline: typeof import("./video-pipeline.server"),
 ) {
   const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as import("./video-pipeline.server").Scene[];
+  const stage = jobStage(job);
 
   const [{ data: product }, { data: identity }, { data: profile }, { data: settingsRow }] = await Promise.all([
     job.product_id
@@ -439,7 +492,7 @@ async function runStep(
   };
 
   // ---------- Etapa 1a: planejar as cenas ----------
-  if (job.render_stage === "planejando") {
+  if (stage === "planejando") {
     const scriptBlocks = splitScript(job.script ?? "");
     const template = await prompts.resolvePrompt(supabase, job.profile_id, "cena");
     const prompt = prompts.renderPrompt(template, {
@@ -448,12 +501,12 @@ async function runStep(
     });
 
     const planned = await pipeline.planScenes(prompt, settings.takes_count);
-    await supabase.from("jobs").update({ scenes: planned, render_stage: "cenas" }).eq("id", job.id);
+    await supabase.from("jobs").update({ scenes: planned, ...trackPatch(job, { render_stage: "cenas" }) }).eq("id", job.id);
     return { stage: "cenas", done: false, progress: { done: 0, total: planned.length } };
   }
 
   // ---------- Etapa 1b: gerar as imagens das cenas ----------
-  if (job.render_stage === "cenas") {
+  if (stage === "cenas") {
     const index = scenes.findIndex((s) => !s.image_url);
     if (index >= 0) {
       const scene = scenes[index]!;
@@ -498,14 +551,14 @@ async function runStep(
     // Etapa concluída com sucesso: limpa qualquer erro de tentativa anterior.
     await supabase
       .from("jobs")
-      .update({ status: "cenas_geradas", render_stage: null, render_error: null })
+      .update(trackPatch(job, { status: "cenas_geradas", render_stage: null, render_error: null }))
       .eq("id", job.id);
     return { stage: null, done: true, progress: { done: scenes.length, total: scenes.length } };
 
   }
 
   // ---------- Etapa 2: animar cada cena com o Veo ----------
-  if (job.render_stage === "takes") {
+  if (stage === "takes") {
     const index = scenes.findIndex((s) => !s.video_url);
     if (index >= 0) {
       const scene = scenes[index]!;
@@ -538,7 +591,7 @@ async function runStep(
           const { operation: _drop, ...rest } = scene;
           scenes[index] = { ...rest, attempts };
           // Nova tentativa já começou: não deixa o erro antigo na tela.
-          await supabase.from("jobs").update({ scenes, render_error: null }).eq("id", job.id);
+          await supabase.from("jobs").update({ scenes, ...trackPatch(job, { render_error: null }) }).eq("id", job.id);
           // O take descartado já foi gerado (e cobrado): registra o consumo.
           await consumo.recordConsumo({
             jobId: job.id,
@@ -561,7 +614,7 @@ async function runStep(
       // Take concluído: limpa o erro da tentativa anterior (ex.: bloqueio de filtro já superado).
       await supabase
         .from("jobs")
-        .update({ scenes, veo_takes_count: (job.veo_takes_count ?? 0) + 1, render_error: null })
+        .update({ scenes, veo_takes_count: (job.veo_takes_count ?? 0) + 1, ...trackPatch(job, { render_error: null }) })
         .eq("id", job.id);
       const realDuration = status.durationSeconds ?? null;
       await consumo.recordConsumo({
@@ -582,15 +635,15 @@ async function runStep(
     // Perfil com voz ElevenLabs gera a narração antes da montagem.
     const voice = await resolveElevenLabsVoice(supabase, settings.voice_ref);
     const next = voice ? "narracao" : "montagem";
-    await supabase.from("jobs").update({ render_stage: next }).eq("id", job.id);
+    await supabase.from("jobs").update(trackPatch(job, { render_stage: next })).eq("id", job.id);
     return { stage: next, done: false, progress: { done: scenes.length, total: scenes.length } };
   }
 
   // ---------- Etapa 2b: narração na ElevenLabs (uma cena por chamada) ----------
-  if (job.render_stage === "narracao") {
+  if (stage === "narracao") {
     const voice = await resolveElevenLabsVoice(supabase, settings.voice_ref);
     if (!voice) {
-      await supabase.from("jobs").update({ render_stage: "montagem" }).eq("id", job.id);
+      await supabase.from("jobs").update(trackPatch(job, { render_stage: "montagem" })).eq("id", job.id);
       return { stage: "montagem", done: false, progress: { done: scenes.length, total: scenes.length } };
     }
 
@@ -625,7 +678,7 @@ async function runStep(
         audio_text: scene.narration,
         audio_voice: voice.voice_id,
       };
-      await supabase.from("jobs").update({ scenes, render_error: null }).eq("id", job.id);
+      await supabase.from("jobs").update({ scenes, ...trackPatch(job, { render_error: null }) }).eq("id", job.id);
 
       await consumo.recordConsumo({
         jobId: job.id,
@@ -645,12 +698,12 @@ async function runStep(
       return { stage: "narracao", done: false, progress: { done: index + 1, total: scenes.length } };
     }
 
-    await supabase.from("jobs").update({ render_stage: "montagem" }).eq("id", job.id);
+    await supabase.from("jobs").update(trackPatch(job, { render_stage: "montagem" })).eq("id", job.id);
     return { stage: "montagem", done: false, progress: { done: scenes.length, total: scenes.length } };
   }
 
   // ---------- Etapa 3: montar no JSON2Video ----------
-  if (job.render_stage === "montagem") {
+  if (stage === "montagem") {
     const { providerKey } = await import("./api-keys.server");
     const apiKey = await providerKey("json2video");
     const token = process.env["JSON2VIDEO_WEBHOOK_TOKEN"];
@@ -691,7 +744,7 @@ async function runStep(
 
     await supabase
       .from("jobs")
-      .update({ render_id: payload.project, render_stage: "render", render_error: null })
+      .update(trackPatch(job, { render_id: payload.project, render_stage: "render", render_error: null }))
       .eq("id", job.id);
 
     // Créditos da montagem: alguns retornos já trazem aqui; senão fica com o webhook.
@@ -710,7 +763,7 @@ async function runStep(
     return { stage: "render", done: true, progress: { done: scenes.length, total: scenes.length } };
   }
 
-  return { stage: job.render_stage, done: true, progress: null };
+  return { stage, done: true, progress: null };
 }
 
 /** Gera (com o Gemini) a imagem de referência da pessoa fixa de um perfil. */
