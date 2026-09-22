@@ -107,7 +107,7 @@ export function RecordingStudio({
   onClose: () => void;
   onSaved?: () => void;
   /** Abre o mesmo fluxo de "Gerar vídeo por IA" usado no modal do roteiro. */
-  onGenerateAi?: () => void;
+  onGenerateAi?: (() => void) | undefined;
   resumeExisting?: boolean;
 }) {
   const qc = useQueryClient();
