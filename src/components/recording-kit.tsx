@@ -416,6 +416,9 @@ export function RecordingKitDialog({
                 </section>
               )}
 
+              {temRoteiro && <JobAiVideo job={job} canEdit={canEdit} />}
+
+
               <div className="grid gap-2">
                 <div className="flex items-center justify-between gap-2">
                   <Label htmlFor="rec-titulo">Título / tema</Label>
