@@ -273,6 +273,7 @@ export function RecordingKitDialog({
   const [studioOpen, setStudioOpen] = useState(openStudioInitially);
   const [resumeExisting, setResumeExisting] = useState(openStudioInitially && !!job.video_path);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   // Snapshot "salvo" dos campos, usado para detectar alterações não salvas (dirty state).
   const savedSnapshot = () =>
