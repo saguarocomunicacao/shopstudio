@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import logoDark from "@/assets/logo-dark.png.asset.json";
 import heroPowerbank from "@/assets/hero-powerbank.png.asset.json";
+import studioRecording from "@/assets/landing/studio-recording.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -153,7 +154,7 @@ function LandingPage() {
                 <CompactFeature icon={<Play />} title="Revise antes de salvar" text="Assista, regrave ou siga direto para a edição." />
               </div>
             </div>
-            <MediaPlaceholder description="Captura do estúdio de gravação no celular com teleprompter e controles." />
+            <img src={studioRecording.url} alt="Estúdio de gravação no celular com teleprompter, controles de velocidade e redução de ruído" className="landing-aura w-full rounded-[22px] border border-landing-line object-cover shadow-2xl shadow-black/40" loading="lazy" />
           </div>
         </section>
 
