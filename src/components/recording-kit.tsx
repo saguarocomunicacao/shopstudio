@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Copy, Download, Loader2, Plus, RefreshCw, Save, Sparkles, Trash2, Video } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, Copy, Download, ListOrdered, Loader2, Plus, RefreshCw, Save, Sparkles, Trash2, Upload, Video } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -23,6 +23,7 @@ import { useStudio } from "./studio-context";
 import { VoiceDictationButton } from "./voice-dictation-button";
 import { actionError } from "@/lib/api-keys";
 import { isMobileViewport } from "@/lib/mobile-fullscreen";
+import { ACCEPTED_DOC_TYPES } from "@/lib/document-text";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
