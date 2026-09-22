@@ -910,6 +910,17 @@ export function RecordingStudio({
               </Button>
               <div className="absolute inset-x-0 bottom-0 z-20 grid gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-16">
               <p className="text-center text-sm font-semibold text-white">Revise sua gravação</p>
+              {onGenerateAi && (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  disabled={salvar.isPending}
+                  onClick={onGenerateAi}
+                >
+                  <Sparkles />
+                  Gerar vídeo por IA
+                </Button>
+              )}
               <Button size="lg" disabled={salvar.isPending} onClick={() => salvar.mutate()}>
                 {salvar.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
                 {salvar.isPending ? "Salvando..." : "Salvar"}
