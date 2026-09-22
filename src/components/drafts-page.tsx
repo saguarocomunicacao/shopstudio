@@ -96,7 +96,7 @@ function DraftThumb({
   onOpen,
 }: {
   job: DbJob;
-  preview?: { videoUrl: string | null; thumbnailUrl: string | null };
+  preview?: { videoUrl: string | null; thumbnailUrl: string | null } | undefined;
   onOpen: () => void;
 }) {
   const [playing, setPlaying] = useState(false);

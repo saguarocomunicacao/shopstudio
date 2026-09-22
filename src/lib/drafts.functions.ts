@@ -319,7 +319,14 @@ export const moveDraftBack = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!job) throw new Error("Rascunho não encontrado.");
 
-    let patch: Record<string, unknown> | null = null;
+    type BackPatch = {
+      status: "rascunho_enviado" | "video_pronto" | "roteiro_pronto";
+      published_at?: null;
+      published_url?: null;
+      approved_at?: null;
+      recorded_at?: null;
+    };
+    let patch: BackPatch | null = null;
     if (job.status === "publicado") {
       patch = { status: "rascunho_enviado", published_at: null, published_url: null };
     } else if (job.status === "rascunho_enviado") {
