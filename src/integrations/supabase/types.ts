@@ -452,6 +452,7 @@ export type Database = {
           ai_video_path: string | null
           ai_video_storage_error: string | null
           ai_video_storage_status: string | null
+          ai_video_thumbnail_path: string | null
           ai_video_thumbnail_url: string | null
           ai_video_url: string | null
           approved_at: string | null
@@ -515,6 +516,7 @@ export type Database = {
           ai_video_path?: string | null
           ai_video_storage_error?: string | null
           ai_video_storage_status?: string | null
+          ai_video_thumbnail_path?: string | null
           ai_video_thumbnail_url?: string | null
           ai_video_url?: string | null
           approved_at?: string | null
@@ -578,6 +580,7 @@ export type Database = {
           ai_video_path?: string | null
           ai_video_storage_error?: string | null
           ai_video_storage_status?: string | null
+          ai_video_thumbnail_path?: string | null
           ai_video_thumbnail_url?: string | null
           ai_video_url?: string | null
           approved_at?: string | null
