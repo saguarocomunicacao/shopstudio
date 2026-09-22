@@ -105,6 +105,7 @@ function DraftThumb({
 }) {
   const [playing, setPlaying] = useState(false);
   const [generatedPoster, setGeneratedPoster] = useState<string | null>(null);
+  const [thumbFailed, setThumbFailed] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const thumbnailAttempted = useRef(false);
   const qc = useQueryClient();
@@ -112,6 +113,8 @@ function DraftThumb({
   const saveThumbnail = useServerFn(saveDraftThumbnail);
   const videoUrl = preview?.videoUrl ?? null;
   const posterUrl = preview?.thumbnailUrl ?? job.video_thumbnail_url ?? generatedPoster ?? undefined;
+  // Enquanto a miniatura ainda não existe (e não falhou), mostramos um placeholder limpo que ocupa o card todo.
+  const generatingThumbnail = !!videoUrl && !posterUrl && !thumbFailed;
 
   useEffect(() => () => {
     if (generatedPoster) URL.revokeObjectURL(generatedPoster);
@@ -136,6 +139,7 @@ function DraftThumb({
       } catch {
         // O próprio vídeo continua disponível; uma próxima abertura pode tentar novamente.
         thumbnailAttempted.current = false;
+        if (!cancelled) setThumbFailed(true);
       }
     };
     void generate();
@@ -145,42 +149,45 @@ function DraftThumb({
   if (videoUrl) {
     return (
       <div className="relative overflow-hidden rounded-xl bg-landing-bg">
-        {!posterUrl && !playing && (
-          <div className="draft-thumbnail-placeholder absolute inset-0 z-10">
+        {generatingThumbnail ? (
+          <div className="draft-thumbnail-placeholder aspect-[9/16] w-full">
             <span className="route-loader-mark scale-75" aria-hidden="true">
               <span className="route-loader-ring" />
               <Film className="relative z-10 size-8 text-brand-cyan" />
             </span>
             <p>Gerando miniatura...</p>
           </div>
-        )}
-        <video
-          ref={videoRef}
-          key={videoUrl}
-          // #t=0.5 faz o navegador desenhar um frame do vídeo como miniatura.
-          src={playing ? videoUrl : `${videoUrl}#t=0.5`}
-          poster={posterUrl}
-          preload="metadata"
-          playsInline
-          muted={!playing}
-          controls={playing}
-          className={`aspect-[9/16] w-full object-cover ${!posterUrl && !playing ? "opacity-0" : "opacity-100"}`}
-          onPause={() => setPlaying(false)}
-        />
-        {!playing && (
-          <button
-            type="button"
-            aria-label={`Assistir ${job.title || "vídeo"}`}
-            className="absolute inset-0 z-20 grid place-items-center bg-overlay/10 transition hover:bg-overlay/25"
-            onClick={() => {
-              setPlaying(true);
-              window.setTimeout(() => void videoRef.current?.play(), 0);
-            }}
-          >
-            <span className="grid size-14 place-items-center rounded-full bg-background/90 text-foreground shadow-lg">
-              <Play className="size-6" />
-            </span>
-          </button>
+        ) : (
+          <>
+            <video
+              ref={videoRef}
+              key={videoUrl}
+              // #t=0.5 faz o navegador desenhar um frame do vídeo como miniatura.
+              src={playing ? videoUrl : `${videoUrl}#t=0.5`}
+              poster={posterUrl}
+              preload="metadata"
+              playsInline
+              muted={!playing}
+              controls={playing}
+              className="aspect-[9/16] w-full object-cover"
+              onPause={() => setPlaying(false)}
+            />
+            {!playing && (
+              <button
+                type="button"
+                aria-label={`Assistir ${job.title || "vídeo"}`}
+                className="absolute inset-0 z-20 grid place-items-center bg-overlay/10 transition hover:bg-overlay/25"
+                onClick={() => {
+                  setPlaying(true);
+                  window.setTimeout(() => void videoRef.current?.play(), 0);
+                }}
+              >
+                <span className="grid size-14 place-items-center rounded-full bg-background/90 text-foreground shadow-lg">
+                  <Play className="size-6" />
+                </span>
+              </button>
+            )}
+          </>
         )}
       </div>
     );
