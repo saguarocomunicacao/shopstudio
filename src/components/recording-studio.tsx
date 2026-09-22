@@ -36,6 +36,9 @@ import { actionError } from "@/lib/api-keys";
 import { VideoEditor } from "@/components/video-editor";
 import type { VideoEditOperation } from "@/lib/video-edit";
 import { isMobileViewport } from "@/lib/mobile-fullscreen";
+import loaderMark from "@/assets/loader-mark.png.asset.json";
+import { captureVideoThumbnail } from "@/lib/video-thumbnail";
+import { createDraftThumbnailUpload, saveDraftThumbnail } from "@/lib/drafts.functions";
 
 const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
   { id: "leve", label: "Leve" },
@@ -111,6 +114,8 @@ export function RecordingStudio({
   const saveEdit = useServerFn(saveEditedRecording);
   const saveOperations = useServerFn(saveRecordingOperations);
   const restoreOriginal = useServerFn(restoreOriginalRecording);
+  const createThumbnailUpload = useServerFn(createDraftThumbnailUpload);
+  const saveThumbnail = useServerFn(saveDraftThumbnail);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const reviewVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -594,18 +599,34 @@ export function RecordingStudio({
     return path;
   };
 
+  const salvarMiniatura = async (source: Blob) => {
+    try {
+      const thumbnail = await captureVideoThumbnail(source);
+      const { path, token } = await createThumbnailUpload({ data: { jobId: job.id } });
+      const { error: uploadError } = await supabase.storage.from("job-media").uploadToSignedUrl(path, token, thumbnail, {
+        contentType: "image/jpeg",
+      });
+      if (uploadError) throw uploadError;
+      await saveThumbnail({ data: { jobId: job.id, path } });
+    } catch (thumbnailError) {
+      console.warn("A miniatura será gerada ao abrir a fila de rascunhos.", thumbnailError);
+    }
+  };
+
   const salvar = useMutation({
     mutationFn: async () => {
       if (!blob) throw new Error("Nada gravado ainda.");
       if (loadedSaved) {
         if (restorePending) {
           await restoreOriginal({ data: { jobId: job.id } });
+          await salvarMiniatura(blob);
           return;
         }
         if (!captureDirty) return;
         if (editOutputDirty && editedBlob) {
           const editedPath = await enviar(editedBlob, "editado");
           await saveEdit({ data: { jobId: job.id, path: editedPath, operations } });
+          await salvarMiniatura(editedBlob);
           return;
         }
         await saveOperations({ data: { jobId: job.id, operations } });
@@ -614,6 +635,7 @@ export function RecordingStudio({
       const path = await enviar(blob, "original");
       const editedPath = editedBlob ? await enviar(editedBlob, "editado") : null;
       await finish({ data: { jobId: job.id, path, editedPath, operations: editedPath ? operations : null } });
+      await salvarMiniatura(editedBlob ?? blob);
     },
     onSuccess: () => {
       stopStream();
@@ -621,6 +643,7 @@ export function RecordingStudio({
       toast.success("Rascunho salvo com o vídeo e as edições.");
       void qc.invalidateQueries({ queryKey: ["jobs"] });
       void qc.invalidateQueries({ queryKey: ["draft-kit", job.id] });
+      void qc.invalidateQueries({ queryKey: ["draft-previews"] });
       (onSaved ?? onClose)();
     },
     onError: (e) => toast.error(`Não foi possível salvar. Seu vídeo continua aqui para tentar novamente. ${errMessage(e)}`),
@@ -650,7 +673,17 @@ export function RecordingStudio({
   return (
     <div className="fixed inset-0 z-50 grid h-screen w-screen place-items-center overflow-hidden bg-black supports-[height:100dvh]:h-[100dvh] max-sm:box-border max-sm:pl-[env(safe-area-inset-left)] max-sm:pr-[env(safe-area-inset-right)]">
       {loadingSaved ? (
-        <div className="flex items-center gap-2 text-sm text-white"><Loader2 className="size-5 animate-spin" />Carregando rascunho...</div>
+        <div className="recording-transition" role="status" aria-live="polite" aria-label="Preparando gravação">
+          <div className="recording-transition-grid" aria-hidden="true" />
+          <div className="recording-transition-content">
+            <div className="route-loader-mark">
+              <span className="route-loader-ring" aria-hidden="true" />
+              <img src={loaderMark.url} alt="" className="route-loader-logo" />
+            </div>
+            <h1>Preparando gravação...</h1>
+            <p>Carregando seu vídeo e suas edições</p>
+          </div>
+        </div>
       ) : !supported ? (
         <div className="m-6 rounded-xl bg-white/10 p-6 text-center text-sm text-white">
           Este navegador não permite gravar vídeo. Abra o Shop Studio pelo Chrome ou Safari atualizado, no celular ou no
