@@ -110,6 +110,17 @@ export type DbJob = {
   voice_ref: string | null;
   video_path?: string | null;
   video_original_path?: string | null;
+  /** Gravação editada preservada mesmo quando a versão ativa é outra. */
+  video_edited_path?: string | null;
+  /** Versão ativa do vídeo próprio: gravado | gravado_editado | ia. */
+  video_choice?: "gravado" | "gravado_editado" | "ia" | null;
+  /** Trilha da versão gerada por IA dentro do modal do vídeo próprio. */
+  ai_status?: string | null;
+  ai_render_stage?: string | null;
+  ai_render_error?: string | null;
+  ai_video_url?: string | null;
+  ai_video_path?: string | null;
+  ai_video_thumbnail_url?: string | null;
   video_edits?: unknown;
   published_url?: string | null;
   approved_at?: string | null;
@@ -246,7 +257,7 @@ export function useTrashedJobs(profileId: string | null, enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edits, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status",
+          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status",
         )
         .eq("profile_id", profileId!)
         .not("deleted_at", "is", null)
@@ -266,7 +277,7 @@ export function useJobs(profileId: string | null, enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edits, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status",
+          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status",
         )
         .eq("profile_id", profileId!)
         .is("deleted_at", null)
@@ -277,7 +288,11 @@ export function useJobs(profileId: string | null, enabled = true) {
     enabled: enabled && !!profileId,
     // Enquanto houver etapa em andamento (cenas ou vídeo), reconsulta para o card avançar sozinho.
     refetchInterval: (query) =>
-      (query.state.data ?? []).some((j: DbJob) => j.status === "gerando_video" || !!j.render_stage) ? 6000 : false,
+      (query.state.data ?? []).some(
+        (j: DbJob) => j.status === "gerando_video" || !!j.render_stage || !!j.ai_render_stage,
+      )
+        ? 6000
+        : false,
   });
 }
 
