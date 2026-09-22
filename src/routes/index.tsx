@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import logoDark from "@/assets/logo-dark.png.asset.json";
 import heroPowerbank from "@/assets/hero-powerbank.png.asset.json";
 import studioRecording from "@/assets/landing/studio-recording.png.asset.json";
+import landingEditor from "@/assets/landing/landing-editor.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
