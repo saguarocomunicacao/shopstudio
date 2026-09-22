@@ -110,9 +110,13 @@ function LandingPage() {
         <AssemblyLine />
 
         <section className="border-y border-landing-line bg-landing-surface/40">
-          <div className="mx-auto grid max-w-7xl gap-8 px-5 py-24 lg:grid-cols-2 lg:px-8 lg:py-28">
-            <CompareColumn title="Fazendo na mão" items={["Garimpar por horas","Gravar e editar cada vídeo","Cuidar de um perfil só","Publicar em volume baixo"]} negative />
-            <CompareColumn title="Com o Shop Studio" items={["Produtos que vendem chegam prontos","Vídeo com pessoa sai sozinho","Vários perfis ao mesmo tempo","Mais conteúdo no ar"]} />
+          <div className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-28">
+            <SectionTitle title="A mesma meta. Dois caminhos bem diferentes." text="Dá pra fazer tudo na mão — mas isso não escala. Compare os dois jeitos de produzir conteúdo de afiliado." />
+            <div className="relative mt-14 grid gap-6 lg:grid-cols-2 lg:gap-10">
+              <span aria-hidden="true" className="landing-plasma-bg landing-display absolute left-1/2 top-1/2 z-10 hidden size-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-4 border-landing-bg text-sm font-black tracking-widest shadow-2xl lg:grid">VS</span>
+              <CompareColumn title="Fazendo na mão" eyebrow="O jeito que cansa" items={["Garimpar por horas","Gravar e editar cada vídeo","Cuidar de um perfil só","Publicar em volume baixo"]} negative />
+              <CompareColumn title="Com o Shop Studio" eyebrow="O jeito que escala" items={["Produtos que vendem chegam prontos","Vídeo com pessoa sai sozinho","Vários perfis ao mesmo tempo","Mais conteúdo no ar"]} />
+            </div>
           </div>
         </section>
 
@@ -301,7 +305,28 @@ function PhoneAction({ icon, label }: { icon: React.ReactNode; label: string }) 
 
 function FloatChip({ icon, text, className, accent, delay }: { icon: React.ReactNode; text: string; className: string; accent: "cyan" | "magenta"; delay: "one" | "two" | "three" }) { return <div className={`landing-float landing-float-${delay} absolute hidden items-center gap-2.5 rounded-xl border border-landing-line bg-landing-surface/80 px-3.5 py-2.5 text-xs font-semibold text-landing-text shadow-xl backdrop-blur-xl lg:flex ${className}`}><span className={`${accent === "magenta" ? "text-landing-plasma-c" : "text-landing-mint"} [&_svg]:size-4`}>{icon}</span>{text}</div>; }
 
-function CompareColumn({ title, items, negative = false }: { title: string; items: string[]; negative?: boolean }) { return <article className={`rounded-[22px] border p-7 sm:p-10 ${negative ? "border-landing-line bg-landing-bg/30" : "landing-feature-glow border-landing-line"}`}><h2 className="landing-display text-2xl font-semibold">{title}</h2><ul className="mt-8 space-y-5">{items.map(item => <li key={item} className="flex items-center gap-3 text-landing-muted">{negative ? <X className="size-5 shrink-0 opacity-60" /> : <Check className="size-5 shrink-0 text-landing-mint" />}<span>{item}</span></li>)}</ul></article>; }
+function CompareColumn({ title, eyebrow, items, negative = false }: { title: string; eyebrow: string; items: string[]; negative?: boolean }) {
+  return (
+    <article className={`relative overflow-hidden rounded-[22px] border p-7 sm:p-10 ${negative ? "border-landing-line bg-landing-bg/30 opacity-90" : "landing-feature-glow landing-aura border-landing-mint/30"}`}>
+      <div className="flex items-center justify-between gap-4">
+        <p className={`landing-display text-xs font-bold uppercase tracking-[0.18em] ${negative ? "text-landing-muted" : "text-landing-mint"}`}>{eyebrow}</p>
+        {negative ? <X className="size-5 text-landing-plasma-c/70" aria-hidden="true" /> : <Sparkles className="size-5 text-landing-mint" aria-hidden="true" />}
+      </div>
+      <h3 className="landing-display mt-4 text-3xl font-semibold">{title}</h3>
+      <ul className="mt-9 space-y-4">
+        {items.map(item => (
+          <li key={item} className={`flex items-center gap-4 rounded-2xl border p-4 ${negative ? "border-landing-line/60 bg-landing-bg/40 text-landing-muted" : "border-landing-mint/15 bg-landing-mint/5 text-landing-text"}`}>
+            <span className={`grid size-8 shrink-0 place-items-center rounded-full ${negative ? "bg-landing-surface-raised text-landing-plasma-c/80" : "bg-landing-mint text-landing-bg"}`}>{negative ? <X className="size-4" aria-hidden="true" /> : <Check className="size-4" aria-hidden="true" />}</span>
+            <span className="font-medium">{item}</span>
+          </li>
+        ))}
+      </ul>
+      <p className={`mt-9 border-t pt-6 text-sm leading-6 ${negative ? "border-landing-line text-landing-muted" : "border-landing-mint/20 text-landing-muted"}`}>
+        {negative ? "O tempo vai todo em processo — não em vender." : "O tempo vai em revisar e postar — o processo é da esteira."}
+      </p>
+    </article>
+  );
+}
 
 function Feature({ icon, title, text, wide = false }: { icon: React.ReactNode; title: string; text: string; wide?: boolean }) { return <article className={`rounded-[22px] border border-landing-line bg-landing-surface p-7 ${wide ? "lg:col-span-2" : ""}`}><span className="text-landing-mint [&_svg]:size-7">{icon}</span><h3 className="landing-display mt-10 text-xl font-semibold">{title}</h3><p className="mt-3 leading-7 text-landing-muted">{text}</p></article>; }
 
