@@ -148,6 +148,7 @@ export function RecordingStudio({
   const [loadedSaved, setLoadedSaved] = useState(false);
   const [restorePending, setRestorePending] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+  const [reopenEditorOnCancel, setReopenEditorOnCancel] = useState(false);
   const [loadingSaved, setLoadingSaved] = useState(resumeExisting);
   const [cameraSession, setCameraSession] = useState(0);
   const [filtro, setFiltro] = useState<FiltroId>("nenhum");
@@ -485,6 +486,7 @@ export function RecordingStudio({
   }, [suavizar, previewUrl, supported]);
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+  useEffect(() => () => { if (editedUrl) URL.revokeObjectURL(editedUrl); }, [editedUrl]);
 
   /** Grava pelo canvas configurado, então o arquivo salvo replica enquadramento e filtros do preview. */
   const buildFilteredStream = (base: MediaStream): MediaStream | null => {
@@ -596,6 +598,7 @@ export function RecordingStudio({
           await restoreOriginal({ data: { jobId: job.id } });
           return;
         }
+        if (!captureDirty) return;
         if (!editedBlob) throw new Error("Não há uma nova edição para salvar.");
         const editedPath = await enviar(editedBlob, "editado");
         await saveEdit({ data: { jobId: job.id, path: editedPath, operations } });
@@ -920,6 +923,8 @@ export function RecordingStudio({
           source={blob}
           initialOperations={operations}
           onCancel={() => {
+            setEditorAberto(false);
+            setReopenEditorOnCancel(true);
             closeStudio();
           }}
           onApply={(resultado, ops) => {
@@ -942,13 +947,22 @@ export function RecordingStudio({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="grid gap-2 sm:grid-cols-3">
-            <AlertDialogCancel disabled={salvar.isPending}>Continuar editando</AlertDialogCancel>
+            <AlertDialogCancel
+              disabled={salvar.isPending}
+              onClick={() => {
+                if (reopenEditorOnCancel) setEditorAberto(true);
+                setReopenEditorOnCancel(false);
+              }}
+            >
+              Continuar editando
+            </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={salvar.isPending}
               onClick={(event) => {
                 event.preventDefault();
                 setConfirmCloseOpen(false);
+                setReopenEditorOnCancel(false);
                 onClose();
               }}
             >
