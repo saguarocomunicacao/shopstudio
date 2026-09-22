@@ -53,7 +53,7 @@ export function VideoEditor({
   initialOperations,
 }: {
   source: Blob;
-  onCancel: () => void;
+  onCancel: (operations: VideoEditOperation[]) => void;
   onApply: (edited: Blob, operations: VideoEditOperation[]) => void;
   /** Edições anteriores: ao reabrir, o editor volta com os mesmos ajustes. */
   initialOperations?: VideoEditOperation[];
@@ -385,7 +385,7 @@ export function VideoEditor({
           <p className="truncate text-sm font-bold sm:text-base">Editar vídeo</p>
           <p className="truncate text-xs text-muted-foreground">O original será preservado</p>
         </div>
-        <Button variant="ghost" size="icon" aria-label="Fechar editor" onClick={onCancel} disabled={processando}>
+        <Button variant="ghost" size="icon" aria-label="Fechar editor" onClick={() => onCancel(operations)} disabled={processando}>
           <X />
         </Button>
       </header>

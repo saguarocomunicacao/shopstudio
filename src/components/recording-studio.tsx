@@ -24,10 +24,11 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbJob } from "@/lib/content";
-import { createRecordingUploadUrl, finishRecording } from "@/lib/recording.functions";
+import { createRecordingUploadUrl, finishRecording, getRecordingVideoUrl, restoreOriginalRecording, saveEditedRecording, saveRecordingOperations } from "@/lib/recording.functions";
 import { withoutDuplicatedHook } from "@/lib/recording-script";
 import { RECORDING_FORMATS, cropCover, type RecordingAspectRatio } from "@/lib/recording-format";
 import { createSkinSmoother, type SkinIntensity, type SkinSmoother } from "@/lib/skin-smoothing";
@@ -95,15 +96,21 @@ export function RecordingStudio({
   aspectRatio,
   onClose,
   onSaved,
+  resumeExisting = false,
 }: {
   job: DbJob;
   aspectRatio: RecordingAspectRatio;
   onClose: () => void;
   onSaved?: () => void;
+  resumeExisting?: boolean;
 }) {
   const qc = useQueryClient();
   const getUploadUrl = useServerFn(createRecordingUploadUrl);
   const finish = useServerFn(finishRecording);
+  const getSavedVideo = useServerFn(getRecordingVideoUrl);
+  const saveEdit = useServerFn(saveEditedRecording);
+  const saveOperations = useServerFn(saveRecordingOperations);
+  const restoreOriginal = useServerFn(restoreOriginalRecording);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const reviewVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -138,6 +145,13 @@ export function RecordingStudio({
   const [operations, setOperations] = useState<VideoEditOperation[]>([]);
   const [editorAberto, setEditorAberto] = useState(false);
   const [reviewPlaying, setReviewPlaying] = useState(false);
+  const [captureDirty, setCaptureDirty] = useState(false);
+  const [loadedSaved, setLoadedSaved] = useState(false);
+  const [restorePending, setRestorePending] = useState(false);
+  const [editOutputDirty, setEditOutputDirty] = useState(false);
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+  const [reopenEditorOnCancel, setReopenEditorOnCancel] = useState(false);
+  const [loadingSaved, setLoadingSaved] = useState(resumeExisting);
   const [cameraSession, setCameraSession] = useState(0);
   const [filtro, setFiltro] = useState<FiltroId>("nenhum");
   const [reduzirRuido, setReduzirRuido] = useState(true);
@@ -172,6 +186,40 @@ export function RecordingStudio({
       body.style.overscrollBehavior = previousOverscroll;
     };
   }, []);
+
+  useEffect(() => {
+    if (!resumeExisting || !job.video_path) return;
+    let cancelled = false;
+    const load = async () => {
+      setLoadingSaved(true);
+      try {
+        const saved = await getSavedVideo({ data: { jobId: job.id } });
+        if (!saved.url || !saved.originalUrl) throw new Error("Vídeo salvo indisponível.");
+        const [originalResponse, activeResponse] = await Promise.all([
+          fetch(saved.originalUrl),
+          saved.edited ? fetch(saved.url) : Promise.resolve(null),
+        ]);
+        if (!originalResponse.ok || (activeResponse && !activeResponse.ok)) throw new Error("Falha ao baixar o vídeo salvo.");
+        const originalBlob = await originalResponse.blob();
+        const activeBlob = activeResponse ? await activeResponse.blob() : null;
+        if (cancelled) return;
+        setBlob(originalBlob);
+        setPreviewUrl(URL.createObjectURL(originalBlob));
+        setEditedBlob(activeBlob);
+        setEditedUrl(activeBlob ? URL.createObjectURL(activeBlob) : null);
+        setOperations(saved.operations as VideoEditOperation[]);
+        setLoadedSaved(true);
+        setEditOutputDirty(false);
+        setCaptureDirty(false);
+      } catch (loadError) {
+        if (!cancelled) setError(errMessage(loadError));
+      } finally {
+        if (!cancelled) setLoadingSaved(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [getSavedVideo, job.id, job.video_path, resumeExisting]);
 
   const teleprompter = teleprompterItems(job);
   recordingRef.current = recording;
@@ -441,6 +489,7 @@ export function RecordingStudio({
   }, [suavizar, previewUrl, supported]);
 
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+  useEffect(() => () => { if (editedUrl) URL.revokeObjectURL(editedUrl); }, [editedUrl]);
 
   /** Grava pelo canvas configurado, então o arquivo salvo replica enquadramento e filtros do preview. */
   const buildFilteredStream = (base: MediaStream): MediaStream | null => {
@@ -500,6 +549,10 @@ export function RecordingStudio({
       }
       setBlob(recorded);
       setPreviewUrl(URL.createObjectURL(recorded));
+      setLoadedSaved(false);
+      setRestorePending(false);
+      setEditOutputDirty(false);
+      setCaptureDirty(true);
     };
     recorderRef.current = recorder;
     try {
@@ -544,13 +597,28 @@ export function RecordingStudio({
   const salvar = useMutation({
     mutationFn: async () => {
       if (!blob) throw new Error("Nada gravado ainda.");
+      if (loadedSaved) {
+        if (restorePending) {
+          await restoreOriginal({ data: { jobId: job.id } });
+          return;
+        }
+        if (!captureDirty) return;
+        if (editOutputDirty && editedBlob) {
+          const editedPath = await enviar(editedBlob, "editado");
+          await saveEdit({ data: { jobId: job.id, path: editedPath, operations } });
+          return;
+        }
+        await saveOperations({ data: { jobId: job.id, operations } });
+        return;
+      }
       const path = await enviar(blob, "original");
       const editedPath = editedBlob ? await enviar(editedBlob, "editado") : null;
       await finish({ data: { jobId: job.id, path, editedPath, operations: editedPath ? operations : null } });
     },
     onSuccess: () => {
       stopStream();
-      toast.success("Gravação salva. O vídeo está na fila de rascunhos.");
+      setCaptureDirty(false);
+      toast.success("Rascunho salvo com o vídeo e as edições.");
       void qc.invalidateQueries({ queryKey: ["jobs"] });
       void qc.invalidateQueries({ queryKey: ["draft-kit", job.id] });
       (onSaved ?? onClose)();
@@ -572,12 +640,18 @@ export function RecordingStudio({
   };
 
   const closeStudio = () => {
+    if (captureDirty) {
+      setConfirmCloseOpen(true);
+      return;
+    }
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 grid h-screen w-screen place-items-center overflow-hidden bg-black supports-[height:100dvh]:h-[100dvh] max-sm:box-border max-sm:pl-[env(safe-area-inset-left)] max-sm:pr-[env(safe-area-inset-right)]">
-      {!supported ? (
+      {loadingSaved ? (
+        <div className="flex items-center gap-2 text-sm text-white"><Loader2 className="size-5 animate-spin" />Carregando rascunho...</div>
+      ) : !supported ? (
         <div className="m-6 rounded-xl bg-white/10 p-6 text-center text-sm text-white">
           Este navegador não permite gravar vídeo. Abra o Shop Studio pelo Chrome ou Safari atualizado, no celular ou no
           computador, para usar o estúdio.
@@ -811,6 +885,10 @@ export function RecordingStudio({
                     setOperations([]);
                     setReviewPlaying(false);
                     setBlob(null);
+                    setLoadedSaved(false);
+                    setRestorePending(false);
+                    setEditOutputDirty(false);
+                    setCaptureDirty(false);
                     setSeconds(0);
                     resetScrolling();
                     setError(null);
@@ -834,6 +912,9 @@ export function RecordingStudio({
                       setEditedBlob(null);
                       setEditedUrl(null);
                       setReviewPlaying(false);
+                      setRestorePending(loadedSaved);
+                      setEditOutputDirty(false);
+                      setCaptureDirty(true);
                     }}
                   >
                     <RotateCcw />
@@ -850,22 +931,68 @@ export function RecordingStudio({
         <VideoEditor
           source={blob}
           initialOperations={operations}
-          onCancel={() => {
-            if (isMobileViewport()) {
-              closeStudio();
-              return;
-            }
+          onCancel={(pendingOperations) => {
+            const operationsChanged = JSON.stringify(pendingOperations) !== JSON.stringify(operations);
+            setOperations(pendingOperations);
+            if (operationsChanged) setCaptureDirty(true);
+            setEditOutputDirty(false);
             setEditorAberto(false);
+            if (captureDirty || operationsChanged) {
+              setReopenEditorOnCancel(true);
+              setConfirmCloseOpen(true);
+            } else {
+              onClose();
+            }
           }}
           onApply={(resultado, ops) => {
             if (editedUrl) URL.revokeObjectURL(editedUrl);
             setEditedBlob(resultado);
             setEditedUrl(URL.createObjectURL(resultado));
             setOperations(ops);
+            setRestorePending(false);
+            setEditOutputDirty(true);
+            setCaptureDirty(true);
             setEditorAberto(false);
           }}
         />
       )}
+      <AlertDialog open={confirmCloseOpen} onOpenChange={setConfirmCloseOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Salvar esta gravação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Há uma gravação ou edição ainda não salva. Você pode guardá-la como rascunho para continuar depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="grid gap-2 sm:grid-cols-3">
+            <AlertDialogCancel
+              disabled={salvar.isPending}
+              onClick={() => {
+                if (reopenEditorOnCancel) setEditorAberto(true);
+                setReopenEditorOnCancel(false);
+              }}
+            >
+              Continuar editando
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={salvar.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                setConfirmCloseOpen(false);
+                setReopenEditorOnCancel(false);
+                onClose();
+              }}
+            >
+              Sair sem salvar
+            </AlertDialogAction>
+            <Button disabled={salvar.isPending} onClick={() => salvar.mutate()}>
+              {salvar.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
+              Salvar como rascunho
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

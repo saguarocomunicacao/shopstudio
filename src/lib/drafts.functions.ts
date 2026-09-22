@@ -48,10 +48,11 @@ type KitRow = {
   published_url: string | null;
   rejection_reason: string | null;
   product_id: string | null;
+  formato: string;
 };
 
 const KIT_COLUMNS =
-  "id, profile_id, status, title, hook, post_cta, caption, hashtags, script, video_url, video_path, video_original_path, video_edits, video_thumbnail_path, video_storage_status, video_storage_error, published_url, rejection_reason, product_id";
+  "id, profile_id, status, title, hook, post_cta, caption, hashtags, script, video_url, video_path, video_original_path, video_edits, video_thumbnail_path, video_storage_status, video_storage_error, published_url, rejection_reason, product_id, formato";
 
 /** Kit de postagem de um rascunho: vídeo do nosso storage + textos prontos. */
 export const getDraftKit = createServerFn({ method: "POST" })
@@ -105,6 +106,7 @@ export const getDraftKit = createServerFn({ method: "POST" })
       stored: !!videoPath,
       // Versão exibida é a editada quando existe; o original segue guardado.
       edited: !!row.video_original_path && !!videoPath && row.video_original_path !== videoPath,
+      formato: row.formato,
       storageStatus,
       storageError,
       publishedUrl: row.published_url,

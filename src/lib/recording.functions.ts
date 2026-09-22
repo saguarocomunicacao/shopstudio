@@ -368,7 +368,14 @@ export const createRecordingUploadUrl = createServerFn({ method: "POST" })
 
 const editOperation = z.discriminatedUnion("type", [
   z.object({ type: z.literal("trim"), start: z.number().min(0), end: z.number().min(0) }),
-  z.object({ type: z.literal("crop"), x: z.number(), y: z.number(), width: z.number(), height: z.number() }),
+  z.object({
+    type: z.literal("crop"),
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+    width: z.number().positive().max(1),
+    height: z.number().positive().max(1),
+    aspectRatio: z.enum(["9:16", "1:1", "4:5", "16:9"]),
+  }),
   z.object({ type: z.literal("cut"), start: z.number().min(0), end: z.number().min(0) }),
 ]);
 
@@ -409,7 +416,7 @@ export const finishRecording = createServerFn({ method: "POST" })
         status: "video_pronto",
         video_path: visible,
         video_original_path: data.path,
-        video_edits: data.editedPath ? ((data.operations ?? []) as never) : null,
+        video_edits: data.operations?.length ? (data.operations as never) : null,
         video_storage_status: "salvo",
         video_storage_error: null,
         recorded_at: new Date().toISOString(),
@@ -469,6 +476,30 @@ export const saveEditedRecording = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Guarda ajustes ainda não renderizados para que o editor possa retomá-los depois. */
+export const saveRecordingOperations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ jobId: z.string().uuid(), operations: z.array(editOperation).max(20) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, profile_id, formato, video_path")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Job não encontrado.");
+    if (job.formato !== "gravacao" || !job.video_path) throw new Error("Este job ainda não tem uma gravação salva.");
+    await assertCanEdit(context.supabase, job.profile_id);
+    const { error: updateError } = await context.supabase
+      .from("jobs")
+      .update({ video_edits: data.operations.length ? (data.operations as never) : null })
+      .eq("id", data.jobId);
+    if (updateError) throw new Error(updateError.message);
+    return { ok: true };
+  });
+
 /** Descarta a edição e volta a exibir a gravação original. */
 export const restoreOriginalRecording = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -506,15 +537,27 @@ export const getRecordingVideoUrl = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("jobs")
-      .select("id, video_path")
+      .select("id, video_path, video_original_path, video_edits")
       .eq("id", data.jobId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    const path = (job as { video_path: string | null } | null)?.video_path ?? null;
+    const row = job as { video_path: string | null; video_original_path: string | null; video_edits: unknown } | null;
+    const path = row?.video_path ?? null;
     if (!path) return { url: null };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: signed } = await supabaseAdmin.storage.from("job-media").createSignedUrl(path, 60 * 60 * 6);
-    return { url: signed?.signedUrl ?? null };
+    const originalPath = row?.video_original_path ?? path;
+    const [active, original] = await Promise.all([
+      supabaseAdmin.storage.from("job-media").createSignedUrl(path, 60 * 60 * 6),
+      originalPath === path
+        ? Promise.resolve(null)
+        : supabaseAdmin.storage.from("job-media").createSignedUrl(originalPath, 60 * 60 * 6),
+    ]);
+    return {
+      url: active.data?.signedUrl ?? null,
+      originalUrl: original?.data?.signedUrl ?? active.data?.signedUrl ?? null,
+      edited: originalPath !== path,
+      operations: Array.isArray(row?.video_edits) ? row.video_edits : [],
+    };
   });
 
 /** Exclui permanentemente um job de gravação e limpa o arquivo privado associado. */
