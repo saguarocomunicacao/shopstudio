@@ -71,9 +71,11 @@ function jobStage(job: JobRow): string | null {
 }
 
 /** Converte um patch do pipeline para as colunas da trilha certa. */
-export function trackPatch(job: { formato?: string | null }, patch: Record<string, unknown>) {
+export function trackPatch<T extends Record<string, unknown>>(job: { formato?: string | null }, patch: T): T {
   if (!isAiTrack(job)) return patch;
-  return Object.fromEntries(Object.entries(patch).map(([key, value]) => [AI_TRACK_KEYS[key] ?? key, value]));
+  return Object.fromEntries(
+    Object.entries(patch).map(([key, value]) => [AI_TRACK_KEYS[key] ?? key, value]),
+  ) as T;
 }
 
 

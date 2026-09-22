@@ -34,13 +34,14 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         const cols = "id, status, profile_id, formato";
-        let job: { id: string; status: string; profile_id: string; formato: string | null } | null = null;
+        type WebhookJob = { id: string; status: string; profile_id: string; formato: string | null };
+        let job: WebhookJob | null = null;
         if (jobId) {
           const { data } = await supabaseAdmin.from("jobs").select(cols).eq("id", jobId).maybeSingle();
-          job = data as typeof job;
+          job = data as unknown as WebhookJob | null;
         } else {
           const { data } = await supabaseAdmin.from("jobs").select(cols).eq("render_id", renderId!).maybeSingle();
-          job = data as typeof job;
+          job = data as unknown as WebhookJob | null;
           if (!job) {
             // Vídeo próprio: a montagem por IA usa a trilha ai_* do job gravado.
             const { data: aiJob } = await supabaseAdmin
@@ -48,7 +49,7 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
               .select(cols)
               .eq("ai_render_id", renderId!)
               .maybeSingle();
-            job = aiJob as typeof job;
+            job = aiJob as unknown as WebhookJob | null;
           }
         }
         if (!job) return new Response("Job not found", { status: 404 });
@@ -106,7 +107,7 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
                     ai_video_storage_status: "pendente",
                     ai_video_storage_error: null,
                   }
-                : { ...pronto, video_storage_updated_at: new Date().toISOString() },
+                : ({ ...pronto, video_storage_updated_at: new Date().toISOString() } as never),
             )
             .eq("id", job.id);
 
