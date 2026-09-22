@@ -43,6 +43,6 @@
 
 ## Transição e miniaturas dos Rascunhos
 - [x] Substituir o carregamento preto pela transição visual do estúdio
-- [ ] Gerar e salvar thumbnail ao salvar uma gravação
-- [ ] Preencher thumbnails de vídeos antigos sem miniatura
+- [x] Gerar e salvar thumbnail ao salvar uma gravação
+- [x] Preencher thumbnails de vídeos antigos sem miniatura
 - [ ] Validar cards, reprodução, tipos e build
