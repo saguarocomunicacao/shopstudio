@@ -304,13 +304,14 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
 
     // Cenas prontas podem ser regeradas na revisão; uma cena que FALHOU (ficou
     // sem imagem) também pode ser refeita sozinha, sem descartar as que deram certo.
-    const retryFailed = job.status === "roteiro_pronto" && !job.render_stage && !scene.image_url;
-    if (job.status !== "cenas_geradas" && !retryFailed) {
+    const retryFailed = jobStatus(job) === "roteiro_pronto" && !jobStage(job) && !scene.image_url;
+    if (jobStatus(job) !== "cenas_geradas" && !retryFailed) {
       throw new Error("Só é possível regerar cenas nesta etapa.");
     }
 
     // Nova tentativa começando: limpa o erro anterior antes de gerar.
-    await supabase.from("jobs").update({ render_error: null }).eq("id", job.id);
+    await supabase.from("jobs").update(trackPatch(job, { render_error: null })).eq("id", job.id);
+
 
 
     const pipeline = await import("./video-pipeline.server");
