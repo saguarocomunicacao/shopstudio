@@ -33,6 +33,9 @@ type JobRow = {
   veo_takes_count: number;
   voice_ref: string | null;
   tenant_id: string;
+  avatar_id?: string | null;
+  avatar_reference_urls?: unknown;
+  avatar_description?: string | null;
 };
 
 /** Quebra o roteiro salvo (GANCHO / CORPO / CTA) nos blocos narrados. */
