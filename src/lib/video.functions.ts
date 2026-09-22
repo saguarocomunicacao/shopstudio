@@ -399,11 +399,12 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
     const { supabase } = context;
     const job = await loadJob(supabase, data.jobId);
 
+    const stageAtual = jobStage(job);
     const running =
-      (job.status === "roteiro_pronto" || job.status === "gerando_video") &&
-      !!job.render_stage &&
-      job.render_stage !== "render";
-    if (!running) return { stage: job.render_stage, done: true, progress: null };
+      (jobStatus(job) === "roteiro_pronto" || jobStatus(job) === "gerando_video") &&
+      !!stageAtual &&
+      stageAtual !== "render";
+    if (!running) return { stage: stageAtual, done: true, progress: null };
 
     const { assertOrcamento: assertOrcamentoEtapa } = await import("./orcamento.server");
     await assertOrcamentoEtapa(job.profile_id, { barata: true });
@@ -420,15 +421,16 @@ export const advanceJobVideo = createServerFn({ method: "POST" })
       ).length;
       // Falha nas imagens não descarta o que já ficou pronto.
       const message =
-        job.render_stage === "cenas" && feitas > 0
+        stageAtual === "cenas" && feitas > 0
           ? `${base} As ${feitas} cena(s) já geradas foram mantidas: refaça apenas as que ficaram sem imagem.`
           : base;
       // Falha na fase de imagens volta ao roteiro; depois da aprovação volta às cenas aprovadas.
-      const backTo = job.render_stage === "planejando" || job.render_stage === "cenas" ? "roteiro_pronto" : "cenas_geradas";
+      const backTo = stageAtual === "planejando" || stageAtual === "cenas" ? "roteiro_pronto" : "cenas_geradas";
       await supabase
         .from("jobs")
-        .update({ status: backTo, render_stage: null, render_error: message })
+        .update(trackPatch(job, { status: backTo, render_stage: null, render_error: message }))
         .eq("id", job.id);
+
       throw new Error(message);
 
     }
