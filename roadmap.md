@@ -39,4 +39,4 @@
 - [x] Adicionar os três modos de criação e diferenciais do garimpo
 - [x] Adicionar estúdio de gravação e editor com placeholders visuais
 - [x] Adicionar BYOK, custos transparentes, multi-perfil, equipe e publicação manual
-- [ ] Validar desktop e mobile e publicar no domínio
+- [x] Validar desktop e mobile e publicar no domínio
