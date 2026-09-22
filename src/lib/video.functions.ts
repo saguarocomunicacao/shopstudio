@@ -33,10 +33,49 @@ type JobRow = {
   veo_takes_count: number;
   voice_ref: string | null;
   tenant_id: string;
+  formato?: string | null;
+  ai_status?: string | null;
+  ai_render_stage?: string | null;
   avatar_id?: string | null;
   avatar_reference_urls?: unknown;
   avatar_description?: string | null;
 };
+
+/**
+ * Trilha de IA do vídeo próprio ("Gravar eu mesmo").
+ * O job gravado continua com status/render_stage/vídeo intactos: a geração por
+ * IA acontece em colunas espelhadas (ai_*), então a gravação nunca é perdida.
+ */
+const AI_TRACK_KEYS: Record<string, string> = {
+  status: "ai_status",
+  render_stage: "ai_render_stage",
+  render_id: "ai_render_id",
+  render_error: "ai_render_error",
+  render_started_at: "ai_render_started_at",
+  video_url: "ai_video_url",
+  video_thumbnail_url: "ai_video_thumbnail_url",
+  video_storage_status: "ai_video_storage_status",
+  video_storage_error: "ai_video_storage_error",
+};
+
+export const isAiTrack = (job: { formato?: string | null }) => job.formato === "gravacao";
+
+/** Status efetivo da trilha em execução. */
+function jobStatus(job: JobRow): string {
+  return isAiTrack(job) ? (job.ai_status ?? "roteiro_pronto") : job.status;
+}
+
+/** Etapa efetiva da trilha em execução. */
+function jobStage(job: JobRow): string | null {
+  return isAiTrack(job) ? (job.ai_render_stage ?? null) : job.render_stage;
+}
+
+/** Converte um patch do pipeline para as colunas da trilha certa. */
+export function trackPatch(job: { formato?: string | null }, patch: Record<string, unknown>) {
+  if (!isAiTrack(job)) return patch;
+  return Object.fromEntries(Object.entries(patch).map(([key, value]) => [AI_TRACK_KEYS[key] ?? key, value]));
+}
+
 
 /** Quebra o roteiro salvo (GANCHO / CORPO / CTA) nos blocos narrados. */
 export function splitScript(script: string): string[] {
