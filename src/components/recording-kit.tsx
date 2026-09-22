@@ -343,25 +343,31 @@ export function RecordingKitDialog({
                         </Button>
                       )}
                     </div>
-                    <Textarea
-                      aria-label="O que mostrar ou fazer"
-                      rows={1}
-                      value={bloco.orientacao}
-                      readOnly={!canEdit}
-                      placeholder="O que mostrar ou fazer"
-                      className="w-full bg-background"
-                      onChange={(e) =>
-                        setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, orientacao: e.target.value } : b)))
-                      }
-                    />
-                    <Textarea
-                      aria-label="Fala do bloco"
-                      rows={2}
-                      value={bloco.fala}
-                      readOnly={!canEdit}
-                      className="w-full bg-background"
-                      onChange={(e) => setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, fala: e.target.value } : b)))}
-                    />
+                    <label className="grid gap-1">
+                      <span className="text-[0.7rem] font-bold uppercase tracking-wide text-muted-foreground">Dica</span>
+                      <Textarea
+                        aria-label="O que mostrar ou fazer"
+                        rows={1}
+                        value={bloco.orientacao}
+                        readOnly={!canEdit}
+                        placeholder="O que mostrar ou fazer"
+                        className="w-full bg-background text-sm text-muted-foreground"
+                        onChange={(e) =>
+                          setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, orientacao: e.target.value } : b)))
+                        }
+                      />
+                    </label>
+                    <label className="grid gap-1">
+                      <span className="text-[0.7rem] font-bold uppercase tracking-wide text-brand-cyan">Fala</span>
+                      <Textarea
+                        aria-label="Fala do bloco"
+                        rows={2}
+                        value={bloco.fala}
+                        readOnly={!canEdit}
+                        className="w-full bg-background font-medium"
+                        onChange={(e) => setBlocos((list) => list.map((b, i) => (i === originalIndex ? { ...b, fala: e.target.value } : b)))}
+                      />
+                    </label>
                   </div>
                 ))}
                 {!blocos.length && <p className="text-xs text-muted-foreground">Nenhum bloco ainda. Gere o roteiro com a inteligência artificial.</p>}
