@@ -49,6 +49,7 @@ import { relativeTime, useJobs, useProducts, useTrashedJobs, type DbJob } from "
 import { restoreOriginalRecording } from "@/lib/recording.functions";
 import {
   approveDraft,
+  createDraftThumbnailUpload,
   getDraftKit,
   getDraftPreviews,
   moveDraftBack,
@@ -59,6 +60,7 @@ import {
   rejectDraft,
   retryDraftVideoStorage,
   saveDraftPostTexts,
+  saveDraftThumbnail,
 } from "@/lib/drafts.functions";
 import { ProfileGate } from "./profile-gate";
 import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
@@ -67,7 +69,6 @@ import { useStudio } from "./studio-context";
 import { actionError } from "@/lib/api-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
-import { createDraftThumbnailUpload, saveDraftThumbnail } from "@/lib/drafts.functions";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 

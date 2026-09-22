@@ -6,7 +6,7 @@ export async function captureVideoThumbnail(source: Blob | string, seekSeconds =
   video.muted = true;
   video.playsInline = true;
   if (typeof source === "string") video.crossOrigin = "anonymous";
-  video.src = objectUrl ?? source;
+  video.src = objectUrl ?? (typeof source === "string" ? source : "");
 
   try {
     await new Promise<void>((resolve, reject) => {
