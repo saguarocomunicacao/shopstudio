@@ -223,8 +223,8 @@ export const generateJobScenes = createServerFn({ method: "POST" })
 
     const { error } = await supabase
       .from("jobs")
-      .update(
-        trackPatch(job, {
+      .update({
+        ...trackPatch(job, {
           render_stage: resume ? "cenas" : "planejando",
           render_started_at: new Date().toISOString(),
           render_error: null,
@@ -233,9 +233,10 @@ export const generateJobScenes = createServerFn({ method: "POST" })
           video_thumbnail_url: null,
           ...(isAiTrack(job) ? { status: "roteiro_pronto" } : {}),
         }),
-      )
-      .update(resume ? {} : { scenes: [], gemini_images_count: 0, veo_takes_count: 0 })
+        ...(resume ? {} : { scenes: [], gemini_images_count: 0, veo_takes_count: 0 }),
+      })
       .eq("id", job.id);
+
     if (error) throw new Error(error.message);
 
 
