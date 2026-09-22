@@ -104,13 +104,18 @@ function DraftThumb({
   onOpen: () => void;
 }) {
   const [playing, setPlaying] = useState(false);
+  const [generatedPoster, setGeneratedPoster] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const thumbnailAttempted = useRef(false);
   const qc = useQueryClient();
   const createThumbnailUpload = useServerFn(createDraftThumbnailUpload);
   const saveThumbnail = useServerFn(saveDraftThumbnail);
   const videoUrl = preview?.videoUrl ?? null;
-  const posterUrl = preview?.thumbnailUrl ?? job.video_thumbnail_url ?? undefined;
+  const posterUrl = preview?.thumbnailUrl ?? job.video_thumbnail_url ?? generatedPoster ?? undefined;
+
+  useEffect(() => () => {
+    if (generatedPoster) URL.revokeObjectURL(generatedPoster);
+  }, [generatedPoster]);
 
   useEffect(() => {
     if (!videoUrl || posterUrl || thumbnailAttempted.current) return;
@@ -120,6 +125,7 @@ function DraftThumb({
       try {
         const thumbnail = await captureVideoThumbnail(videoUrl);
         if (cancelled) return;
+        setGeneratedPoster(URL.createObjectURL(thumbnail));
         const { path, token } = await createThumbnailUpload({ data: { jobId: job.id } });
         const { error } = await supabase.storage.from("job-media").uploadToSignedUrl(path, token, thumbnail, {
           contentType: "image/jpeg",
@@ -139,6 +145,15 @@ function DraftThumb({
   if (videoUrl) {
     return (
       <div className="relative overflow-hidden rounded-xl bg-landing-bg">
+        {!posterUrl && !playing && (
+          <div className="draft-thumbnail-placeholder absolute inset-0 z-10">
+            <span className="route-loader-mark scale-75" aria-hidden="true">
+              <span className="route-loader-ring" />
+              <Film className="relative z-10 size-8 text-brand-cyan" />
+            </span>
+            <p>Gerando miniatura...</p>
+          </div>
+        )}
         <video
           ref={videoRef}
           key={videoUrl}
@@ -149,14 +164,14 @@ function DraftThumb({
           playsInline
           muted={!playing}
           controls={playing}
-          className="aspect-[9/16] w-full object-cover"
+          className={`aspect-[9/16] w-full object-cover ${!posterUrl && !playing ? "opacity-0" : "opacity-100"}`}
           onPause={() => setPlaying(false)}
         />
         {!playing && (
           <button
             type="button"
             aria-label={`Assistir ${job.title || "vídeo"}`}
-            className="absolute inset-0 grid place-items-center bg-overlay/10 transition hover:bg-overlay/25"
+            className="absolute inset-0 z-20 grid place-items-center bg-overlay/10 transition hover:bg-overlay/25"
             onClick={() => {
               setPlaying(true);
               window.setTimeout(() => void videoRef.current?.play(), 0);
