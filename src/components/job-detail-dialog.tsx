@@ -14,6 +14,7 @@ import { extractCtaFromScript, extractHookFromScript } from "@/lib/script-parser
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/video.functions";
 import { approveDraft, saveDraftPostTexts } from "@/lib/drafts.functions";
+import { JobAvatarSelect } from "./avatar-library";
 import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
 import { JobCostSummary } from "./job-cost";
@@ -268,7 +269,12 @@ export function JobDetailDialog({
               Este job ainda não tem roteiro. {canEdit ? "Gere um com a inteligência artificial." : "Você não tem permissão para gerar."}
             </p>
           )}
+
+          {job && job.formato !== "gravacao" && job.status === "roteiro_pronto" && !job.render_stage && (
+            <JobAvatarSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
+          )}
         </div>
+
         <DialogFooter className="sm:justify-between">
           <div className="flex flex-wrap gap-2">
             {canDelete && onDelete && (
