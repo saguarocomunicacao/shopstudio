@@ -806,7 +806,7 @@ export const setJobVideoChoice = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("jobs")
-      .select("id, profile_id, formato, video_path, video_original_path, video_edited_path, ai_video_path")
+      .select("id, profile_id, formato, status, video_path, video_original_path, video_edited_path, ai_video_path")
       .eq("id", data.jobId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -822,9 +822,17 @@ export const setJobVideoChoice = createServerFn({ method: "POST" })
           : (job.video_original_path ?? job.video_path);
     if (!destino) throw new Error("Essa versão do vídeo ainda não está disponível.");
 
+    // Escolher a versão por IA sem ter gravado nada coloca o job na fila de revisão.
+    const promover = job.status === "roteiro_pronto" || job.status === "cenas_geradas";
     const { error: updateError } = await context.supabase
       .from("jobs")
-      .update({ video_path: destino, video_choice: data.choice })
+      .update({
+        video_path: destino,
+        video_choice: data.choice,
+        ...(promover
+          ? { status: "video_pronto" as const, video_storage_status: "salvo", video_storage_error: null }
+          : {}),
+      })
       .eq("id", data.jobId);
     if (updateError) throw new Error(updateError.message);
     return { ok: true, path: destino };
