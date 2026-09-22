@@ -183,15 +183,12 @@ async function assertVideoKeys(supabase: any, job: JobRow) {
 async function loadJob(supabase: any, jobId: string): Promise<JobRow> {
   const { data: job, error } = await supabase
     .from("jobs")
-    .select("id, product_id, profile_id, tenant_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato, avatar_id, avatar_reference_urls, avatar_description")
+    .select("id, product_id, profile_id, tenant_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato, ai_status, ai_render_stage, avatar_id, avatar_reference_urls, avatar_description")
     .eq("id", jobId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!job) throw new Error("Job não encontrado ou sem permissão de acesso.");
-  // No formato "Gravar eu mesmo" a pessoa grava o vídeo: nada de cenas, Veo ou montagem.
-  if (job.formato === "gravacao") {
-    throw new Error("Este vídeo é do formato Gravar eu mesmo: ele não usa geração automática de cenas ou vídeo.");
-  }
+
 
   const { data: canEdit, error: permError } = await supabase.rpc("can_edit_pipeline", { _profile_id: job.profile_id });
   if (permError) throw new Error(permError.message);
