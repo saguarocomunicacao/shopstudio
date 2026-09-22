@@ -20,7 +20,7 @@ import {
   Undo2,
   Video,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -100,6 +100,7 @@ function DraftThumb({
   onOpen: () => void;
 }) {
   const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const videoUrl = preview?.videoUrl ?? null;
   const posterUrl = preview?.thumbnailUrl ?? job.video_thumbnail_url ?? undefined;
 
@@ -107,6 +108,7 @@ function DraftThumb({
     return (
       <div className="relative overflow-hidden rounded-xl bg-black">
         <video
+          ref={videoRef}
           key={videoUrl}
           // #t=0.5 faz o navegador desenhar um frame do vídeo como miniatura.
           src={playing ? videoUrl : `${videoUrl}#t=0.5`}
@@ -123,10 +125,9 @@ function DraftThumb({
             type="button"
             aria-label={`Assistir ${job.title || "vídeo"}`}
             className="absolute inset-0 grid place-items-center bg-black/10 transition hover:bg-black/25"
-            onClick={(event) => {
+            onClick={() => {
               setPlaying(true);
-              const el = (event.currentTarget.previousSibling as HTMLVideoElement | null);
-              window.setTimeout(() => void el?.play(), 0);
+              window.setTimeout(() => void videoRef.current?.play(), 0);
             }}
           >
             <span className="grid size-14 place-items-center rounded-full bg-background/90 text-foreground shadow-lg">
