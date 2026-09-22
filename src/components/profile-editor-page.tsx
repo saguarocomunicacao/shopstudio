@@ -26,6 +26,7 @@ import { TONE_OPTIONS } from "@/lib/content";
 import { generateAvatarReference, saveAvatarReferences } from "@/lib/video.functions";
 import { seedProfilePrompts } from "@/lib/prompts.functions";
 import { DEFAULT_RECORDING_ASPECT_RATIO, RECORDING_FORMATS, normalizeRecordingAspectRatio, type RecordingAspectRatio } from "@/lib/recording-format";
+import { ProfileAvatarsCard } from "./avatar-library";
 import { CategorySelect } from "./category-select";
 import { LanguageSelect } from "./language-select";
 import { ProfilePrompts } from "./profile-prompts";
@@ -87,23 +88,24 @@ const readFile = (file: File) =>
 type FormState = {
   name: string; handle: string; niche: string; categoryId: string; followers: string; status: string;
   tone: string; language: string; notes: string;
-  avatarMode: string; takes: string; duration: string; geminiModel: string; veoModel: string; recordingAspectRatio: RecordingAspectRatio; voiceRef: string | null;
+  avatarMode: string; avatarDescription: string; takes: string; duration: string; geminiModel: string; veoModel: string; recordingAspectRatio: RecordingAspectRatio; voiceRef: string | null;
   requireReview: boolean;
 };
 const emptyForm: FormState = {
   name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo",
   tone: "descontraido", language: "pt-BR", notes: "",
-  avatarMode: "livre", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value, recordingAspectRatio: DEFAULT_RECORDING_ASPECT_RATIO, voiceRef: null,
+  avatarMode: "livre", avatarDescription: "", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value, recordingAspectRatio: DEFAULT_RECORDING_ASPECT_RATIO, voiceRef: null,
   requireReview: true,
 };
 
-type TabKey = "dados" | "identidade" | "video" | "pessoa" | "voz" | "publicacao" | "integracoes" | "prompts";
+type TabKey = "dados" | "identidade" | "video" | "pessoa" | "avatares" | "voz" | "publicacao" | "integracoes" | "prompts";
 
 const TABS: { key: TabKey; label: string; hint: string }[] = [
   { key: "dados", label: "Dados do perfil", hint: "Nome, conta, categoria e status" },
   { key: "identidade", label: "Identidade", hint: "Tom, idioma e estilo usados pela IA" },
   { key: "video", label: "Geração de vídeo", hint: "Cenas, duração e qualidade" },
   { key: "pessoa", label: "Pessoa / Avatar", hint: "Quem aparece nos vídeos" },
+  { key: "avatares", label: "Meus avatares", hint: "Avatares salvos para reusar" },
   { key: "voz", label: "Voz", hint: "Voz da narração" },
   { key: "publicacao", label: "Publicação", hint: "Revisão, alertas e resumos" },
   { key: "integracoes", label: "Integrações", hint: "Conta do TikTok Shop" },
@@ -115,7 +117,7 @@ const TAB_FIELDS: Partial<Record<TabKey, (keyof FormState)[]>> = {
   dados: ["name", "handle", "categoryId", "niche", "followers", "status"],
   identidade: ["tone", "language", "notes"],
   video: ["takes", "duration", "geminiModel", "veoModel", "recordingAspectRatio"],
-  pessoa: ["avatarMode"],
+  pessoa: ["avatarMode", "avatarDescription"],
   voz: ["voiceRef"],
   publicacao: ["requireReview"],
 };
@@ -183,7 +185,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
       });
     void supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration, recording_aspect_ratio, voice_ref, require_review")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, avatar_description, takes_count, gemini_model, veo_model, take_duration, recording_aspect_ratio, voice_ref, require_review")
       .eq("profile_id", profile.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -196,6 +198,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
         if (urls.length > 1) setAvatarSource("upload");
         const patch = {
           avatarMode: data.avatar_mode,
+          avatarDescription: data.avatar_description ?? "",
           takes: String(data.takes_count),
           duration: String(data.take_duration),
           geminiModel: data.gemini_model,
@@ -254,6 +257,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
         {
           profile_id: newId,
           avatar_mode: values.avatarMode,
+          avatar_description: values.avatarDescription.trim(),
           takes_count: Number(values.takes),
           take_duration: Number(values.duration),
           gemini_model: values.geminiModel,
@@ -683,8 +687,25 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                   )}
                 </div>
               )}
+
+              <div className="grid gap-2">
+                <Label htmlFor="p-avatar-desc">Descrição do avatar <span className="font-normal text-muted-foreground">(opcional)</span></Label>
+                <Textarea
+                  id="p-avatar-desc"
+                  rows={2}
+                  value={form.avatarDescription}
+                  onChange={(e) => setForm({ ...form, avatarDescription: e.target.value })}
+                  placeholder="mulher, loira, cerca de 30 anos, sorridente"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Se houver fotos, elas têm prioridade. Sem fotos, a IA cria a pessoa a partir desta descrição. Sem nenhum dos dois, a pessoa é livre.
+                </p>
+              </div>
             </div>
           )}
+
+          {tab === "avatares" && <ProfileAvatarsCard profileId={profile?.id ?? null} />}
+
 
           {tab === "voz" && (
             <div className="grid gap-4">
