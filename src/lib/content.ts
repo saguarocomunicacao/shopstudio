@@ -115,6 +115,8 @@ export type DbJob = {
   approved_at?: string | null;
   published_at?: string | null;
   rejection_reason?: string | null;
+  deleted_at?: string | null;
+  deleted_from_status?: JobStatusKey | null;
   /** Vídeos campeões usados como referência ao gerar o roteiro. */
   script_refs?: ChampionRef[] | null;
 };
@@ -244,9 +246,10 @@ export function useJobs(profileId: string | null, enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edits, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at",
+          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edits, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status",
         )
         .eq("profile_id", profileId!)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []) as DbJob[];
