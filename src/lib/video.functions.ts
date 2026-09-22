@@ -252,7 +252,7 @@ export const approveJobScenes = createServerFn({ method: "POST" })
     const { supabase } = context;
     const job = await loadJob(supabase, data.jobId);
 
-    if (job.status !== "cenas_geradas") {
+    if (jobStatus(job) !== "cenas_geradas") {
       throw new Error("Aprove as cenas quando elas estiverem geradas.");
     }
     const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as { image_url?: string }[];
@@ -268,15 +268,18 @@ export const approveJobScenes = createServerFn({ method: "POST" })
 
     const { error } = await supabase
       .from("jobs")
-      .update({
-        status: "gerando_video",
-        render_stage: "takes",
-        render_started_at: new Date().toISOString(),
-        render_error: null,
-        render_id: null,
-      })
+      .update(
+        trackPatch(job, {
+          status: "gerando_video",
+          render_stage: "takes",
+          render_started_at: new Date().toISOString(),
+          render_error: null,
+          render_id: null,
+        }),
+      )
       .eq("id", job.id);
     if (error) throw new Error(error.message);
+
 
     return { stage: "takes" as const };
   });
