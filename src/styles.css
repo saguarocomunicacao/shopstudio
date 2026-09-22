@@ -302,6 +302,26 @@
   backdrop-filter: blur(10px) saturate(130%);
   animation: route-loader-in 140ms ease-out both;
 }
+.recording-transition {
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  background:var(--landing-bg);
+  color:var(--landing-text);
+}
+.recording-transition-grid {
+  position:absolute;
+  inset:0;
+  opacity:.16;
+  background-image:linear-gradient(var(--landing-line) 1px,transparent 1px),linear-gradient(90deg,var(--landing-line) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:radial-gradient(circle at center,black,transparent 70%);
+}
+.recording-transition-content { position:relative; display:grid; place-items:center; text-align:center; padding:2rem; }
+.recording-transition-content h1 { margin-top:1.5rem; font-family:var(--font-display); font-size:1.25rem; font-weight:700; letter-spacing:0; }
+.recording-transition-content p { margin-top:.35rem; color:var(--landing-muted); font-size:.875rem; }
 .route-loader-leaving { animation: route-loader-out 260ms ease-in both; pointer-events: none; }
 .route-loader-mark { position: relative; display: grid; width: 7.5rem; height: 7.5rem; place-items: center; }
 .route-loader-logo {

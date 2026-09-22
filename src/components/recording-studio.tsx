@@ -36,6 +36,7 @@ import { actionError } from "@/lib/api-keys";
 import { VideoEditor } from "@/components/video-editor";
 import type { VideoEditOperation } from "@/lib/video-edit";
 import { isMobileViewport } from "@/lib/mobile-fullscreen";
+import loaderMark from "@/assets/loader-mark.png.asset.json";
 
 const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
   { id: "leve", label: "Leve" },
@@ -650,7 +651,17 @@ export function RecordingStudio({
   return (
     <div className="fixed inset-0 z-50 grid h-screen w-screen place-items-center overflow-hidden bg-black supports-[height:100dvh]:h-[100dvh] max-sm:box-border max-sm:pl-[env(safe-area-inset-left)] max-sm:pr-[env(safe-area-inset-right)]">
       {loadingSaved ? (
-        <div className="flex items-center gap-2 text-sm text-white"><Loader2 className="size-5 animate-spin" />Carregando rascunho...</div>
+        <div className="recording-transition" role="status" aria-live="polite" aria-label="Preparando gravação">
+          <div className="recording-transition-grid" aria-hidden="true" />
+          <div className="recording-transition-content">
+            <div className="route-loader-mark">
+              <span className="route-loader-ring" aria-hidden="true" />
+              <img src={loaderMark.url} alt="" className="route-loader-logo" />
+            </div>
+            <h1>Preparando gravação...</h1>
+            <p>Carregando seu vídeo e suas edições</p>
+          </div>
+        </div>
       ) : !supported ? (
         <div className="m-6 rounded-xl bg-white/10 p-6 text-center text-sm text-white">
           Este navegador não permite gravar vídeo. Abra o Shop Studio pelo Chrome ou Safari atualizado, no celular ou no

@@ -12,6 +12,12 @@ const SIGNED_TTL = 60 * 60 * 6;
 
 const jobInput = (data: unknown) => z.object({ jobId: z.string().uuid() }).parse(data);
 
+async function assertCanEditDraft(supabase: any, profileId: string) {
+  const { data: canEdit, error } = await supabase.rpc("can_edit_pipeline", { _profile_id: profileId });
+  if (error) throw new Error(error.message);
+  if (!canEdit) throw new Error("Você não tem permissão para editar conteúdo neste perfil.");
+}
+
 async function sign(path: string | null | undefined) {
   if (!path) return null;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -450,4 +456,56 @@ export const getDraftPreviews = createServerFn({ method: "POST" })
       })),
     );
     return { previews };
+  });
+
+/** Prepara o envio privado de uma miniatura extraída no navegador. */
+export const createDraftThumbnailUpload = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(jobInput)
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, profile_id")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Rascunho não encontrado.");
+    await assertCanEditDraft(context.supabase, job.profile_id);
+
+    const path = `thumbs/${job.id}-${Date.now()}.jpg`;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: signed, error: signError } = await supabaseAdmin.storage
+      .from("job-media")
+      .createSignedUploadUrl(path);
+    if (signError || !signed) throw new Error(signError?.message ?? "Não foi possível preparar a miniatura.");
+    return { path, token: signed.token };
+  });
+
+/** Associa a miniatura enviada ao job e remove a anterior quando necessário. */
+export const saveDraftThumbnail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ jobId: z.string().uuid(), path: z.string().trim().min(3).max(300) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, profile_id, video_thumbnail_path")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Rascunho não encontrado.");
+    if (!data.path.startsWith(`thumbs/${job.id}-`)) throw new Error("Miniatura inválida para este rascunho.");
+    await assertCanEditDraft(context.supabase, job.profile_id);
+
+    const { error: updateError } = await context.supabase
+      .from("jobs")
+      .update({ video_thumbnail_path: data.path })
+      .eq("id", job.id);
+    if (updateError) throw new Error(updateError.message);
+    if (job.video_thumbnail_path && job.video_thumbnail_path !== data.path) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.storage.from("job-media").remove([job.video_thumbnail_path]);
+    }
+    return { ok: true };
   });

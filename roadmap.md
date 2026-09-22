@@ -42,7 +42,7 @@
 - [x] Validar desktop e mobile e publicar no domínio
 
 ## Transição e miniaturas dos Rascunhos
-- [ ] Substituir o carregamento preto pela transição visual do estúdio
+- [x] Substituir o carregamento preto pela transição visual do estúdio
 - [ ] Gerar e salvar thumbnail ao salvar uma gravação
 - [ ] Preencher thumbnails de vídeos antigos sem miniatura
 - [ ] Validar cards, reprodução, tipos e build
