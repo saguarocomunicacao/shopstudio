@@ -932,12 +932,17 @@ export function RecordingStudio({
           source={blob}
           initialOperations={operations}
           onCancel={(pendingOperations) => {
+            const operationsChanged = JSON.stringify(pendingOperations) !== JSON.stringify(operations);
             setOperations(pendingOperations);
-            setCaptureDirty(true);
+            if (operationsChanged) setCaptureDirty(true);
             setEditOutputDirty(false);
             setEditorAberto(false);
-            setReopenEditorOnCancel(true);
-            closeStudio();
+            if (captureDirty || operationsChanged) {
+              setReopenEditorOnCancel(true);
+              setConfirmCloseOpen(true);
+            } else {
+              onClose();
+            }
           }}
           onApply={(resultado, ops) => {
             if (editedUrl) URL.revokeObjectURL(editedUrl);
