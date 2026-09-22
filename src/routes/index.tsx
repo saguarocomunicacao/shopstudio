@@ -3,8 +3,9 @@ import { useRef, useState } from "react";
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
 import {
   ArrowDown, ArrowRight, BarChart3, Bookmark, Check, ChevronRight, CircleCheck,
-  Clapperboard, Clock3, Film, Heart, Image, LockKeyhole, MessageCircle, PackageSearch,
-  PenLine, Play, Radar, Send, Share2, ShoppingBag, Sparkles, Users, WandSparkles, X,
+  Clapperboard, Clock3, Coins, Crop, Film, Heart, Image, KeyRound, Layers3,
+  LockKeyhole, MessageCircle, Mic2, PackageSearch, PenLine, Play, Radar, Scissors,
+  Send, Share2, ShoppingBag, SlidersHorizontal, Sparkles, Trophy, Users, WandSparkles, X,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,17 @@ function LandingPage() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-32">
+          <SectionTitle title="Você escolhe quanto quer automatizar" text="Comece com uma ideia, com um produto que já está vendendo ou deixe a inteligência artificial montar o vídeo completo." />
+          <div className="mt-14 grid gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-stretch">
+            <CreationMode number="1" icon={<PenLine />} title="Pedido livre" text="Você diz o tema. A IA escreve o roteiro no tom do seu perfil e você grava do seu jeito." result="Tema → roteiro → sua gravação" />
+            <ChevronRight className="mx-auto hidden self-center text-landing-muted lg:block" aria-hidden="true" />
+            <CreationMode number="2" icon={<PackageSearch />} title="A partir de um produto" text="Escolha um item em alta no garimpo. A IA transforma os sinais de venda em roteiro e você grava." result="Produto → roteiro → sua gravação" />
+            <ChevronRight className="mx-auto hidden self-center text-landing-muted lg:block" aria-hidden="true" />
+            <CreationMode number="3" icon={<WandSparkles />} title="Vídeo 100% IA" text="O sistema cria cena, animação, narração e montagem. Você revisa o resultado antes de postar." result="Produto → cenas → vídeo pronto" />
+          </div>
+        </section>
+
         <section id="recursos" className="mx-auto max-w-7xl scroll-mt-24 px-5 py-24 lg:px-8 lg:py-32">
           <SectionTitle title="Um estúdio inteiro. Sem a complexidade." text="Cada ferramenta existe para acelerar a produção sem tirar sua decisão do processo." />
           <div className="mt-14 grid auto-rows-[minmax(230px,auto)] gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -123,6 +135,37 @@ function LandingPage() {
             <Feature icon={<WandSparkles />} title="Roteiro no seu tom" text="Voz, idioma e estilo próprios para cada perfil." />
             <Feature icon={<Play />} title="Pipeline visual" text="Avance, volte e refaça sem perder trabalho, com histórico de tempo." wide />
             <Feature icon={<Users />} title="Equipe com permissões" text="Vários usuários, papéis por perfil e controle fino de acesso." />
+          </div>
+          <div className="mt-16 grid gap-4 lg:grid-cols-2">
+            <Feature icon={<Radar />} title="Radar de emergentes" text="Encontre produtos ganhando tração antes que o mercado inteiro esteja falando deles." />
+            <Feature icon={<Trophy />} title="Roteiro por campeões" text="Use os vídeos que já performam como referência para criar uma abordagem própria para o seu perfil." />
+          </div>
+        </section>
+
+        <section className="border-y border-landing-line bg-landing-surface/40">
+          <div className="mx-auto grid max-w-7xl gap-12 px-5 py-24 lg:grid-cols-[.85fr_1.15fr] lg:items-center lg:px-8 lg:py-28">
+            <div>
+              <SectionTitle title="Grave no seu ritmo, sem sair do navegador" text="Transforme o roteiro em vídeo usando o celular ou computador, com tudo que ajuda a falar naturalmente para a câmera." />
+              <div className="mt-9 grid gap-5 sm:grid-cols-2">
+                <CompactFeature icon={<Mic2 />} title="Teleprompter automático" text="Rolagem contínua, velocidade e tamanho do texto sob seu controle." />
+                <CompactFeature icon={<SlidersHorizontal />} title="Imagem e som ajustados" text="Filtros, suavização de pele e redução de ruído durante a gravação." />
+                <CompactFeature icon={<Film />} title="Vertical por padrão" text="Gravação pronta para o formato 9:16 do TikTok Shop." />
+                <CompactFeature icon={<Play />} title="Revise antes de salvar" text="Assista, regrave ou siga direto para a edição." />
+              </div>
+            </div>
+            <MediaPlaceholder description="Captura do estúdio de gravação no celular com teleprompter e controles." />
+          </div>
+        </section>
+
+        <section className="mx-auto grid max-w-7xl gap-12 px-5 py-24 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:px-8 lg:py-32">
+          <MediaPlaceholder description="Captura do editor com linha do tempo, tesoura e moldura de enquadramento." />
+          <div className="lg:order-2">
+            <SectionTitle title="Edite só o que precisa. O original fica guardado." text="Faça os ajustes essenciais depois de gravar e aplique tudo de uma vez, sem perder qualidade a cada mudança." />
+            <div className="mt-9 space-y-7">
+              <ControlItem icon={<SlidersHorizontal />} title="Apare as pontas" text="Ajuste com precisão onde o vídeo começa e termina." />
+              <ControlItem icon={<Scissors />} title="Corte trechos do meio" text="Remova pausas e erros; as partes restantes são unidas automaticamente." />
+              <ControlItem icon={<Crop />} title="Reenquadre a imagem" text="Escolha a proporção, mova a moldura e mantenha somente a região que importa." />
+            </div>
           </div>
         </section>
 
@@ -148,6 +191,21 @@ function LandingPage() {
             </div>
           </div>
           <PipelinePanel />
+        </section>
+
+        <section className="border-y border-landing-line bg-landing-surface/40">
+          <div className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-28">
+            <SectionTitle title="Sua operação, do seu jeito" text="Produza para diferentes perfis, organize quem pode fazer o quê e acompanhe o uso sem surpresas." />
+            <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Feature icon={<KeyRound />} title="Suas chaves ou nossa infraestrutura" text="Conecte suas próprias chaves de inteligência artificial e pague apenas pelo software, ou use a infraestrutura do Shop Studio." />
+              <Feature icon={<Coins />} title="Custo transparente" text="Veja o consumo de cada ação e acompanhe saldos por fornecedor e créditos, sem caixa-preta." />
+              <Feature icon={<Users />} title="Multi-perfil e equipe" text="Organize vários perfis e nichos, com papéis e permissões para cada pessoa da equipe." />
+            </div>
+            <div className="mt-4 flex flex-col gap-5 rounded-[22px] border border-landing-line bg-landing-surface p-7 sm:flex-row sm:items-center sm:justify-between lg:p-9">
+              <div className="flex gap-4"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-landing-surface-raised text-landing-mint"><Layers3 className="size-5" aria-hidden="true" /></span><div><h3 className="landing-display text-xl font-semibold">Você revisa. A publicação continua manual.</h3><p className="mt-2 max-w-3xl leading-7 text-landing-muted">Baixe o vídeo final, marque o produto dentro do TikTok Shop e publique. Sem promessas de automação que a plataforma não permite.</p></div></div>
+              <Button asChild className="landing-focus landing-magenta h-11 shrink-0 rounded-xl border-0 px-5 text-landing-text hover:opacity-90"><Link to="/entrar">Criar conta <ArrowRight aria-hidden="true" /></Link></Button>
+            </div>
+          </div>
         </section>
 
         <section className="px-5 pb-24 lg:px-8 lg:pb-32">
@@ -244,6 +302,12 @@ function FloatChip({ icon, text, className, accent, delay }: { icon: React.React
 function CompareColumn({ title, items, negative = false }: { title: string; items: string[]; negative?: boolean }) { return <article className={`rounded-[22px] border p-7 sm:p-10 ${negative ? "border-landing-line bg-landing-bg/30" : "landing-feature-glow border-landing-line"}`}><h2 className="landing-display text-2xl font-semibold">{title}</h2><ul className="mt-8 space-y-5">{items.map(item => <li key={item} className="flex items-center gap-3 text-landing-muted">{negative ? <X className="size-5 shrink-0 opacity-60" /> : <Check className="size-5 shrink-0 text-landing-mint" />}<span>{item}</span></li>)}</ul></article>; }
 
 function Feature({ icon, title, text, wide = false }: { icon: React.ReactNode; title: string; text: string; wide?: boolean }) { return <article className={`rounded-[22px] border border-landing-line bg-landing-surface p-7 ${wide ? "lg:col-span-2" : ""}`}><span className="text-landing-mint [&_svg]:size-7">{icon}</span><h3 className="landing-display mt-10 text-xl font-semibold">{title}</h3><p className="mt-3 leading-7 text-landing-muted">{text}</p></article>; }
+
+function CreationMode({ number, icon, title, text, result }: { number: string; icon: React.ReactNode; title: string; text: string; result: string }) { return <article className="landing-feature-glow rounded-[22px] border border-landing-line p-7"><div className="flex items-center justify-between"><span className="landing-display text-xs font-bold text-landing-muted">MODO {number}</span><span className="text-landing-mint [&_svg]:size-7">{icon}</span></div><h3 className="landing-display mt-10 text-2xl font-semibold">{title}</h3><p className="mt-3 leading-7 text-landing-muted">{text}</p><div className="mt-8 border-t border-landing-line pt-5 text-sm font-medium text-landing-text">{result}</div></article>; }
+
+function CompactFeature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) { return <div className="flex gap-3"><span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg bg-landing-surface-raised text-landing-mint [&_svg]:size-4">{icon}</span><div><h3 className="landing-display font-semibold">{title}</h3><p className="mt-1 text-sm leading-6 text-landing-muted">{text}</p></div></div>; }
+
+function MediaPlaceholder({ description }: { description: string }) { return <div data-landing-image-placeholder className="landing-aura grid min-h-[360px] place-items-center rounded-[22px] border border-dashed border-landing-mint/35 bg-landing-surface p-8 text-center sm:min-h-[460px]"><div><Image className="mx-auto size-10 text-landing-mint" aria-hidden="true" /><p className="landing-display mt-6 text-2xl font-bold">VAI IMAGEM AQUI</p><p className="mx-auto mt-3 max-w-md text-sm leading-6 text-landing-muted">{description}</p></div></div>; }
 
 function AiStep({ number, title, text, icon }: { number: string; title: string; text: string; icon: React.ReactNode }) { return <article className="min-h-64 rounded-[22px] border border-landing-line bg-landing-surface p-7"><div className="flex items-center justify-between"><span className="landing-plasma-bg landing-display grid size-10 place-items-center rounded-full font-bold">{number}</span><span className="text-landing-mint [&_svg]:size-7">{icon}</span></div><h3 className="landing-display mt-12 text-2xl font-semibold">{title}</h3><p className="mt-3 leading-7 text-landing-muted">{text}</p></article>; }
 
