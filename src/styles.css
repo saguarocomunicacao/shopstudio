@@ -327,9 +327,8 @@
   display:grid;
   place-content:center;
   place-items:center;
-  gap:.25rem;
+  gap:.5rem;
   overflow:hidden;
-  border:1px dashed color-mix(in oklab,var(--brand-cyan) 34%,var(--border));
   border-radius:.75rem;
   background:linear-gradient(145deg,color-mix(in oklab,var(--brand-cyan) 9%,var(--landing-bg)),color-mix(in oklab,var(--secondary-brand) 10%,var(--landing-bg)));
   color:var(--landing-text);
@@ -339,7 +338,7 @@
   content:"";
   position:absolute;
   inset:0;
-  opacity:.12;
+  opacity:.10;
   background-image:linear-gradient(var(--landing-line) 1px,transparent 1px),linear-gradient(90deg,var(--landing-line) 1px,transparent 1px);
   background-size:32px 32px;
 }
