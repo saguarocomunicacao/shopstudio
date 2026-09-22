@@ -57,21 +57,52 @@ export function profileAvatarUrls(settings: { avatar_reference_url?: string | nu
   return settings?.avatar_reference_url ? [settings.avatar_reference_url] : [];
 }
 
+/** Lista de URLs guardadas num campo jsonb. */
+function urlList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((u): u is string => typeof u === "string" && !!u).slice(0, 5) : [];
+}
+
+export type AvatarSettings = {
+  avatar_mode?: string | null;
+  avatar_reference_url?: string | null;
+  avatar_reference_urls?: unknown;
+  avatar_description?: string | null;
+};
+
+export type AvatarJob = { avatar_reference_urls?: unknown; avatar_description?: string | null };
+
 /**
- * Referências de pessoa para uma cena.
- * - Pessoa fixa: todas as fotos do perfil.
- * - Pessoa nova: a primeira cena cria a pessoa e as demais reaproveitam a
- *   imagem dela, para o vídeo inteiro ter a MESMA pessoa.
+ * Avatar efetivo de uma cena.
+ * - O override do vídeo (fotos ou descrição) vence o avatar do perfil.
+ * - Com fotos: elas são as referências de identidade.
+ * - Só com descrição: a primeira cena cria a pessoa a partir do texto e as
+ *   demais reaproveitam a imagem dela, mantendo a MESMA pessoa no vídeo.
+ * - Sem nada: comportamento antigo (pessoa qualquer, fixada pela cena 1).
  */
-function personReferenceUrls(
-  settings: { avatar_mode?: string | null; avatar_reference_url?: string | null; avatar_reference_urls?: unknown } | null,
+function avatarForScene(
+  job: AvatarJob,
+  settings: AvatarSettings | null,
   scenes: { image_url?: string }[],
   index: number,
-): string[] {
-  if (settings?.avatar_mode === "fixo") return profileAvatarUrls(settings);
+): { urls: string[]; description: string } {
+  const jobUrls = urlList(job.avatar_reference_urls);
+  const jobDescription = (job.avatar_description ?? "").trim();
+  const override = jobUrls.length > 0 || jobDescription.length > 0;
+
+  const urls = override ? jobUrls : settings?.avatar_mode === "fixo" ? profileAvatarUrls(settings) : [];
+  const description = override ? jobDescription : (settings?.avatar_description ?? "").trim();
+  if (urls.length) return { urls, description: "" };
+
   const first = scenes[0]?.image_url;
-  return index > 0 && first ? [first] : [];
+  return { urls: index > 0 && first ? [first] : [], description };
 }
+
+/** Bloco de prompt que descreve a pessoa quando não há fotos de referência. */
+function personDescriptionBlock(description: string): string {
+  if (!description) return "";
+  return `PERSON DESCRIPTION: The person appearing in the scene must match this description: ${description}. Keep exactly the same person, face and hair across every scene of this video.\n\n`;
+}
+
 
 /**
  * Voz do perfil quando ela é da ElevenLabs (clonada ou catálogo). Voz padrão
