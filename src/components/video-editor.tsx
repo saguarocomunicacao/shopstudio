@@ -548,10 +548,11 @@ export function VideoEditor({
           </Button>
           <Button type="button" size="sm" variant={mode === "cut" ? "default" : "ghost"} aria-pressed={mode === "cut"} onClick={() => {
             setMode("cut");
-            const span = Math.max(0.2, end - start);
-            setCutStart(start + span * 0.35);
-            setCutEnd(start + span * 0.65);
+            const selecao = cutSelectionFor(ranges);
+            setCutStart(selecao.start);
+            setCutEnd(selecao.end);
           }}>
+
             <Scissors /> Tesoura
           </Button>
           <Button type="button" size="sm" variant={mode === "crop" ? "default" : "ghost"} aria-pressed={mode === "crop"} onClick={() => {
