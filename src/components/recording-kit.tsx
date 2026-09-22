@@ -150,6 +150,7 @@ export function RecordingKitDialog({
   const [caption, setCaption] = useState(job.caption ?? "");
   const [hashtags, setHashtags] = useState((job.hashtags ?? []).join(" "));
   const [studioOpen, setStudioOpen] = useState(openStudioInitially);
+  const [resumeExisting, setResumeExisting] = useState(openStudioInitially && !!job.video_path);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
 
   // Snapshot "salvo" dos campos, usado para detectar alterações não salvas (dirty state).
@@ -429,6 +430,7 @@ export function RecordingKitDialog({
 
               {canEdit && (
                 <Button size="lg" disabled={!temRoteiro} onClick={() => {
+                  setResumeExisting(false);
                   setStudioOpen(true);
                 }}>
                   <Video />
@@ -444,6 +446,7 @@ export function RecordingKitDialog({
         <RecordingStudio
           job={job}
           aspectRatio={recordingAspectRatio}
+          resumeExisting={resumeExisting}
           onClose={() => {
             if (isMobileViewport()) {
               onClose();

@@ -263,7 +263,11 @@ function DraftsContent() {
         </div>
       )}
 
-      {openId && <DraftKitDialog jobId={openId} onClose={() => setOpenId(null)} />}
+      {openId && <DraftKitDialog jobId={openId} onClose={() => setOpenId(null)} onResumeRecording={() => {
+        const jobId = openId;
+        setOpenId(null);
+        openRecordingKit(jobId, true);
+      }} />}
       {recordingJob && (
         <RecordingKitDialog
           job={recordingJob}
@@ -393,7 +397,7 @@ function PostTextField({
   );
 }
 
-function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void }) {
+function DraftKitDialog({ jobId, onClose, onResumeRecording }: { jobId: string; onClose: () => void; onResumeRecording: () => void }) {
   const qc = useQueryClient();
   const fetchKit = useServerFn(getDraftKit);
   const retryStorage = useServerFn(retryDraftVideoStorage);
@@ -545,6 +549,12 @@ function DraftKitDialog({ jobId, onClose }: { jobId: string; onClose: () => void
                       Restaurar original
                     </Button>
                   </div>
+                )}
+                {data.formato === "gravacao" && (
+                  <Button variant="secondary" size="lg" className="mt-3 w-full" onClick={onResumeRecording}>
+                    <Scissors />
+                    Continuar edição
+                  </Button>
                 )}
               </section>
             ) : (

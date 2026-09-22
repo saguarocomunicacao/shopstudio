@@ -109,6 +109,8 @@ export type DbJob = {
   veo_takes_count: number;
   voice_ref: string | null;
   video_path?: string | null;
+  video_original_path?: string | null;
+  video_edits?: unknown;
   published_url?: string | null;
   approved_at?: string | null;
   published_at?: string | null;
@@ -242,7 +244,7 @@ export function useJobs(profileId: string | null, enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at",
+          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edits, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at",
         )
         .eq("profile_id", profileId!)
         .order("created_at", { ascending: false });
