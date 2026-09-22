@@ -99,12 +99,15 @@ export function RecordingStudio({
   aspectRatio,
   onClose,
   onSaved,
+  onGenerateAi,
   resumeExisting = false,
 }: {
   job: DbJob;
   aspectRatio: RecordingAspectRatio;
   onClose: () => void;
   onSaved?: () => void;
+  /** Abre o mesmo fluxo de "Gerar vídeo por IA" usado no modal do roteiro. */
+  onGenerateAi?: () => void;
   resumeExisting?: boolean;
 }) {
   const qc = useQueryClient();
