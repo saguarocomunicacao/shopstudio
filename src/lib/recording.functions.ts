@@ -416,7 +416,7 @@ export const finishRecording = createServerFn({ method: "POST" })
         status: "video_pronto",
         video_path: visible,
         video_original_path: data.path,
-        video_edits: data.editedPath ? ((data.operations ?? []) as never) : null,
+        video_edits: data.operations?.length ? (data.operations as never) : null,
         video_storage_status: "salvo",
         video_storage_error: null,
         recorded_at: new Date().toISOString(),
@@ -473,6 +473,30 @@ export const saveEditedRecording = createServerFn({ method: "POST" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       await supabaseAdmin.storage.from("job-media").remove([job.video_path]);
     }
+    return { ok: true };
+  });
+
+/** Guarda ajustes ainda não renderizados para que o editor possa retomá-los depois. */
+export const saveRecordingOperations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ jobId: z.string().uuid(), operations: z.array(editOperation).max(20) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, profile_id, formato, video_path")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Job não encontrado.");
+    if (job.formato !== "gravacao" || !job.video_path) throw new Error("Este job ainda não tem uma gravação salva.");
+    await assertCanEdit(context.supabase, job.profile_id);
+    const { error: updateError } = await context.supabase
+      .from("jobs")
+      .update({ video_edits: data.operations.length ? (data.operations as never) : null })
+      .eq("id", data.jobId);
+    if (updateError) throw new Error(updateError.message);
     return { ok: true };
   });
 

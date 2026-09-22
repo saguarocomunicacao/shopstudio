@@ -28,7 +28,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbJob } from "@/lib/content";
-import { createRecordingUploadUrl, finishRecording, getRecordingVideoUrl, restoreOriginalRecording, saveEditedRecording } from "@/lib/recording.functions";
+import { createRecordingUploadUrl, finishRecording, getRecordingVideoUrl, restoreOriginalRecording, saveEditedRecording, saveRecordingOperations } from "@/lib/recording.functions";
 import { withoutDuplicatedHook } from "@/lib/recording-script";
 import { RECORDING_FORMATS, cropCover, type RecordingAspectRatio } from "@/lib/recording-format";
 import { createSkinSmoother, type SkinIntensity, type SkinSmoother } from "@/lib/skin-smoothing";
@@ -109,6 +109,7 @@ export function RecordingStudio({
   const finish = useServerFn(finishRecording);
   const getSavedVideo = useServerFn(getRecordingVideoUrl);
   const saveEdit = useServerFn(saveEditedRecording);
+  const saveOperations = useServerFn(saveRecordingOperations);
   const restoreOriginal = useServerFn(restoreOriginalRecording);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -147,6 +148,7 @@ export function RecordingStudio({
   const [captureDirty, setCaptureDirty] = useState(false);
   const [loadedSaved, setLoadedSaved] = useState(false);
   const [restorePending, setRestorePending] = useState(false);
+  const [editOutputDirty, setEditOutputDirty] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
   const [reopenEditorOnCancel, setReopenEditorOnCancel] = useState(false);
   const [loadingSaved, setLoadingSaved] = useState(resumeExisting);
@@ -207,6 +209,7 @@ export function RecordingStudio({
         setEditedUrl(activeBlob ? URL.createObjectURL(activeBlob) : null);
         setOperations(saved.operations as VideoEditOperation[]);
         setLoadedSaved(true);
+        setEditOutputDirty(false);
         setCaptureDirty(false);
       } catch (loadError) {
         if (!cancelled) setError(errMessage(loadError));
@@ -548,6 +551,7 @@ export function RecordingStudio({
       setPreviewUrl(URL.createObjectURL(recorded));
       setLoadedSaved(false);
       setRestorePending(false);
+      setEditOutputDirty(false);
       setCaptureDirty(true);
     };
     recorderRef.current = recorder;
@@ -599,9 +603,12 @@ export function RecordingStudio({
           return;
         }
         if (!captureDirty) return;
-        if (!editedBlob) throw new Error("Não há uma nova edição para salvar.");
-        const editedPath = await enviar(editedBlob, "editado");
-        await saveEdit({ data: { jobId: job.id, path: editedPath, operations } });
+        if (editOutputDirty && editedBlob) {
+          const editedPath = await enviar(editedBlob, "editado");
+          await saveEdit({ data: { jobId: job.id, path: editedPath, operations } });
+          return;
+        }
+        await saveOperations({ data: { jobId: job.id, operations } });
         return;
       }
       const path = await enviar(blob, "original");
@@ -880,6 +887,7 @@ export function RecordingStudio({
                     setBlob(null);
                     setLoadedSaved(false);
                     setRestorePending(false);
+                    setEditOutputDirty(false);
                     setCaptureDirty(false);
                     setSeconds(0);
                     resetScrolling();
@@ -905,6 +913,7 @@ export function RecordingStudio({
                       setEditedUrl(null);
                       setReviewPlaying(false);
                       setRestorePending(loadedSaved);
+                      setEditOutputDirty(false);
                       setCaptureDirty(true);
                     }}
                   >
@@ -922,7 +931,10 @@ export function RecordingStudio({
         <VideoEditor
           source={blob}
           initialOperations={operations}
-          onCancel={() => {
+          onCancel={(pendingOperations) => {
+            setOperations(pendingOperations);
+            setCaptureDirty(true);
+            setEditOutputDirty(false);
             setEditorAberto(false);
             setReopenEditorOnCancel(true);
             closeStudio();
@@ -933,6 +945,7 @@ export function RecordingStudio({
             setEditedUrl(URL.createObjectURL(resultado));
             setOperations(ops);
             setRestorePending(false);
+            setEditOutputDirty(true);
             setCaptureDirty(true);
             setEditorAberto(false);
           }}
