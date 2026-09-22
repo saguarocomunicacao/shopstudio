@@ -33,7 +33,7 @@ import { useStudio } from "./studio-context";
 const hoje = () => new Date().toISOString().slice(0, 10);
 const dataCurta = (v: string) => new Date(`${v}T12:00:00`).toLocaleDateString("pt-BR");
 const numero = (v: number) => Number(v.toFixed(2)).toLocaleString("pt-BR");
-const statusConsumo = (origem: string) => (origem === "estimado" ? "Estimado" : "Real");
+const statusConsumo = (origem: string | null) => (origem === "estimado" ? "Estimado" : "Real");
 const quantidadeConsumo = (credito: number | null, unidade: string | null, unidadePadrao: string | null) => {
   if (credito === null) return "—";
   const quantidade = numero(credito);
