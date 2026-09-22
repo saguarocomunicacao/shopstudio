@@ -12,6 +12,7 @@ import {
   RefreshCw,
   RotateCcw,
   Save,
+  Scissors,
   Send,
   Trash2,
   Undo2,
