@@ -443,6 +443,7 @@ async function runStep(
   pipeline: typeof import("./video-pipeline.server"),
 ) {
   const scenes = (Array.isArray(job.scenes) ? job.scenes : []) as import("./video-pipeline.server").Scene[];
+  const stage = jobStage(job);
 
   const [{ data: product }, { data: identity }, { data: profile }, { data: settingsRow }] = await Promise.all([
     job.product_id
@@ -489,7 +490,7 @@ async function runStep(
   };
 
   // ---------- Etapa 1a: planejar as cenas ----------
-  if (job.render_stage === "planejando") {
+  if (stage === "planejando") {
     const scriptBlocks = splitScript(job.script ?? "");
     const template = await prompts.resolvePrompt(supabase, job.profile_id, "cena");
     const prompt = prompts.renderPrompt(template, {
@@ -498,12 +499,12 @@ async function runStep(
     });
 
     const planned = await pipeline.planScenes(prompt, settings.takes_count);
-    await supabase.from("jobs").update({ scenes: planned, render_stage: "cenas" }).eq("id", job.id);
+    await supabase.from("jobs").update({ scenes: planned, ...trackPatch(job, { render_stage: "cenas" }) }).eq("id", job.id);
     return { stage: "cenas", done: false, progress: { done: 0, total: planned.length } };
   }
 
   // ---------- Etapa 1b: gerar as imagens das cenas ----------
-  if (job.render_stage === "cenas") {
+  if (stage === "cenas") {
     const index = scenes.findIndex((s) => !s.image_url);
     if (index >= 0) {
       const scene = scenes[index]!;
@@ -548,14 +549,14 @@ async function runStep(
     // Etapa concluída com sucesso: limpa qualquer erro de tentativa anterior.
     await supabase
       .from("jobs")
-      .update({ status: "cenas_geradas", render_stage: null, render_error: null })
+      .update(trackPatch(job, { status: "cenas_geradas", render_stage: null, render_error: null }))
       .eq("id", job.id);
     return { stage: null, done: true, progress: { done: scenes.length, total: scenes.length } };
 
   }
 
   // ---------- Etapa 2: animar cada cena com o Veo ----------
-  if (job.render_stage === "takes") {
+  if (stage === "takes") {
     const index = scenes.findIndex((s) => !s.video_url);
     if (index >= 0) {
       const scene = scenes[index]!;
@@ -588,7 +589,7 @@ async function runStep(
           const { operation: _drop, ...rest } = scene;
           scenes[index] = { ...rest, attempts };
           // Nova tentativa já começou: não deixa o erro antigo na tela.
-          await supabase.from("jobs").update({ scenes, render_error: null }).eq("id", job.id);
+          await supabase.from("jobs").update({ scenes, ...trackPatch(job, { render_error: null }) }).eq("id", job.id);
           // O take descartado já foi gerado (e cobrado): registra o consumo.
           await consumo.recordConsumo({
             jobId: job.id,
@@ -611,7 +612,7 @@ async function runStep(
       // Take concluído: limpa o erro da tentativa anterior (ex.: bloqueio de filtro já superado).
       await supabase
         .from("jobs")
-        .update({ scenes, veo_takes_count: (job.veo_takes_count ?? 0) + 1, render_error: null })
+        .update({ scenes, veo_takes_count: (job.veo_takes_count ?? 0) + 1, ...trackPatch(job, { render_error: null }) })
         .eq("id", job.id);
       const realDuration = status.durationSeconds ?? null;
       await consumo.recordConsumo({
@@ -632,15 +633,15 @@ async function runStep(
     // Perfil com voz ElevenLabs gera a narração antes da montagem.
     const voice = await resolveElevenLabsVoice(supabase, settings.voice_ref);
     const next = voice ? "narracao" : "montagem";
-    await supabase.from("jobs").update({ render_stage: next }).eq("id", job.id);
+    await supabase.from("jobs").update(trackPatch(job, { render_stage: next })).eq("id", job.id);
     return { stage: next, done: false, progress: { done: scenes.length, total: scenes.length } };
   }
 
   // ---------- Etapa 2b: narração na ElevenLabs (uma cena por chamada) ----------
-  if (job.render_stage === "narracao") {
+  if (stage === "narracao") {
     const voice = await resolveElevenLabsVoice(supabase, settings.voice_ref);
     if (!voice) {
-      await supabase.from("jobs").update({ render_stage: "montagem" }).eq("id", job.id);
+      await supabase.from("jobs").update(trackPatch(job, { render_stage: "montagem" })).eq("id", job.id);
       return { stage: "montagem", done: false, progress: { done: scenes.length, total: scenes.length } };
     }
 
@@ -675,7 +676,7 @@ async function runStep(
         audio_text: scene.narration,
         audio_voice: voice.voice_id,
       };
-      await supabase.from("jobs").update({ scenes, render_error: null }).eq("id", job.id);
+      await supabase.from("jobs").update({ scenes, ...trackPatch(job, { render_error: null }) }).eq("id", job.id);
 
       await consumo.recordConsumo({
         jobId: job.id,
@@ -695,12 +696,12 @@ async function runStep(
       return { stage: "narracao", done: false, progress: { done: index + 1, total: scenes.length } };
     }
 
-    await supabase.from("jobs").update({ render_stage: "montagem" }).eq("id", job.id);
+    await supabase.from("jobs").update(trackPatch(job, { render_stage: "montagem" })).eq("id", job.id);
     return { stage: "montagem", done: false, progress: { done: scenes.length, total: scenes.length } };
   }
 
   // ---------- Etapa 3: montar no JSON2Video ----------
-  if (job.render_stage === "montagem") {
+  if (stage === "montagem") {
     const { providerKey } = await import("./api-keys.server");
     const apiKey = await providerKey("json2video");
     const token = process.env["JSON2VIDEO_WEBHOOK_TOKEN"];
@@ -741,7 +742,7 @@ async function runStep(
 
     await supabase
       .from("jobs")
-      .update({ render_id: payload.project, render_stage: "render", render_error: null })
+      .update(trackPatch(job, { render_id: payload.project, render_stage: "render", render_error: null }))
       .eq("id", job.id);
 
     // Créditos da montagem: alguns retornos já trazem aqui; senão fica com o webhook.
@@ -760,7 +761,7 @@ async function runStep(
     return { stage: "render", done: true, progress: { done: scenes.length, total: scenes.length } };
   }
 
-  return { stage: job.render_stage, done: true, progress: null };
+  return { stage, done: true, progress: null };
 }
 
 /** Gera (com o Gemini) a imagem de referência da pessoa fixa de um perfil. */
