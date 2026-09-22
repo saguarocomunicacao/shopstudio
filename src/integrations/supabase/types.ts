@@ -444,6 +444,16 @@ export type Database = {
       }
       jobs: {
         Row: {
+          ai_render_error: string | null
+          ai_render_id: string | null
+          ai_render_stage: string | null
+          ai_render_started_at: string | null
+          ai_status: string | null
+          ai_video_path: string | null
+          ai_video_storage_error: string | null
+          ai_video_storage_status: string | null
+          ai_video_thumbnail_url: string | null
+          ai_video_url: string | null
           approved_at: string | null
           avatar_description: string | null
           avatar_id: string | null
@@ -482,6 +492,8 @@ export type Database = {
           title: string
           updated_at: string
           veo_takes_count: number
+          video_choice: string
+          video_edited_path: string | null
           video_edits: Json | null
           video_original_path: string | null
           video_path: string | null
@@ -495,6 +507,16 @@ export type Database = {
           voice_ref: string | null
         }
         Insert: {
+          ai_render_error?: string | null
+          ai_render_id?: string | null
+          ai_render_stage?: string | null
+          ai_render_started_at?: string | null
+          ai_status?: string | null
+          ai_video_path?: string | null
+          ai_video_storage_error?: string | null
+          ai_video_storage_status?: string | null
+          ai_video_thumbnail_url?: string | null
+          ai_video_url?: string | null
           approved_at?: string | null
           avatar_description?: string | null
           avatar_id?: string | null
@@ -533,6 +555,8 @@ export type Database = {
           title?: string
           updated_at?: string
           veo_takes_count?: number
+          video_choice?: string
+          video_edited_path?: string | null
           video_edits?: Json | null
           video_original_path?: string | null
           video_path?: string | null
@@ -546,6 +570,16 @@ export type Database = {
           voice_ref?: string | null
         }
         Update: {
+          ai_render_error?: string | null
+          ai_render_id?: string | null
+          ai_render_stage?: string | null
+          ai_render_started_at?: string | null
+          ai_status?: string | null
+          ai_video_path?: string | null
+          ai_video_storage_error?: string | null
+          ai_video_storage_status?: string | null
+          ai_video_thumbnail_url?: string | null
+          ai_video_url?: string | null
           approved_at?: string | null
           avatar_description?: string | null
           avatar_id?: string | null
@@ -584,6 +618,8 @@ export type Database = {
           title?: string
           updated_at?: string
           veo_takes_count?: number
+          video_choice?: string
+          video_edited_path?: string | null
           video_edits?: Json | null
           video_original_path?: string | null
           video_path?: string | null
