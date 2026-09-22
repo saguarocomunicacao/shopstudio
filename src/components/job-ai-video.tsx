@@ -4,6 +4,7 @@ import { Check, Clapperboard, Loader2, RefreshCw, Sparkles, TriangleAlert, Video
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JobScenesReview } from "@/components/job-scenes-review";
+import { JobAvatarSelect } from "@/components/avatar-library";
 import type { DbJob } from "@/lib/content";
 import { actionError } from "@/lib/api-keys";
 import { useEstimativaVeo } from "@/lib/orcamento";
@@ -104,12 +105,15 @@ export function JobAiVideo({ job, canEdit }: { job: DbJob; canEdit: boolean }) {
         </p>
       )}
 
-      {/* Etapa 1: começar */}
+      {/* Etapa 1: escolher avatar (override só deste vídeo) e começar */}
       {!rodando && !aiStatus && (
-        <Button size="lg" className="w-full" disabled={!canEdit || iniciar.isPending} onClick={() => iniciar.mutate()}>
-          {iniciar.isPending ? <Loader2 className="animate-spin" /> : <Clapperboard />}
-          Gerar vídeo por IA
-        </Button>
+        <div className="grid gap-3">
+          <JobAvatarSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
+          <Button size="lg" className="w-full" disabled={!canEdit || iniciar.isPending} onClick={() => iniciar.mutate()}>
+            {iniciar.isPending ? <Loader2 className="animate-spin" /> : <Clapperboard />}
+            Gerar vídeo por IA
+          </Button>
+        </div>
       )}
 
       {/* Em andamento */}
