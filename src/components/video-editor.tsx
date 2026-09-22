@@ -591,7 +591,7 @@ export function VideoEditor({
               <div key={`${cut.start}-${cut.end}-${index}`} className="absolute inset-y-0 bg-destructive/65" style={{ left: `${pct(cut.start)}%`, width: `${pct(cut.end - cut.start)}%` }} />
             ))}
             {mode === "cut" && cutEnd > cutStart && (
-              <div className="absolute inset-y-0 border-x-2 border-destructive bg-destructive/30" style={{ left: `${pct(cutStart)}%`, width: `${pct(cutEnd - cutStart)}%` }} />
+              <div className="absolute inset-y-0 z-10 border-x-2 border-primary bg-primary/30" style={{ left: `${pct(cutStart)}%`, width: `${pct(cutEnd - cutStart)}%` }} />
             )}
             <div className="pointer-events-none absolute inset-y-0 w-0.5 bg-foreground" style={{ left: `${pct(currentTime)}%` }} />
             {mode === "trim" ? (
@@ -601,9 +601,10 @@ export function VideoEditor({
               </>
             ) : mode === "cut" ? (
               <>
-                <Button type="button" variant="destructive" aria-label="Início do corte interno" data-cut-handle="start" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutStart)}%` }} onPointerDown={dragHandle("cutStart")} />
-                <Button type="button" variant="destructive" aria-label="Fim do corte interno" data-cut-handle="end" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutEnd)}%` }} onPointerDown={dragHandle("cutEnd")} />
+                <Button type="button" variant="destructive" aria-label="Início do corte interno" data-cut-handle="start" className="absolute top-0 z-20 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutStart)}%` }} onPointerDown={dragHandle("cutStart")} />
+                <Button type="button" variant="destructive" aria-label="Fim do corte interno" data-cut-handle="end" className="absolute top-0 z-20 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutEnd)}%` }} onPointerDown={dragHandle("cutEnd")} />
               </>
+
             ) : null}
           </div>
         </div>
