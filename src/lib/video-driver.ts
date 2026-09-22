@@ -14,12 +14,15 @@ export function useVideoDriver(jobs: DbJob[]) {
   const running = useRef(false);
 
   useEffect(() => {
-    const pending = jobs.filter(
-      (j) =>
-        (j.status === "gerando_video" || j.status === "roteiro_pronto") &&
-        !!j.render_stage &&
-        j.render_stage !== "render",
+    const pending = jobs.filter((j) =>
+      // Vídeo próprio: a versão por IA roda na trilha ai_*, com as mesmas pausas de aprovação.
+      j.formato === "gravacao"
+        ? !!j.ai_render_stage && j.ai_render_stage !== "render"
+        : (j.status === "gerando_video" || j.status === "roteiro_pronto") &&
+          !!j.render_stage &&
+          j.render_stage !== "render",
     );
+
 
     if (!pending.length || running.current) return;
     running.current = true;
