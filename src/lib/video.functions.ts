@@ -367,8 +367,11 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
       .update({
         scenes,
         gemini_images_count: (job.gemini_images_count ?? 0) + 1,
-        render_error: null,
-        ...(completed ? { status: "cenas_geradas", render_stage: null } : {}),
+        ...trackPatch(job, {
+          render_error: null,
+          ...(completed ? { status: "cenas_geradas", render_stage: null } : {}),
+        }),
+
       })
       .eq("id", job.id);
     if (error) throw new Error(error.message);
