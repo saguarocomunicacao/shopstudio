@@ -273,6 +273,7 @@ export function RecordingKitDialog({
   const [studioOpen, setStudioOpen] = useState(openStudioInitially);
   const [resumeExisting, setResumeExisting] = useState(openStudioInitially && !!job.video_path);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   // Snapshot "salvo" dos campos, usado para detectar alterações não salvas (dirty state).
   const savedSnapshot = () =>
@@ -585,8 +586,23 @@ export function RecordingKitDialog({
             setStudioOpen(false);
           }}
           onSaved={onClose}
+          onGenerateAi={temRoteiro ? () => setAiOpen(true) : undefined}
         />
       )}
+
+      {/* Mesmo fluxo de IA do modal do roteiro, acessível do estúdio e da revisão. */}
+      <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+        <DialogContent className="max-h-[92vh] max-w-lg overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Gerar vídeo por IA</DialogTitle>
+            <DialogDescription>
+              Usa o roteiro deste vídeo. Você aprova as cenas antes de qualquer custo com o vídeo.
+            </DialogDescription>
+          </DialogHeader>
+          <JobAiVideo job={job} canEdit={canEdit} />
+        </DialogContent>
+      </Dialog>
+
 
       <AlertDialog open={confirmCloseOpen} onOpenChange={setConfirmCloseOpen}>
         <AlertDialogContent>

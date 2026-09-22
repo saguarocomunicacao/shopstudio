@@ -99,12 +99,15 @@ export function RecordingStudio({
   aspectRatio,
   onClose,
   onSaved,
+  onGenerateAi,
   resumeExisting = false,
 }: {
   job: DbJob;
   aspectRatio: RecordingAspectRatio;
   onClose: () => void;
   onSaved?: () => void;
+  /** Abre o mesmo fluxo de "Gerar vídeo por IA" usado no modal do roteiro. */
+  onGenerateAi?: (() => void) | undefined;
   resumeExisting?: boolean;
 }) {
   const qc = useQueryClient();
@@ -728,6 +731,17 @@ export function RecordingStudio({
 
           <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/70 to-transparent px-3 pb-10 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
             <p className="min-w-0 truncate pt-2 text-sm font-bold">{job.title || "Gravar vídeo"}</p>
+            {onGenerateAi && !previewUrl && !recording && (
+              <Button
+                type="button"
+                size="sm"
+                className="pointer-events-auto shrink-0"
+                onClick={onGenerateAi}
+              >
+                <Sparkles />
+                Gerar por IA
+              </Button>
+            )}
             <Button type="button" variant="ghost" size="icon" aria-label="Fechar estúdio" title="Fechar estúdio" className="pointer-events-auto shrink-0 bg-black/30 text-white backdrop-blur-md hover:bg-black/50 hover:text-white" onClick={closeStudio}>
               <X className="size-5" />
             </Button>
@@ -896,6 +910,17 @@ export function RecordingStudio({
               </Button>
               <div className="absolute inset-x-0 bottom-0 z-20 grid gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-16">
               <p className="text-center text-sm font-semibold text-white">Revise sua gravação</p>
+              {onGenerateAi && (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  disabled={salvar.isPending}
+                  onClick={onGenerateAi}
+                >
+                  <Sparkles />
+                  Gerar vídeo por IA
+                </Button>
+              )}
               <Button size="lg" disabled={salvar.isPending} onClick={() => salvar.mutate()}>
                 {salvar.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
                 {salvar.isPending ? "Salvando..." : "Salvar"}
