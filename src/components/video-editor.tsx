@@ -248,20 +248,37 @@ export function VideoEditor({
   rangesRef.current = ranges;
   const validResult = duration > 0 && ranges.length > 0;
 
+  /** Seleção padrão da tesoura: meio do maior trecho ainda preservado. */
+  const cutSelectionFor = (list: { start: number; end: number }[]) => {
+    const maior = list.reduce<{ start: number; end: number } | null>(
+      (melhor, range) => (!melhor || range.end - range.start > melhor.end - melhor.start ? range : melhor),
+      null,
+    );
+    const base = maior ?? { start, end };
+    const span = Math.max(0.2, base.end - base.start);
+    return { start: base.start + span * 0.35, end: base.start + span * 0.65 };
+  };
+
   const addCut = () => {
     if (cutEnd - cutStart < 0.2) return;
     const next = normalizeCuts([...cuts, { type: "cut", start: cutStart, end: cutEnd }], start, end);
-    if (!keepRanges(duration, [...(aparado ? [{ type: "trim" as const, start, end }] : []), ...next]).length) {
+    const restantes = keepRanges(duration, [...(aparado ? [{ type: "trim" as const, start, end }] : []), ...next]);
+    if (!restantes.length) {
       setErro("O corte não pode remover o vídeo inteiro.");
       return;
     }
     setHistory((current) => [...current, { start, end, cuts, crop }]);
     setCuts(next);
     setErro(null);
+    // A seleção volta para um trecho ainda preservado, pronta para o próximo corte.
+    const selecao = cutSelectionFor(restantes);
+    setCutStart(selecao.start);
+    setCutEnd(selecao.end);
     // O corte vale na hora: se o cursor estava dentro dele, pula para a continuação.
     const video = videoRef.current;
     if (video && video.currentTime >= cutStart && video.currentTime < cutEnd) seek(Math.min(cutEnd, end));
   };
+
 
   const desfazer = () => {
     setHistory((current) => {
