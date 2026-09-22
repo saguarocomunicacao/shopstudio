@@ -33,3 +33,10 @@
 - [x] Salvar rascunho com original, versão ativa e operações
 - [x] Reabrir rascunho gravado diretamente no estúdio/editor com operações restauradas
 - [ ] Validar gravação, fechamento, salvamento e retomada
+
+## Expansão da landing
+- [x] Preservar hero, navegação, estrutura, identidade e seções atuais
+- [x] Adicionar os três modos de criação e diferenciais do garimpo
+- [x] Adicionar estúdio de gravação e editor com placeholders visuais
+- [x] Adicionar BYOK, custos transparentes, multi-perfil, equipe e publicação manual
+- [ ] Validar desktop e mobile e publicar no domínio
