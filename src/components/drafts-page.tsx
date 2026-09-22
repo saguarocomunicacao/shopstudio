@@ -7,8 +7,10 @@ import {
   CheckCircle2,
   Copy,
   Download,
+  Film,
   Loader2,
   LockKeyhole,
+  Play,
   RefreshCw,
   RotateCcw,
   Save,
@@ -18,7 +20,7 @@ import {
   Undo2,
   Video,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,11 +45,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
-import { deleteRecordingJob, restoreOriginalRecording } from "@/lib/recording.functions";
+import { relativeTime, useJobs, useProducts, useTrashedJobs, type DbJob } from "@/lib/content";
+import { restoreOriginalRecording } from "@/lib/recording.functions";
 import {
   approveDraft,
   getDraftKit,
+  getDraftPreviews,
+  moveDraftBack,
+  purgeDraft,
+  restoreDraft,
+  trashDraft,
   markDraftPublished,
   rejectDraft,
   retryDraftVideoStorage,
@@ -61,18 +68,19 @@ import { actionError } from "@/lib/api-keys";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
-type QueueKey = "roteiros" | "revisao" | "aprovado" | "publicado";
+type QueueKey = "roteiros" | "revisao" | "aprovado" | "publicado" | "lixeira";
 
 const QUEUES: { key: QueueKey; label: string; status?: DbJob["status"]; badge: string }[] = [
   { key: "roteiros", label: "Roteiros prontos", badge: "status-violet" },
   { key: "revisao", label: "Aguardando revisão", status: "video_pronto", badge: "status-lime" },
   { key: "aprovado", label: "Aprovados", status: "rascunho_enviado", badge: "status-orange" },
   { key: "publicado", label: "Publicados", status: "publicado", badge: "status-pink" },
+  { key: "lixeira", label: "Lixeira", badge: "status-violet" },
 ];
 
 /** Roteiros concluídos do formato de gravação que ainda aguardam a pessoa gravar. */
 const roteiroPronto = (job: DbJob) =>
-  job.formato === "gravacao" && job.status === "roteiro_pronto" && !job.recorded_at && !job.video_path;
+  job.formato === "gravacao" && job.status === "roteiro_pronto" && !job.recorded_at;
 
 export function DraftsPage() {
   return (
@@ -82,9 +90,75 @@ export function DraftsPage() {
   );
 }
 
+function DraftThumb({
+  job,
+  preview,
+  onOpen,
+}: {
+  job: DbJob;
+  preview?: { videoUrl: string | null; thumbnailUrl: string | null } | undefined;
+  onOpen: () => void;
+}) {
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const videoUrl = preview?.videoUrl ?? null;
+  const posterUrl = preview?.thumbnailUrl ?? job.video_thumbnail_url ?? undefined;
+
+  if (videoUrl) {
+    return (
+      <div className="relative overflow-hidden rounded-xl bg-black">
+        <video
+          ref={videoRef}
+          key={videoUrl}
+          // #t=0.5 faz o navegador desenhar um frame do vídeo como miniatura.
+          src={playing ? videoUrl : `${videoUrl}#t=0.5`}
+          poster={posterUrl}
+          preload="metadata"
+          playsInline
+          muted={!playing}
+          controls={playing}
+          className="aspect-[9/16] w-full object-cover"
+          onPause={() => setPlaying(false)}
+        />
+        {!playing && (
+          <button
+            type="button"
+            aria-label={`Assistir ${job.title || "vídeo"}`}
+            className="absolute inset-0 grid place-items-center bg-black/10 transition hover:bg-black/25"
+            onClick={() => {
+              setPlaying(true);
+              window.setTimeout(() => void videoRef.current?.play(), 0);
+            }}
+          >
+            <span className="grid size-14 place-items-center rounded-full bg-background/90 text-foreground shadow-lg">
+              <Play className="size-6" />
+            </span>
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onOpen} className="block w-full overflow-hidden rounded-xl">
+      {posterUrl ? (
+        <img src={posterUrl} alt={job.title || "Rascunho"} className="aspect-[9/16] w-full bg-black object-cover" />
+      ) : (
+        <div className="grid aspect-[9/16] w-full place-items-center gap-2 rounded-xl border border-dashed bg-secondary/60 px-4 text-center">
+          <span className="grid size-12 place-items-center rounded-full bg-background text-muted-foreground shadow-sm">
+            <Film className="size-5" />
+          </span>
+          <p className="text-xs font-semibold text-muted-foreground">Preparando a prévia do vídeo...</p>
+        </div>
+      )}
+    </button>
+  );
+}
+
 function DraftsContent() {
   const { activeProfileId, can } = useStudio();
   const { data: jobs = [], isLoading } = useJobs(activeProfileId);
+  const { data: trashed = [] } = useTrashedJobs(activeProfileId);
   const canViewProducts = can("produtos", "visualizar");
   const { data: products = [] } = useProducts(activeProfileId, canViewProducts);
   const [queue, setQueue] = useState<QueueKey>("roteiros");
@@ -92,19 +166,35 @@ function DraftsContent() {
   const [recordingId, setRecordingId] = useState<string | null>(null);
   const [openStudioDirectly, setOpenStudioDirectly] = useState(false);
   const [novoOpen, setNovoOpen] = useState(false);
-  const [deleting, setDeleting] = useState<DbJob | null>(null);
+  const [trashing, setTrashing] = useState<DbJob | null>(null);
+  const [purging, setPurging] = useState<DbJob | null>(null);
   const qc = useQueryClient();
-  const removeRecording = useServerFn(deleteRecordingJob);
+  const toTrash = useServerFn(trashDraft);
+  const undoTrash = useServerFn(restoreDraft);
+  const purge = useServerFn(purgeDraft);
+  const stepBack = useServerFn(moveDraftBack);
+  const loadPreviews = useServerFn(getDraftPreviews);
 
   const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
   const canRemove = (job: DbJob) =>
     can("pipeline", "criar", job.profile_id) || can("pipeline", "editar", job.profile_id);
   const roteirosList = jobs.filter(roteiroPronto);
   const current = QUEUES.find((q) => q.key === queue);
-  const list = queue === "roteiros" ? roteirosList : jobs.filter((j) => j.status === current?.status);
+  const isTrash = queue === "lixeira";
+  const list = isTrash
+    ? trashed
+    : queue === "roteiros"
+      ? roteirosList
+      : jobs.filter((j) => j.status === current?.status);
   const countOf = (status: DbJob["status"]) => jobs.filter((j) => j.status === status).length;
   const countQueue = (item: (typeof QUEUES)[number]) =>
-    item.key === "roteiros" ? roteirosList.length : item.status ? countOf(item.status) : 0;
+    item.key === "lixeira"
+      ? trashed.length
+      : item.key === "roteiros"
+        ? roteirosList.length
+        : item.status
+          ? countOf(item.status)
+          : 0;
   const productName = (job: DbJob) => {
     if (!job.product_id) return "Tema próprio • sem produto";
     return products.find((product) => product.id === job.product_id)?.name ?? "Produto associado";
@@ -114,16 +204,65 @@ function DraftsContent() {
     setOpenStudioDirectly(studio);
     setRecordingId(jobId);
   };
-  const removeRecordingMut = useMutation({
-    mutationFn: (jobId: string) => removeRecording({ data: { jobId } }),
+
+  // Links assinados do vídeo de cada card: o frame do próprio vídeo vira a miniatura.
+  const previewIds = list.filter((job) => !!job.video_path).map((job) => job.id);
+  const previews = useQuery({
+    queryKey: ["draft-previews", previewIds.join(",")],
+    queryFn: () => loadPreviews({ data: { jobIds: previewIds } }),
+    enabled: previewIds.length > 0,
+    staleTime: 1000 * 60 * 30,
+  });
+  const previewOf = (jobId: string) => previews.data?.previews.find((p) => p.id === jobId);
+
+  const refreshLists = () => {
+    void qc.invalidateQueries({ queryKey: ["jobs"] });
+    void qc.invalidateQueries({ queryKey: ["jobs-trash"] });
+  };
+
+  const backMut = useMutation({
+    mutationFn: (jobId: string) => stepBack({ data: { jobId } }),
     onSuccess: () => {
-      toast.success("Vídeo excluído.");
-      setDeleting(null);
-      setRecordingId(null);
-      void qc.invalidateQueries({ queryKey: ["jobs"] });
+      toast.success("Vídeo voltou para a etapa anterior.");
+      refreshLists();
     },
     onError: (e) => toast.error(errMessage(e)),
   });
+
+  const trashMut = useMutation({
+    mutationFn: (jobId: string) => toTrash({ data: { jobId } }),
+    onSuccess: () => {
+      toast.success("Vídeo movido para a Lixeira.");
+      setTrashing(null);
+      setRecordingId(null);
+      refreshLists();
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const restoreMut = useMutation({
+    mutationFn: (jobId: string) => undoTrash({ data: { jobId } }),
+    onSuccess: () => {
+      toast.success("Vídeo restaurado.");
+      refreshLists();
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const purgeMut = useMutation({
+    mutationFn: (jobId: string) => purge({ data: { jobId } }),
+    onSuccess: () => {
+      toast.success("Vídeo excluído definitivamente.");
+      setPurging(null);
+      refreshLists();
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const canStepBack = (job: DbJob) =>
+    job.status === "publicado" ||
+    job.status === "rascunho_enviado" ||
+    (job.status === "video_pronto" && job.formato === "gravacao");
 
   return (
     <>
@@ -163,11 +302,18 @@ function DraftsContent() {
       ) : list.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {list.map((job) => {
-            const pendente = queue === "roteiros";
+            const pendente = isTrash
+              ? job.deleted_from_status === "roteiro_pronto"
+              : queue === "roteiros";
             const abrir = () => (pendente ? openRecordingKit(job.id, false) : setOpenId(job.id));
+            const badgeLabel = isTrash
+              ? "Na lixeira"
+              : pendente
+                ? "Pendente de gravação"
+                : current?.label;
             return (
               <article key={job.id} className="panel">
-                {pendente ? (
+                {pendente && !job.video_path ? (
                   <section className="flex aspect-[9/16] w-full flex-col justify-between rounded-xl border border-primary/30 bg-primary/5 p-5">
                     <div>
                       <span className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
@@ -189,53 +335,51 @@ function DraftsContent() {
                     </div>
                   </section>
                 ) : (
-                  <button type="button" onClick={abrir} className="block w-full overflow-hidden rounded-xl bg-black">
-                    {job.video_thumbnail_url ? (
-                    <img
-                      src={job.video_thumbnail_url}
-                      alt={job.title || "Rascunho"}
-                      className="aspect-[9/16] w-full object-cover"
-                    />
-                  ) : (
-                    <div className="grid aspect-[9/16] w-full place-items-center px-4 text-center text-xs text-white/70">
-                      Sem miniatura
-                    </div>
-                  )}
-                  </button>
+                  <DraftThumb job={job} preview={previewOf(job.id)} onOpen={abrir} />
                 )}
-                {!pendente && <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>}
+                <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>
                 <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${current?.badge ?? "status-violet"}`}
+                      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${isTrash ? "bg-secondary text-muted-foreground" : (current?.badge ?? "status-violet")}`}
                     >
-                      {pendente ? "Pendente de gravação" : current?.label}
+                      {badgeLabel}
                     </span>
-                    {!pendente && !job.video_path && (
+                    {!isTrash && !pendente && !job.video_path && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
                         <AlertTriangle className="size-3" />
                         não salvo
                       </span>
                     )}
                   </div>
-                  {pendente && canRemove(job) && (
+                  {canRemove(job) && (
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      aria-label={`Excluir ${job.title || "vídeo"}`}
-                      title="Excluir vídeo"
-                      onClick={() => setDeleting(job)}
+                      aria-label={`${isTrash ? "Excluir definitivamente" : "Mover para a lixeira"}: ${job.title || "vídeo"}`}
+                      title={isTrash ? "Excluir definitivamente" : "Mover para a lixeira"}
+                      onClick={() => (isTrash ? setPurging(job) : setTrashing(job))}
                     >
                       <Trash2 />
                     </Button>
                   )}
                 </div>
-                <div className={`mt-3 grid gap-2 ${pendente ? "grid-cols-1" : "grid-cols-[minmax(0,1fr)_auto]"}`}>
-                  {pendente ? (
-                    <>
+                <div className="mt-3 grid gap-2">
+                  {isTrash ? (
+                    <Button
+                      className="min-w-0"
+                      variant="secondary"
+                      disabled={restoreMut.isPending}
+                      onClick={() => restoreMut.mutate(job.id)}
+                    >
+                      <RotateCcw />
+                      Restaurar
+                    </Button>
+                  ) : pendente ? (
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
                       <Button className="min-w-0" onClick={() => openRecordingKit(job.id, true)}>
                         <Camera />
                         Gravar vídeo
@@ -243,9 +387,20 @@ function DraftsContent() {
                       <Button variant="secondary" className="min-w-0" onClick={abrir}>
                         Ver roteiro
                       </Button>
-                    </>
+                    </div>
                   ) : (
                     <Button className="min-w-0" onClick={abrir}>Abrir kit de postagem</Button>
+                  )}
+                  {!isTrash && canRemove(job) && canStepBack(job) && (
+                    <Button
+                      variant="ghost"
+                      className="min-w-0"
+                      disabled={backMut.isPending}
+                      onClick={() => backMut.mutate(job.id)}
+                    >
+                      <Undo2 />
+                      Voltar etapa
+                    </Button>
                   )}
                 </div>
               </article>
@@ -260,7 +415,9 @@ function DraftsContent() {
               ? "Nenhum rascunho aprovado no momento."
               : queue === "roteiros"
                 ? "Nenhum roteiro pronto para gravar. Crie um vídeo próprio ou gere o roteiro de um produto nesse formato."
-                : "Nenhum vídeo publicado ainda."}
+                : queue === "lixeira"
+                  ? "A lixeira está vazia."
+                  : "Nenhum vídeo publicado ainda."}
         </div>
       )}
 
@@ -282,26 +439,50 @@ function DraftsContent() {
       )}
       <NewOwnVideoDialog open={novoOpen} onOpenChange={setNovoOpen} onCreated={(jobId) => setRecordingId(jobId)} />
 
-      <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
+      <AlertDialog open={!!trashing} onOpenChange={(open) => !open && setTrashing(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir vídeo?</AlertDialogTitle>
+            <AlertDialogTitle>Mover para a Lixeira?</AlertDialogTitle>
             <AlertDialogDescription>
-              “{deleting?.title || "Sem título"}” será removido permanentemente, incluindo o roteiro e a gravação. Esta ação não pode ser desfeita.
+              “{trashing?.title || "Sem título"}” sai desta lista e vai para a Lixeira. Não é exclusão definitiva: você pode restaurar depois.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={trashMut.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                if (trashing) trashMut.mutate(trashing.id);
+              }}
+            >
+              {trashMut.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+              Mover para a Lixeira
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!purging} onOpenChange={(open) => !open && setPurging(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir definitivamente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              “{purging?.title || "Sem título"}” será apagado para sempre: vídeo editado, gravação original, miniatura e links de compartilhamento. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={removeRecordingMut.isPending}
+              disabled={purgeMut.isPending}
               onClick={(event) => {
                 event.preventDefault();
-                if (deleting) removeRecordingMut.mutate(deleting.id);
+                if (purging) purgeMut.mutate(purging.id);
               }}
             >
-              {removeRecordingMut.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
-              Excluir vídeo
+              {purgeMut.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+              Excluir definitivamente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

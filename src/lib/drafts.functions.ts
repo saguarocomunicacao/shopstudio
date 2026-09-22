@@ -301,3 +301,153 @@ export const rejectDraft = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, discarded: false };
   });
+
+/* ------------------------------------------------------------------ *
+ * Retroceder etapa e Lixeira (exclusão em duas etapas)
+ * ------------------------------------------------------------------ */
+
+/** Volta o rascunho para a fase anterior da fila (uma por vez). */
+export const moveDraftBack = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(jobInput)
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, status, formato")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Rascunho não encontrado.");
+
+    type BackPatch = {
+      status: "rascunho_enviado" | "video_pronto" | "roteiro_pronto";
+      published_at?: null;
+      published_url?: null;
+      approved_at?: null;
+      recorded_at?: null;
+    };
+    let patch: BackPatch | null = null;
+    if (job.status === "publicado") {
+      patch = { status: "rascunho_enviado", published_at: null, published_url: null };
+    } else if (job.status === "rascunho_enviado") {
+      patch = { status: "video_pronto", approved_at: null };
+    } else if (job.status === "video_pronto" && job.formato === "gravacao") {
+      patch = { status: "roteiro_pronto", recorded_at: null, approved_at: null };
+    }
+    if (!patch) throw new Error("Este vídeo já está na primeira etapa da fila.");
+
+    const { error: upError } = await context.supabase.from("jobs").update(patch).eq("id", data.jobId);
+    if (upError) throw new Error(upError.message);
+    return { ok: true };
+  });
+
+/** Move o rascunho para a Lixeira (soft delete), guardando a fase de origem. */
+export const trashDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(jobInput)
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, status, deleted_at")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Rascunho não encontrado.");
+    if (job.deleted_at) return { ok: true };
+
+    const { error: upError } = await context.supabase
+      .from("jobs")
+      .update({ deleted_at: new Date().toISOString(), deleted_from_status: job.status })
+      .eq("id", data.jobId);
+    if (upError) throw new Error(upError.message);
+    return { ok: true };
+  });
+
+/** Tira o item da Lixeira e devolve à fase em que estava. */
+export const restoreDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(jobInput)
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, status, deleted_from_status")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Rascunho não encontrado.");
+
+    const { error: upError } = await context.supabase
+      .from("jobs")
+      .update({
+        deleted_at: null,
+        deleted_from_status: null,
+        status: job.deleted_from_status ?? job.status,
+      })
+      .eq("id", data.jobId);
+    if (upError) throw new Error(upError.message);
+    return { ok: true };
+  });
+
+/** Exclusão permanente: registro, arquivos no storage e links públicos. */
+export const purgeDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(jobInput)
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, profile_id, video_path, video_original_path, video_thumbnail_path")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Rascunho não encontrado.");
+
+    const { error: sharesError } = await context.supabase.from("job_shares").delete().eq("job_id", job.id);
+    if (sharesError) throw new Error(sharesError.message);
+
+    const { data: deleted, error: deleteError } = await context.supabase
+      .from("jobs")
+      .delete()
+      .eq("id", job.id)
+      .select("id")
+      .maybeSingle();
+    if (deleteError) throw new Error(deleteError.message);
+    if (!deleted) throw new Error("Você não tem permissão para excluir este vídeo.");
+
+    const arquivos = [
+      ...new Set(
+        [job.video_path, job.video_original_path, job.video_thumbnail_path].filter((p): p is string => !!p),
+      ),
+    ];
+    if (arquivos.length) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: storageError } = await supabaseAdmin.storage.from("job-media").remove(arquivos);
+      if (storageError) console.error("Falha ao limpar arquivos do job excluído", { jobId: job.id, message: storageError.message });
+    }
+    return { ok: true };
+  });
+
+/**
+ * Links assinados do vídeo/miniatura de vários rascunhos, para o card mostrar
+ * preview de verdade (o frame do próprio vídeo) em vez de um bloco preto.
+ */
+export const getDraftPreviews = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({ jobIds: z.array(z.string().uuid()).max(60) }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    if (!data.jobIds.length) return { previews: [] as { id: string; videoUrl: string | null; thumbnailUrl: string | null }[] };
+    const { data: rows, error } = await context.supabase
+      .from("jobs")
+      .select("id, video_path, video_thumbnail_path, video_thumbnail_url")
+      .in("id", data.jobIds);
+    if (error) throw new Error(error.message);
+    const previews = await Promise.all(
+      (rows ?? []).map(async (row) => ({
+        id: row.id as string,
+        videoUrl: await sign(row.video_path as string | null),
+        thumbnailUrl: (await sign(row.video_thumbnail_path as string | null)) ?? (row.video_thumbnail_url as string | null),
+      })),
+    );
+    return { previews };
+  });

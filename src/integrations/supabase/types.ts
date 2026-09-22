@@ -448,6 +448,8 @@ export type Database = {
           caption: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
+          deleted_from_status: Database["public"]["Enums"]["job_status"] | null
           formato: string
           gemini_images_count: number
           hashtags: string[] | null
@@ -492,6 +494,8 @@ export type Database = {
           caption?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_from_status?: Database["public"]["Enums"]["job_status"] | null
           formato?: string
           gemini_images_count?: number
           hashtags?: string[] | null
@@ -536,6 +540,8 @@ export type Database = {
           caption?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_from_status?: Database["public"]["Enums"]["job_status"] | null
           formato?: string
           gemini_images_count?: number
           hashtags?: string[] | null
