@@ -110,9 +110,13 @@ function LandingPage() {
         <AssemblyLine />
 
         <section className="border-y border-landing-line bg-landing-surface/40">
-          <div className="mx-auto grid max-w-7xl gap-8 px-5 py-24 lg:grid-cols-2 lg:px-8 lg:py-28">
-            <CompareColumn title="Fazendo na mão" items={["Garimpar por horas","Gravar e editar cada vídeo","Cuidar de um perfil só","Publicar em volume baixo"]} negative />
-            <CompareColumn title="Com o Shop Studio" items={["Produtos que vendem chegam prontos","Vídeo com pessoa sai sozinho","Vários perfis ao mesmo tempo","Mais conteúdo no ar"]} />
+          <div className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-28">
+            <SectionTitle title="A mesma meta. Dois caminhos bem diferentes." text="Dá pra fazer tudo na mão — mas isso não escala. Compare os dois jeitos de produzir conteúdo de afiliado." />
+            <div className="relative mt-14 grid gap-6 lg:grid-cols-2 lg:gap-10">
+              <span aria-hidden="true" className="landing-plasma-bg landing-display absolute left-1/2 top-1/2 z-10 hidden size-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-4 border-landing-bg text-sm font-black tracking-widest shadow-2xl lg:grid">VS</span>
+              <CompareColumn title="Fazendo na mão" eyebrow="O jeito que cansa" items={["Garimpar por horas","Gravar e editar cada vídeo","Cuidar de um perfil só","Publicar em volume baixo"]} negative />
+              <CompareColumn title="Com o Shop Studio" eyebrow="O jeito que escala" items={["Produtos que vendem chegam prontos","Vídeo com pessoa sai sozinho","Vários perfis ao mesmo tempo","Mais conteúdo no ar"]} />
+            </div>
           </div>
         </section>
 
