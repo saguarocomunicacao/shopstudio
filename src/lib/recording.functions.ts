@@ -627,6 +627,8 @@ export const finishRecording = createServerFn({ method: "POST" })
         status: "video_pronto",
         video_path: visible,
         video_original_path: data.path,
+        video_edited_path: data.editedPath ?? null,
+        video_choice: data.editedPath ? "gravado_editado" : "gravado",
         video_edits: data.operations?.length ? (data.operations as never) : null,
         video_storage_status: "salvo",
         video_storage_error: null,
@@ -676,7 +678,13 @@ export const saveEditedRecording = createServerFn({ method: "POST" })
 
     const { error: updateError } = await context.supabase
       .from("jobs")
-      .update({ video_path: data.path, video_original_path: original, video_edits: data.operations as never })
+      .update({
+        video_path: data.path,
+        video_original_path: original,
+        video_edited_path: data.path,
+        video_choice: "gravado_editado",
+        video_edits: data.operations as never,
+      })
       .eq("id", data.jobId);
     if (updateError) throw new Error(updateError.message);
 
@@ -730,7 +738,7 @@ export const restoreOriginalRecording = createServerFn({ method: "POST" })
 
     const { error: updateError } = await context.supabase
       .from("jobs")
-      .update({ video_path: original, video_edits: null })
+      .update({ video_path: original, video_edited_path: null, video_choice: "gravado", video_edits: null })
       .eq("id", data.jobId);
     if (updateError) throw new Error(updateError.message);
 
@@ -741,34 +749,85 @@ export const restoreOriginalRecording = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-/** Link temporário para assistir/baixar o vídeo gravado. */
+/** Link temporário para assistir/baixar as versões do vídeo próprio. */
 export const getRecordingVideoUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ jobId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     const { data: job, error } = await context.supabase
       .from("jobs")
-      .select("id, video_path, video_original_path, video_edits")
+      .select(
+        "id, video_path, video_original_path, video_edited_path, video_edits, video_choice, ai_video_path, ai_video_url",
+      )
       .eq("id", data.jobId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    const row = job as { video_path: string | null; video_original_path: string | null; video_edits: unknown } | null;
+    const row = job as {
+      video_path: string | null;
+      video_original_path: string | null;
+      video_edited_path: string | null;
+      video_edits: unknown;
+      video_choice: string | null;
+      ai_video_path: string | null;
+      ai_video_url: string | null;
+    } | null;
     const path = row?.video_path ?? null;
-    if (!path) return { url: null };
+    if (!path && !row?.ai_video_path && !row?.ai_video_url) return { url: null };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const sign = async (p: string | null) =>
+      p ? (await supabaseAdmin.storage.from("job-media").createSignedUrl(p, 60 * 60 * 6)).data?.signedUrl ?? null : null;
+
     const originalPath = row?.video_original_path ?? path;
-    const [active, original] = await Promise.all([
-      supabaseAdmin.storage.from("job-media").createSignedUrl(path, 60 * 60 * 6),
-      originalPath === path
-        ? Promise.resolve(null)
-        : supabaseAdmin.storage.from("job-media").createSignedUrl(originalPath, 60 * 60 * 6),
+    const [active, original, edited, ia] = await Promise.all([
+      sign(path),
+      sign(originalPath),
+      sign(row?.video_edited_path ?? null),
+      sign(row?.ai_video_path ?? null),
     ]);
     return {
-      url: active.data?.signedUrl ?? null,
-      originalUrl: original?.data?.signedUrl ?? active.data?.signedUrl ?? null,
-      edited: originalPath !== path,
+      url: active,
+      originalUrl: original ?? active,
+      editedUrl: edited,
+      aiUrl: ia ?? row?.ai_video_url ?? null,
+      choice: (row?.video_choice ?? "gravado") as "gravado" | "gravado_editado" | "ia",
+      edited: !!row?.video_edited_path && originalPath !== path,
       operations: Array.isArray(row?.video_edits) ? row.video_edits : [],
     };
+  });
+
+/** Escolhe qual versão do vídeo próprio fica ativa. Nenhuma versão é apagada. */
+export const setJobVideoChoice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z
+      .object({ jobId: z.string().uuid(), choice: z.enum(["gravado", "gravado_editado", "ia"]) })
+      .parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase
+      .from("jobs")
+      .select("id, profile_id, formato, video_path, video_original_path, video_edited_path, ai_video_path")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Job não encontrado.");
+    if (job.formato !== "gravacao") throw new Error("Este job não é do formato Gravar eu mesmo.");
+    await assertCanEdit(context.supabase, job.profile_id);
+
+    const destino =
+      data.choice === "ia"
+        ? job.ai_video_path
+        : data.choice === "gravado_editado"
+          ? job.video_edited_path
+          : (job.video_original_path ?? job.video_path);
+    if (!destino) throw new Error("Essa versão do vídeo ainda não está disponível.");
+
+    const { error: updateError } = await context.supabase
+      .from("jobs")
+      .update({ video_path: destino, video_choice: data.choice })
+      .eq("id", data.jobId);
+    if (updateError) throw new Error(updateError.message);
+    return { ok: true, path: destino };
   });
 
 /** Exclui permanentemente um job de gravação e limpa o arquivo privado associado. */
