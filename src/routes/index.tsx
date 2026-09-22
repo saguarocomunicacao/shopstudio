@@ -160,7 +160,7 @@ function LandingPage() {
         </section>
 
         <section className="mx-auto grid max-w-7xl gap-12 px-5 py-24 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:px-8 lg:py-32">
-          <MediaPlaceholder description="Captura do editor com linha do tempo, tesoura e moldura de enquadramento." />
+          <img src={landingEditor.url} alt="Editor de vídeo com linha do tempo, tesoura para cortes e moldura de enquadramento 9:16 sobre a gravação" className="landing-aura w-full rounded-[22px] border border-landing-line object-cover shadow-2xl shadow-black/40" loading="lazy" />
           <div className="lg:order-2">
             <SectionTitle title="Edite só o que precisa. O original fica guardado." text="Faça os ajustes essenciais depois de gravar e aplique tudo de uma vez, sem perder qualidade a cada mudança." />
             <div className="mt-9 space-y-7">
