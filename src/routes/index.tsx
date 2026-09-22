@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
 import {
   ArrowDown, ArrowRight, BarChart3, Bookmark, Check, ChevronRight, CircleCheck,
-  Clapperboard, Clock3, Coins, Crop, Film, Gauge, Heart, Image, KeyRound, Layers3,
+  Clapperboard, Clock3, Coins, Crop, Film, Heart, Image, KeyRound, Layers3,
   LockKeyhole, MessageCircle, Mic2, PackageSearch, PenLine, Play, Radar, Scissors,
   Send, Share2, ShoppingBag, SlidersHorizontal, Sparkles, Trophy, Users, WandSparkles, X,
   type LucideIcon,
