@@ -273,18 +273,18 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
         : Promise.resolve({ data: null }),
       supabase
         .from("profile_video_settings")
-        .select("avatar_mode, avatar_reference_url, avatar_reference_urls, gemini_model")
+        .select("avatar_mode, avatar_reference_url, avatar_reference_urls, avatar_description, gemini_model")
         .eq("profile_id", job.profile_id)
         .maybeSingle(),
     ]);
 
     const imagePrompt = data.prompt?.trim() || scene.image_prompt;
-    const personUrls = personReferenceUrls(settingsRow, scenes, data.index);
-    const personRefs = await pipeline.loadPersonReferences(personUrls);
+    const avatar = avatarForScene(job, settingsRow, scenes, data.index);
+    const personRefs = await pipeline.loadPersonReferences(avatar.urls);
     const productRefs = await pipeline.loadProductReferences(pipeline.productImageUrls(product));
     const references: { base64: string; mimeType: string }[] = [...personRefs, ...productRefs];
 
-    const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : "";
+    const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : personDescriptionBlock(avatar.description);
     const referenceGuide = pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
 
     const { withTenantKeys } = await import("./api-keys.server");
@@ -399,7 +399,7 @@ async function runStep(
     supabase.from("profiles").select("name, niche").eq("id", job.profile_id).maybeSingle(),
     supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, takes_count, gemini_model, veo_model, take_duration, voice_ref")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, avatar_description, takes_count, gemini_model, veo_model, take_duration, voice_ref")
       .eq("profile_id", job.profile_id)
       .maybeSingle(),
   ]);
@@ -454,13 +454,12 @@ async function runStep(
     const index = scenes.findIndex((s) => !s.image_url);
     if (index >= 0) {
       const scene = scenes[index]!;
-      const personRefs = await pipeline.loadPersonReferences(
-        personReferenceUrls(settingsRow, scenes, index),
-      );
+      const avatar = avatarForScene(job, settingsRow, scenes, index);
+      const personRefs = await pipeline.loadPersonReferences(avatar.urls);
       const productRefs = await pipeline.loadProductReferences(pipeline.productImageUrls(product));
       const references: { base64: string; mimeType: string }[] = [...personRefs, ...productRefs];
 
-      const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : "";
+      const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : personDescriptionBlock(avatar.description);
       const referenceGuide = pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
       const productFacts = product?.description
         ? `\n\nPRODUCT FACTS (from the real listing, obey them): ${String(product.description).replace(/\s+/g, " ").slice(0, 700)}`
