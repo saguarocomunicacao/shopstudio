@@ -248,20 +248,37 @@ export function VideoEditor({
   rangesRef.current = ranges;
   const validResult = duration > 0 && ranges.length > 0;
 
+  /** Seleção padrão da tesoura: meio do maior trecho ainda preservado. */
+  const cutSelectionFor = (list: { start: number; end: number }[]) => {
+    const maior = list.reduce<{ start: number; end: number } | null>(
+      (melhor, range) => (!melhor || range.end - range.start > melhor.end - melhor.start ? range : melhor),
+      null,
+    );
+    const base = maior ?? { start, end };
+    const span = Math.max(0.2, base.end - base.start);
+    return { start: base.start + span * 0.35, end: base.start + span * 0.65 };
+  };
+
   const addCut = () => {
     if (cutEnd - cutStart < 0.2) return;
     const next = normalizeCuts([...cuts, { type: "cut", start: cutStart, end: cutEnd }], start, end);
-    if (!keepRanges(duration, [...(aparado ? [{ type: "trim" as const, start, end }] : []), ...next]).length) {
+    const restantes = keepRanges(duration, [...(aparado ? [{ type: "trim" as const, start, end }] : []), ...next]);
+    if (!restantes.length) {
       setErro("O corte não pode remover o vídeo inteiro.");
       return;
     }
     setHistory((current) => [...current, { start, end, cuts, crop }]);
     setCuts(next);
     setErro(null);
+    // A seleção volta para um trecho ainda preservado, pronta para o próximo corte.
+    const selecao = cutSelectionFor(restantes);
+    setCutStart(selecao.start);
+    setCutEnd(selecao.end);
     // O corte vale na hora: se o cursor estava dentro dele, pula para a continuação.
     const video = videoRef.current;
     if (video && video.currentTime >= cutStart && video.currentTime < cutEnd) seek(Math.min(cutEnd, end));
   };
+
 
   const desfazer = () => {
     setHistory((current) => {
@@ -531,10 +548,11 @@ export function VideoEditor({
           </Button>
           <Button type="button" size="sm" variant={mode === "cut" ? "default" : "ghost"} aria-pressed={mode === "cut"} onClick={() => {
             setMode("cut");
-            const span = Math.max(0.2, end - start);
-            setCutStart(start + span * 0.35);
-            setCutEnd(start + span * 0.65);
+            const selecao = cutSelectionFor(ranges);
+            setCutStart(selecao.start);
+            setCutEnd(selecao.end);
           }}>
+
             <Scissors /> Tesoura
           </Button>
           <Button type="button" size="sm" variant={mode === "crop" ? "default" : "ghost"} aria-pressed={mode === "crop"} onClick={() => {
@@ -573,7 +591,7 @@ export function VideoEditor({
               <div key={`${cut.start}-${cut.end}-${index}`} className="absolute inset-y-0 bg-destructive/65" style={{ left: `${pct(cut.start)}%`, width: `${pct(cut.end - cut.start)}%` }} />
             ))}
             {mode === "cut" && cutEnd > cutStart && (
-              <div className="absolute inset-y-0 border-x-2 border-destructive bg-destructive/30" style={{ left: `${pct(cutStart)}%`, width: `${pct(cutEnd - cutStart)}%` }} />
+              <div className="absolute inset-y-0 z-10 border-x-2 border-primary bg-primary/30" style={{ left: `${pct(cutStart)}%`, width: `${pct(cutEnd - cutStart)}%` }} />
             )}
             <div className="pointer-events-none absolute inset-y-0 w-0.5 bg-foreground" style={{ left: `${pct(currentTime)}%` }} />
             {mode === "trim" ? (
@@ -583,9 +601,10 @@ export function VideoEditor({
               </>
             ) : mode === "cut" ? (
               <>
-                <Button type="button" variant="destructive" aria-label="Início do corte interno" data-cut-handle="start" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutStart)}%` }} onPointerDown={dragHandle("cutStart")} />
-                <Button type="button" variant="destructive" aria-label="Fim do corte interno" data-cut-handle="end" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutEnd)}%` }} onPointerDown={dragHandle("cutEnd")} />
+                <Button type="button" variant="destructive" aria-label="Início do corte interno" data-cut-handle="start" className="absolute top-0 z-20 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutStart)}%` }} onPointerDown={dragHandle("cutStart")} />
+                <Button type="button" variant="destructive" aria-label="Fim do corte interno" data-cut-handle="end" className="absolute top-0 z-20 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutEnd)}%` }} onPointerDown={dragHandle("cutEnd")} />
               </>
+
             ) : null}
           </div>
         </div>
