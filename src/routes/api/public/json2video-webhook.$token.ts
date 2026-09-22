@@ -33,11 +33,26 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        const query = supabaseAdmin.from("jobs").select("id, status, profile_id").limit(1);
-        const { data: job } = jobId
-          ? await query.eq("id", jobId).maybeSingle()
-          : await query.eq("render_id", renderId!).maybeSingle();
+        const cols = "id, status, profile_id, formato";
+        let job: { id: string; status: string; profile_id: string; formato: string | null } | null = null;
+        if (jobId) {
+          const { data } = await supabaseAdmin.from("jobs").select(cols).eq("id", jobId).maybeSingle();
+          job = data as typeof job;
+        } else {
+          const { data } = await supabaseAdmin.from("jobs").select(cols).eq("render_id", renderId!).maybeSingle();
+          job = data as typeof job;
+          if (!job) {
+            // Vídeo próprio: a montagem por IA usa a trilha ai_* do job gravado.
+            const { data: aiJob } = await supabaseAdmin
+              .from("jobs")
+              .select(cols)
+              .eq("ai_render_id", renderId!)
+              .maybeSingle();
+            job = aiJob as typeof job;
+          }
+        }
         if (!job) return new Response("Job not found", { status: 404 });
+        const aiTrack = job.formato === "gravacao";
 
         // Consumo da montagem: grava os créditos se vierem, senão registra o evento sem quantidade.
         const consumo = await import("@/lib/consumo.server");
@@ -69,36 +84,57 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
         const thumbnail = typeof payload["thumbnail"] === "string" ? payload["thumbnail"] : null;
 
         if (url) {
+          const pronto = {
+            status: "video_pronto",
+            render_stage: null,
+            video_url: url,
+            video_thumbnail_url: thumbnail,
+            render_error: null,
+            video_storage_status: "pendente",
+            video_storage_error: null,
+          };
           await supabaseAdmin
             .from("jobs")
-            .update({
-              status: "video_pronto",
-              render_stage: null,
-              video_url: url,
-              video_thumbnail_url: thumbnail,
-              render_error: null,
-              video_storage_status: "pendente",
-              video_storage_error: null,
-              video_storage_updated_at: new Date().toISOString(),
-            })
+            .update(
+              aiTrack
+                ? {
+                    ai_status: "video_pronto",
+                    ai_render_stage: null,
+                    ai_video_url: url,
+                    ai_video_thumbnail_url: thumbnail,
+                    ai_render_error: null,
+                    ai_video_storage_status: "pendente",
+                    ai_video_storage_error: null,
+                  }
+                : { ...pronto, video_storage_updated_at: new Date().toISOString() },
+            )
             .eq("id", job.id);
 
           // O JSON2Video apaga o arquivo em 7 dias: guardamos uma cópia nossa.
           // A cópia roda fora da resposta do webhook; a rotina agendada cobre o que falhar.
           const { ensureJobVideoStoredWithRetry } = await import("@/lib/video-storage.server");
-          void ensureJobVideoStoredWithRetry(job.id).catch((e) => {
+          void ensureJobVideoStoredWithRetry(job.id, 3, aiTrack ? "ia" : "principal").catch((e) => {
             console.error(`[video-storage] cópia em background do job ${job.id} falhou:`, e);
           });
         } else {
           await supabaseAdmin
             .from("jobs")
-            .update({
-              status: "cenas_geradas",
-              render_stage: null,
-              render_error: "A renderização do vídeo falhou. Tente gerar novamente.",
-            })
+            .update(
+              aiTrack
+                ? {
+                    ai_status: "cenas_geradas",
+                    ai_render_stage: null,
+                    ai_render_error: "A renderização do vídeo falhou. Tente gerar novamente.",
+                  }
+                : {
+                    status: "cenas_geradas",
+                    render_stage: null,
+                    render_error: "A renderização do vídeo falhou. Tente gerar novamente.",
+                  },
+            )
             .eq("id", job.id);
         }
+
 
         return new Response("ok");
       },
