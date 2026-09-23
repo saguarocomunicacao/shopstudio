@@ -608,6 +608,37 @@ function AutomationContent() {
   );
 }
 
+const RUN_LABEL: Record<string, string> = {
+  gerando: "Gerando",
+  concluido: "Concluída",
+  falhou: "Falhou",
+  sem_produto: "Sem produto novo",
+  pausado: "Pausada por teto",
+};
+
+/** Registro simples das execuções automáticas (painel detalhado fica para a Parte 3). */
+function RunsLog({ profileId }: { profileId: string | null }) {
+  const { data: runs = [] } = useAutomationRuns(profileId);
+  if (!runs.length) return null;
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card p-4">
+      <h3 className="mb-3 text-sm font-semibold">Últimas execuções</h3>
+      <ul className="space-y-2">
+        {runs.map((r) => (
+          <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+            <span className="font-medium">
+              {r.dia.split("-").reverse().join("/")} às {r.horario}
+            </span>
+            <span className="text-xs font-semibold text-primary">{RUN_LABEL[r.status] ?? r.status}</span>
+            {r.mensagem && <span className="text-xs text-muted-foreground">{r.mensagem}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+
 export function AutomationPage() {
   return (
     <ProfileGate>
