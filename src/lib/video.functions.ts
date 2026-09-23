@@ -399,50 +399,51 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     return { url: stored.url };
   });
 
-/** Executa a próxima etapa pendente do job (chamada repetidamente pela tela). */
+/** Executa a próxima etapa pendente do job (núcleo, chamado pela tela e pela automação). */
+export async function advanceJobVideoCore(supabase: any, jobId: string, skipPermission = false) {
+  const job = await loadJob(supabase, jobId, skipPermission);
+
+  const stageAtual = jobStage(job);
+  const running =
+    (jobStatus(job) === "roteiro_pronto" || jobStatus(job) === "gerando_video") &&
+    !!stageAtual &&
+    stageAtual !== "render";
+  if (!running) return { stage: stageAtual, done: true, progress: null };
+
+  const { assertOrcamento: assertOrcamentoEtapa } = await import("./orcamento.server");
+  await assertOrcamentoEtapa(job.profile_id, { barata: true });
+
+  const pipeline = await import("./video-pipeline.server");
+
+  const { withTenantKeys } = await import("./api-keys.server");
+  try {
+    return await withTenantKeys(job.tenant_id, () => runStep(supabase, job, pipeline));
+  } catch (e) {
+    const base = e instanceof Error ? e.message : "A geração do vídeo falhou.";
+    const feitas = (Array.isArray(job.scenes) ? job.scenes : []).filter(
+      (s) => !!(s as { image_url?: string })?.image_url,
+    ).length;
+    // Falha nas imagens não descarta o que já ficou pronto.
+    const message =
+      stageAtual === "cenas" && feitas > 0
+        ? `${base} As ${feitas} cena(s) já geradas foram mantidas: refaça apenas as que ficaram sem imagem.`
+        : base;
+    // Falha na fase de imagens volta ao roteiro; depois da aprovação volta às cenas aprovadas.
+    const backTo = stageAtual === "planejando" || stageAtual === "cenas" ? "roteiro_pronto" : "cenas_geradas";
+    await supabase
+      .from("jobs")
+      .update(trackPatch(job, { status: backTo, render_stage: null, render_error: message }))
+      .eq("id", job.id);
+
+    throw new Error(message);
+  }
+}
+
 export const advanceJobVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator(input)
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const job = await loadJob(supabase, data.jobId);
+  .handler(async ({ data, context }) => advanceJobVideoCore(context.supabase, data.jobId));
 
-    const stageAtual = jobStage(job);
-    const running =
-      (jobStatus(job) === "roteiro_pronto" || jobStatus(job) === "gerando_video") &&
-      !!stageAtual &&
-      stageAtual !== "render";
-    if (!running) return { stage: stageAtual, done: true, progress: null };
-
-    const { assertOrcamento: assertOrcamentoEtapa } = await import("./orcamento.server");
-    await assertOrcamentoEtapa(job.profile_id, { barata: true });
-
-    const pipeline = await import("./video-pipeline.server");
-
-    const { withTenantKeys } = await import("./api-keys.server");
-    try {
-      return await withTenantKeys(job.tenant_id, () => runStep(supabase, job, pipeline));
-    } catch (e) {
-      const base = e instanceof Error ? e.message : "A geração do vídeo falhou.";
-      const feitas = (Array.isArray(job.scenes) ? job.scenes : []).filter(
-        (s) => !!(s as { image_url?: string })?.image_url,
-      ).length;
-      // Falha nas imagens não descarta o que já ficou pronto.
-      const message =
-        stageAtual === "cenas" && feitas > 0
-          ? `${base} As ${feitas} cena(s) já geradas foram mantidas: refaça apenas as que ficaram sem imagem.`
-          : base;
-      // Falha na fase de imagens volta ao roteiro; depois da aprovação volta às cenas aprovadas.
-      const backTo = stageAtual === "planejando" || stageAtual === "cenas" ? "roteiro_pronto" : "cenas_geradas";
-      await supabase
-        .from("jobs")
-        .update(trackPatch(job, { status: backTo, render_stage: null, render_error: message }))
-        .eq("id", job.id);
-
-      throw new Error(message);
-
-    }
-  });
 
 
 async function runStep(
