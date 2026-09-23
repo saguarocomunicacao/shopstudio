@@ -544,7 +544,9 @@ export async function runAutomationTick(opts: { now?: Date; budgetMs?: number } 
           .select("*")
           .eq("id", job.automation_schedule_id)
           .maybeSingle();
-        if (!schedule) continue;
+        // Guarda de pausa: agenda pausada não consome mais nada sozinha.
+        if (!schedule || !schedule.ativa) continue;
+
         try {
           await avancarJob(admin, schedule, job.id, dia, ateMs);
           jobsAvancados += 1;
