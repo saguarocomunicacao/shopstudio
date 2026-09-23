@@ -468,6 +468,7 @@ function ScheduleDialog({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={submit} disabled={save.isPending}>{save.isPending ? "Salvando..." : "Salvar agenda"}</Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
