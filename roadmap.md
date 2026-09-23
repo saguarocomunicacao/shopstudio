@@ -72,3 +72,9 @@
 - [ ] Garantir fallback global amigável em português
 - [ ] Revisar carregamento, vazio e erro nas telas principais
 - [ ] Validar tipos, build e fluxos críticos
+
+## Foto de identidade do perfil
+- [ ] Adicionar campo e armazenamento isolado por empresa/perfil
+- [ ] Criar upload JPG/PNG de até 15 MB com recorte circular
+- [ ] Exibir foto no seletor superior e na listagem de Perfis
+- [ ] Validar upload real, fallback e visualização desktop/mobile
