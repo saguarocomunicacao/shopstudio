@@ -34,6 +34,7 @@ import { TiktokIntegrationCard } from "./tiktok-integration-card";
 import { VoiceSelect } from "./voice-select";
 import { useStudio } from "./studio-context";
 import { actionError } from "@/lib/api-keys";
+import { DEFAULT_VISUAL_STYLE, VISUAL_STYLE_OPTIONS, type VisualStyle } from "@/lib/visual-style";
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
@@ -89,12 +90,14 @@ type FormState = {
   name: string; handle: string; niche: string; categoryId: string; followers: string; status: string;
   tone: string; language: string; notes: string;
   avatarMode: string; avatarDescription: string; takes: string; duration: string; geminiModel: string; veoModel: string; recordingAspectRatio: RecordingAspectRatio; voiceRef: string | null;
+  visualStyle: VisualStyle; visualStyleCustom: string;
   requireReview: boolean;
 };
 const emptyForm: FormState = {
   name: "", handle: "", niche: "", categoryId: "", followers: "0", status: "Ativo",
   tone: "descontraido", language: "pt-BR", notes: "",
   avatarMode: "livre", avatarDescription: "", takes: "3", duration: "8", geminiModel: GEMINI_MODELS[0]!.value, veoModel: VEO_MODELS[0]!.value, recordingAspectRatio: DEFAULT_RECORDING_ASPECT_RATIO, voiceRef: null,
+  visualStyle: DEFAULT_VISUAL_STYLE, visualStyleCustom: "",
   requireReview: true,
 };
 
@@ -116,7 +119,7 @@ const TABS: { key: TabKey; label: string; hint: string }[] = [
 const TAB_FIELDS: Partial<Record<TabKey, (keyof FormState)[]>> = {
   dados: ["name", "handle", "categoryId", "niche", "followers", "status"],
   identidade: ["tone", "language", "notes"],
-  video: ["takes", "duration", "geminiModel", "veoModel", "recordingAspectRatio"],
+  video: ["takes", "duration", "geminiModel", "veoModel", "recordingAspectRatio", "visualStyle", "visualStyleCustom"],
   pessoa: ["avatarMode", "avatarDescription"],
   voz: ["voiceRef"],
   publicacao: ["requireReview"],
@@ -185,7 +188,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
       });
     void supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, avatar_description, takes_count, gemini_model, veo_model, take_duration, recording_aspect_ratio, voice_ref, require_review")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, avatar_description, takes_count, gemini_model, veo_model, take_duration, recording_aspect_ratio, voice_ref, require_review, visual_style, visual_style_custom")
       .eq("profile_id", profile.id)
       .maybeSingle()
       .then(({ data }) => {
@@ -206,6 +209,8 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           recordingAspectRatio: normalizeRecordingAspectRatio(data.recording_aspect_ratio),
           voiceRef: data.voice_ref ?? null,
           requireReview: data.require_review ?? true,
+          visualStyle: (VISUAL_STYLE_OPTIONS.some((option) => option.value === data.visual_style) ? data.visual_style : DEFAULT_VISUAL_STYLE) as VisualStyle,
+          visualStyleCustom: data.visual_style_custom ?? "",
         };
         setForm((f) => ({ ...f, ...patch }));
         setSaved((f) => ({ ...f, ...patch }));
@@ -265,6 +270,8 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           recording_aspect_ratio: values.recordingAspectRatio,
           voice_ref: values.voiceRef,
           require_review: values.requireReview,
+          visual_style: values.visualStyle,
+          visual_style_custom: values.visualStyle === "personalizado" ? values.visualStyleCustom.trim() || null : null,
         },
         { onConflict: "profile_id" },
       );
@@ -466,6 +473,22 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           {tab === "video" && (
             <div className="grid gap-4">
               <SectionTitle title="Geração de vídeo" description="Todo vídeo deste perfil mostra uma pessoa ou mão usando o produto." />
+              <div className="grid gap-3 rounded-xl border p-4">
+                <div className="grid gap-2 sm:max-w-md">
+                  <Label htmlFor="p-visual-style">Estilo visual padrão</Label>
+                  <Select value={form.visualStyle} onValueChange={(value) => setForm({ ...form, visualStyle: value as VisualStyle })}>
+                    <SelectTrigger id="p-visual-style"><SelectValue /></SelectTrigger>
+                    <SelectContent>{VISUAL_STYLE_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Aplicado a todas as cenas geradas por IA deste perfil, salvo quando um vídeo tiver outra escolha.</p>
+                </div>
+                {form.visualStyle === "personalizado" && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="p-visual-style-custom">Descrição do estilo</Label>
+                    <Textarea id="p-visual-style-custom" rows={3} maxLength={500} value={form.visualStyleCustom} onChange={(event) => setForm({ ...form, visualStyleCustom: event.target.value })} placeholder="Ex: colagem editorial com papel recortado, textura impressa e cores vibrantes" />
+                  </div>
+                )}
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="p-takes">Cenas por vídeo</Label>

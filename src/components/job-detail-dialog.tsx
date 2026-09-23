@@ -15,6 +15,7 @@ import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/video.functions";
 import { approveDraft, saveDraftPostTexts } from "@/lib/drafts.functions";
 import { JobAvatarSelect } from "./avatar-library";
+import { JobVisualStyleSelect } from "./job-visual-style-select";
 import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
 import { JobCostSummary } from "./job-cost";
@@ -283,7 +284,10 @@ export function JobDetailDialog({
           )}
 
           {job && job.formato !== "gravacao" && job.status === "roteiro_pronto" && !job.render_stage && (
-            <JobAvatarSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
+            <div className="grid gap-3">
+              <JobAvatarSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
+              <JobVisualStyleSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
+            </div>
           )}
         </div>
 

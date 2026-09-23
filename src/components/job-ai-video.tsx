@@ -12,6 +12,7 @@ import { getRecordingVideoUrl, setJobVideoChoice } from "@/lib/recording.functio
 import { useVideoDriver } from "@/lib/video-driver";
 import { approveJobScenes, generateJobScenes } from "@/lib/video.functions";
 import { VideoDownloadButton } from "@/components/video-download-button";
+import { JobVisualStyleSelect } from "@/components/job-visual-style-select";
 
 const brl = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
@@ -110,6 +111,7 @@ export function JobAiVideo({ job, canEdit }: { job: DbJob; canEdit: boolean }) {
       {!rodando && !aiStatus && (
         <div className="grid gap-3">
           <JobAvatarSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
+          <JobVisualStyleSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
           <Button size="lg" className="w-full" disabled={!canEdit || iniciar.isPending} onClick={() => iniciar.mutate()}>
             {iniciar.isPending ? <Loader2 className="animate-spin" /> : <Clapperboard />}
             Gerar vídeo por IA
