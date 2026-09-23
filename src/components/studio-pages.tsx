@@ -12,6 +12,7 @@ import { ChampionRefsToggle } from "./champion-refs-toggle";
 import { ProfileGate } from "./profile-gate";
 import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { useStudio } from "./studio-context";
+import { VideoDownloadButton } from "./video-download-button";
 
 const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-lime", "Rascunho enviado": "status-orange", "Publicado": "status-pink", "Ativo": "status-lime", "Pausado": "status-neutral" };
 function Badge({ children }: { children: string }) { return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusClass[children] ?? "status-neutral"}`}>{children}</span>; }
@@ -64,6 +65,17 @@ function VideosContent() {
             <video src={job.video_url!} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="aspect-[9/16] w-full rounded-xl bg-black object-cover" />
             <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>
             <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
+            <VideoDownloadButton
+              versions={[
+                { key: "ativa", label: "Vídeo montado", source: job.video_url },
+                { key: "ia", label: "Versão gerada por IA", source: job.ai_video_url },
+              ]}
+              title={job.title}
+              profileName={profileName(job.profile_id)}
+              size="sm"
+              variant="secondary"
+              className="mt-3 w-full"
+            />
           </article>
         ))}
       </div>
