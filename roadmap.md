@@ -80,7 +80,7 @@
 - [x] Validar upload real, fallback e visualização desktop/mobile
 
 ## Estado da geração por IA em vídeo próprio
-- [ ] Sincronizar a etapa de IA com o estado principal do job
-- [ ] Exibir geração de cenas, animação e vídeo pronto em Rascunhos
-- [ ] Mover o card pelas colunas corretas do Pipeline
-- [ ] Validar progressão preservando as versões gravadas
+- [x] Sincronizar a etapa de IA com o estado principal do job
+- [x] Exibir geração de cenas, animação e vídeo pronto em Rascunhos
+- [x] Mover o card pelas colunas corretas do Pipeline
+- [x] Validar progressão preservando as versões gravadas

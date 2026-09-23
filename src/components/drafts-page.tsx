@@ -44,7 +44,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { relativeTime, useJobs, useProducts, useTrashedJobs, type DbJob } from "@/lib/content";
+import { jobStatusLabel, relativeTime, useJobs, useProducts, useTrashedJobs, type DbJob } from "@/lib/content";
 import { restoreOriginalRecording } from "@/lib/recording.functions";
 import {
   approveDraft,
@@ -85,7 +85,9 @@ const QUEUES: { key: QueueKey; label: string; status?: DbJob["status"]; badge: s
 
 /** Roteiros concluídos do formato de gravação que ainda aguardam a pessoa gravar. */
 const roteiroPronto = (job: DbJob) =>
-  job.formato === "gravacao" && job.status === "roteiro_pronto" && !job.recorded_at;
+  job.formato === "gravacao" &&
+  ["roteiro_pronto", "gerando_cenas", "cenas_geradas", "gerando_video"].includes(job.status) &&
+  !job.recorded_at;
 
 export function DraftsPage({ initialJobId }: { initialJobId?: string | undefined }) {
   return (
@@ -383,13 +385,16 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
           {list.map((job) => {
             const pendente = isTrash
               ? job.deleted_from_status === "roteiro_pronto"
-              : queue === "roteiros";
-            const abrir = () => (pendente ? openRecordingKit(job.id, false) : setOpenId(job.id));
+              : queue === "roteiros" && job.status === "roteiro_pronto";
+            const fluxoIaProprio = !isTrash && queue === "roteiros" && job.formato === "gravacao";
+            const abrir = () => (fluxoIaProprio ? openRecordingKit(job.id, false) : setOpenId(job.id));
             const badgeLabel = isTrash
               ? "Na lixeira"
-              : pendente
-                ? "Pendente de gravação"
-                : current?.label;
+              : fluxoIaProprio && job.status !== "roteiro_pronto"
+                ? jobStatusLabel(job)
+                : pendente
+                  ? "Pendente de gravação"
+                  : current?.label;
             return (
               <article key={job.id} className="panel">
                 {pendente && !job.video_path ? (

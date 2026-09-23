@@ -435,6 +435,13 @@
       "when": 1790199831237,
       "tag": "0061_add_profile_identity_image",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1790200333841,
+      "tag": "0062_add_generating_scenes_job_status",
+      "breakpoints": true
     }
   ]
 }
