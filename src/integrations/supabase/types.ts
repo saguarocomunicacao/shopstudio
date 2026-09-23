@@ -2053,6 +2053,7 @@ export type Database = {
         | "novo"
         | "produto_escolhido"
         | "roteiro_pronto"
+        | "gerando_cenas"
         | "cenas_geradas"
         | "gerando_video"
         | "video_pronto"
@@ -2208,6 +2209,7 @@ export const Constants = {
         "novo",
         "produto_escolhido",
         "roteiro_pronto",
+        "gerando_cenas",
         "cenas_geradas",
         "gerando_video",
         "video_pronto",
