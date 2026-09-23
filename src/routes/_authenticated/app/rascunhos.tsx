@@ -3,8 +3,8 @@ import { DraftsPage } from "@/components/drafts-page";
 
 export const Route = createFileRoute("/_authenticated/app/rascunhos")({
   validateSearch: (search: Record<string, unknown>) => ({
-    jobId: typeof search.jobId === "string" ? search.jobId : undefined,
-    perfil: typeof search.perfil === "string" ? search.perfil : undefined,
+    jobId: typeof search["jobId"] === "string" ? search["jobId"] : undefined,
+    perfil: typeof search["perfil"] === "string" ? search["perfil"] : undefined,
   }),
   head: () => ({
     meta: [

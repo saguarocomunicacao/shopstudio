@@ -86,7 +86,7 @@ const QUEUES: { key: QueueKey; label: string; status?: DbJob["status"]; badge: s
 const roteiroPronto = (job: DbJob) =>
   job.formato === "gravacao" && job.status === "roteiro_pronto" && !job.recorded_at;
 
-export function DraftsPage({ initialJobId }: { initialJobId?: string }) {
+export function DraftsPage({ initialJobId }: { initialJobId?: string | undefined }) {
   return (
     <ProfileGate>
       <DraftsContent initialJobId={initialJobId} />
@@ -210,7 +210,7 @@ function DraftThumb({
   );
 }
 
-function DraftsContent({ initialJobId }: { initialJobId?: string }) {
+function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) {
   const { activeProfileId, activeProfile, can } = useStudio();
   const { data: jobs = [], isLoading } = useJobs(activeProfileId);
   const { data: trashed = [] } = useTrashedJobs(activeProfileId);
