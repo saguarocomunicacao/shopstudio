@@ -31,6 +31,7 @@ function MultiPersonaHint({ text }: { text: string }) {
 export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean }) {
   const qc = useQueryClient();
   const regenerate = useServerFn(regenerateJobScene);
+  const { data: personas = [] } = useProfileAvatars(job.profile_id);
   const [prompts, setPrompts] = useState<Record<number, string>>({});
   const [busyIndex, setBusyIndex] = useState<number | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
