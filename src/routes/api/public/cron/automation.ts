@@ -10,8 +10,16 @@ export const Route = createFileRoute('/api/public/cron/automation')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const unauthorized = await authenticateCronRequest(request)
-        if (unauthorized) return unauthorized
+        // Aceita o segredo padrão de cron do Lovable OU o token dedicado
+        // usado pelo agendador do banco (pg_cron), que não enxerga env vars.
+        const token = request.headers.get('x-automation-token')
+        const esperado = process.env['AUTOMATION_CRON_TOKEN']
+        const tokenOk = !!token && !!esperado && token === esperado
+        if (!tokenOk) {
+          const unauthorized = await authenticateCronRequest(request)
+          if (unauthorized) return unauthorized
+        }
+
 
         try {
           const { runAutomationTick } = await import('@/lib/automation-run.server')
