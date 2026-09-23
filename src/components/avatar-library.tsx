@@ -174,15 +174,25 @@ function AvatarFormDialog({
   const qc = useQueryClient();
   const save = useServerFn(saveProfileAvatar);
   const [name, setName] = useState("");
+  const [tag, setTag] = useState("");
+  const [tagTocada, setTagTocada] = useState(false);
   const [description, setDescription] = useState("");
   const [photos, setPhotos] = useState<AvatarPhoto[]>([]);
+  const [primaryIndex, setPrimaryIndex] = useState(0);
 
   useEffect(() => {
     if (!open) return;
     setName(avatar?.name ?? "");
+    setTag(avatar?.tag ?? "");
+    setTagTocada(!!avatar?.tag);
     setDescription(avatar?.description ?? "");
-    setPhotos((avatar?.reference_urls ?? []).map((url) => ({ preview: url, url })));
+    const urls = avatar?.reference_urls ?? [];
+    setPhotos(urls.map((url) => ({ preview: url, url })));
+    const idx = avatar?.primary_url ? urls.indexOf(avatar.primary_url) : 0;
+    setPrimaryIndex(idx >= 0 ? idx : 0);
   }, [open, avatar]);
+
+  const tagFinal = slugifyTag(tagTocada && tag ? tag : name);
 
   const run = useMutation({
     mutationFn: async () =>
@@ -191,8 +201,10 @@ function AvatarFormDialog({
           profileId,
           avatarId: avatar?.id,
           name: name.trim(),
+          tag: tagFinal,
           description: description.trim(),
           images: toPayload(photos),
+          primaryIndex: Math.min(primaryIndex, Math.max(0, photos.length - 1)),
         },
       }),
     onSuccess: () => {
