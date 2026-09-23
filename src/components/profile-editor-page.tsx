@@ -35,6 +35,7 @@ import { VoiceSelect } from "./voice-select";
 import { useStudio } from "./studio-context";
 import { actionError } from "@/lib/api-keys";
 import { DEFAULT_VISUAL_STYLE, VISUAL_STYLE_OPTIONS, type VisualStyle } from "@/lib/visual-style";
+import { MAX_AVATAR_FILE_BYTES } from "@/lib/avatars.functions";
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
@@ -335,8 +336,8 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
       const id = `${file.name}-${file.size}-${Math.random().toString(36).slice(2, 8)}`;
       if (!["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(file.type)) {
         rejects.push({ id, name: file.name, reason: "Formato inválido (use JPG ou PNG)" });
-      } else if (file.size > 5 * 1024 * 1024) {
-        rejects.push({ id, name: file.name, reason: "Maior que 5 MB" });
+      } else if (file.size > MAX_AVATAR_FILE_BYTES) {
+        rejects.push({ id, name: file.name, reason: "Maior que 15 MB" });
       } else if (accepted.length >= free) {
         rejects.push({ id, name: file.name, reason: `Limite de ${MAX_AVATARS} fotos` });
       } else {
@@ -651,7 +652,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                   ) : (
                     <div className="grid gap-3">
                       <p className="text-xs text-muted-foreground">
-                        Envie de 1 a {MAX_AVATARS} fotos da mesma pessoa. JPG ou PNG, até 5 MB cada.{" "}
+                        Envie de 1 a {MAX_AVATARS} fotos da mesma pessoa. JPG ou PNG, até 15 MB cada.{" "}
                         <span className="font-semibold text-foreground">3 boas fotos já bastam</span> — acima disso o ganho é pequeno.
                       </p>
 
@@ -705,7 +706,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                             {uploadAvatars.isPending ? "Enviando fotos..." : "Arraste fotos aqui ou clique para enviar"}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            {avatarItems.length} de {MAX_AVATARS} · JPG ou PNG, até 5 MB cada
+                            {avatarItems.length} de {MAX_AVATARS} · JPG ou PNG, até 15 MB cada
                           </span>
                         </button>
                       )}

@@ -80,8 +80,12 @@ export function AccountPage() {
 
   const upload = async (file: File) => {
     if (!userId) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Escolha uma imagem.");
+    if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
+      toast.error("Escolha uma imagem JPG ou PNG.");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 15 MB.");
       return;
     }
     setUploading(true);
@@ -124,7 +128,7 @@ export function AccountPage() {
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -136,7 +140,7 @@ export function AccountPage() {
                 {uploading ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
                 {uploading ? "Enviando..." : "Trocar foto"}
               </Button>
-              <p className="mt-2 text-xs text-muted-foreground">Imagem de até 5 MB.</p>
+              <p className="mt-2 text-xs text-muted-foreground">JPG ou PNG de até 15 MB.</p>
             </div>
           </div>
 

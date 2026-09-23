@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { actionError } from "@/lib/api-keys";
-import { deleteProfileAvatar, saveProfileAvatar, setJobAvatar, slugifyTag, MAX_AVATAR_IMAGES } from "@/lib/avatars.functions";
+import { deleteProfileAvatar, saveProfileAvatar, setJobAvatar, slugifyTag, MAX_AVATAR_FILE_BYTES, MAX_AVATAR_IMAGES } from "@/lib/avatars.functions";
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
@@ -92,8 +92,8 @@ export function AvatarPhotosField({
       toast.error(`Máximo de ${MAX_AVATAR_IMAGES} fotos.`);
       return;
     }
-    const valid = list.filter((f) => ACCEPTED.includes(f.type) && f.size <= 5 * 1024 * 1024).slice(0, free);
-    if (valid.length < list.length) toast.error("Algumas fotos foram ignoradas (use JPG ou PNG de até 5 MB).");
+    const valid = list.filter((f) => ACCEPTED.includes(f.type) && f.size <= MAX_AVATAR_FILE_BYTES).slice(0, free);
+    if (valid.length < list.length) toast.error("Algumas fotos foram ignoradas (use JPG ou PNG de até 15 MB).");
     const read = await Promise.all(valid.map(readPhoto));
     onChange([...photos, ...read]);
   };
@@ -155,7 +155,7 @@ export function AvatarPhotosField({
         className="hidden"
         onChange={(e) => { void pick(e.target.files); e.target.value = ""; }}
       />
-      <p className="text-xs text-muted-foreground">Até {MAX_AVATAR_IMAGES} fotos da mesma pessoa, JPG ou PNG de até 5 MB.</p>
+      <p className="text-xs text-muted-foreground">Até {MAX_AVATAR_IMAGES} fotos da mesma pessoa, JPG ou PNG de até 15 MB.</p>
     </div>
   );
 }
