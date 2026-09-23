@@ -317,13 +317,19 @@ export function ProfileAvatarsCard({ profileId }: { profileId: string | null }) 
         <ul className="grid gap-3 sm:grid-cols-2">
           {avatars.map((avatar) => (
             <li key={avatar.id} className="flex gap-3 rounded-xl border p-3">
-              {avatar.reference_urls[0] ? (
-                <img src={avatar.reference_urls[0]} alt="" className="size-16 shrink-0 rounded-lg object-cover" />
+              {avatar.primary_url || avatar.reference_urls[0] ? (
+                <img src={avatar.primary_url ?? avatar.reference_urls[0]} alt="" className="size-16 shrink-0 rounded-lg object-cover" />
               ) : (
                 <span className="grid size-16 shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground"><UserRound className="size-6" /></span>
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{avatar.name}</p>
+                {avatar.tag && (
+                  <p className="mt-0.5 text-xs">
+                    <code className="rounded bg-secondary px-1 font-bold">{`{{${avatar.tag}}}`}</code>{" "}
+                    <span className="text-muted-foreground">use nas cenas</span>
+                  </p>
+                )}
                 <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                   {avatar.reference_urls.length
                     ? `${avatar.reference_urls.length} foto(s) de referência`
