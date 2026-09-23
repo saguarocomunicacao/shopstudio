@@ -461,7 +461,7 @@ function AutomationContent() {
                 <TableCell className="font-semibold">{s.nome}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{s.fonte === "radar" ? "Radar de emergentes" : "Garimpo normal"}</TableCell>
                 <TableCell className="text-sm">{s.horarios.join(", ")}</TableCell>
-                <TableCell>{s.videos_por_dia}</TableCell>
+                <TableCell>{s.horarios.length}</TableCell>
                 <TableCell>{brlFromCents(s.teto_diario_cents)}</TableCell>
                 <TableCell>{brlFromCents(s.teto_mensal_cents)}</TableCell>
                 <TableCell>
