@@ -49,7 +49,7 @@ type EditorSnapshot = { start: number; end: number; cuts: CutOperation[]; crop: 
 const FILMSTRIP_MIN_FRAMES = 8;
 const FILMSTRIP_MAX_FRAMES = 15;
 
-function waitForVideoEvent(video: HTMLVideoElement, eventName: "loadedmetadata" | "seeked") {
+function waitForVideoEvent(video: HTMLVideoElement, eventName: "loadedmetadata" | "loadeddata" | "seeked") {
   return new Promise<void>((resolve, reject) => {
     const cleanup = () => {
       video.removeEventListener(eventName, resolveEvent);
@@ -103,6 +103,9 @@ function VideoFilmstrip({ source, duration }: { source: Blob; duration: number }
           video.load();
           await waitForVideoEvent(video, "loadedmetadata");
         }
+        if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+          await waitForVideoEvent(video, "loadeddata");
+        }
         const usableDuration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : duration;
         const canvas = document.createElement("canvas");
         canvas.width = 112;
@@ -124,6 +127,7 @@ function VideoFilmstrip({ source, duration }: { source: Blob; duration: number }
             video.currentTime = target;
             await seeked;
           }
+          if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) await waitForVideoEvent(video, "loadeddata");
           if (cancelled) break;
           context.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
           const frame = canvas.toDataURL("image/jpeg", 0.58);
