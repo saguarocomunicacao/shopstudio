@@ -627,19 +627,27 @@ async function runStep(
     const index = scenes.findIndex((s) => !s.image_url);
     if (index >= 0) {
       const scene = scenes[index]!;
+      const personas = await resolveScenePersonas(supabase, job.profile_id, scene.image_prompt);
       const avatar = avatarForScene(job, settingsRow, scenes, index);
-      const personRefs = await pipeline.loadPersonReferences(avatar.urls);
+      const personRefs = await pipeline.loadPersonReferences(personas ? personas.urls : avatar.urls);
       const productRefs = await pipeline.loadProductReferences(pipeline.productImageUrls(product));
       const references: { base64: string; mimeType: string }[] = [...personRefs, ...productRefs];
 
-      const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : personDescriptionBlock(avatar.description);
-      const referenceGuide = pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
+      const sceneText = personas ? personas.prompt : scene.image_prompt;
+      const identityRequirement = personas
+        ? `${pipeline.personaIdentityBlock(personas.labels)}\n\n`
+        : personRefs.length
+          ? `${pipeline.SAME_PERSON_SUFFIX}\n\n`
+          : personDescriptionBlock(avatar.description);
+      const referenceGuide = personas
+        ? pipeline.buildPersonaGuide(personas.labels, productRefs.length)
+        : pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
       const productFacts = product?.description
         ? `\n\nPRODUCT FACTS (from the real listing, obey them): ${String(product.description).replace(/\s+/g, " ").slice(0, 700)}`
         : "";
       const generated = await pipeline.generateSceneImage({
         model: settings.gemini_model,
-        prompt: `${identityRequirement}${referenceGuide}${productFacts}\n\nSCENE: ${scene.image_prompt} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
+        prompt: `${identityRequirement}${referenceGuide}${productFacts}\n\nSCENE: ${sceneText} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
         references,
       });
 
