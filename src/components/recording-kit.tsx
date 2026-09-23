@@ -127,15 +127,16 @@ export function NewOwnVideoDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !criar.isPending && onOpenChange(v)}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-h-[92vh] min-w-0 overflow-hidden p-0">
+        <div className="grid min-w-0 max-h-[92vh] gap-6 overflow-x-hidden overflow-y-auto p-6 [scrollbar-gutter:stable]">
+        <DialogHeader className="min-w-0">
           <DialogTitle>Novo vídeo próprio</DialogTitle>
           <DialogDescription>
             Escolha se a inteligência artificial escreve o roteiro do zero ou se ela só organiza o roteiro que você já tem.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-2 sm:grid-cols-2">
           {([
             { valor: "criar", titulo: "Criar roteiro", apoio: "Você conta o assunto e a IA escreve tudo." },
             { valor: "organizar", titulo: "Organizar meu roteiro", apoio: "Você entrega o roteiro e a IA só monta a linha do tempo." },
@@ -159,7 +160,7 @@ export function NewOwnVideoDialog({
         </div>
 
         {modo === "criar" ? (
-          <div className="grid gap-2 py-2">
+          <div className="grid min-w-0 gap-2 py-2">
             <Label htmlFor="assunto-video">Assunto do vídeo</Label>
             <Textarea
               id="assunto-video"
@@ -178,7 +179,7 @@ export function NewOwnVideoDialog({
             </div>
           </div>
         ) : (
-          <div className="grid gap-2 py-2">
+          <div className="grid min-w-0 gap-2 py-2">
             <Label htmlFor="roteiro-pronto">Seu roteiro</Label>
             <Textarea
               id="roteiro-pronto"
@@ -186,6 +187,7 @@ export function NewOwnVideoDialog({
               value={roteiroPronto}
               onChange={(e) => setRoteiroPronto(e.target.value)}
               placeholder={"Cole aqui o roteiro que você já escreveu.\n\nExemplo:\nGANCHO: você tá perdendo dinheiro sem saber\nFALA: ..."}
+              className="min-w-0 max-w-full [overflow-wrap:anywhere]"
             />
             <div className="flex flex-wrap items-center gap-2">
               <VoiceDictationButton
@@ -241,6 +243,7 @@ export function NewOwnVideoDialog({
             )}
           </Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
