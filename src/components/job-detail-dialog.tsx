@@ -14,7 +14,7 @@ import { extractCtaFromScript, extractHookFromScript } from "@/lib/script-parser
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, approveJobScenes, generateJobScenes } from "@/lib/video.functions";
 import { approveDraft, saveDraftPostTexts } from "@/lib/drafts.functions";
-import { JobAvatarSelect } from "./avatar-library";
+import { JobAvatarSelect, PersonaTagsSummary, usePendingPersonaTags, warnPendingPersonas } from "./avatar-library";
 import { JobVisualStyleSelect } from "./job-visual-style-select";
 import { JobScenesReview } from "./job-scenes-review";
 import { JobTimeline } from "./job-timeline";
@@ -65,6 +65,7 @@ export function JobDetailDialog({
   const orcamentoEstourado = !!gasto?.bloqueado;
 
   const [script, setScript] = useState("");
+  const pendingPersonas = usePendingPersonaTags(job?.profile_id ?? null, [script, JSON.stringify(job?.scenes ?? [])]);
   const [hook, setHook] = useState("");
   const [postCta, setPostCta] = useState("");
   const [caption, setCaption] = useState("");
@@ -287,6 +288,7 @@ export function JobDetailDialog({
             <div className="grid gap-3">
               <JobAvatarSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
               <JobVisualStyleSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
+              <PersonaTagsSummary profileId={job.profile_id} texts={[script, JSON.stringify(job.scenes ?? [])]} canEdit={canEdit} />
             </div>
           )}
         </div>
@@ -314,7 +316,7 @@ export function JobDetailDialog({
                 </Button>
               )}
               {job?.status === "roteiro_pronto" && !job.render_stage && (
-                <Button variant="outline" disabled={runScenes.isPending} onClick={() => runScenes.mutate(job.id)}>
+                <Button variant="outline" disabled={runScenes.isPending} onClick={() => { warnPendingPersonas(pendingPersonas); runScenes.mutate(job.id); }}>
                   {runScenes.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Images />{job.render_error ? ((job.scenes ?? []).some((s) => s.image_url) ? "Gerar as cenas que faltam" : "Tentar de novo") : "Gerar cenas"}</>}
                 </Button>
               )}
