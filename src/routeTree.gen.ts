@@ -21,6 +21,7 @@ import { Route as VTokenRouteImport } from './routes/v.$token'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
 import { Route as AuthenticatedAppApisRouteImport } from './routes/_authenticated/app/apis'
 import { Route as AuthenticatedAppAprovacoesRouteImport } from './routes/_authenticated/app/aprovacoes'
+import { Route as AuthenticatedAppAutomacaoRouteImport } from './routes/_authenticated/app/automacao'
 import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
 import { Route as AuthenticatedAppContaRouteImport } from './routes/_authenticated/app/conta'
 import { Route as AuthenticatedAppCustosRouteImport } from './routes/_authenticated/app/custos'
@@ -101,6 +102,12 @@ const AuthenticatedAppAprovacoesRoute =
   AuthenticatedAppAprovacoesRouteImport.update({
     id: '/app/aprovacoes',
     path: '/app/aprovacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppAutomacaoRoute =
+  AuthenticatedAppAutomacaoRouteImport.update({
+    id: '/app/automacao',
+    path: '/app/automacao',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAppConfiguracoesRoute =
@@ -235,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/v/$token': typeof VTokenRoute
   '/app/apis': typeof AuthenticatedAppApisRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
+  '/app/automacao': typeof AuthenticatedAppAutomacaoRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/conta': typeof AuthenticatedAppContaRoute
   '/app/custos': typeof AuthenticatedAppCustosRoute
@@ -269,6 +277,7 @@ export interface FileRoutesByTo {
   '/v/$token': typeof VTokenRoute
   '/app/apis': typeof AuthenticatedAppApisRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
+  '/app/automacao': typeof AuthenticatedAppAutomacaoRoute
   '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/app/conta': typeof AuthenticatedAppContaRoute
   '/app/custos': typeof AuthenticatedAppCustosRoute
@@ -305,6 +314,7 @@ export interface FileRoutesById {
   '/v/$token': typeof VTokenRoute
   '/_authenticated/app/apis': typeof AuthenticatedAppApisRoute
   '/_authenticated/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
+  '/_authenticated/app/automacao': typeof AuthenticatedAppAutomacaoRoute
   '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
   '/_authenticated/app/conta': typeof AuthenticatedAppContaRoute
   '/_authenticated/app/custos': typeof AuthenticatedAppCustosRoute
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/v/$token'
     | '/app/apis'
     | '/app/aprovacoes'
+    | '/app/automacao'
     | '/app/configuracoes'
     | '/app/conta'
     | '/app/custos'
@@ -375,6 +386,7 @@ export interface FileRouteTypes {
     | '/v/$token'
     | '/app/apis'
     | '/app/aprovacoes'
+    | '/app/automacao'
     | '/app/configuracoes'
     | '/app/conta'
     | '/app/custos'
@@ -410,6 +422,7 @@ export interface FileRouteTypes {
     | '/v/$token'
     | '/_authenticated/app/apis'
     | '/_authenticated/app/aprovacoes'
+    | '/_authenticated/app/automacao'
     | '/_authenticated/app/configuracoes'
     | '/_authenticated/app/conta'
     | '/_authenticated/app/custos'
@@ -534,6 +547,13 @@ declare module '@tanstack/react-router' {
       path: '/app/aprovacoes'
       fullPath: '/app/aprovacoes'
       preLoaderRoute: typeof AuthenticatedAppAprovacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/automacao': {
+      id: '/_authenticated/app/automacao'
+      path: '/app/automacao'
+      fullPath: '/app/automacao'
+      preLoaderRoute: typeof AuthenticatedAppAutomacaoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/app/configuracoes': {
@@ -689,6 +709,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppApisRoute: typeof AuthenticatedAppApisRoute
   AuthenticatedAppAprovacoesRoute: typeof AuthenticatedAppAprovacoesRoute
+  AuthenticatedAppAutomacaoRoute: typeof AuthenticatedAppAutomacaoRoute
   AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
   AuthenticatedAppContaRoute: typeof AuthenticatedAppContaRoute
   AuthenticatedAppCustosRoute: typeof AuthenticatedAppCustosRoute
@@ -712,6 +733,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppApisRoute: AuthenticatedAppApisRoute,
   AuthenticatedAppAprovacoesRoute: AuthenticatedAppAprovacoesRoute,
+  AuthenticatedAppAutomacaoRoute: AuthenticatedAppAutomacaoRoute,
   AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
   AuthenticatedAppContaRoute: AuthenticatedAppContaRoute,
   AuthenticatedAppCustosRoute: AuthenticatedAppCustosRoute,

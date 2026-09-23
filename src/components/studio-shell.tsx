@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BarChart3, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, KeyRound, Landmark, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, Sun, PiggyBank, UserCog, Users, UserSquare2, Wallet, X } from "lucide-react";
+import { BarChart3, Bot, ChevronDown, CircleGauge, Clapperboard, FileClock, KanbanSquare, KeyRound, Landmark, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, Sun, PiggyBank, UserCog, Users, UserSquare2, Wallet, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,11 @@ import logoMarkDarkAsset from "@/assets/logo-mark-dark.png.asset.json";
 
 const items: readonly (readonly [string, string, typeof CircleGauge, ModuleKey | null])[] = [
   ["Dashboard", "/app", CircleGauge, null], ["Perfis", "/app/perfis", UserSquare2, "perfis"], ["Produtos", "/app/produtos", Package, "produtos"],
-  ["Pipeline", "/app/pipeline", KanbanSquare, "pipeline"], ["Vídeos", "/app/videos", Clapperboard, "videos"], ["Rascunhos", "/app/rascunhos", FileClock, "rascunhos"],
+  ["Pipeline", "/app/pipeline", KanbanSquare, "pipeline"], ["Automação", "/app/automacao", Bot, null], ["Vídeos", "/app/videos", Clapperboard, "videos"], ["Rascunhos", "/app/rascunhos", FileClock, "rascunhos"],
   ["Métricas", "/app/metricas", BarChart3, "metricas"], ["Custos", "/app/custos", Wallet, "custos"], ["Investimento", "/app/investimento", PiggyBank, "investimento"], ["Equipe", "/app/equipe", Users, "equipe"], ["Empresas", "/app/empresas", Landmark, "backoffice"], ["Planos", "/app/planos", Wallet, "backoffice"], ["Configurações", "/app/configuracoes", Settings, "configuracoes"],
 ];
 
-const titles: Record<string, string> = { "/app": "Visão geral", "/app/perfis": "Perfis", "/app/produtos": "Produtos em alta", "/app/pipeline": "Pipeline de conteúdo", "/app/videos": "Biblioteca de vídeos", "/app/rascunhos": "Rascunhos", "/app/metricas": "Métricas", "/app/custos": "Custos", "/app/investimento": "Investimento nos fornecedores", "/app/equipe": "Equipe e permissões", "/app/prompts": "Prompts do sistema", "/app/aprovacoes": "Empresas", "/app/empresas": "Empresas", "/app/planos": "Planos", "/app/configuracoes": "Configurações" };
+const titles: Record<string, string> = { "/app": "Visão geral", "/app/perfis": "Perfis", "/app/produtos": "Produtos em alta", "/app/pipeline": "Pipeline de conteúdo", "/app/automacao": "Automação", "/app/videos": "Biblioteca de vídeos", "/app/rascunhos": "Rascunhos", "/app/metricas": "Métricas", "/app/custos": "Custos", "/app/investimento": "Investimento nos fornecedores", "/app/equipe": "Equipe e permissões", "/app/prompts": "Prompts do sistema", "/app/aprovacoes": "Empresas", "/app/empresas": "Empresas", "/app/planos": "Planos", "/app/configuracoes": "Configurações" };
 
 
 const initialsOf = (value: string) => value.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("") || "US";
