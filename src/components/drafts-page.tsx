@@ -297,7 +297,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
   const dupMut = useMutation({
     mutationFn: (jobId: string) => duplicate({ data: { jobId } }),
     onSuccess: () => {
-      toast.success("Cópia criada em Roteiros prontos.");
+      toast.success("Cópia criada como rascunho (roteiro pronto).");
       refreshLists();
       setQueue("roteiros");
     },
