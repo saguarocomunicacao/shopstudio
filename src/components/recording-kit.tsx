@@ -399,15 +399,17 @@ export function RecordingKitDialog({
                   {download.data?.url ? (
                     <>
                       <video src={download.data.url} controls playsInline className={`${RECORDING_FORMATS[recordingAspectRatio].mediaClass} w-full rounded-xl bg-black object-contain`} />
-                      <Button asChild size="lg" className="mt-3 w-full">
-                        <a
-                          href={download.data.url}
-                          download={`${job.title || "video"}.${job.video_path?.toLowerCase().endsWith(".webm") ? "webm" : "mp4"}`}
-                        >
-                          <Download />
-                          Baixar vídeo
-                        </a>
-                      </Button>
+                      <VideoDownloadButton
+                        versions={[
+                          { key: "ativa", label: "Versão em uso", source: download.data.url },
+                          { key: "gravado", label: "Gravação original", source: download.data.originalUrl },
+                          { key: "gravado-editado", label: "Gravação editada", source: download.data.editedUrl },
+                          { key: "ia", label: "Versão gerada por IA", source: download.data.aiUrl },
+                        ]}
+                        title={job.title}
+                        size="lg"
+                        className="mt-3 w-full"
+                      />
                     </>
                   ) : (
                     <p className="flex items-center gap-2 text-sm text-muted-foreground">
