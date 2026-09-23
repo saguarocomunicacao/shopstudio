@@ -302,11 +302,7 @@ function tituloProvisorio(texto: string) {
   return primeira.length > 180 ? `${primeira.slice(0, 177)}...` : primeira;
 }
 
-/** Origem A: vídeo próprio sobre um assunto livre, sem produto vinculado. */
-export const createOwnVideoJob = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
-    z.discriminatedUnion("modo", [
+export const createOwnVideoJobInputSchema = z.discriminatedUnion("modo", [
       z.object({
         profileId: z.string().uuid(),
         modo: z.literal("criar"),
@@ -320,8 +316,12 @@ export const createOwnVideoJob = createServerFn({ method: "POST" })
           "Cole, dite ou envie o roteiro que você já tem para a inteligência artificial organizar.",
         ),
       }),
-    ]).parse(data),
-  )
+    ]);
+
+/** Origem A: vídeo próprio sobre um assunto livre, sem produto vinculado. */
+export const createOwnVideoJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => createOwnVideoJobInputSchema.parse(data))
   .handler(async ({ data, context }) => {
     await assertCanEdit(context.supabase, data.profileId);
     const origem = (data.modo === "organizar" ? data.roteiroOrigem : data.assunto).trim();
