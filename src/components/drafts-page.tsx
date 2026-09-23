@@ -68,6 +68,7 @@ import { useStudio } from "./studio-context";
 import { actionError } from "@/lib/api-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
+import { VideoDownloadButton } from "./video-download-button";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
@@ -210,7 +211,7 @@ function DraftThumb({
 }
 
 function DraftsContent() {
-  const { activeProfileId, can } = useStudio();
+  const { activeProfileId, activeProfile, can } = useStudio();
   const { data: jobs = [], isLoading } = useJobs(activeProfileId);
   const { data: trashed = [] } = useTrashedJobs(activeProfileId);
   const canViewProducts = can("produtos", "visualizar");
