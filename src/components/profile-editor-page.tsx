@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, Check, ChevronLeft, ChevronRight, Loader2, Sparkles, Upload, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, Loader2, Sparkles, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,9 @@ import { useStudio } from "./studio-context";
 import { actionError } from "@/lib/api-keys";
 import { DEFAULT_VISUAL_STYLE, VISUAL_STYLE_OPTIONS, type VisualStyle } from "@/lib/visual-style";
 import { MAX_AVATAR_FILE_BYTES } from "@/lib/avatars.functions";
+import { MAX_PROFILE_IMAGE_BYTES, saveProfileImage } from "@/lib/profile-image.functions";
+import { ProfileImage } from "./profile-image";
+import { ProfileImageCropper } from "./profile-image-cropper";
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
@@ -146,6 +149,9 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const [pendingAvatars, setPendingAvatars] = useState<AvatarItem[]>([]);
   const [rejectedAvatars, setRejectedAvatars] = useState<{ id: string; name: string; reason: string }[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const profileImageInput = useRef<HTMLInputElement>(null);
+  const [profileImageSource, setProfileImageSource] = useState<string | null>(null);
+  const [profileImageCropOpen, setProfileImageCropOpen] = useState(false);
 
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
   const prevLightbox = useCallback(() => setLightboxIndex((i) => (i === null ? null : (i - 1 + avatarItems.length) % avatarItems.length)), [avatarItems.length]);
@@ -164,6 +170,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const generateAvatar = useServerFn(generateAvatarReference);
   const saveAvatars = useServerFn(saveAvatarReferences);
   const seedPrompts = useServerFn(seedProfilePrompts);
+  const saveProfileImageFn = useServerFn(saveProfileImage);
 
   useEffect(() => {
     const base: FormState = profile
@@ -321,6 +328,44 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
     onSettled: () => setPendingAvatars([]),
   });
 
+  const profileImageUpload = useMutation({
+    mutationFn: async (base64: string) => {
+      if (!profile) throw new Error("Salve o perfil antes de enviar a foto.");
+      return saveProfileImageFn({ data: { profileId: profile.id, base64, mimeType: "image/png" } });
+    },
+    onSuccess: () => {
+      toast.success("Foto do perfil salva.");
+      setProfileImageCropOpen(false);
+      setProfileImageSource(null);
+      qc.invalidateQueries({ queryKey: ["access"] });
+      qc.invalidateQueries({ queryKey: ["profile-image-url"] });
+    },
+    onError: (error) => toast.error(errMessage(error)),
+  });
+
+  const pickProfileImage = (file: File | undefined) => {
+    if (!file) return;
+    if (!profile) {
+      toast.error("Salve o perfil antes de enviar a foto.");
+      return;
+    }
+    if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
+      toast.error("Escolha uma imagem JPG ou PNG.");
+      return;
+    }
+    if (file.size > MAX_PROFILE_IMAGE_BYTES) {
+      toast.error("A imagem deve ter no máximo 15 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => toast.error("Não foi possível ler a imagem.");
+    reader.onload = () => {
+      setProfileImageSource(String(reader.result));
+      setProfileImageCropOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const pickAvatarFiles = async (files: FileList | File[] | null) => {
     const list = files ? Array.from(files) : [];
     if (!list.length) return;
@@ -435,6 +480,29 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                   Informe ao menos o nome e a categoria oficial.
                 </p>
               )}
+              <div className="grid gap-3 rounded-xl border p-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
+                {profile ? (
+                  <ProfileImage profile={profile} className="size-20 bg-foreground text-base text-background" />
+                ) : (
+                  <span className="grid size-20 place-items-center rounded-full bg-secondary text-base font-bold">{initialsOf(form.name)}</span>
+                )}
+                <div className="min-w-0">
+                  <Label>Foto do perfil</Label>
+                  <p className="mt-1 text-xs text-muted-foreground">Foto ou logo do canal exibido no painel. Não é a pessoa que aparece nos vídeos.</p>
+                  <input
+                    ref={profileImageInput}
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    className="hidden"
+                    onChange={(event) => { pickProfileImage(event.target.files?.[0]); event.currentTarget.value = ""; }}
+                  />
+                  <Button type="button" variant="secondary" size="sm" className="mt-3" disabled={!profile || profileImageUpload.isPending} onClick={() => profileImageInput.current?.click()}>
+                    <Camera className="size-4" />{profile?.profile_image_path ? "Trocar foto" : "Enviar foto"}
+                  </Button>
+                  <p className="mt-2 text-[11px] text-muted-foreground">JPG ou PNG, até 15 MB. Você ajustará o recorte redondo antes de salvar.</p>
+                  {!profile && <p className="mt-1 text-[11px] font-semibold text-primary">Crie o perfil primeiro para adicionar a foto.</p>}
+                </div>
+              </div>
               <div className="grid gap-2"><Label htmlFor="p-name">Nome</Label><Input id="p-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Moda e Acessórios" /></div>
               <div className="grid gap-2"><Label htmlFor="p-handle">@ da conta <span className="font-normal text-muted-foreground">(opcional)</span></Label><Input id="p-handle" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="ainda sem conta" /></div>
               <div className="grid gap-2"><Label htmlFor="p-niche">Categoria oficial</Label><CategorySelect id="p-niche" value={form.categoryId} onChange={(categoryId, categoryName) => setForm({ ...form, categoryId, niche: categoryName })} /></div>
@@ -853,6 +921,13 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           )}
         </DialogContent>
       </Dialog>
+      <ProfileImageCropper
+        source={profileImageSource}
+        open={profileImageCropOpen}
+        saving={profileImageUpload.isPending}
+        onOpenChange={(open) => { setProfileImageCropOpen(open); if (!open) setProfileImageSource(null); }}
+        onSave={(base64) => profileImageUpload.mutate(base64)}
+      />
     </>
   );
 }
