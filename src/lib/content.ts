@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { RecordingAspectRatio } from "@/lib/recording-format";
+import type { VisualStyle } from "@/lib/visual-style";
 
 export type DbProduct = {
   id: string;
@@ -130,6 +131,8 @@ export type DbJob = {
   deleted_from_status?: JobStatusKey | null;
   /** Vídeos campeões usados como referência ao gerar o roteiro. */
   script_refs?: ChampionRef[] | null;
+  visual_style_override?: VisualStyle | null;
+  visual_style_custom?: string | null;
 };
 
 export type ChampionRef = {
@@ -162,6 +165,8 @@ export type DbVideoSettings = {
   veo_model: string;
   take_duration: number;
   recording_aspect_ratio: RecordingAspectRatio;
+  visual_style: VisualStyle;
+  visual_style_custom: string | null;
 };
 
 export function useVideoSettings(profileId: string | null) {
@@ -170,7 +175,7 @@ export function useVideoSettings(profileId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profile_video_settings")
-        .select("profile_id, avatar_mode, avatar_reference_url, takes_count, gemini_model, veo_model, take_duration, recording_aspect_ratio")
+        .select("profile_id, avatar_mode, avatar_reference_url, takes_count, gemini_model, veo_model, take_duration, recording_aspect_ratio, visual_style, visual_style_custom")
         .eq("profile_id", profileId!)
         .maybeSingle();
       if (error) throw new Error(error.message);
@@ -257,7 +262,7 @@ export function useTrashedJobs(profileId: string | null, enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status",
+          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status, visual_style_override, visual_style_custom",
         )
         .eq("profile_id", profileId!)
         .not("deleted_at", "is", null)
@@ -277,7 +282,7 @@ export function useJobs(profileId: string | null, enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status",
+          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status, visual_style_override, visual_style_custom",
         )
         .eq("profile_id", profileId!)
         .is("deleted_at", null)

@@ -696,6 +696,8 @@ export type Database = {
           video_thumbnail_path: string | null
           video_thumbnail_url: string | null
           video_url: string | null
+          visual_style_custom: string | null
+          visual_style_override: string | null
           voice_ref: string | null
         }
         Insert: {
@@ -763,6 +765,8 @@ export type Database = {
           video_thumbnail_path?: string | null
           video_thumbnail_url?: string | null
           video_url?: string | null
+          visual_style_custom?: string | null
+          visual_style_override?: string | null
           voice_ref?: string | null
         }
         Update: {
@@ -830,6 +834,8 @@ export type Database = {
           video_thumbnail_path?: string | null
           video_thumbnail_url?: string | null
           video_url?: string | null
+          visual_style_custom?: string | null
+          visual_style_override?: string | null
           voice_ref?: string | null
         }
         Relationships: [
@@ -1289,6 +1295,8 @@ export type Database = {
           tenant_id: string
           updated_at: string
           veo_model: string
+          visual_style: string
+          visual_style_custom: string | null
           voice_ref: string | null
         }
         Insert: {
@@ -1306,6 +1314,8 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
           veo_model?: string
+          visual_style?: string
+          visual_style_custom?: string | null
           voice_ref?: string | null
         }
         Update: {
@@ -1323,6 +1333,8 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
           veo_model?: string
+          visual_style?: string
+          visual_style_custom?: string | null
           voice_ref?: string | null
         }
         Relationships: [
