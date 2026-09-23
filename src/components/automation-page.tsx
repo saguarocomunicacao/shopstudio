@@ -4,7 +4,8 @@
  * Nenhuma geração é disparada nesta parte.
  */
 import { useMemo, useState } from "react";
-import { AlertTriangle, Bot, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { AlertTriangle, Bot, CalendarClock, ExternalLink, Pencil, Plus, Trash2, Wallet, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -33,6 +35,7 @@ import {
   FONTE_LABELS,
   LANCAMENTO_LABELS,
   PERIODO_LABELS,
+  useAutomationInsights,
   useAutomationRuns,
   useAutomationSchedules,
 
@@ -46,6 +49,43 @@ import {
 
 const brlFromCents = (v: number | null) =>
   v === null || v === undefined ? "—" : (v / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const brl = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const nextRunLabel = (schedule: AutomationSchedule) => {
+  if (!schedule.ativa) return "Sem próximo disparo";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
+  const nowMinutes = hour * 60 + minute;
+  const times = schedule.horarios
+    .map((time) => ({ time, minutes: Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)) }))
+    .filter((item) => Number.isFinite(item.minutes))
+    .sort((a, b) => a.minutes - b.minutes);
+  const today = times.find((item) => item.minutes > nowMinutes);
+  return today ? `Hoje, ${today.time}` : times[0] ? `Amanhã, ${times[0].time}` : "Horário não definido";
+};
+
+function SpendProgress({ label, value, ceilingCents }: { label: string; value: number; ceilingCents: number | null }) {
+  const ceiling = ceilingCents === null ? null : ceilingCents / 100;
+  const percent = ceiling && ceiling > 0 ? Math.min(100, (value / ceiling) * 100) : 0;
+  return (
+    <div className="min-w-[190px] space-y-1.5">
+      <div className="flex items-center justify-between gap-3 text-xs">
+        <span className="font-semibold">{label}</span>
+        <span className="whitespace-nowrap text-muted-foreground">
+          {ceiling === null ? `${brl(value)} · sem teto` : `${brl(value)} de ${brl(ceiling)}`}
+        </span>
+      </div>
+      <Progress value={percent} className="h-1.5" />
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ *
  * Máscaras / conversores de campos numéricos e monetários
