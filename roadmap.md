@@ -1,5 +1,11 @@
 # Roadmap
 
+## Planos por quantidade — Etapa A
+- [ ] Simplificar cadastro de planos para preço unitário por ação
+- [ ] Adequar Minha conta ao modelo de quantidades sem expiração
+- [ ] Registrar todo novo consumo com preço unitário, sem débito de saldo
+- [ ] Validar Planos e Conta sem referências a franquia, excedente ou ciclo mensal
+
 - [x] Diagnosticar a rolagem automática do teleprompter no mobile
 - [x] Unificar animação do vídeo e rolagem e adicionar controles sobrepostos
 - [x] Expor e aplicar o formato de gravação no estúdio
