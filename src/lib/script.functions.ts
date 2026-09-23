@@ -240,4 +240,12 @@ export async function generateScriptForJob(supabase: any, jobId: string, skipPer
     if (updateError) throw new Error(updateError.message);
 
     return { ...generated, status: nextStatus };
-  });
+  }
+}
+
+/** Gera o roteiro de um job com a IA nativa do Lovable e avança o status uma etapa. */
+export const generateJobScript = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ jobId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => generateScriptForJob(context.supabase, data.jobId));
+
