@@ -63,3 +63,11 @@
 ## Validação do roteiro próprio
 - [x] Separar os campos obrigatórios dos modos Criar e Organizar
 - [x] Validar os dois modos sem regressão
+
+## Varredura de erros e estados
+- [ ] Centralizar extração e sanitização de mensagens de validação
+- [ ] Remover mensagens técnicas diretas da interface
+- [ ] Padronizar falhas de fornecedores e funções do servidor
+- [ ] Garantir fallback global amigável em português
+- [ ] Revisar carregamento, vazio e erro nas telas principais
+- [ ] Validar tipos, build e fluxos críticos
