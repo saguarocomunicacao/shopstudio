@@ -379,6 +379,13 @@
       "when": 1790167011351,
       "tag": "0053_create_automation_schedules",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1790170681200,
+      "tag": "0054_automation_runs",
+      "breakpoints": true
     }
   ]
 }

@@ -79,6 +79,80 @@ export type Database = {
           },
         ]
       }
+      automation_runs: {
+        Row: {
+          created_at: string
+          custo_estimado_cents: number | null
+          dia: string
+          horario: string
+          id: string
+          job_id: string | null
+          mensagem: string | null
+          profile_id: string
+          schedule_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custo_estimado_cents?: number | null
+          dia: string
+          horario: string
+          id?: string
+          job_id?: string | null
+          mensagem?: string | null
+          profile_id: string
+          schedule_id: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custo_estimado_cents?: number | null
+          dia?: string
+          horario?: string
+          id?: string
+          job_id?: string | null
+          mensagem?: string | null
+          profile_id?: string
+          schedule_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_runs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_runs_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_runs_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_schedules: {
         Row: {
           ativa: boolean
@@ -560,6 +634,7 @@ export type Database = {
           ai_video_thumbnail_url: string | null
           ai_video_url: string | null
           approved_at: string | null
+          automation_schedule_id: string | null
           avatar_description: string | null
           avatar_id: string | null
           avatar_reference_urls: Json
@@ -624,6 +699,7 @@ export type Database = {
           ai_video_thumbnail_url?: string | null
           ai_video_url?: string | null
           approved_at?: string | null
+          automation_schedule_id?: string | null
           avatar_description?: string | null
           avatar_id?: string | null
           avatar_reference_urls?: Json
@@ -688,6 +764,7 @@ export type Database = {
           ai_video_thumbnail_url?: string | null
           ai_video_url?: string | null
           approved_at?: string | null
+          automation_schedule_id?: string | null
           avatar_description?: string | null
           avatar_id?: string | null
           avatar_reference_urls?: Json
@@ -740,6 +817,13 @@ export type Database = {
           voice_ref?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "jobs_automation_schedule_id_fkey"
+            columns: ["automation_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_schedules"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "jobs_avatar_id_fkey"
             columns: ["avatar_id"]
