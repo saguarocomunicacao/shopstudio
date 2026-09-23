@@ -966,7 +966,6 @@ export function RecordingStudio({
                  title={job.title}
                  size="lg"
                  variant="secondary"
-                 label="Baixar vídeo"
                />
               {editedBlob && (
                 <>
