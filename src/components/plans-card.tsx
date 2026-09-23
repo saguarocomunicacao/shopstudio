@@ -169,7 +169,7 @@ export function PlanDetailPage({ planId }: { planId?: string }) {
   });
   if (!isBackoffice) return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Você não tem acesso a esta página.</div>;
   if (editing && (planLoading || priceLoading)) return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando plano...</p>;
-  return <div className="mx-auto max-w-6xl">
+  return <div className="w-full">
     <div className="mb-6"><p className="mb-1 text-xs font-bold uppercase text-primary">Planos</p><h1 className="text-2xl font-black sm:text-3xl">{editing ? "Editar plano" : "Novo plano"}</h1></div>
     <section className="panel"><div className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(240px,1fr)_auto] md:items-end">
       <label className="grid gap-1.5 text-xs font-semibold">Nome do plano<Input value={name} onChange={(event) => setName(event.target.value)} /></label>
