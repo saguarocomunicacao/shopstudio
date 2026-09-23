@@ -39,6 +39,7 @@ import { isMobileViewport } from "@/lib/mobile-fullscreen";
 import loaderMark from "@/assets/loader-mark.png.asset.json";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
 import { createDraftThumbnailUpload, saveDraftThumbnail } from "@/lib/drafts.functions";
+import { VideoDownloadButton } from "@/components/video-download-button";
 
 const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
   { id: "leve", label: "Leve" },
