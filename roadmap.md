@@ -59,3 +59,7 @@
 - [x] Aplicar o estilo em geração e regeneração de cenas sem alterar referências
 - [x] Exibir os seletores nos dois fluxos de vídeo por IA
 - [x] Testar herança cartoon e override realista
+
+## Validação do roteiro próprio
+- [x] Separar os campos obrigatórios dos modos Criar e Organizar
+- [x] Validar os dois modos sem regressão
