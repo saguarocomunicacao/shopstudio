@@ -181,7 +181,7 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
                 >
                   {busyIndex === index
                     ? <><Loader2 className="animate-spin" />Gerando...</>
-                    : <><RefreshCw />{scene.image_url ? "Regerar esta cena" : "Gerar esta cena"}</>}
+                    : <><RefreshCw />{scene.image_url ? "Regerar esta cena" : "Tentar novamente"}</>}
                 </Button>
               </div>
             )}

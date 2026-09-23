@@ -112,14 +112,20 @@ export function JobAiVideo({ job, canEdit }: { job: DbJob; canEdit: boolean }) {
       )}
 
       {/* Etapa 1: escolher avatar (override só deste vídeo) e começar */}
-      {!rodando && !aiStatus && (
+      {/* Falha nas cenas: mantém as prontas e permite refazer só as que faltaram */}
+      {!rodando && aiStatus === "roteiro_pronto" && cenas.length > 0 && (
+        <JobScenesReview job={job} canEdit={canEdit} />
+      )}
+      {!rodando && (!aiStatus || aiStatus === "roteiro_pronto") && (
         <div className="grid gap-3">
           <JobAvatarSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
           <JobVisualStyleSelect jobId={job.id} profileId={job.profile_id} canEdit={canEdit} />
           <PersonaTagsSummary profileId={job.profile_id} texts={personaTexts} canEdit={canEdit} />
           <Button size="lg" className="w-full" disabled={!canEdit || iniciar.isPending} onClick={() => iniciar.mutate()}>
-            {iniciar.isPending ? <Loader2 className="animate-spin" /> : <Clapperboard />}
-            Gerar vídeo por IA
+            {iniciar.isPending ? <Loader2 className="animate-spin" /> : job.ai_render_error ? <RefreshCw /> : <Clapperboard />}
+            {job.ai_render_error
+              ? cenas.some((c) => c.image_url) ? "Continuar: gerar as cenas que faltam" : "Tentar novamente"
+              : "Gerar vídeo por IA"}
           </Button>
         </div>
       )}
@@ -151,8 +157,8 @@ export function JobAiVideo({ job, canEdit }: { job: DbJob; canEdit: boolean }) {
           </div>
           <div className="grid gap-2">
             <Button size="lg" disabled={!canEdit || aprovar.isPending} onClick={() => aprovar.mutate()}>
-              {aprovar.isPending ? <Loader2 className="animate-spin" /> : <Check />}
-              Aprovar cenas e gerar o vídeo
+              {aprovar.isPending ? <Loader2 className="animate-spin" /> : job.ai_render_error ? <RefreshCw /> : <Check />}
+              {job.ai_render_error ? "Tentar novamente (continua de onde parou)" : "Aprovar cenas e gerar o vídeo"}
             </Button>
             <Button
               size="lg"
