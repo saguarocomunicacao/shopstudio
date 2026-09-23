@@ -6,7 +6,6 @@ import {
   Check,
   CheckCircle2,
   Copy,
-  Download,
   Film,
   Loader2,
   LockKeyhole,
