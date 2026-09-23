@@ -243,6 +243,9 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
         initials: initialsOf(values.name),
       };
       if (!payload.name) throw new Error("Informe o nome do perfil.");
+      if (values.visualStyle === "personalizado" && !values.visualStyleCustom.trim()) {
+        throw new Error("Descreva o estilo visual personalizado.");
+      }
       let newId: string;
       if (profile) {
         const { error } = await supabase.from("profiles").update(payload).eq("id", profile.id);

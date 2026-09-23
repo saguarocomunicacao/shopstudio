@@ -55,7 +55,7 @@
 - [x] Validar cards, reprodução, tipos e build
 
 ## Estilo visual da geração por IA
-- [ ] Adicionar estilo padrão por perfil e override por vídeo
-- [ ] Aplicar o estilo em geração e regeneração de cenas sem alterar referências
-- [ ] Exibir os seletores nos dois fluxos de vídeo por IA
+- [x] Adicionar estilo padrão por perfil e override por vídeo
+- [x] Aplicar o estilo em geração e regeneração de cenas sem alterar referências
+- [x] Exibir os seletores nos dois fluxos de vídeo por IA
 - [ ] Testar herança cartoon e override realista
