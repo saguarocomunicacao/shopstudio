@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
 import { useProfileAvatars } from "./avatar-library";
@@ -499,6 +500,13 @@ function AutomationContent() {
         </div>
       </div>
 
+      <Tabs defaultValue="agendamentos" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
+          <TabsTrigger value="execucoes">Últimas execuções</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agendamentos" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-black">Agendas de {activeProfile?.name ?? "perfil"}</h2>
@@ -571,8 +579,14 @@ function AutomationContent() {
           </TableBody>
         </Table>
       </div>
+        </TabsContent>
 
-      <RunsLog profileId={activeProfileId} />
+        <TabsContent value="execucoes">
+          <RunsLog profileId={activeProfileId} />
+        </TabsContent>
+      </Tabs>
+
+
 
 
       {dialog.open && activeProfileId && (
@@ -618,24 +632,62 @@ const RUN_LABEL: Record<string, string> = {
   pausado: "Pausada por teto",
 };
 
+const RUN_BADGE: Record<string, string> = {
+  gerando: "bg-primary/10 text-primary",
+  concluido: "bg-primary/10 text-primary",
+  falhou: "bg-destructive/10 text-destructive",
+  sem_produto: "bg-secondary text-muted-foreground",
+  pausado: "bg-destructive/10 text-destructive",
+};
+
 /** Registro simples das execuções automáticas (painel detalhado fica para a Parte 3). */
 function RunsLog({ profileId }: { profileId: string | null }) {
-  const { data: runs = [] } = useAutomationRuns(profileId);
-  if (!runs.length) return null;
+  const { data: runs = [], isLoading } = useAutomationRuns(profileId);
   return (
-    <div className="rounded-2xl border border-border/70 bg-card p-4">
-      <h3 className="mb-3 text-sm font-semibold">Últimas execuções</h3>
-      <ul className="space-y-2">
-        {runs.map((r) => (
-          <li key={r.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
-            <span className="font-medium">
-              {r.dia.split("-").reverse().join("/")} às {r.horario}
-            </span>
-            <span className="text-xs font-semibold text-primary">{RUN_LABEL[r.status] ?? r.status}</span>
-            {r.mensagem && <span className="text-xs text-muted-foreground">{r.mensagem}</span>}
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-black">Últimas execuções</h2>
+        <p className="text-sm text-muted-foreground">
+          Cada vez que o robô roda um horário da agenda, ele registra o resultado aqui.
+        </p>
+      </div>
+      <div className="panel overflow-x-auto p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Horário</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Detalhe</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && (
+              <TableRow><TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>
+            )}
+            {!isLoading && !runs.length && (
+              <TableRow>
+                <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                  <Bot className="mx-auto mb-2 h-6 w-6" />
+                  Nenhuma execução ainda. Quando uma agenda ativa chegar no horário, o resultado aparece aqui.
+                </TableCell>
+              </TableRow>
+            )}
+            {runs.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="whitespace-nowrap font-medium">{r.dia.split("-").reverse().join("/")}</TableCell>
+                <TableCell className="whitespace-nowrap text-sm tabular-nums">{r.horario}</TableCell>
+                <TableCell>
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${RUN_BADGE[r.status] ?? "bg-secondary text-muted-foreground"}`}>
+                    {RUN_LABEL[r.status] ?? r.status}
+                  </span>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">{r.mensagem ?? "—"}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
