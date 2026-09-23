@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Share } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { downloadVideo, videoExtension, videoFileName } from "@/lib/video-download";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { downloadVideo, shareOrDownloadVideo, videoExtension, videoFileName } from "@/lib/video-download";
 
 export type VideoVersion = {
   /** Identificador estável da versão (ex.: gravado, gravado_editado, ia). */
@@ -83,7 +84,7 @@ export function VideoDownloadButton({
         onClick={() => void baixar(disponiveis[0]!)}
       >
         {icone}
-        {size !== "icon" && (baixando ? "Baixando..." : label)}
+        {size !== "icon" && (baixando ? carregando : rotulo)}
       </Button>
     );
   }
@@ -93,7 +94,7 @@ export function VideoDownloadButton({
       <DropdownMenuTrigger asChild>
         <Button type="button" size={size} variant={variant} className={className} disabled={baixando}>
           {icone}
-          {size !== "icon" && (baixando ? "Baixando..." : label)}
+          {size !== "icon" && (baixando ? carregando : rotulo)}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
