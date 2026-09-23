@@ -557,9 +557,21 @@ export async function advanceJobVideoCore(supabase: any, jobId: string, skipPerm
         : base;
     // Falha na fase de imagens volta ao roteiro; depois da aprovação volta às cenas aprovadas.
     const backTo = stageAtual === "planejando" || stageAtual === "cenas" ? "roteiro_pronto" : "cenas_geradas";
+    // Take que falhou: descarta a operação morta do Veo para a nova tentativa
+    // começar do zero naquele take (os takes prontos são mantidos).
+    let scenesPatch: Record<string, unknown> = {};
+    if (stageAtual === "takes" && Array.isArray(job.scenes)) {
+      const list = (job.scenes as Array<Record<string, unknown>>).map((s) => ({ ...s }));
+      const idx = list.findIndex((s) => !s["video_url"]);
+      if (idx >= 0) {
+        delete list[idx]!["operation"];
+        list[idx]!["attempts"] = 0;
+        scenesPatch = { scenes: list };
+      }
+    }
     await supabase
       .from("jobs")
-      .update(trackPatch(job, { status: backTo, render_stage: null, render_error: message }))
+      .update({ ...scenesPatch, ...trackPatch(job, { status: backTo, render_stage: null, render_error: message }) })
       .eq("id", job.id);
 
     throw new Error(message);
@@ -884,8 +896,8 @@ async function runStep(
       | { success?: boolean; project?: string; message?: string; error?: string }
       | null;
     if (!res.ok || !payload?.project) {
-      const detail = payload?.message || payload?.error || `erro ${res.status}`;
-      throw new Error(`Não foi possível montar o vídeo: ${detail}`);
+      console.error("[montagem] JSON2Video recusou o envio", { jobId: job.id, status: res.status, payload });
+      throw new Error("Não foi possível montar o vídeo agora. Tente novamente.");
     }
 
     await supabase

@@ -326,7 +326,7 @@ export function JobDetailDialog({
                   title={orcamentoEstourado ? "O orçamento do mês foi atingido." : undefined}
                   onClick={() => setConfirmVeo(true)}
                 >
-                  {runApprove.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <><Clapperboard />Aprovar e gerar vídeo</>}
+                  {runApprove.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <>{job.render_error ? <RefreshCw /> : <Clapperboard />}{job.render_error ? "Tentar novamente (continua de onde parou)" : "Aprovar e gerar vídeo"}</>}
                 </Button>
               )}
 
