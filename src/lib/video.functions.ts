@@ -473,10 +473,12 @@ async function runStep(
   const settings = {
     avatar_mode: settingsRow?.avatar_mode ?? "livre",
     avatar_reference_url: settingsRow?.avatar_reference_url ?? null,
-    takes_count: settingsRow?.takes_count ?? 3,
+    // Cenas/duração: o valor gravado no job (usado pela automação) vence o do perfil.
+    takes_count: job.cenas_count ?? settingsRow?.takes_count ?? 3,
     gemini_model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
     veo_model: settingsRow?.veo_model ?? "veo-3.1-fast-generate-preview",
-    take_duration: settingsRow?.take_duration ?? 8,
+    take_duration: job.take_duration ?? settingsRow?.take_duration ?? 8,
+
     // Voz efetiva: a escolhida no job vence a voz padrão do perfil.
     voice_ref: job.voice_ref ?? settingsRow?.voice_ref ?? null,
   };
