@@ -59,3 +59,47 @@ export async function downloadVideo(source: string | Blob, filename: string): Pr
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
+
+/** Busca o arquivo como blob (ou devolve o blob recebido). */
+async function asBlob(source: string | Blob): Promise<Blob | null> {
+  if (typeof source !== "string") return source;
+  try {
+    const res = await fetch(source);
+    if (!res.ok) return null;
+    return await res.blob();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * No celular abre a folha nativa de compartilhamento com o arquivo MP4
+ * (WhatsApp, Arquivos/Fotos, AirDrop). Sem suporte, baixa o arquivo direto.
+ */
+export async function shareOrDownloadVideo(
+  source: string | Blob,
+  filename: string,
+  title?: string,
+): Promise<"shared" | "downloaded"> {
+  const blob = await asBlob(source);
+  if (blob) {
+    const type = blob.type && blob.type.startsWith("video/")
+      ? blob.type
+      : filename.endsWith(".webm")
+        ? "video/webm"
+        : "video/mp4";
+    const file = new File([blob], filename, { type });
+    const nav = navigator as Navigator & { canShare?: (data?: ShareData) => boolean };
+    if (typeof nav.share === "function" && nav.canShare?.({ files: [file] })) {
+      try {
+        await nav.share({ files: [file], title: title || filename });
+        return "shared";
+      } catch (e) {
+        // Cancelar a folha nativa não é erro; não cai para download nesse caso.
+        if (e instanceof DOMException && e.name === "AbortError") return "shared";
+      }
+    }
+  }
+  await downloadVideo(blob ?? source, filename);
+  return "downloaded";
+}
