@@ -363,11 +363,21 @@ function ScheduleDialog({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Limite por dia (R$)</Label>
-                <Input inputMode="decimal" value={form.teto_diario} onChange={(e) => set("teto_diario", e.target.value)} placeholder="Sem limite" />
+                <Input
+                  inputMode="numeric"
+                  value={brlMask(form.teto_diario)}
+                  onChange={(e) => set("teto_diario", toCentsMask(e.target.value))}
+                  placeholder="Sem limite"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Limite por mês (R$)</Label>
-                <Input inputMode="decimal" value={form.teto_mensal} onChange={(e) => set("teto_mensal", e.target.value)} placeholder="Sem limite" />
+                <Input
+                  inputMode="numeric"
+                  value={brlMask(form.teto_mensal)}
+                  onChange={(e) => set("teto_mensal", toCentsMask(e.target.value))}
+                  placeholder="Sem limite"
+                />
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
