@@ -579,8 +579,14 @@ function AutomationContent() {
           </TableBody>
         </Table>
       </div>
+        </TabsContent>
 
-      <RunsLog profileId={activeProfileId} />
+        <TabsContent value="execucoes">
+          <RunsLog profileId={activeProfileId} />
+        </TabsContent>
+      </Tabs>
+
+
 
 
       {dialog.open && activeProfileId && (
