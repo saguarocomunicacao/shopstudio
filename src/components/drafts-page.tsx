@@ -408,6 +408,17 @@ function DraftsContent() {
                       </span>
                     )}
                   </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                  {!isTrash && previewOf(job.id)?.videoUrl && (
+                    <VideoDownloadButton
+                      versions={[{ key: "ativa", label: "Vídeo", source: previewOf(job.id)?.videoUrl ?? null }]}
+                      title={job.title}
+                      profileName={activeProfile?.name ?? null}
+                      size="icon"
+                      variant="ghost"
+                      className="shrink-0"
+                    />
+                  )}
                   {canRemove(job) && (
                     <Button
                       type="button"
