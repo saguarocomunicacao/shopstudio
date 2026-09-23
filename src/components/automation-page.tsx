@@ -44,18 +44,40 @@ import {
 const brlFromCents = (v: number | null) =>
   v === null || v === undefined ? "—" : (v / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-/** Máscara de R$ para campos de dinheiro: armazena centavos, exibe "R$ 30,00". */
-const brlMask = (cents: number | null) =>
+/* ------------------------------------------------------------------ *
+ * Máscaras / conversores de campos numéricos e monetários
+ * ------------------------------------------------------------------ */
+
+/** Máscara R$ para CENTAVOS (tetos de gasto): exibe "R$ 30,00". */
+const brlMaskCents = (cents: number | null) =>
   cents === null || cents === undefined ? "" : (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-/** Converte o texto mascarado de volta a centavos; vazio => null. */
 const toCentsMask = (v: string): number | null => {
   const digits = v.replace(/\D/g, "");
-  if (!digits) return null;
-  return Number(digits);
+  return digits ? Number(digits) : null;
 };
-const numOrNull = (v: string) => {
-  const n = Number(v.replace(",", "."));
-  return v.trim() === "" || Number.isNaN(n) ? null : n;
+
+/** Máscara R$ para REAIS (filtros de preço/receita): exibe "R$ 5.000,00". */
+const brlMaskReais = (reais: number | null) =>
+  reais === null || reais === undefined ? "" : reais.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const toReaisMask = (v: string): number | null => {
+  const digits = v.replace(/\D/g, "");
+  return digits ? Number(digits) / 100 : null;
+};
+
+/** Percentual (%): aceita só dígitos e vírgula, exibe "15" ou "15,5". */
+const percentMask = (v: number | null) => (v === null || v === undefined ? "" : String(v).replace(".", ","));
+const toPercentMask = (v: string): number | null => {
+  const clean = v.replace(/[^0-9,]/g, "").replace(/,+/g, ",");
+  if (!clean || clean === ",") return null;
+  const n = Number(clean.replace(",", "."));
+  return Number.isNaN(n) ? null : n;
+};
+
+/** Inteiro positivo: aceita só dígitos. */
+const intMask = (v: number | null) => (v === null || v === undefined ? "" : String(v));
+const toIntMask = (v: string): number | null => {
+  const digits = v.replace(/\D/g, "");
+  return digits ? Number(digits) : null;
 };
 
 type FormState = {
@@ -63,18 +85,18 @@ type FormState = {
   nome: string;
   horarios: string[];
   fonte: AutomationFonte;
-  comissao_min: string;
-  preco_min: string;
-  preco_max: string;
-  receita_min: string;
+  comissao_min: number | null;
+  preco_min: number | null;
+  preco_max: number | null;
+  receita_min: number | null;
   lancamento: string;
   periodo: string;
   palavra_chave: string;
   avatar_modo: AutomationAvatarModo;
   avatar_id: string | null;
   voice_ref: string | null;
-  cenas_count: string;
-  take_duration: string;
+  cenas_count: number | null;
+  take_duration: number | null;
   qualidade: string;
   teto_diario: number | null;
   teto_mensal: number | null;
@@ -84,18 +106,18 @@ const emptyForm = (): FormState => ({
   nome: "Agenda de automação",
   horarios: ["09:00"],
   fonte: "garimpo",
-  comissao_min: "",
-  preco_min: "",
-  preco_max: "",
-  receita_min: "",
+  comissao_min: null,
+  preco_min: null,
+  preco_max: null,
+  receita_min: null,
   lancamento: "qualquer",
   periodo: "last7Day",
   palavra_chave: "",
   avatar_modo: "perfil",
   avatar_id: null,
   voice_ref: null,
-  cenas_count: "",
-  take_duration: "",
+  cenas_count: null,
+  take_duration: null,
   qualidade: "herdar",
   teto_diario: null,
   teto_mensal: null,
@@ -106,18 +128,18 @@ const formFrom = (s: AutomationSchedule): FormState => ({
   nome: s.nome,
   horarios: s.horarios.length ? s.horarios : ["09:00"],
   fonte: s.fonte,
-  comissao_min: s.filtros.comissao_min != null ? String(s.filtros.comissao_min) : "",
-  preco_min: s.filtros.preco_min != null ? String(s.filtros.preco_min) : "",
-  preco_max: s.filtros.preco_max != null ? String(s.filtros.preco_max) : "",
-  receita_min: s.filtros.receita_min != null ? String(s.filtros.receita_min) : "",
+  comissao_min: s.filtros.comissao_min ?? null,
+  preco_min: s.filtros.preco_min ?? null,
+  preco_max: s.filtros.preco_max ?? null,
+  receita_min: s.filtros.receita_min ?? null,
   lancamento: s.filtros.lancamento ?? "qualquer",
   periodo: s.filtros.periodo ?? "last7Day",
   palavra_chave: s.filtros.palavra_chave ?? "",
   avatar_modo: s.avatar_modo,
   avatar_id: s.avatar_id,
   voice_ref: s.voice_ref,
-  cenas_count: s.cenas_count != null ? String(s.cenas_count) : "",
-  take_duration: s.take_duration != null ? String(s.take_duration) : "",
+  cenas_count: s.cenas_count ?? null,
+  take_duration: s.take_duration ?? null,
   qualidade: s.qualidade ?? "herdar",
   teto_diario: s.teto_diario_cents,
   teto_mensal: s.teto_mensal_cents,
@@ -146,6 +168,31 @@ function ScheduleDialog({
       toast.error("Defina ao menos um horário de disparo.");
       return;
     }
+    // Validação de campos numéricos/monetários
+    if (form.comissao_min !== null && (form.comissao_min < 0 || form.comissao_min > 100)) {
+      toast.error("Comissão mínima deve ser entre 0 e 100%.");
+      return;
+    }
+    if (form.cenas_count !== null && (!Number.isInteger(form.cenas_count) || form.cenas_count < 1 || form.cenas_count > 12)) {
+      toast.error("Número de cenas deve ser um inteiro entre 1 e 12.");
+      return;
+    }
+    if (form.take_duration !== null && (!Number.isInteger(form.take_duration) || form.take_duration < 2 || form.take_duration > 15)) {
+      toast.error("Duração de cada cena deve ser um inteiro entre 2 e 15 segundos.");
+      return;
+    }
+    if (form.preco_min !== null && form.preco_max !== null && form.preco_min > form.preco_max) {
+      toast.error("Preço mínimo não pode ser maior que o preço máximo.");
+      return;
+    }
+    if (form.teto_diario !== null && form.teto_diario <= 0) {
+      toast.error("Limite por dia deve ser maior que zero.");
+      return;
+    }
+    if (form.teto_mensal !== null && form.teto_mensal <= 0) {
+      toast.error("Limite por mês deve ser maior que zero.");
+      return;
+    }
     save.mutate(
       {
         id: form.id,
@@ -156,10 +203,10 @@ function ScheduleDialog({
         horarios,
         fonte: form.fonte,
         filtros: {
-          comissao_min: numOrNull(form.comissao_min),
-          preco_min: numOrNull(form.preco_min),
-          preco_max: numOrNull(form.preco_max),
-          receita_min: numOrNull(form.receita_min),
+          comissao_min: form.comissao_min,
+          preco_min: form.preco_min,
+          preco_max: form.preco_max,
+          receita_min: form.receita_min,
           lancamento: form.lancamento === "qualquer" ? null : (form.lancamento as never),
           periodo: form.periodo as never,
           palavra_chave: form.palavra_chave.trim() || null,
@@ -167,8 +214,8 @@ function ScheduleDialog({
         avatar_modo: form.avatar_modo,
         avatar_id: form.avatar_modo === "biblioteca" ? form.avatar_id : null,
         voice_ref: form.voice_ref,
-        cenas_count: form.cenas_count.trim() ? Number(form.cenas_count) : null,
-        take_duration: form.take_duration.trim() ? Number(form.take_duration) : null,
+        cenas_count: form.cenas_count,
+        take_duration: form.take_duration,
         qualidade: form.qualidade === "herdar" ? null : form.qualidade,
         teto_diario_cents: form.teto_diario,
         teto_mensal_cents: form.teto_mensal,
@@ -249,19 +296,39 @@ function ScheduleDialog({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Comissão mínima (%)</Label>
-                <Input inputMode="decimal" value={form.comissao_min} onChange={(e) => set("comissao_min", e.target.value)} placeholder="Ex.: 15" />
+                <Input
+                  inputMode="decimal"
+                  value={percentMask(form.comissao_min)}
+                  onChange={(e) => set("comissao_min", toPercentMask(e.target.value))}
+                  placeholder="Ex.: 15"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Receita mínima (R$)</Label>
-                <Input inputMode="decimal" value={form.receita_min} onChange={(e) => set("receita_min", e.target.value)} placeholder="Ex.: 5000" />
+                <Input
+                  inputMode="numeric"
+                  value={brlMaskReais(form.receita_min)}
+                  onChange={(e) => set("receita_min", toReaisMask(e.target.value))}
+                  placeholder="R$ 5.000,00"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Preço mínimo (R$)</Label>
-                <Input inputMode="decimal" value={form.preco_min} onChange={(e) => set("preco_min", e.target.value)} />
+                <Input
+                  inputMode="numeric"
+                  value={brlMaskReais(form.preco_min)}
+                  onChange={(e) => set("preco_min", toReaisMask(e.target.value))}
+                  placeholder="R$ 0,00"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Preço máximo (R$)</Label>
-                <Input inputMode="decimal" value={form.preco_max} onChange={(e) => set("preco_max", e.target.value)} />
+                <Input
+                  inputMode="numeric"
+                  value={brlMaskReais(form.preco_max)}
+                  onChange={(e) => set("preco_max", toReaisMask(e.target.value))}
+                  placeholder="R$ 0,00"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Período analisado</Label>
@@ -338,11 +405,21 @@ function ScheduleDialog({
               </div>
               <div className="space-y-1.5">
                 <Label>Número de cenas</Label>
-                <Input type="number" min={1} max={12} value={form.cenas_count} onChange={(e) => set("cenas_count", e.target.value)} placeholder="Herdar do perfil" />
+                <Input
+                  inputMode="numeric"
+                  value={intMask(form.cenas_count)}
+                  onChange={(e) => set("cenas_count", toIntMask(e.target.value))}
+                  placeholder="Herdar do perfil"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Duração de cada cena (s)</Label>
-                <Input type="number" min={2} max={15} value={form.take_duration} onChange={(e) => set("take_duration", e.target.value)} placeholder="Herdar do perfil" />
+                <Input
+                  inputMode="numeric"
+                  value={intMask(form.take_duration)}
+                  onChange={(e) => set("take_duration", toIntMask(e.target.value))}
+                  placeholder="Herdar do perfil"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Qualidade</Label>
@@ -365,7 +442,7 @@ function ScheduleDialog({
                 <Label>Limite por dia (R$)</Label>
                 <Input
                   inputMode="numeric"
-                  value={brlMask(form.teto_diario)}
+                  value={brlMaskCents(form.teto_diario)}
                   onChange={(e) => set("teto_diario", toCentsMask(e.target.value))}
                   placeholder="Sem limite"
                 />
@@ -374,7 +451,7 @@ function ScheduleDialog({
                 <Label>Limite por mês (R$)</Label>
                 <Input
                   inputMode="numeric"
-                  value={brlMask(form.teto_mensal)}
+                  value={brlMaskCents(form.teto_mensal)}
                   onChange={(e) => set("teto_mensal", toCentsMask(e.target.value))}
                   placeholder="Sem limite"
                 />
