@@ -76,13 +76,15 @@ async function acquireLock(admin: Admin, now: Date): Promise<boolean> {
   }
   if (atual.value_text && atual.value_text > now.toISOString()) return false;
 
-  const { data, error } = await admin
-    .from("app_config")
-    .update({ value_text: until })
-    .eq("key", LOCK_KEY)
-    .eq("value_text", atual.value_text)
-    .select("key");
+  // A trava só é tomada se a linha continuar exatamente como foi lida
+  // (comparação condicional), o que impede duas execuções simultâneas.
+  const query = admin.from("app_config").update({ value_text: until }).eq("key", LOCK_KEY);
+  const { data, error } = await (atual.value_text === null
+    ? query.is("value_text", null)
+    : query.eq("value_text", atual.value_text)
+  ).select("key");
   return !error && (data ?? []).length > 0;
+
 }
 
 async function releaseLock(admin: Admin) {
