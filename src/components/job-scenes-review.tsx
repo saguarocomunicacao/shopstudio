@@ -160,6 +160,7 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
               onChange={(e) => setPrompts((p) => ({ ...p, [index]: e.target.value }))}
               disabled={!canEdit || busyIndex !== null}
             />
+            <MultiPersonaHint text={prompts[index] ?? scene.image_prompt} />
             {canEdit && (
               <div className="flex flex-wrap gap-2">
                 {scene.image_url && (
