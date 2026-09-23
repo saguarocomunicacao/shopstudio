@@ -86,10 +86,10 @@ const QUEUES: { key: QueueKey; label: string; status?: DbJob["status"]; badge: s
 const roteiroPronto = (job: DbJob) =>
   job.formato === "gravacao" && job.status === "roteiro_pronto" && !job.recorded_at;
 
-export function DraftsPage() {
+export function DraftsPage({ initialJobId }: { initialJobId?: string | undefined }) {
   return (
     <ProfileGate>
-      <DraftsContent />
+      <DraftsContent initialJobId={initialJobId} />
     </ProfileGate>
   );
 }
@@ -210,7 +210,7 @@ function DraftThumb({
   );
 }
 
-function DraftsContent() {
+function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) {
   const { activeProfileId, activeProfile, can } = useStudio();
   const { data: jobs = [], isLoading } = useJobs(activeProfileId);
   const { data: trashed = [] } = useTrashedJobs(activeProfileId);
@@ -228,6 +228,14 @@ function DraftsContent() {
   const undoTrash = useServerFn(restoreDraft);
   const purge = useServerFn(purgeDraft);
   const stepBack = useServerFn(moveDraftBack);
+
+  useEffect(() => {
+    if (!initialJobId || isLoading) return;
+    const job = jobs.find((item) => item.id === initialJobId);
+    if (!job) return;
+    setQueue(job.status === "rascunho_enviado" ? "aprovado" : job.status === "publicado" ? "publicado" : "revisao");
+    setOpenId(initialJobId);
+  }, [initialJobId, isLoading, jobs]);
   const loadPreviews = useServerFn(getDraftPreviews);
 
   const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
