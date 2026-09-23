@@ -1372,6 +1372,7 @@ export type Database = {
           initials: string
           name: string
           niche: string
+          profile_image_path: string | null
           slug: string
           status: string
           tenant_id: string
@@ -1386,6 +1387,7 @@ export type Database = {
           initials?: string
           name: string
           niche?: string
+          profile_image_path?: string | null
           slug: string
           status?: string
           tenant_id?: string
@@ -1400,6 +1402,7 @@ export type Database = {
           initials?: string
           name?: string
           niche?: string
+          profile_image_path?: string | null
           slug?: string
           status?: string
           tenant_id?: string

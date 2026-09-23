@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ModuleKey } from "@/lib/access";
 import { OPEN_PROFILE_PICKER_EVENT } from "./profile-gate";
 import { useAvatarUrl } from "./account-page";
+import { ProfileImage } from "./profile-image";
 import { StudioProvider, useStudio } from "./studio-context";
 import { UpdateGate } from "./update-gate";
 import { SessionExpiredDialog } from "./session-expired-dialog";
@@ -79,7 +80,7 @@ function ProfilePicker() {
     return <Button asChild variant="secondary" className="h-10 gap-2 px-3"><Link to="/app/perfis"><Plus className="h-4 w-4" />Criar perfil</Link></Button>;
   }
 
-  return <DropdownMenu open={open} onOpenChange={setOpen}><DropdownMenuTrigger asChild><Button variant="secondary" className="h-10 max-w-[210px] justify-between gap-2 px-2.5 sm:min-w-[210px]"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-foreground text-[9px] font-bold text-background">{activeProfile?.initials ?? "?"}</span><span className="min-w-0 flex-1 truncate text-left">{activeProfile?.name ?? "Selecionar perfil"}</span><ChevronDown className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-64 rounded-xl border-border p-1.5"><DropdownMenuLabel>Perfil ativo</DropdownMenuLabel><DropdownMenuSeparator/>{profiles.map(p => <DropdownMenuItem key={p.id} onClick={() => setActiveProfileId(p.id)} className={activeProfileId === p.id ? "bg-accent font-semibold text-primary" : ""}><span className="grid h-7 w-7 place-items-center rounded-full bg-secondary text-[9px] font-bold">{p.initials}</span><span className="min-w-0 flex-1 truncate">{p.name}<span className="block truncate text-xs font-normal text-muted-foreground">@{p.handle || p.slug}</span></span></DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>;
+  return <DropdownMenu open={open} onOpenChange={setOpen}><DropdownMenuTrigger asChild><Button variant="secondary" className="h-10 max-w-[210px] justify-between gap-2 px-2.5 sm:min-w-[210px]">{activeProfile ? <ProfileImage profile={activeProfile} className="size-6 bg-foreground text-[9px] text-background" /> : <span className="grid size-6 place-items-center rounded-full bg-foreground text-[9px] font-bold text-background">?</span>}<span className="min-w-0 flex-1 truncate text-left">{activeProfile?.name ?? "Selecionar perfil"}</span><ChevronDown className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-64 rounded-xl border-border p-1.5"><DropdownMenuLabel>Perfil ativo</DropdownMenuLabel><DropdownMenuSeparator/>{profiles.map(p => <DropdownMenuItem key={p.id} onClick={() => setActiveProfileId(p.id)} className={activeProfileId === p.id ? "bg-accent font-semibold text-primary" : ""}><ProfileImage profile={p} className="size-7 text-[9px]" /><span className="min-w-0 flex-1 truncate">{p.name}<span className="block truncate text-xs font-normal text-muted-foreground">@{p.handle || p.slug}</span></span></DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>;
 }
 
 function useSignOut() {
