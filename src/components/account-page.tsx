@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useInvalidateAccess } from "@/lib/access";
+import { ACAO_LABELS, type BillableAction } from "@/lib/custo-core";
 import { useStudio } from "./studio-context";
 
 /** Gera a URL temporária da foto guardada no bucket privado. */
@@ -33,11 +34,11 @@ function usePlan(userId: string | null) {
       if (!me?.tenant_id) return null;
       const { data, error } = await supabase
         .from("tenants")
-        .select("id, name, plans:plan_id ( name, billing_model, price_cents )")
+        .select("id, name, plans:plan_id ( id, name, plan_action_prices ( action_type, unit_price_cents ) )")
         .eq("id", me.tenant_id)
         .maybeSingle();
       if (error) throw new Error(error.message);
-      return data as { id: string; name: string; plans: { name: string; billing_model: string; price_cents: number } | null } | null;
+      return data as { id: string; name: string; plans: { id: string; name: string; plan_action_prices: Array<{ action_type: BillableAction; unit_price_cents: number }> } | null } | null;
     },
   });
 }
@@ -93,6 +94,7 @@ export function AccountPage() {
 
   const initials = (me?.name || me?.email || "?").slice(0, 2).toUpperCase();
   const planName = tenant?.plans?.name ?? "Sem plano definido";
+  const actionPrices = tenant?.plans?.plan_action_prices ?? [];
 
   return (
     <>
@@ -165,9 +167,15 @@ export function AccountPage() {
               <p className="text-sm font-semibold" data-testid="plano-atual">{planName}</p>
               <p className="text-xs text-muted-foreground">
                 {tenant?.plans
-                  ? "Cobrança por item: cada uso tem quantidade incluída no mês e preço por unidade."
+                  ? "Você compra quantidades que não expiram e usa uma unidade a cada ação realizada."
                   : "Aguardando definição do administrador."}
               </p>
+              {actionPrices.length > 0 && <div className="mt-4 grid gap-2 border-t pt-3 sm:grid-cols-2">
+                {actionPrices.map((price) => <div key={price.action_type} className="flex items-center justify-between gap-3 text-xs">
+                  <span className="text-muted-foreground">{ACAO_LABELS[price.action_type]}</span>
+                  <strong className="shrink-0 font-semibold text-foreground">{(price.unit_price_cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/un.</strong>
+                </div>)}
+              </div>}
             </div>
           )}
           <p className="mt-3 text-xs text-muted-foreground">Para mudar de plano, fale com o administrador.</p>

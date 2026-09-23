@@ -15,7 +15,7 @@ import { ACAO_LABELS, type BillableAction } from "@/lib/custo-core";
 import { useStudio } from "./studio-context";
 
 type Plan = { id: string; name: string; key_source: "shop_studio" | "byok"; is_active: boolean };
-type ActionPrice = { plan_id: string; action_type: BillableAction; included_qty: number; unit_price_cents: number; overage_price_cents: number };
+type ActionPrice = { plan_id: string; action_type: BillableAction; unit_price_cents: number };
 type Tenant = { id: string; plan_id: string | null };
 
 export const PLAN_ACTIONS: BillableAction[] = [
@@ -50,7 +50,7 @@ function usePlansData() {
   const prices = useQuery({
     queryKey: ["plan-action-prices"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("plan_action_prices").select("plan_id, action_type, included_qty, unit_price_cents, overage_price_cents");
+      const { data, error } = await supabase.from("plan_action_prices").select("plan_id, action_type, unit_price_cents");
       if (error) throw new Error(error.message);
       return (data ?? []) as ActionPrice[];
     },
@@ -93,7 +93,7 @@ export function PlansPage() {
   const loading = plans.isLoading || prices.isLoading || tenants.isLoading;
   return <BackofficeOnly><div>
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div><p className="mb-1 text-xs font-bold uppercase text-primary">Backoffice</p><h1 className="text-2xl font-black sm:text-3xl">Planos</h1><p className="mt-2 text-sm text-muted-foreground">Catálogo de franquias e preços por ação. Não há mensalidade.</p></div>
+      <div><p className="mb-1 text-xs font-bold uppercase text-primary">Backoffice</p><h1 className="text-2xl font-black sm:text-3xl">Planos</h1><p className="mt-2 text-sm text-muted-foreground">Cada ação tem um preço por unidade. O cliente compra quantidades que não expiram e usa quando quiser.</p></div>
       {isBackoffice && <Button asChild><Link to="/app/planos/$planId" params={{ planId: "novo" }}><Plus />Novo plano</Link></Button>}
     </div>
     <section className="panel overflow-hidden p-0">
@@ -125,7 +125,7 @@ function PlanRows({ plan, rows, companies, open, canEdit, onToggle, onActive, on
         {canEdit && <><Button asChild variant="ghost" size="sm"><Link to="/app/planos/$planId" params={{ planId: plan.id }}><Pencil />Editar</Link></Button><Button variant="ghost" size="icon" aria-label={plan.is_active ? "Desativar plano" : "Ativar plano"} onClick={() => onActive(!plan.is_active)}><Power /></Button><Button variant="ghost" size="icon" aria-label="Remover plano" onClick={onRemove}><Trash2 /></Button></>}
       </div></TableCell>
     </TableRow>
-    {open && <TableRow className="bg-secondary/40 hover:bg-secondary/40"><TableCell/><TableCell colSpan={5}><div className="grid gap-3 py-3 sm:grid-cols-3"><Summary label="Ações configuradas" value={`${rows.filter((row) => row.included_qty || row.unit_price_cents || row.overage_price_cents).length} de 12`} /><Summary label="Franquia mensal" value={`${rows.reduce((sum, row) => sum + row.included_qty, 0)} itens`} /><Summary label="Preço unitário máximo" value={brl(Math.max(0, ...rows.map((row) => row.unit_price_cents)))} /></div></TableCell></TableRow>}
+    {open && <TableRow className="bg-secondary/40 hover:bg-secondary/40"><TableCell/><TableCell colSpan={5}><div className="grid gap-3 py-3 sm:grid-cols-2"><Summary label="Ações configuradas" value={`${rows.filter((row) => row.unit_price_cents > 0).length} de 12`} /><Summary label="Preço unitário máximo" value={brl(Math.max(0, ...rows.map((row) => row.unit_price_cents)))} /></div></TableCell></TableRow>}
   </>;
 }
 
@@ -142,17 +142,17 @@ export function PlanDetailPage({ planId }: { planId?: string }) {
   });
   const { data: savedPrices = [], isLoading: priceLoading } = useQuery({
     queryKey: ["plan-action-prices", planId], enabled: editing,
-    queryFn: async () => { const { data, error } = await supabase.from("plan_action_prices").select("plan_id, action_type, included_qty, unit_price_cents, overage_price_cents").eq("plan_id", planId ?? ""); if (error) throw new Error(error.message); return (data ?? []) as ActionPrice[]; },
+    queryFn: async () => { const { data, error } = await supabase.from("plan_action_prices").select("plan_id, action_type, unit_price_cents").eq("plan_id", planId ?? ""); if (error) throw new Error(error.message); return (data ?? []) as ActionPrice[]; },
   });
   const [name, setName] = useState("");
   const [keySource, setKeySource] = useState<Plan["key_source"]>("shop_studio");
   const [active, setActive] = useState(true);
-  const [draft, setDraft] = useState<Record<BillableAction, Omit<ActionPrice, "plan_id" | "action_type">>>(() => emptyPrices());
+  const [draft, setDraft] = useState<Record<BillableAction, number>>(() => emptyPrices());
   const hydrated = useMemo(() => plan ? `${plan.id}:${savedPrices.length}` : "", [plan, savedPrices.length]);
   const [lastHydrated, setLastHydrated] = useState("");
   if (plan && hydrated !== lastHydrated) {
     setLastHydrated(hydrated); setName(plan.name); setKeySource(plan.key_source); setActive(plan.is_active);
-    setDraft(Object.fromEntries(PLAN_ACTIONS.map((action) => { const row = savedPrices.find((price) => price.action_type === action); return [action, { included_qty: row?.included_qty ?? 0, unit_price_cents: row?.unit_price_cents ?? 0, overage_price_cents: row?.overage_price_cents ?? 0 }]; })) as Record<BillableAction, Omit<ActionPrice, "plan_id" | "action_type">>);
+    setDraft(Object.fromEntries(PLAN_ACTIONS.map((action) => { const row = savedPrices.find((price) => price.action_type === action); return [action, row?.unit_price_cents ?? 0]; })) as Record<BillableAction, number>);
   }
   const save = useMutation({
     mutationFn: async () => {
@@ -160,7 +160,7 @@ export function PlanDetailPage({ planId }: { planId?: string }) {
       let id = planId;
       if (id) { const { error } = await supabase.from("plans").update({ name: name.trim(), key_source: keySource, is_active: active }).eq("id", id); if (error) throw new Error(error.message); }
       else { const { data, error } = await supabase.from("plans").insert({ name: name.trim(), key_source: keySource, is_active: active } as never).select("id").single(); if (error) throw new Error(error.message); id = (data as { id: string }).id; }
-      const rows = PLAN_ACTIONS.map((action_type) => ({ plan_id: id as string, action_type, ...draft[action_type] }));
+      const rows = PLAN_ACTIONS.map((action_type) => ({ plan_id: id as string, action_type, unit_price_cents: draft[action_type], included_qty: 0, overage_price_cents: 0 }));
       const { error } = await supabase.from("plan_action_prices").upsert(rows as never, { onConflict: "plan_id,action_type" });
       if (error) throw new Error(error.message);
     },
@@ -176,15 +176,15 @@ export function PlanDetailPage({ planId }: { planId?: string }) {
       <label className="grid gap-1.5 text-xs font-semibold">Fonte de chave<Select value={keySource} onValueChange={(value) => setKeySource(value as Plan["key_source"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{KEY_SOURCE.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></label>
       <label className="flex h-10 items-center gap-2 text-sm font-semibold"><Switch checked={active} onCheckedChange={setActive} />Ativo</label>
     </div></section>
-    <section className="panel mt-5"><div className="mb-5"><h2 className="font-bold">Preços por ação</h2><p className="mt-1 text-sm text-muted-foreground">A quantidade incluída é renovada a cada mês. Zero cobra o preço unitário desde o primeiro uso.</p></div>
-      <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="p-2">Ação</th><th className="p-2">Quantidade incluída por mês</th><th className="p-2">Preço unitário</th><th className="p-2">Preço excedente</th></tr></thead><tbody className="divide-y">{PLAN_ACTIONS.map((action) => <tr key={action}><td className="p-2 font-medium">{ACAO_LABELS[action]}</td><td className="p-2"><Input type="number" min={0} value={draft[action].included_qty} onChange={(event) => setDraftValue(setDraft, draft, action, "included_qty", Math.max(0, Math.round(Number(event.target.value) || 0)))} /></td><td className="p-2"><MoneyInput value={draft[action].unit_price_cents} onChange={(value) => setDraftValue(setDraft, draft, action, "unit_price_cents", value)} /></td><td className="p-2"><MoneyInput value={draft[action].overage_price_cents} onChange={(value) => setDraftValue(setDraft, draft, action, "overage_price_cents", value)} /></td></tr>)}</tbody></table></div>
+    <section className="panel mt-5"><div className="mb-5"><h2 className="font-bold">Preços por ação</h2><p className="mt-1 text-sm text-muted-foreground">Defina quanto custa comprar uma unidade de cada ação. As quantidades compradas não expiram e são usadas conforme o consumo.</p></div>
+      <div className="overflow-hidden"><table className="w-full table-fixed text-sm"><thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="w-1/2 p-2 sm:w-2/5">Ação</th><th className="p-2">Preço unitário <span className="hidden sm:inline">(R$ por unidade)</span><span className="sm:hidden">(R$)</span></th></tr></thead><tbody className="divide-y">{PLAN_ACTIONS.map((action) => <tr key={action}><td className="p-2 font-medium">{ACAO_LABELS[action]}</td><td className="p-2"><MoneyInput value={draft[action]} onChange={(value) => setDraftValue(setDraft, draft, action, value)} /></td></tr>)}</tbody></table></div>
     </section>
     <div className="mt-5 flex justify-end gap-2"><Button variant="ghost" onClick={() => navigate({ to: "/app/planos" })}>Cancelar</Button><Button disabled={save.isPending || !name.trim()} onClick={() => save.mutate()}>{save.isPending && <Loader2 className="size-4 animate-spin" />}Salvar plano</Button></div>
   </div>;
 }
 
-function emptyPrices() { return Object.fromEntries(PLAN_ACTIONS.map((action) => [action, { included_qty: 0, unit_price_cents: 0, overage_price_cents: 0 }])) as Record<BillableAction, Omit<ActionPrice, "plan_id" | "action_type">>; }
-function setDraftValue(setter: React.Dispatch<React.SetStateAction<Record<BillableAction, Omit<ActionPrice, "plan_id" | "action_type">>>>, current: Record<BillableAction, Omit<ActionPrice, "plan_id" | "action_type">>, action: BillableAction, key: "included_qty" | "unit_price_cents" | "overage_price_cents", value: number) { setter({ ...current, [action]: { ...current[action], [key]: value } }); }
+function emptyPrices() { return Object.fromEntries(PLAN_ACTIONS.map((action) => [action, 0])) as Record<BillableAction, number>; }
+function setDraftValue(setter: React.Dispatch<React.SetStateAction<Record<BillableAction, number>>>, current: Record<BillableAction, number>, action: BillableAction, value: number) { setter({ ...current, [action]: value }); }
 function MoneyInput({ value, onChange }: { value: number; onChange: (value: number) => void }) { return <Input inputMode="numeric" value={brl(value)} onChange={(event) => onChange(toCents(event.target.value))} />; }
 
 /** Compatibilidade temporária para imports antigos. */
