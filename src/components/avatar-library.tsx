@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Loader2, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
+import { Loader2, Pencil, Plus, Star, Trash2, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { actionError } from "@/lib/api-keys";
-import { deleteProfileAvatar, saveProfileAvatar, setJobAvatar, MAX_AVATAR_IMAGES } from "@/lib/avatars.functions";
+import { deleteProfileAvatar, saveProfileAvatar, setJobAvatar, slugifyTag, MAX_AVATAR_IMAGES } from "@/lib/avatars.functions";
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
@@ -20,8 +20,10 @@ export type AvatarPhoto = { preview: string; url?: string; base64?: string; mime
 export type LibraryAvatar = {
   id: string;
   name: string;
+  tag: string;
   description: string;
   reference_urls: string[];
+  primary_url: string | null;
 };
 
 const ACCEPTED = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -48,17 +50,19 @@ export function useProfileAvatars(profileId: string | null) {
     queryFn: async (): Promise<LibraryAvatar[]> => {
       const { data, error } = await supabase
         .from("profile_avatars")
-        .select("id, name, description, reference_urls")
+        .select("id, name, tag, description, reference_urls, primary_url")
         .eq("profile_id", profileId!)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []).map((row) => ({
         id: row.id,
         name: row.name,
+        tag: row.tag ?? "",
         description: row.description ?? "",
         reference_urls: Array.isArray(row.reference_urls)
           ? (row.reference_urls as unknown[]).filter((u): u is string => typeof u === "string" && !!u)
           : [],
+        primary_url: row.primary_url ?? null,
       }));
     },
   });
@@ -69,10 +73,14 @@ export function AvatarPhotosField({
   photos,
   onChange,
   disabled,
+  primaryIndex,
+  onPrimaryChange,
 }: {
   photos: AvatarPhoto[];
   onChange: (photos: AvatarPhoto[]) => void;
   disabled?: boolean;
+  primaryIndex?: number;
+  onPrimaryChange?: (index: number) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -95,16 +103,37 @@ export function AvatarPhotosField({
       <div className="flex flex-wrap gap-3">
         {photos.map((photo, i) => (
           <div key={photo.url ?? i} className="relative">
-            <img src={photo.preview} alt="" className="size-20 rounded-xl object-cover" />
+            <img
+              src={photo.preview}
+              alt=""
+              className={`size-20 rounded-xl object-cover ${onPrimaryChange && primaryIndex === i ? "ring-2 ring-primary ring-offset-2" : ""}`}
+            />
             <button
               type="button"
               aria-label="Remover foto"
               disabled={disabled}
               className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow"
-              onClick={() => onChange(photos.filter((_, idx) => idx !== i))}
+              onClick={() => {
+                onChange(photos.filter((_, idx) => idx !== i));
+                if (onPrimaryChange && primaryIndex !== undefined && primaryIndex >= i) {
+                  onPrimaryChange(Math.max(0, primaryIndex - (primaryIndex === i ? primaryIndex : 1)));
+                }
+              }}
             >
               <X className="size-3.5" />
             </button>
+            {onPrimaryChange && (
+              <button
+                type="button"
+                aria-label="Marcar como foto principal"
+                title="Foto principal"
+                disabled={disabled}
+                className={`absolute -left-2 -top-2 grid size-6 place-items-center rounded-full border bg-background shadow ${primaryIndex === i ? "text-primary" : "text-muted-foreground"}`}
+                onClick={() => onPrimaryChange(i)}
+              >
+                <Star className={`size-3.5 ${primaryIndex === i ? "fill-current" : ""}`} />
+              </button>
+            )}
           </div>
         ))}
         {photos.length < MAX_AVATAR_IMAGES && (
@@ -145,15 +174,25 @@ function AvatarFormDialog({
   const qc = useQueryClient();
   const save = useServerFn(saveProfileAvatar);
   const [name, setName] = useState("");
+  const [tag, setTag] = useState("");
+  const [tagTocada, setTagTocada] = useState(false);
   const [description, setDescription] = useState("");
   const [photos, setPhotos] = useState<AvatarPhoto[]>([]);
+  const [primaryIndex, setPrimaryIndex] = useState(0);
 
   useEffect(() => {
     if (!open) return;
     setName(avatar?.name ?? "");
+    setTag(avatar?.tag ?? "");
+    setTagTocada(!!avatar?.tag);
     setDescription(avatar?.description ?? "");
-    setPhotos((avatar?.reference_urls ?? []).map((url) => ({ preview: url, url })));
+    const urls = avatar?.reference_urls ?? [];
+    setPhotos(urls.map((url) => ({ preview: url, url })));
+    const idx = avatar?.primary_url ? urls.indexOf(avatar.primary_url) : 0;
+    setPrimaryIndex(idx >= 0 ? idx : 0);
   }, [open, avatar]);
+
+  const tagFinal = slugifyTag(tagTocada && tag ? tag : name);
 
   const run = useMutation({
     mutationFn: async () =>
@@ -162,8 +201,10 @@ function AvatarFormDialog({
           profileId,
           avatarId: avatar?.id,
           name: name.trim(),
+          tag: tagFinal,
           description: description.trim(),
           images: toPayload(photos),
+          primaryIndex: Math.min(primaryIndex, Math.max(0, photos.length - 1)),
         },
       }),
     onSuccess: () => {
@@ -186,8 +227,30 @@ function AvatarFormDialog({
             <Input id="av-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ana, apresentadora" />
           </div>
           <div className="grid gap-2">
+            <Label htmlFor="av-tag">Etiqueta</Label>
+            <Input
+              id="av-tag"
+              value={tagTocada ? tag : tagFinal}
+              onChange={(e) => { setTagTocada(true); setTag(e.target.value); }}
+              placeholder="ana"
+            />
+            <p className="text-xs text-muted-foreground">
+              Use <code className="rounded bg-secondary px-1">{`{{${tagFinal || "etiqueta"}}}`}</code> na descrição da cena para
+              colocar esta pessoa na imagem. Só letras, números e _, sem espaço nem acento.
+            </p>
+          </div>
+          <div className="grid gap-2">
             <Label>Fotos de referência <span className="font-normal text-muted-foreground">(opcional)</span></Label>
-            <AvatarPhotosField photos={photos} onChange={setPhotos} disabled={run.isPending} />
+            <AvatarPhotosField
+              photos={photos}
+              onChange={setPhotos}
+              disabled={run.isPending}
+              primaryIndex={primaryIndex}
+              onPrimaryChange={setPrimaryIndex}
+            />
+            <p className="text-xs text-muted-foreground">
+              A estrela marca a foto principal, usada nas cenas com mais de uma pessoa.
+            </p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="av-desc">Descrição <span className="font-normal text-muted-foreground">(usada quando não há fotos)</span></Label>
@@ -254,13 +317,19 @@ export function ProfileAvatarsCard({ profileId }: { profileId: string | null }) 
         <ul className="grid gap-3 sm:grid-cols-2">
           {avatars.map((avatar) => (
             <li key={avatar.id} className="flex gap-3 rounded-xl border p-3">
-              {avatar.reference_urls[0] ? (
-                <img src={avatar.reference_urls[0]} alt="" className="size-16 shrink-0 rounded-lg object-cover" />
+              {avatar.primary_url || avatar.reference_urls[0] ? (
+                <img src={avatar.primary_url ?? avatar.reference_urls[0]} alt="" className="size-16 shrink-0 rounded-lg object-cover" />
               ) : (
                 <span className="grid size-16 shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground"><UserRound className="size-6" /></span>
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold">{avatar.name}</p>
+                {avatar.tag && (
+                  <p className="mt-0.5 text-xs">
+                    <code className="rounded bg-secondary px-1 font-bold">{`{{${avatar.tag}}}`}</code>{" "}
+                    <span className="text-muted-foreground">use nas cenas</span>
+                  </p>
+                )}
                 <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                   {avatar.reference_urls.length
                     ? `${avatar.reference_urls.length} foto(s) de referência`

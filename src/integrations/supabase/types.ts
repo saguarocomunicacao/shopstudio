@@ -1119,8 +1119,10 @@ export type Database = {
           description: string
           id: string
           name: string
+          primary_url: string | null
           profile_id: string
           reference_urls: Json
+          tag: string | null
           tenant_id: string
           updated_at: string
         }
@@ -1130,8 +1132,10 @@ export type Database = {
           description?: string
           id?: string
           name: string
+          primary_url?: string | null
           profile_id: string
           reference_urls?: Json
+          tag?: string | null
           tenant_id?: string
           updated_at?: string
         }
@@ -1141,8 +1145,10 @@ export type Database = {
           description?: string
           id?: string
           name?: string
+          primary_url?: string | null
           profile_id?: string
           reference_urls?: Json
+          tag?: string | null
           tenant_id?: string
           updated_at?: string
         }

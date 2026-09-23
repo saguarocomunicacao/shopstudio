@@ -462,6 +462,28 @@ export function buildReferenceGuide(personCount: number, productCount: number): 
   return parts.join(" ");
 }
 
+/**
+ * Guia de referências quando a cena cita várias pessoas por tag.
+ * Cada pessoa entra com UMA foto principal e é nomeada na ordem das imagens,
+ * para a IA saber exatamente quem é quem.
+ */
+export function buildPersonaGuide(labels: string[], productCount: number): string {
+  const parts = labels.map((label, i) => `Image ${i + 1} is the identity reference of ${label}.`);
+  if (productCount > 0) {
+    const first = labels.length + 1;
+    const last = labels.length + productCount;
+    parts.push(
+      `Image${productCount > 1 ? `s ${first} to ${last} are` : ` ${first} is`} the real product, shown from different angles. Reproduce the product exactly: identical material, texture, shape, colour, label and proportions.`,
+    );
+  }
+  return parts.join(" ");
+}
+
+/** Exigência de identidade para cenas com mais de uma pessoa nomeada. */
+export function personaIdentityBlock(labels: string[]): string {
+  return `CRITICAL IDENTITY REQUIREMENT: This scene shows ${labels.length} specific real ${labels.length === 1 ? "person" : "people"}: ${labels.join(", ")}. Each person reference image belongs to the named person listed in the reference guide below — never swap, merge or blend their faces. Preserve each individual's facial structure, eyes, nose, mouth, skin tone, hair colour and hairstyle exactly as in their own reference photo. Place each named person in the scene exactly as described in the scene text.`;
+}
+
 /** Bloco prioritário que preserva a identidade exata da pessoa de referência. */
 export const SAME_PERSON_SUFFIX =
   "CRITICAL IDENTITY REQUIREMENT: The person in every scene must be the EXACT SAME individual shown in the person reference photos (the first input images). Preserve identity precisely: same facial structure, face shape, eyes, nose, mouth, skin tone, hair color and hairstyle. This is the same real person across all scenes, not a similar-looking person. Do not stylize, beautify, or alter their features. Match the person reference photos as closely as possible.";

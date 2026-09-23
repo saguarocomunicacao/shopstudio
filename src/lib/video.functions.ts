@@ -150,6 +150,68 @@ function personDescriptionBlock(description: string): string {
   return `PERSON DESCRIPTION: The person appearing in the scene must match this description: ${description}. Keep exactly the same person, face and hair across every scene of this video.\n\n`;
 }
 
+/** Tags {{nome}} citadas numa descrição de cena, em ordem e sem repetição. */
+export function sceneTags(prompt: string): string[] {
+  const found = [...(prompt ?? "").matchAll(/\{\{\s*([A-Za-z0-9_-]{2,24})\s*\}\}/g)].map((m) =>
+    m[1]!.toLowerCase(),
+  );
+  return [...new Set(found)];
+}
+
+export type ScenePersonas = { prompt: string; urls: string[]; labels: string[] };
+
+/**
+ * Cenas com várias pessoas: resolve as tags {{alex}} nas personas da biblioteca
+ * do perfil e usa UMA foto principal por pessoa (várias fotos por pessoa viram
+ * ruído em cena multi-pessoa). Sem tag reconhecida, devolve null e o fluxo de
+ * avatar único segue igual.
+ */
+export async function resolveScenePersonas(
+  supabase: any,
+  profileId: string,
+  prompt: string,
+): Promise<ScenePersonas | null> {
+  const tags = sceneTags(prompt);
+  if (!tags.length) return null;
+
+  const { data } = await supabase
+    .from("profile_avatars")
+    .select("name, tag, primary_url, reference_urls")
+    .eq("profile_id", profileId);
+
+  const byTag = new Map<string, { name: string; url: string }>();
+  for (const row of (data ?? []) as {
+    name: string;
+    tag: string | null;
+    primary_url: string | null;
+    reference_urls: unknown;
+  }[]) {
+    const tag = (row.tag ?? "").trim().toLowerCase();
+    if (!tag) continue;
+    const refs = urlList(row.reference_urls);
+    const url = row.primary_url && refs.includes(row.primary_url) ? row.primary_url : (row.primary_url ?? refs[0] ?? "");
+    if (!url) continue;
+    byTag.set(tag, { name: row.name, url });
+  }
+
+  const labels: string[] = [];
+  const urls: string[] = [];
+  for (const tag of tags) {
+    const persona = byTag.get(tag);
+    if (!persona) continue;
+    labels.push(persona.name);
+    urls.push(persona.url);
+  }
+  if (!labels.length) return null;
+
+  const texto = prompt.replace(/\{\{\s*([A-Za-z0-9_-]{2,24})\s*\}\}/g, (_all, raw: string) => {
+    const persona = byTag.get(raw.toLowerCase());
+    return persona ? persona.name : raw;
+  });
+
+  return { prompt: texto, urls, labels };
+}
+
 
 /**
  * Voz do perfil quando ela é da ElevenLabs (clonada ou catálogo). Voz padrão
@@ -373,19 +435,27 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     ]);
 
     const imagePrompt = data.prompt?.trim() || scene.image_prompt;
+    const personas = await resolveScenePersonas(supabase, job.profile_id, imagePrompt);
     const avatar = avatarForScene(job, settingsRow, scenes, data.index);
-    const personRefs = await pipeline.loadPersonReferences(avatar.urls);
+    const personRefs = await pipeline.loadPersonReferences(personas ? personas.urls : avatar.urls);
     const productRefs = await pipeline.loadProductReferences(pipeline.productImageUrls(product));
     const references: { base64: string; mimeType: string }[] = [...personRefs, ...productRefs];
 
-    const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : personDescriptionBlock(avatar.description);
-    const referenceGuide = pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
+    const sceneText = personas ? personas.prompt : imagePrompt;
+    const identityRequirement = personas
+      ? `${pipeline.personaIdentityBlock(personas.labels)}\n\n`
+      : personRefs.length
+        ? `${pipeline.SAME_PERSON_SUFFIX}\n\n`
+        : personDescriptionBlock(avatar.description);
+    const referenceGuide = personas
+      ? pipeline.buildPersonaGuide(personas.labels, productRefs.length)
+      : pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
 
     const { withTenantKeys } = await import("./api-keys.server");
     const generated = await withTenantKeys(job.tenant_id, () =>
       pipeline.generateSceneImage({
         model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
-        prompt: `${identityRequirement}${referenceGuide}\n\nSCENE: ${imagePrompt} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
+        prompt: `${identityRequirement}${referenceGuide}\n\nSCENE: ${sceneText} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
         references,
       }),
     );
@@ -557,19 +627,27 @@ async function runStep(
     const index = scenes.findIndex((s) => !s.image_url);
     if (index >= 0) {
       const scene = scenes[index]!;
+      const personas = await resolveScenePersonas(supabase, job.profile_id, scene.image_prompt);
       const avatar = avatarForScene(job, settingsRow, scenes, index);
-      const personRefs = await pipeline.loadPersonReferences(avatar.urls);
+      const personRefs = await pipeline.loadPersonReferences(personas ? personas.urls : avatar.urls);
       const productRefs = await pipeline.loadProductReferences(pipeline.productImageUrls(product));
       const references: { base64: string; mimeType: string }[] = [...personRefs, ...productRefs];
 
-      const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : personDescriptionBlock(avatar.description);
-      const referenceGuide = pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
+      const sceneText = personas ? personas.prompt : scene.image_prompt;
+      const identityRequirement = personas
+        ? `${pipeline.personaIdentityBlock(personas.labels)}\n\n`
+        : personRefs.length
+          ? `${pipeline.SAME_PERSON_SUFFIX}\n\n`
+          : personDescriptionBlock(avatar.description);
+      const referenceGuide = personas
+        ? pipeline.buildPersonaGuide(personas.labels, productRefs.length)
+        : pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
       const productFacts = product?.description
         ? `\n\nPRODUCT FACTS (from the real listing, obey them): ${String(product.description).replace(/\s+/g, " ").slice(0, 700)}`
         : "";
       const generated = await pipeline.generateSceneImage({
         model: settings.gemini_model,
-        prompt: `${identityRequirement}${referenceGuide}${productFacts}\n\nSCENE: ${scene.image_prompt} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
+        prompt: `${identityRequirement}${referenceGuide}${productFacts}\n\nSCENE: ${sceneText} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
         references,
       });
 

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, ChevronLeft, ChevronRight, ImageOff, Loader2, RefreshCw } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ImageOff, Loader2, RefreshCw, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,15 +9,29 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbJob } from "@/lib/content";
-import { regenerateJobScene } from "@/lib/video.functions";
+import { regenerateJobScene, sceneTags } from "@/lib/video.functions";
 import { actionError } from "@/lib/api-keys";
+import { useProfileAvatars } from "@/components/avatar-library";
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
+
+/** Aviso: várias pessoas específicas na mesma imagem é difícil para a IA. */
+function MultiPersonaHint({ text }: { text: string }) {
+  if (sceneTags(text).length < 2) return null;
+  return (
+    <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+      <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+      Esta cena tem mais de uma pessoa marcada. Juntar várias pessoas específicas na mesma imagem é difícil para a IA:
+      pode ser preciso regerar a cena algumas vezes até sair certo.
+    </p>
+  );
+}
 
 /** Revisão humana das cenas geradas (imagens baratas) antes de animar no Veo. */
 export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean }) {
   const qc = useQueryClient();
   const regenerate = useServerFn(regenerateJobScene);
+  const { data: personas = [] } = useProfileAvatars(job.profile_id);
   const [prompts, setPrompts] = useState<Record<number, string>>({});
   const [busyIndex, setBusyIndex] = useState<number | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -91,6 +105,20 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
       <p className="text-sm text-muted-foreground">
         Revise as cenas antes de animar. Regerar uma imagem é barato; a animação é a parte cara.
       </p>
+      {personas.some((p) => p.tag) && (
+        <div className="rounded-xl border bg-secondary/50 px-4 py-3 text-xs">
+          <p className="font-bold">Pessoas deste perfil</p>
+          <p className="mt-1 text-muted-foreground">
+            Escreva a etiqueta na descrição da cena para colocar a pessoa na imagem, ex.{" "}
+            <code className="rounded bg-background px-1">{`{{${personas.find((p) => p.tag)!.tag}}} segura o produto`}</code>.
+          </p>
+          <p className="mt-2 flex flex-wrap gap-1.5">
+            {personas.filter((p) => p.tag).map((p) => (
+              <code key={p.id} className="rounded bg-background px-1.5 py-0.5 font-bold">{`{{${p.tag}}}`}</code>
+            ))}
+          </p>
+        </div>
+      )}
       {faltando > 0 && (
         <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {faltando === 1 ? "1 cena ficou sem imagem" : `${faltando} cenas ficaram sem imagem`}. As demais já estão
@@ -132,6 +160,7 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
               onChange={(e) => setPrompts((p) => ({ ...p, [index]: e.target.value }))}
               disabled={!canEdit || busyIndex !== null}
             />
+            <MultiPersonaHint text={prompts[index] ?? scene.image_prompt} />
             {canEdit && (
               <div className="flex flex-wrap gap-2">
                 {scene.image_url && (
@@ -207,6 +236,7 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
                   onChange={(event) => setPrompts((current) => ({ ...current, [lightboxIndex]: event.target.value }))}
                   disabled={!canEdit || busyIndex !== null}
                 />
+                <MultiPersonaHint text={prompts[lightboxIndex] ?? scenes[lightboxIndex].image_prompt} />
                 {canEdit && (
                   <div className="flex flex-wrap gap-2">
                     <Button

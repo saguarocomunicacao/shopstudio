@@ -414,6 +414,13 @@
       "when": 1790190867507,
       "tag": "0058_carteira_saldo_pacotes",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1790192512642,
+      "tag": "0059_avatar_tag_primary_photo",
+      "breakpoints": true
     }
   ]
 }
