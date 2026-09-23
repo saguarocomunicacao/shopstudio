@@ -61,7 +61,6 @@ const numOrNull = (v: string) => {
 type FormState = {
   id?: string;
   nome: string;
-  videos_por_dia: number;
   horarios: string[];
   fonte: AutomationFonte;
   comissao_min: string;
@@ -77,13 +76,12 @@ type FormState = {
   cenas_count: string;
   take_duration: string;
   qualidade: string;
-  teto_diario: string;
-  teto_mensal: string;
+  teto_diario: number | null;
+  teto_mensal: number | null;
 };
 
 const emptyForm = (): FormState => ({
   nome: "Agenda de automação",
-  videos_por_dia: 1,
   horarios: ["09:00"],
   fonte: "garimpo",
   comissao_min: "",
@@ -99,14 +97,13 @@ const emptyForm = (): FormState => ({
   cenas_count: "",
   take_duration: "",
   qualidade: "herdar",
-  teto_diario: "",
-  teto_mensal: "",
+  teto_diario: null,
+  teto_mensal: null,
 });
 
 const formFrom = (s: AutomationSchedule): FormState => ({
   id: s.id,
   nome: s.nome,
-  videos_por_dia: s.videos_por_dia,
   horarios: s.horarios.length ? s.horarios : ["09:00"],
   fonte: s.fonte,
   comissao_min: s.filtros.comissao_min != null ? String(s.filtros.comissao_min) : "",
@@ -122,8 +119,8 @@ const formFrom = (s: AutomationSchedule): FormState => ({
   cenas_count: s.cenas_count != null ? String(s.cenas_count) : "",
   take_duration: s.take_duration != null ? String(s.take_duration) : "",
   qualidade: s.qualidade ?? "herdar",
-  teto_diario: inputFromCents(s.teto_diario_cents),
-  teto_mensal: inputFromCents(s.teto_mensal_cents),
+  teto_diario: s.teto_diario_cents,
+  teto_mensal: s.teto_mensal_cents,
 });
 
 function ScheduleDialog({
