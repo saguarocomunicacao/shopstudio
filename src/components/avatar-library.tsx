@@ -227,8 +227,30 @@ function AvatarFormDialog({
             <Input id="av-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ana, apresentadora" />
           </div>
           <div className="grid gap-2">
+            <Label htmlFor="av-tag">Etiqueta</Label>
+            <Input
+              id="av-tag"
+              value={tagTocada ? tag : tagFinal}
+              onChange={(e) => { setTagTocada(true); setTag(e.target.value); }}
+              placeholder="ana"
+            />
+            <p className="text-xs text-muted-foreground">
+              Use <code className="rounded bg-secondary px-1">{`{{${tagFinal || "etiqueta"}}}`}</code> na descrição da cena para
+              colocar esta pessoa na imagem. Só letras, números e _, sem espaço nem acento.
+            </p>
+          </div>
+          <div className="grid gap-2">
             <Label>Fotos de referência <span className="font-normal text-muted-foreground">(opcional)</span></Label>
-            <AvatarPhotosField photos={photos} onChange={setPhotos} disabled={run.isPending} />
+            <AvatarPhotosField
+              photos={photos}
+              onChange={setPhotos}
+              disabled={run.isPending}
+              primaryIndex={primaryIndex}
+              onPrimaryChange={setPrimaryIndex}
+            />
+            <p className="text-xs text-muted-foreground">
+              A estrela marca a foto principal, usada nas cenas com mais de uma pessoa.
+            </p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="av-desc">Descrição <span className="font-normal text-muted-foreground">(usada quando não há fotos)</span></Label>
