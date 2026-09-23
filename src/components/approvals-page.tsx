@@ -76,7 +76,7 @@ export function ApprovalsPage() {
   return <div>
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-1 text-xs font-bold uppercase text-primary">Controle de acesso</p><h1 className="text-2xl font-black sm:text-3xl">Empresas</h1><p className="mt-2 max-w-2xl text-sm text-muted-foreground">Aprove cadastros, atribua planos e envie redefinições de senha.</p></div><div className="w-full sm:w-52"><Select value={filter} onValueChange={(value) => setFilter(value as Filter)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos os status</SelectItem><SelectItem value="pendente">Pendentes ({pendingCount})</SelectItem><SelectItem value="aprovado">Aprovados</SelectItem><SelectItem value="recusado">Recusados</SelectItem></SelectContent></Select></div></div>
     <section className="panel overflow-hidden p-0">
-      {companies.isLoading ? <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando empresas...</p> : <Table><TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-10"/><TableHead>E-mail</TableHead><TableHead>Empresa</TableHead><TableHead>Plano atual</TableHead><TableHead>Status</TableHead><TableHead>Cadastro</TableHead></TableRow></TableHeader><TableBody>{rows.map((user) => {
+      {companies.isLoading ? <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando empresas...</p> : companies.isError ? <p className="p-8 text-center text-sm text-muted-foreground">Não foi possível carregar as empresas. Tente novamente.</p> : <Table><TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-10"/><TableHead>E-mail</TableHead><TableHead>Empresa</TableHead><TableHead>Plano atual</TableHead><TableHead>Status</TableHead><TableHead>Cadastro</TableHead></TableRow></TableHeader><TableBody>{rows.map((user) => {
         const tenant = data.tenants.find((item) => item.id === user.tenant_id);
         const plan = data.plans.find((item) => item.id === tenant?.plan_id);
         const open = expanded === user.id;
@@ -84,7 +84,7 @@ export function ApprovalsPage() {
         const Icon = open ? ChevronDown : ChevronRight;
         return <CompanyRows key={user.id} user={user} tenant={tenant} plan={plan} plans={data.plans} open={open} protectedAccount={protectedAccount} busy={review.isPending || assignPlan.isPending || resetPassword.isPending} onToggle={() => setExpanded(open ? null : user.id)} onReview={(status) => review.mutate({ id: user.id, status })} onPlan={(planId) => tenant && assignPlan.mutate({ tenantId: tenant.id, planId })} onReset={() => resetPassword.mutate(user.id)} />;
       })}</TableBody></Table>}
-      {!companies.isLoading && !rows.length && <p className="p-8 text-center text-sm text-muted-foreground">Nenhuma empresa neste filtro.</p>}
+      {!companies.isLoading && !companies.isError && !rows.length && <p className="p-8 text-center text-sm text-muted-foreground">Nenhuma empresa neste filtro.</p>}
     </section>
   </div>;
 }
