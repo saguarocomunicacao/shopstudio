@@ -24,6 +24,7 @@ import { JobChampionRefs } from "./job-champion-refs";
 import { brl } from "@/lib/custo";
 import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
 import { actionError } from "@/lib/api-keys";
+import { VideoDownloadButton } from "./video-download-button";
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
@@ -179,7 +180,18 @@ export function JobDetailDialog({
           )}
 
           {job?.video_url && (
-            <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[300px] rounded-xl bg-black" />
+            <div className="grid gap-3">
+              <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[300px] rounded-xl bg-black" />
+              <VideoDownloadButton
+                versions={[
+                  { key: "ativa", label: "Vídeo montado", source: job.video_url },
+                  { key: "ia", label: "Versão gerada por IA", source: job.ai_video_url },
+                ]}
+                title={job.title}
+                size="lg"
+                className="w-full"
+              />
+            </div>
           )}
           {job && SHAREABLE_STATUS.includes(job.status) && (
             <JobVideoStorage jobId={job.id} renderedAt={job.render_started_at ?? job.created_at} />

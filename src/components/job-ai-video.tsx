@@ -11,6 +11,7 @@ import { useEstimativaVeo } from "@/lib/orcamento";
 import { getRecordingVideoUrl, setJobVideoChoice } from "@/lib/recording.functions";
 import { useVideoDriver } from "@/lib/video-driver";
 import { approveJobScenes, generateJobScenes } from "@/lib/video.functions";
+import { VideoDownloadButton } from "@/components/video-download-button";
 
 const brl = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
