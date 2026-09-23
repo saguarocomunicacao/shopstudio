@@ -266,7 +266,17 @@ async function escolherProduto(
     const candidatos =
       schedule.fonte === "radar"
         ? itens
-            .map((i) => ({ item: i, score: ascensionScore(i.growthRate, i.salesVolume, i.revenue) }))
+            .map((i) => ({
+              item: i,
+              score: ascensionScore({
+                growthRate: i.growthRate,
+                salesVolume: i.salesVolume,
+                revenue: i.revenue,
+                commission: i.commission,
+                recentLaunch: false,
+              }),
+            }))
+
             .filter((c) => c.score >= RISING_BADGE_THRESHOLD)
             .sort((a, b) => b.score - a.score)
             .map((c) => c.item)
