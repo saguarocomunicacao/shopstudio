@@ -80,13 +80,24 @@ export const saveProfileAvatar = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    const tag = slugifyTag(data.tag || data.name);
+    if (tag && !TAG_REGEX.test(tag)) {
+      throw new Error("A etiqueta deve ter de 2 a 24 letras, números ou _ (sem espaço nem acento).");
+    }
     const urls = await storeImages(`avatars/${data.profileId}/biblioteca`, data.images);
     const payload = {
       profile_id: data.profileId,
       name: data.name,
+      tag: tag || null,
       description: data.description,
       reference_urls: urls,
+      primary_url: urls[data.primaryIndex] ?? urls[0] ?? null,
     };
+
+    const duplicada = (message: string) =>
+      /profile_avatars_profile_tag_key|duplicate key/i.test(message)
+        ? new Error(`A etiqueta "${tag}" já é usada por outro avatar deste perfil.`)
+        : new Error(message);
 
     if (data.avatarId) {
       const { data: row, error } = await supabase
@@ -95,9 +106,9 @@ export const saveProfileAvatar = createServerFn({ method: "POST" })
         .eq("id", data.avatarId)
         .select("id")
         .maybeSingle();
-      if (error) throw new Error(error.message);
+      if (error) throw duplicada(error.message);
       if (!row) throw new Error("Você não tem permissão para editar este avatar.");
-      return { avatarId: row.id as string, urls };
+      return { avatarId: row.id as string, urls, tag };
     }
 
     const { data: row, error } = await supabase
@@ -105,9 +116,9 @@ export const saveProfileAvatar = createServerFn({ method: "POST" })
       .insert({ ...payload, created_by: context.userId })
       .select("id")
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) throw duplicada(error.message);
     if (!row) throw new Error("Você não tem permissão para criar avatares neste perfil.");
-    return { avatarId: row.id as string, urls };
+    return { avatarId: row.id as string, urls, tag };
   });
 
 /** Remove um avatar da biblioteca. Vídeos já gerados não são afetados. */
