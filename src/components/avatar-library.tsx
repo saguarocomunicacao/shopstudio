@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { actionError } from "@/lib/api-keys";
-import { deleteProfileAvatar, saveProfileAvatar, setJobAvatar, MAX_AVATAR_IMAGES } from "@/lib/avatars.functions";
+import { deleteProfileAvatar, saveProfileAvatar, setJobAvatar, slugifyTag, MAX_AVATAR_IMAGES } from "@/lib/avatars.functions";
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
