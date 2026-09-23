@@ -46,8 +46,9 @@ function initialCrop(aspectRatio: RecordingAspectRatio, source: VideoSourceSize,
 
 type EditorSnapshot = { start: number; end: number; cuts: CutOperation[]; crop: CropOperation | null };
 
-const FILMSTRIP_MIN_FRAMES = 8;
-const FILMSTRIP_MAX_FRAMES = 15;
+const FILMSTRIP_MIN_FRAMES = 3;
+const FILMSTRIP_MAX_FRAMES = 40;
+const FILMSTRIP_HEIGHT_PX = 64;
 
 function waitForVideoEvent(video: HTMLVideoElement, eventName: "loadedmetadata" | "loadeddata" | "seeked") {
   return new Promise<void>((resolve, reject) => {
@@ -69,10 +70,11 @@ function waitForVideoEvent(video: HTMLVideoElement, eventName: "loadedmetadata" 
 }
 
 /** Tira visual leve, extraída localmente sem alterar nem reencodar o vídeo. */
-function VideoFilmstrip({ source, duration }: { source: Blob; duration: number }) {
+function VideoFilmstrip({ source, duration, sourceSize }: { source: Blob; duration: number; sourceSize: VideoSourceSize | null }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [frameCount, setFrameCount] = useState(FILMSTRIP_MIN_FRAMES);
   const [frames, setFrames] = useState<(string | null)[]>(() => Array(FILMSTRIP_MIN_FRAMES).fill(null));
+  const sourceAspectRatio = sourceSize && sourceSize.width > 0 && sourceSize.height > 0 ? sourceSize.width / sourceSize.height : 16 / 9;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -80,11 +82,12 @@ function VideoFilmstrip({ source, duration }: { source: Blob; duration: number }
     const observer = new ResizeObserver(([entry]) => {
       const width = entry?.contentRect.width ?? 0;
       if (width <= 0) return;
-      setFrameCount(Math.min(FILMSTRIP_MAX_FRAMES, Math.max(FILMSTRIP_MIN_FRAMES, Math.round(width / 72))));
+      const frameWidth = FILMSTRIP_HEIGHT_PX * sourceAspectRatio;
+      setFrameCount(Math.min(FILMSTRIP_MAX_FRAMES, Math.max(FILMSTRIP_MIN_FRAMES, Math.ceil(width / frameWidth))));
     });
     observer.observe(container);
     return () => observer.disconnect();
-  }, []);
+  }, [sourceAspectRatio]);
 
   useEffect(() => {
     if (duration <= 0 || frameCount <= 0) return;
@@ -108,17 +111,12 @@ function VideoFilmstrip({ source, duration }: { source: Blob; duration: number }
         }
         const usableDuration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : duration;
         const canvas = document.createElement("canvas");
-        canvas.width = 112;
-        canvas.height = 64;
+        if (!video.videoWidth || !video.videoHeight) return;
+        const extractionHeight = 128;
+        canvas.height = extractionHeight;
+        canvas.width = Math.max(1, Math.round(extractionHeight * (video.videoWidth / video.videoHeight)));
         const context = canvas.getContext("2d", { alpha: false });
-        if (!context || !video.videoWidth || !video.videoHeight) return;
-
-        const sourceRatio = video.videoWidth / video.videoHeight;
-        const targetRatio = canvas.width / canvas.height;
-        const sourceWidth = sourceRatio > targetRatio ? video.videoHeight * targetRatio : video.videoWidth;
-        const sourceHeight = sourceRatio > targetRatio ? video.videoHeight : video.videoWidth / targetRatio;
-        const sourceX = (video.videoWidth - sourceWidth) / 2;
-        const sourceY = (video.videoHeight - sourceHeight) / 2;
+        if (!context) return;
 
         for (let index = 0; index < frameCount && !cancelled; index += 1) {
           const target = Math.min(Math.max(0.01, ((index + 0.5) / frameCount) * usableDuration), Math.max(0.01, usableDuration - 0.03));
@@ -129,7 +127,7 @@ function VideoFilmstrip({ source, duration }: { source: Blob; duration: number }
           }
           if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) await waitForVideoEvent(video, "loadeddata");
           if (cancelled) break;
-          context.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
+          context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, 0, 0, canvas.width, canvas.height);
           const frame = canvas.toDataURL("image/jpeg", 0.58);
           setFrames((current) => current.map((value, frameIndex) => (frameIndex === index ? frame : value)));
           await new Promise<void>((resolve) => window.setTimeout(resolve, 20));
@@ -151,7 +149,7 @@ function VideoFilmstrip({ source, duration }: { source: Blob; duration: number }
   return (
     <div ref={containerRef} className="pointer-events-none absolute inset-0 z-0 flex overflow-hidden rounded-md bg-muted" aria-hidden="true">
       {frames.map((frame, index) => (
-        <div key={index} className="min-w-0 flex-1 border-r border-background/30 last:border-r-0">
+        <div key={index} className="h-full shrink-0 border-r border-background/30 last:border-r-0" style={{ aspectRatio: sourceAspectRatio }}>
           {frame ? <img src={frame} alt="" className="size-full object-cover" draggable={false} /> : <div className="size-full animate-pulse bg-muted-foreground/15" />}
         </div>
       ))}
@@ -699,7 +697,7 @@ export function VideoEditor({
             <span className="text-right">Fim {formatTime(end)}</span>
           </div>
           <div ref={trackRef} data-trim-track className="relative h-16 select-none overflow-visible rounded-md bg-muted ring-1 ring-border" aria-label="Linha do tempo do vídeo" onPointerDown={(event) => seek(timeFromPointer(event.clientX))}>
-            <VideoFilmstrip source={source} duration={duration} />
+            <VideoFilmstrip source={source} duration={duration} sourceSize={videoSize} />
             {mode === "trim" && (
               <>
                 <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] rounded-l-md bg-background/70" style={{ width: `${pct(start)}%` }} />
