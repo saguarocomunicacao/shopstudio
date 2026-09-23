@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Copy, Download, ListOrdered, Loader2, Plus, RefreshCw, Save, Sparkles, Trash2, Upload, Video } from "lucide-react";
+import { Check, Copy, ListOrdered, Loader2, Plus, RefreshCw, Save, Sparkles, Trash2, Upload, Video } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { VoiceDictationButton } from "./voice-dictation-button";
 import { actionError } from "@/lib/api-keys";
 import { isMobileViewport } from "@/lib/mobile-fullscreen";
 import { ACCEPTED_DOC_TYPES } from "@/lib/document-text";
+import { VideoDownloadButton } from "./video-download-button";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
@@ -399,15 +400,17 @@ export function RecordingKitDialog({
                   {download.data?.url ? (
                     <>
                       <video src={download.data.url} controls playsInline className={`${RECORDING_FORMATS[recordingAspectRatio].mediaClass} w-full rounded-xl bg-black object-contain`} />
-                      <Button asChild size="lg" className="mt-3 w-full">
-                        <a
-                          href={download.data.url}
-                          download={`${job.title || "video"}.${job.video_path?.toLowerCase().endsWith(".webm") ? "webm" : "mp4"}`}
-                        >
-                          <Download />
-                          Baixar vídeo
-                        </a>
-                      </Button>
+                      <VideoDownloadButton
+                        versions={[
+                          { key: "ativa", label: "Versão em uso", source: download.data.url },
+                          { key: "gravado", label: "Gravação original", source: download.data.originalUrl },
+                          { key: "gravado-editado", label: "Gravação editada", source: download.data.editedUrl },
+                          { key: "ia", label: "Versão gerada por IA", source: download.data.aiUrl },
+                        ]}
+                        title={job.title}
+                        size="lg"
+                        className="mt-3 w-full"
+                      />
                     </>
                   ) : (
                     <p className="flex items-center gap-2 text-sm text-muted-foreground">

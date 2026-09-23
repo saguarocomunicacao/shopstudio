@@ -39,6 +39,7 @@ import { isMobileViewport } from "@/lib/mobile-fullscreen";
 import loaderMark from "@/assets/loader-mark.png.asset.json";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
 import { createDraftThumbnailUpload, saveDraftThumbnail } from "@/lib/drafts.functions";
+import { VideoDownloadButton } from "@/components/video-download-button";
 
 const INTENSIDADES: { id: SkinIntensity; label: string }[] = [
   { id: "leve", label: "Leve" },
@@ -956,7 +957,17 @@ export function RecordingStudio({
                   <RefreshCw />
                   Regravar
                 </Button>
-              </div>
+               </div>
+               <VideoDownloadButton
+                 versions={[
+                   ...(editedBlob ? [{ key: "gravado-editado", label: "Gravação editada", source: editedBlob }] : []),
+                   { key: "gravado", label: "Gravação original", source: blob },
+                 ]}
+                 title={job.title}
+                 size="lg"
+                 variant="secondary"
+                 label="Baixar vídeo"
+               />
               {editedBlob && (
                 <>
                   <p className="text-center text-xs text-white/70">Mostrando a versão editada. O vídeo original continua guardado.</p>

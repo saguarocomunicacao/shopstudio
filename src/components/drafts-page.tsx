@@ -6,7 +6,6 @@ import {
   Check,
   CheckCircle2,
   Copy,
-  Download,
   Film,
   Loader2,
   LockKeyhole,
@@ -69,6 +68,7 @@ import { useStudio } from "./studio-context";
 import { actionError } from "@/lib/api-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
+import { VideoDownloadButton } from "./video-download-button";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
@@ -211,7 +211,7 @@ function DraftThumb({
 }
 
 function DraftsContent() {
-  const { activeProfileId, can } = useStudio();
+  const { activeProfileId, activeProfile, can } = useStudio();
   const { data: jobs = [], isLoading } = useJobs(activeProfileId);
   const { data: trashed = [] } = useTrashedJobs(activeProfileId);
   const canViewProducts = can("produtos", "visualizar");
@@ -408,6 +408,17 @@ function DraftsContent() {
                       </span>
                     )}
                   </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                  {!isTrash && previewOf(job.id)?.videoUrl && (
+                    <VideoDownloadButton
+                      versions={[{ key: "ativa", label: "Vídeo", source: previewOf(job.id)?.videoUrl ?? null }]}
+                      title={job.title}
+                      profileName={activeProfile?.name ?? null}
+                      size="icon"
+                      variant="ghost"
+                      className="shrink-0"
+                    />
+                  )}
                   {canRemove(job) && (
                     <Button
                       type="button"
@@ -421,6 +432,7 @@ function DraftsContent() {
                       <Trash2 />
                     </Button>
                   )}
+                  </div>
                 </div>
                 <div className="mt-3 grid gap-2">
                   {isTrash ? (
@@ -766,12 +778,12 @@ function DraftKitDialog({ jobId, onClose, onResumeRecording }: { jobId: string; 
                     className="aspect-[9/16] w-full rounded-xl bg-black object-cover"
                   />
                 )}
-                <Button asChild size="lg" className="mt-3 w-full">
-                  <a href={data.videoUrl ?? "#"} download={`${data.title || "video"}.mp4`}>
-                    <Download />
-                    Baixar vídeo
-                  </a>
-                </Button>
+                <VideoDownloadButton
+                  versions={[{ key: "ativa", label: "Vídeo", source: data.videoUrl }]}
+                  title={data.title}
+                  size="lg"
+                  className="mt-3 w-full"
+                />
                 {data.edited && (
                   <div className="mt-3 grid gap-2">
                     <p className="text-xs text-muted-foreground">Você está vendo a versão editada. A gravação original continua guardada.</p>
