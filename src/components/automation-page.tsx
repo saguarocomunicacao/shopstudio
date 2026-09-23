@@ -520,6 +520,8 @@ function ScheduleDialog({
 function AutomationContent() {
   const { activeProfileId, activeProfile } = useStudio();
   const { data: schedules = [], isLoading } = useAutomationSchedules(activeProfileId);
+  const { data: runs = [], isLoading: runsLoading } = useAutomationRuns(activeProfileId);
+  const { data: insights, isLoading: insightsLoading } = useAutomationInsights(activeProfileId, runs);
   const toggle = useToggleSchedule();
   const remove = useDeleteSchedule();
   const [dialog, setDialog] = useState<{ open: boolean; initial: AutomationSchedule | null }>({ open: false, initial: null });
@@ -560,39 +562,54 @@ function AutomationContent() {
       </div>
 
       <div className="panel overflow-x-auto p-0">
-        <Table>
+        <Table className="min-w-[1040px] table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead>Agenda</TableHead>
-              <TableHead>Fonte</TableHead>
-              <TableHead>Horários</TableHead>
-              <TableHead>Vídeos/dia</TableHead>
-              <TableHead>Teto diário</TableHead>
-              <TableHead>Teto mensal</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="w-[18%]">Agenda</TableHead>
+              <TableHead className="w-[19%]">Programação</TableHead>
+              <TableHead className="w-[27%]">Gasto vs. teto</TableHead>
+              <TableHead className="w-[15%]">Vídeos gerados</TableHead>
+              <TableHead className="w-[15%]">Status</TableHead>
+              <TableHead className="w-[6%] text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>
             )}
             {!isLoading && !schedules.length && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
                   <Bot className="mx-auto mb-2 h-6 w-6" />
                   Nenhuma agenda ainda. Crie a primeira para configurar a automação deste perfil.
                 </TableCell>
               </TableRow>
             )}
-            {schedules.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell className="font-semibold">{s.nome}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{s.fonte === "radar" ? "Radar de emergentes" : "Garimpo normal"}</TableCell>
-                <TableCell className="text-sm">{s.horarios.join(", ")}</TableCell>
-                <TableCell>{s.horarios.length}</TableCell>
-                <TableCell>{brlFromCents(s.teto_diario_cents)}</TableCell>
-                <TableCell>{brlFromCents(s.teto_mensal_cents)}</TableCell>
+            {schedules.map((s) => {
+              const detail = insights?.schedules.get(s.id);
+              const noProduct = detail?.latestRunStatus === "sem_produto";
+              return (
+              <TableRow key={s.id} className="align-top">
+                <TableCell>
+                  <p className="font-semibold">{s.nome}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{s.fonte === "radar" ? "Radar de emergentes" : "Garimpo normal"}</p>
+                </TableCell>
+                <TableCell>
+                  <p className="text-sm font-medium">{s.horarios.join(", ")}</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <CalendarClock className="size-3.5" /> {nextRunLabel(s)}
+                  </p>
+                </TableCell>
+                <TableCell className="space-y-3">
+                  <SpendProgress label="Hoje" value={detail?.costTodayBrl ?? 0} ceilingCents={s.teto_diario_cents} />
+                  <SpendProgress label="Mês" value={detail?.costMonthBrl ?? 0} ceilingCents={s.teto_mensal_cents} />
+                </TableCell>
+                <TableCell>
+                  <p className="text-sm font-bold tabular-nums">{detail?.videosToday ?? 0} hoje</p>
+                  <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                    {detail?.videosMonth ?? 0} no mês · {detail?.videosTotal ?? 0} total
+                  </p>
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Switch
@@ -604,7 +621,16 @@ function AutomationContent() {
                       {s.ativa ? "Ativa" : "Pausada"}
                     </span>
                   </div>
-                  {s.pausada_motivo && <p className="mt-1 text-xs text-muted-foreground">{s.pausada_motivo}</p>}
+                  {s.pausada_motivo && (
+                    <p className="mt-2 rounded-md bg-destructive/10 px-2 py-1.5 text-xs font-medium text-destructive">
+                      Pausa automática: {s.pausada_motivo}
+                    </p>
+                  )}
+                  {!s.pausada_motivo && noProduct && (
+                    <p className="mt-2 rounded-md bg-secondary px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                      Produtos novos esgotados para os filtros atuais.
+                    </p>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" aria-label="Editar" onClick={() => setDialog({ open: true, initial: s })}>
@@ -615,14 +641,21 @@ function AutomationContent() {
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>
         </TabsContent>
 
         <TabsContent value="execucoes">
-          <RunsLog profileId={activeProfileId} />
+          <RunsLog
+            profileId={activeProfileId}
+            schedules={schedules}
+            runs={runs}
+            insights={insights}
+            isLoading={runsLoading || insightsLoading}
+          />
         </TabsContent>
       </Tabs>
 
@@ -680,9 +713,67 @@ const RUN_BADGE: Record<string, string> = {
   pausado: "bg-destructive/10 text-destructive",
 };
 
-/** Registro simples das execuções automáticas (painel detalhado fica para a Parte 3). */
-function RunsLog({ profileId }: { profileId: string | null }) {
-  const { data: runs = [], isLoading } = useAutomationRuns(profileId);
+type RunPeriod = "hoje" | "mes" | "30dias" | "todos";
+type RunResult = "todos" | "gerou" | "pausado" | "sem_produto" | "falhou";
+
+function dateKeyBrasilia(value: string | Date) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(typeof value === "string" ? new Date(value) : value);
+}
+
+function RunsLog({
+  profileId,
+  schedules,
+  runs,
+  insights,
+  isLoading,
+}: {
+  profileId: string | null;
+  schedules: AutomationSchedule[];
+  runs: import("@/lib/automation").AutomationRun[];
+  insights: import("@/lib/automation").AutomationInsights | undefined;
+  isLoading: boolean;
+}) {
+  const [scheduleFilter, setScheduleFilter] = useState("todas");
+  const [period, setPeriod] = useState<RunPeriod>("mes");
+  const [result, setResult] = useState<RunResult>("todos");
+  const today = dateKeyBrasilia(new Date());
+  const month = today.slice(0, 7);
+  const cutoff30 = new Date();
+  cutoff30.setDate(cutoff30.getDate() - 29);
+  const cutoff30Key = dateKeyBrasilia(cutoff30);
+  const inPeriod = (date: string) => {
+    const key = dateKeyBrasilia(date);
+    if (period === "hoje") return key === today;
+    if (period === "mes") return key.slice(0, 7) === month;
+    if (period === "30dias") return key >= cutoff30Key;
+    return true;
+  };
+  const matchesResult = (status: string) => {
+    if (result === "todos") return true;
+    if (result === "gerou") return status === "concluido" || status === "gerando";
+    return status === result;
+  };
+  const filteredRuns = runs.filter(
+    (run) => (scheduleFilter === "todas" || run.schedule_id === scheduleFilter) && inPeriod(run.created_at) && matchesResult(run.status),
+  );
+  const periodJobs = [...(insights?.jobs.values() ?? [])].filter(
+    (job) => (scheduleFilter === "todas" || job.scheduleId === scheduleFilter) && inPeriod(job.createdAt),
+  );
+  const periodCost = periodJobs.reduce((total, job) => total + job.costBrl, 0);
+  const costsBySchedule = schedules
+    .map((schedule) => ({
+      id: schedule.id,
+      name: schedule.nome,
+      value: periodJobs.filter((job) => job.scheduleId === schedule.id).reduce((total, job) => total + job.costBrl, 0),
+    }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+
   return (
     <div className="space-y-4">
       <div>
@@ -691,40 +782,115 @@ function RunsLog({ profileId }: { profileId: string | null }) {
           Cada vez que o robô roda um horário da agenda, ele registra o resultado aqui.
         </p>
       </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="panel">
+          <p className="text-xs font-semibold text-muted-foreground">Gasto hoje</p>
+          <p className="mt-1 text-2xl font-black text-primary">{brl(insights?.totalTodayBrl ?? 0)}</p>
+        </div>
+        <div className="panel">
+          <p className="text-xs font-semibold text-muted-foreground">Gasto no mês</p>
+          <p className="mt-1 text-2xl font-black">{brl(insights?.totalMonthBrl ?? 0)}</p>
+        </div>
+        <div className="panel">
+          <p className="text-xs font-semibold text-muted-foreground">Gasto no período filtrado</p>
+          <p className="mt-1 text-2xl font-black">{brl(periodCost)}</p>
+        </div>
+      </div>
+      <div className="flex items-start gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-xs text-muted-foreground">
+        <Wallet className="mt-0.5 size-4 shrink-0 text-primary" />
+        <p>Esta é uma visão recortada do mesmo consumo registrado em Custos. Nenhum valor é contabilizado duas vezes.</p>
+      </div>
+      {costsBySchedule.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {costsBySchedule.map((item) => (
+            <span key={item.id} className="rounded-full bg-secondary px-3 py-1.5 text-xs">
+              <strong>{item.name}</strong> · {brl(item.value)}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Select value={scheduleFilter} onValueChange={setScheduleFilter}>
+          <SelectTrigger><SelectValue placeholder="Todas as agendas" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas as agendas</SelectItem>
+            {schedules.map((schedule) => <SelectItem key={schedule.id} value={schedule.id}>{schedule.nome}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={period} onValueChange={(value) => setPeriod(value as RunPeriod)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="hoje">Hoje</SelectItem>
+            <SelectItem value="mes">Este mês</SelectItem>
+            <SelectItem value="30dias">Últimos 30 dias</SelectItem>
+            <SelectItem value="todos">Todo o período</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={result} onValueChange={(value) => setResult(value as RunResult)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os resultados</SelectItem>
+            <SelectItem value="gerou">Gerou vídeo</SelectItem>
+            <SelectItem value="pausado">Pausou por teto</SelectItem>
+            <SelectItem value="sem_produto">Sem produto novo</SelectItem>
+            <SelectItem value="falhou">Erro</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <div className="panel overflow-x-auto p-0">
-        <Table>
+        <Table className="min-w-[920px] table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead>Data</TableHead>
               <TableHead>Horário</TableHead>
+              <TableHead>Agenda</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Produto escolhido</TableHead>
+              <TableHead className="text-right">Custo do vídeo</TableHead>
+              <TableHead className="text-right">Vídeo</TableHead>
               <TableHead>Detalhe</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={4} className="py-8 text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>
             )}
-            {!isLoading && !runs.length && (
+            {!isLoading && !filteredRuns.length && (
               <TableRow>
-                <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">
                   <Bot className="mx-auto mb-2 h-6 w-6" />
-                  Nenhuma execução ainda. Quando uma agenda ativa chegar no horário, o resultado aparece aqui.
+                  {runs.length ? "Nenhuma execução corresponde aos filtros." : "Nenhuma execução ainda. Quando uma agenda ativa chegar no horário, o resultado aparece aqui."}
                 </TableCell>
               </TableRow>
             )}
-            {runs.map((r) => (
-              <TableRow key={r.id}>
+            {filteredRuns.map((r) => {
+              const job = r.job_id ? insights?.jobs.get(r.job_id) : undefined;
+              const schedule = schedules.find((item) => item.id === r.schedule_id);
+              return (
+              <TableRow key={r.id} className="align-top">
                 <TableCell className="whitespace-nowrap font-medium">{r.dia.split("-").reverse().join("/")}</TableCell>
                 <TableCell className="whitespace-nowrap text-sm tabular-nums">{r.horario}</TableCell>
+                <TableCell className="text-sm font-medium">{schedule?.nome ?? "Agenda removida"}</TableCell>
                 <TableCell>
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${RUN_BADGE[r.status] ?? "bg-secondary text-muted-foreground"}`}>
                     {RUN_LABEL[r.status] ?? r.status}
                   </span>
                 </TableCell>
+                <TableCell className="text-sm">{job?.productName ?? (r.job_id ? job?.title ?? "Produto associado" : "—")}</TableCell>
+                <TableCell className="whitespace-nowrap text-right font-bold tabular-nums">{r.job_id ? brl(job?.costBrl ?? 0) : "—"}</TableCell>
+                <TableCell className="text-right">
+                  {r.job_id && profileId ? (
+                    <Button asChild variant="ghost" size="sm">
+                      <Link to="/app/rascunhos" search={{ jobId: r.job_id, perfil: profileId }}>
+                        Abrir <ExternalLink className="ml-1 size-3.5" />
+                      </Link>
+                    </Button>
+                  ) : "—"}
+                </TableCell>
                 <TableCell className="text-sm text-muted-foreground">{r.mensagem ?? "—"}</TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>
