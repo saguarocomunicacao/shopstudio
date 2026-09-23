@@ -13,6 +13,12 @@ const AUTH_MESSAGES: Array<[RegExp, string]> = [
 ];
 
 const firstIssueMessage = (value: unknown): string | null => {
+  if (Array.isArray(value)) {
+    for (const issue of value as ValidationIssue[]) {
+      if (typeof issue?.message === "string" && issue.message.trim()) return issue.message.trim();
+    }
+    return null;
+  }
   if (!value || typeof value !== "object") return null;
   const record = value as Record<string, unknown>;
   const issues = Array.isArray(record["issues"])
