@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Copy, Download, ListOrdered, Loader2, Plus, RefreshCw, Save, Sparkles, Trash2, Upload, Video } from "lucide-react";
+import { Check, Copy, ListOrdered, Loader2, Plus, RefreshCw, Save, Sparkles, Trash2, Upload, Video } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { VoiceDictationButton } from "./voice-dictation-button";
 import { actionError } from "@/lib/api-keys";
 import { isMobileViewport } from "@/lib/mobile-fullscreen";
 import { ACCEPTED_DOC_TYPES } from "@/lib/document-text";
+import { VideoDownloadButton } from "./video-download-button";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
