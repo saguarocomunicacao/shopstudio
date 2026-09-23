@@ -500,6 +500,13 @@ function AutomationContent() {
         </div>
       </div>
 
+      <Tabs defaultValue="agendamentos" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="agendamentos">Agendamentos</TabsTrigger>
+          <TabsTrigger value="execucoes">Últimas execuções</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agendamentos" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-black">Agendas de {activeProfile?.name ?? "perfil"}</h2>
