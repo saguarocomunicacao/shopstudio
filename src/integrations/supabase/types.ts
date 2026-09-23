@@ -639,6 +639,7 @@ export type Database = {
           avatar_id: string | null
           avatar_reference_urls: Json
           caption: string | null
+          cenas_count: number | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -667,6 +668,7 @@ export type Database = {
           script: string | null
           script_refs: Json
           status: Database["public"]["Enums"]["job_status"]
+          take_duration: number | null
           tenant_id: string
           texto_tela: string | null
           title: string
@@ -704,6 +706,7 @@ export type Database = {
           avatar_id?: string | null
           avatar_reference_urls?: Json
           caption?: string | null
+          cenas_count?: number | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -732,6 +735,7 @@ export type Database = {
           script?: string | null
           script_refs?: Json
           status?: Database["public"]["Enums"]["job_status"]
+          take_duration?: number | null
           tenant_id?: string
           texto_tela?: string | null
           title?: string
@@ -769,6 +773,7 @@ export type Database = {
           avatar_id?: string | null
           avatar_reference_urls?: Json
           caption?: string | null
+          cenas_count?: number | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -797,6 +802,7 @@ export type Database = {
           script?: string | null
           script_refs?: Json
           status?: Database["public"]["Enums"]["job_status"]
+          take_duration?: number | null
           tenant_id?: string
           texto_tela?: string | null
           title?: string
