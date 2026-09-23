@@ -121,14 +121,16 @@ async function callLovableAi(prompt: string): Promise<{ script: GeneratedScript;
 export const composeScript = (s: GeneratedScript) =>
   `GANCHO (0-3s)\n${s.hook}\n\nCORPO\n${s.body}\n\nCTA\n${s.cta}`;
 
-/** Gera o roteiro de um job com a IA nativa do Lovable e avança o status uma etapa. */
-export const generateJobScript = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ jobId: z.string().uuid() }).parse(data))
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
+/**
+ * Núcleo da geração de roteiro. `skipPermission` é usado SOMENTE pela automação
+ * (cron), que roda sem sessão e já validou a agenda/tenant antes de chamar.
+ */
+export async function generateScriptForJob(supabase: any, jobId: string, skipPermission = false) {
+  {
+    const data = { jobId };
 
     const { data: job, error: jobError } = await supabase
+
       .from("jobs")
       .select("id, product_id, profile_id, status, title")
       .eq("id", data.jobId)
