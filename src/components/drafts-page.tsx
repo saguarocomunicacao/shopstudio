@@ -778,12 +778,12 @@ function DraftKitDialog({ jobId, onClose, onResumeRecording }: { jobId: string; 
                     className="aspect-[9/16] w-full rounded-xl bg-black object-cover"
                   />
                 )}
-                <Button asChild size="lg" className="mt-3 w-full">
-                  <a href={data.videoUrl ?? "#"} download={`${data.title || "video"}.mp4`}>
-                    <Download />
-                    Baixar vídeo
-                  </a>
-                </Button>
+                <VideoDownloadButton
+                  versions={[{ key: "ativa", label: "Vídeo", source: data.videoUrl }]}
+                  title={data.title}
+                  size="lg"
+                  className="mt-3 w-full"
+                />
                 {data.edited && (
                   <div className="mt-3 grid gap-2">
                     <p className="text-xs text-muted-foreground">Você está vendo a versão editada. A gravação original continua guardada.</p>
