@@ -570,6 +570,9 @@ function AutomationContent() {
         </Table>
       </div>
 
+      <RunsLog profileId={activeProfileId} />
+
+
       {dialog.open && activeProfileId && (
         <ScheduleDialog
           key={dialog.initial?.id ?? "nova"}
