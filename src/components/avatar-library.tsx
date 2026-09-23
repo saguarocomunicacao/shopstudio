@@ -20,8 +20,10 @@ export type AvatarPhoto = { preview: string; url?: string; base64?: string; mime
 export type LibraryAvatar = {
   id: string;
   name: string;
+  tag: string;
   description: string;
   reference_urls: string[];
+  primary_url: string | null;
 };
 
 const ACCEPTED = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
