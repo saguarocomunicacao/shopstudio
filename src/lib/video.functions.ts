@@ -181,8 +181,12 @@ async function assertVideoKeys(supabase: any, job: JobRow) {
   await assertTenantKeys(job.tenant_id, providersForFullVideo(!!voice));
 }
 
-/** Carrega o job, valida permissão de pipeline e devolve os dados. */
-async function loadJob(supabase: any, jobId: string): Promise<JobRow> {
+/**
+ * Carrega o job, valida permissão de pipeline e devolve os dados.
+ * `skipPermission` é usado SOMENTE pela automação (cron), que roda sem sessão
+ * e já validou o dono da agenda/tenant antes de chamar o pipeline.
+ */
+async function loadJob(supabase: any, jobId: string, skipPermission = false): Promise<JobRow> {
   const { data: job, error } = await supabase
     .from("jobs")
     .select("id, product_id, profile_id, tenant_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato, ai_status, ai_render_stage, avatar_id, avatar_reference_urls, avatar_description")
@@ -191,12 +195,14 @@ async function loadJob(supabase: any, jobId: string): Promise<JobRow> {
   if (error) throw new Error(error.message);
   if (!job) throw new Error("Job não encontrado ou sem permissão de acesso.");
 
-
-  const { data: canEdit, error: permError } = await supabase.rpc("can_edit_pipeline", { _profile_id: job.profile_id });
-  if (permError) throw new Error(permError.message);
-  if (!canEdit) throw new Error("Você não tem permissão para gerar vídeo neste perfil.");
+  if (!skipPermission) {
+    const { data: canEdit, error: permError } = await supabase.rpc("can_edit_pipeline", { _profile_id: job.profile_id });
+    if (permError) throw new Error(permError.message);
+    if (!canEdit) throw new Error("Você não tem permissão para gerar vídeo neste perfil.");
+  }
   return job as JobRow;
 }
+
 
 /** Passo 1: inicia a geração das IMAGENS das cenas (Gemini). Não chama o Veo. */
 export const generateJobScenes = createServerFn({ method: "POST" })
