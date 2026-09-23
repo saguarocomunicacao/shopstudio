@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { userErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/redefinir-senha")({
   ssr: false,
@@ -30,7 +31,11 @@ function ResetPasswordPage() {
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      console.error("[reset-password]", error);
+      toast.error(userErrorMessage(error, "Não foi possível atualizar a senha. Tente novamente."));
+      return;
+    }
     toast.success("Senha atualizada.");
     navigate({ to: "/app", replace: true });
   };

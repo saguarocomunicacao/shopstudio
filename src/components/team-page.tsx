@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { ACTIONS, ACTION_LABELS, MODULES, MODULE_LABELS, type ActionKey, type AppUser, type Assignment, type Invite, type ModuleKey, type Permission, type Role, type RolePermission } from "@/lib/access";
+import { userErrorMessage } from "@/lib/user-error";
 import { useStudio } from "./studio-context";
 
 const NONE = "none";
@@ -34,7 +35,10 @@ async function fetchTeam() {
   };
 }
 
-const errMessage = (error: unknown) => (error instanceof Error ? error.message : "Não foi possível concluir a ação.");
+const errMessage = (error: unknown) => {
+  console.error("[team]", error);
+  return userErrorMessage(error, "Não foi possível concluir a ação. Tente novamente.");
+};
 
 export function TeamPage() {
   const { profiles, isAdmin } = useStudio();

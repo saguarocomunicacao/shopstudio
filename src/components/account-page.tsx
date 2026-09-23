@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useInvalidateAccess } from "@/lib/access";
 import { ACAO_LABELS, type BillableAction } from "@/lib/custo-core";
 import { ehIlimitado, useMovimentos, usePacotesDoPlano, useSaldos } from "@/lib/saldo";
+import { userErrorMessage } from "@/lib/user-error";
 import { PLAN_ACTIONS } from "./plans-card";
 import { useStudio } from "./studio-context";
 
@@ -71,7 +72,10 @@ export function AccountPage() {
       invalidateAccess();
       qc.invalidateQueries({ queryKey: ["avatar-url"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível salvar."),
+    onError: (e) => {
+      console.error("[account] save", e);
+      toast.error(userErrorMessage(e, "Não foi possível salvar sua conta. Tente novamente."));
+    },
   });
 
   const upload = async (file: File) => {
@@ -88,7 +92,8 @@ export function AccountPage() {
       if (error) throw new Error(error.message);
       await save.mutateAsync({ avatar_url: path });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível enviar a foto.");
+      console.error("[account] avatar upload", e);
+      toast.error(userErrorMessage(e, "Não foi possível enviar a foto. Tente novamente."));
     } finally {
       setUploading(false);
     }

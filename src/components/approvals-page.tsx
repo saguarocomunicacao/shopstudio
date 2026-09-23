@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { SUPER_ADMIN_EMAIL } from "@/lib/access";
 import { sendCompanyPasswordReset } from "@/lib/company-admin.functions";
+import { userErrorMessage } from "@/lib/user-error";
 import { useStudio } from "./studio-context";
 
 type CompanyUser = { id: string; email: string; name: string; status: string; created_at: string; tenant_id: string };
@@ -18,7 +19,14 @@ type Filter = "todos" | "pendente" | "aprovado" | "recusado";
 
 const STATUS_LABEL: Record<string, string> = { pendente: "Pendente", aprovado: "Aprovado", recusado: "Recusado" };
 const STATUS_CLASS: Record<string, string> = { pendente: "status-pink", aprovado: "status-lime", recusado: "status-neutral" };
-const fmt = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+const fmt = (iso: string) => {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+};
+const approvalError = (error: unknown, fallback: string) => {
+  console.error("[companies]", error);
+  return userErrorMessage(error, fallback);
+};
 
 export function ApprovalsPage() {
   const { isBackoffice } = useStudio();
@@ -45,19 +53,19 @@ export function ApprovalsPage() {
   const review = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "aprovado" | "recusado" }) => { const { error } = await supabase.from("app_users").update({ status }).eq("id", id); if (error) throw new Error(error.message); },
     onSuccess: (_data, values) => { toast.success(values.status === "aprovado" ? "Cadastro liberado." : "Cadastro recusado."); qc.invalidateQueries({ queryKey: ["companies"] }); qc.invalidateQueries({ queryKey: ["team"] }); },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível concluir."),
+    onError: (error) => toast.error(approvalError(error, "Não foi possível concluir. Tente novamente.")),
   });
 
   const assignPlan = useMutation({
     mutationFn: async ({ tenantId, planId }: { tenantId: string; planId: string }) => { const { error } = await supabase.from("tenants").update({ plan_id: planId }).eq("id", tenantId); if (error) throw new Error(error.message); },
     onSuccess: () => { toast.success("Plano da empresa atualizado."); qc.invalidateQueries({ queryKey: ["companies"] }); qc.invalidateQueries({ queryKey: ["tenants"] }); },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível trocar o plano."),
+    onError: (error) => toast.error(approvalError(error, "Não foi possível trocar o plano. Tente novamente.")),
   });
 
   const resetPassword = useMutation({
     mutationFn: async (userId: string) => sendPasswordReset({ data: { userId } }),
     onSuccess: () => toast.success("E-mail de redefinição enviado."),
-    onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível enviar o e-mail."),
+    onError: (error) => toast.error(approvalError(error, "Não foi possível enviar o e-mail. Tente novamente.")),
   });
 
   const data = companies.data ?? { users: [], tenants: [], plans: [] };

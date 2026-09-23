@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteTenantApiKey, saveTenantApiKey, testTenantApiKey } from "@/lib/tenant-keys.functions";
-import { useTenantKeys } from "@/lib/api-keys";
+import { actionError, useTenantKeys } from "@/lib/api-keys";
 import { useStudio } from "./studio-context";
 
 type Provider = "gemini" | "json2video" | "elevenlabs" | "kalodata";
@@ -41,7 +41,10 @@ function ProviderCard({ meta, row, byok }: { meta: (typeof PROVIDERS)[number]; r
   const remove = useServerFn(deleteTenantApiKey);
   const test = useServerFn(testTenantApiKey);
   const refresh = () => qc.invalidateQueries({ queryKey: ["tenant-api-keys"] });
-  const fail = (e: unknown) => toast.error(e instanceof Error ? e.message : "Não foi possível concluir.");
+  const fail = (e: unknown) => {
+    console.error(`[api-key] ${meta.id}`, e);
+    toast.error(actionError(e, "Não foi possível concluir. Verifique a chave e tente novamente."));
+  };
 
   const saving = useMutation({
     mutationFn: () => save({ data: { provider: meta.id, apiKey: value.trim() } }),

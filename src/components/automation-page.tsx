@@ -30,6 +30,7 @@ import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
 import { useProfileAvatars } from "./avatar-library";
 import { useVoices } from "@/lib/voices";
+import { userErrorMessage } from "@/lib/user-error";
 import {
   AVATAR_MODO_LABELS,
   FONTE_LABELS,
@@ -268,7 +269,10 @@ function ScheduleDialog({
           toast.success("Agenda salva.");
           onOpenChange(false);
         },
-        onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Não foi possível salvar."),
+        onError: (e: unknown) => {
+          console.error("[automation] save schedule", e);
+          toast.error(userErrorMessage(e, "Não foi possível salvar a agenda. Tente novamente."));
+        },
       },
     );
   };
