@@ -138,9 +138,12 @@ export async function generateScriptForJob(supabase: any, jobId: string, skipPer
     if (jobError) throw new Error(jobError.message);
     if (!job) throw new Error("Job não encontrado ou sem permissão de acesso.");
 
-    const { data: canEdit, error: permError } = await supabase.rpc("can_edit_pipeline", { _profile_id: job.profile_id });
-    if (permError) throw new Error(permError.message);
-    if (!canEdit) throw new Error("Você não tem permissão para gerar roteiro neste perfil.");
+    if (!skipPermission) {
+      const { data: canEdit, error: permError } = await supabase.rpc("can_edit_pipeline", { _profile_id: job.profile_id });
+      if (permError) throw new Error(permError.message);
+      if (!canEdit) throw new Error("Você não tem permissão para gerar roteiro neste perfil.");
+    }
+
 
     const [{ data: product }, { data: identity }, { data: profile }] = await Promise.all([
       job.product_id
