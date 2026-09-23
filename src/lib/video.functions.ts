@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { DEFAULT_VISUAL_STYLE, isVisualStyle, visualStylePrompt, type VisualStyle } from "@/lib/visual-style";
 
 /**
  * Orquestração do vídeo profissional com pessoa usando o produto.
@@ -41,6 +42,8 @@ type JobRow = {
   avatar_description?: string | null;
   cenas_count?: number | null;
   take_duration?: number | null;
+  visual_style_override?: string | null;
+  visual_style_custom?: string | null;
 };
 
 
@@ -150,6 +153,21 @@ function personDescriptionBlock(description: string): string {
   return `PERSON DESCRIPTION: The person appearing in the scene must match this description: ${description}. Keep exactly the same person, face and hair across every scene of this video.\n\n`;
 }
 
+type VisualStyleSettings = { visual_style?: string | null; visual_style_custom?: string | null };
+
+export function effectiveVisualStyle(
+  job: Pick<JobRow, "visual_style_override" | "visual_style_custom">,
+  settings: VisualStyleSettings | null,
+): { style: VisualStyle; custom: string | null; prompt: string } {
+  const override = isVisualStyle(job.visual_style_override) ? job.visual_style_override : null;
+  const profileStyle = isVisualStyle(settings?.visual_style) ? settings.visual_style : DEFAULT_VISUAL_STYLE;
+  const style = override ?? profileStyle;
+  const custom = style === "personalizado"
+    ? (override ? job.visual_style_custom : settings?.visual_style_custom)?.trim() || null
+    : null;
+  return { style, custom, prompt: visualStylePrompt(style, custom) };
+}
+
 /** Tags {{nome}} citadas numa descrição de cena, em ordem e sem repetição. */
 export function sceneTags(prompt: string): string[] {
   const found = [...(prompt ?? "").matchAll(/\{\{\s*([A-Za-z0-9_-]{2,24})\s*\}\}/g)].map((m) =>
@@ -254,7 +272,7 @@ async function assertVideoKeys(supabase: any, job: JobRow) {
 async function loadJob(supabase: any, jobId: string, skipPermission = false): Promise<JobRow> {
   const { data: job, error } = await supabase
     .from("jobs")
-    .select("id, product_id, profile_id, tenant_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato, ai_status, ai_render_stage, avatar_id, avatar_reference_urls, avatar_description, cenas_count, take_duration")
+    .select("id, product_id, profile_id, tenant_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato, ai_status, ai_render_stage, avatar_id, avatar_reference_urls, avatar_description, cenas_count, take_duration, visual_style_override, visual_style_custom")
     .eq("id", jobId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -429,7 +447,7 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
         : Promise.resolve({ data: null }),
       supabase
         .from("profile_video_settings")
-        .select("avatar_mode, avatar_reference_url, avatar_reference_urls, avatar_description, gemini_model")
+        .select("avatar_mode, avatar_reference_url, avatar_reference_urls, avatar_description, gemini_model, visual_style, visual_style_custom")
         .eq("profile_id", job.profile_id)
         .maybeSingle(),
     ]);
@@ -442,6 +460,7 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     const references: { base64: string; mimeType: string }[] = [...personRefs, ...productRefs];
 
     const sceneText = personas ? personas.prompt : imagePrompt;
+    const style = effectiveVisualStyle(job, settingsRow);
     const identityRequirement = personas
       ? `${pipeline.personaIdentityBlock(personas.labels)}\n\n`
       : personRefs.length
@@ -455,7 +474,7 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     const generated = await withTenantKeys(job.tenant_id, () =>
       pipeline.generateSceneImage({
         model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
-        prompt: `${identityRequirement}${referenceGuide}\n\nSCENE: ${sceneText} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
+        prompt: `${style.prompt}\n\n${identityRequirement}${referenceGuide}\n\nSCENE: ${sceneText} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
         references,
       }),
     );
@@ -570,7 +589,7 @@ async function runStep(
     supabase.from("profiles").select("name, niche").eq("id", job.profile_id).maybeSingle(),
     supabase
       .from("profile_video_settings")
-      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, avatar_description, takes_count, gemini_model, veo_model, take_duration, voice_ref")
+      .select("avatar_mode, avatar_reference_url, avatar_reference_urls, avatar_description, takes_count, gemini_model, veo_model, take_duration, voice_ref, visual_style, visual_style_custom")
       .eq("profile_id", job.profile_id)
       .maybeSingle(),
   ]);
@@ -591,6 +610,7 @@ async function runStep(
     voice_ref: job.voice_ref ?? settingsRow?.voice_ref ?? null,
   };
   const language = identity?.language || "pt-BR";
+  const visualStyle = effectiveVisualStyle(job, settingsRow);
 
   const prompts = await import("./prompts.server");
   const promptVars = {
@@ -604,6 +624,7 @@ async function runStep(
     idioma: language,
     tom_de_voz: identity?.tone ?? "",
     observacoes_estilo: identity?.style_notes ?? "",
+    estilo_visual: visualStyle.custom ?? visualStyle.style,
     numero_cenas: settings.takes_count,
     duracao_cena: settings.take_duration,
   };
@@ -647,7 +668,7 @@ async function runStep(
         : "";
       const generated = await pipeline.generateSceneImage({
         model: settings.gemini_model,
-        prompt: `${identityRequirement}${referenceGuide}${productFacts}\n\nSCENE: ${sceneText} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
+        prompt: `${visualStyle.prompt}\n\n${identityRequirement}${referenceGuide}${productFacts}\n\nSCENE: ${sceneText} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
         references,
       });
 
