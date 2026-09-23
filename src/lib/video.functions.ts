@@ -223,6 +223,22 @@ export async function startJobScenes(supabase: any, jobId: string, skipPermissio
   const { assertOrcamento: assertOrcamentoCenas } = await import("./orcamento.server");
   await assertOrcamentoCenas(job.profile_id, { barata: true });
 
+  // Trava de saldo ANTES de começar: o vídeo inteiro precisa de cenas, animações,
+  // montagem e (quando há voz) narração. Falta de qualquer uma impede a geração.
+  {
+    const { assertSaldo, needsVideoCompleto } = await import("./saldo.server");
+    const { data: cfg } = await supabase
+      .from("profile_video_settings")
+      .select("takes_count, voice_ref")
+      .eq("profile_id", job.profile_id)
+      .maybeSingle();
+    const cenas = job.cenas_count ?? cfg?.takes_count ?? 3;
+    await assertSaldo(
+      job.tenant_id,
+      needsVideoCompleto({ cenas, comNarracao: !!(job.voice_ref ?? cfg?.voice_ref) }),
+    );
+  }
+
   // Retentativa: se já existem cenas com imagem, elas são preservadas e só
   // as que ficaram sem imagem são refeitas. Nada do que deu certo é perdido.
   const existing = (Array.isArray(job.scenes) ? job.scenes : []) as { image_url?: string }[];
@@ -272,6 +288,23 @@ export async function approveJobScenesCore(supabase: any, jobId: string, skipPer
   await assertOrcamento(job.profile_id);
   await assertSaldoFornecedor("animacao_veo");
 
+  {
+    const { assertSaldo, needsVideoCompleto } = await import("./saldo.server");
+    const { data: cfg } = await supabase
+      .from("profile_video_settings")
+      .select("voice_ref")
+      .eq("profile_id", job.profile_id)
+      .maybeSingle();
+    await assertSaldo(
+      job.tenant_id,
+      needsVideoCompleto({
+        cenas: scenes.length,
+        comCenas: false,
+        comNarracao: !!(job.voice_ref ?? cfg?.voice_ref),
+      }),
+    );
+  }
+
   const { error } = await supabase
     .from("jobs")
     .update(
@@ -312,6 +345,8 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
 
     const { assertOrcamento: assertOrcamentoRegen } = await import("./orcamento.server");
     await assertOrcamentoRegen(job.profile_id, { barata: true });
+    const { assertSaldo } = await import("./saldo.server");
+    await assertSaldo(job.tenant_id, { cena: 1 });
 
     // Cenas prontas podem ser regeradas na revisão; uma cena que FALHOU (ficou
     // sem imagem) também pode ser refeita sozinha, sem descartar as que deram certo.

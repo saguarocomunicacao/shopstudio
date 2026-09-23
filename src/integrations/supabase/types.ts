@@ -320,6 +320,7 @@ export type Database = {
           tenant_id: string
           tool_price_cents: number
           unidade: Database["public"]["Enums"]["unidade_tarifa"]
+          wallet_movement_id: string | null
         }
         Insert: {
           action_type?: string | null
@@ -338,6 +339,7 @@ export type Database = {
           tenant_id?: string
           tool_price_cents?: number
           unidade: Database["public"]["Enums"]["unidade_tarifa"]
+          wallet_movement_id?: string | null
         }
         Update: {
           action_type?: string | null
@@ -356,6 +358,7 @@ export type Database = {
           tenant_id?: string
           tool_price_cents?: number
           unidade?: Database["public"]["Enums"]["unidade_tarifa"]
+          wallet_movement_id?: string | null
         }
         Relationships: [
           {
@@ -384,6 +387,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consumo_eventos_wallet_movement_id_fkey"
+            columns: ["wallet_movement_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_movements"
             referencedColumns: ["id"]
           },
         ]
@@ -908,6 +918,8 @@ export type Database = {
           action_type: string
           included_qty: number
           overage_price_cents: number
+          package_price_cents: number
+          package_qty: number
           plan_id: string
           price_cents: number
           unit_price_cents: number
@@ -917,6 +929,8 @@ export type Database = {
           action_type: string
           included_qty?: number
           overage_price_cents?: number
+          package_price_cents?: number
+          package_qty?: number
           plan_id: string
           price_cents?: number
           unit_price_cents?: number
@@ -926,6 +940,8 @@ export type Database = {
           action_type?: string
           included_qty?: number
           overage_price_cents?: number
+          package_price_cents?: number
+          package_qty?: number
           plan_id?: string
           price_cents?: number
           unit_price_cents?: number
@@ -1534,6 +1550,42 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_action_balances: {
+        Row: {
+          action_type: string
+          saldo: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          action_type: string
+          saldo?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          saldo?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_action_balances_action_type_fkey"
+            columns: ["action_type"]
+            isOneToOne: false
+            referencedRelation: "billable_actions"
+            referencedColumns: ["action_type"]
+          },
+          {
+            foreignKeyName: "tenant_action_balances_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_api_keys: {
         Row: {
           created_at: string
@@ -1848,6 +1900,70 @@ export type Database = {
           },
         ]
       }
+      wallet_movements: {
+        Row: {
+          action_type: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          job_id: string | null
+          price_cents: number
+          quantidade: number
+          saldo_apos: number
+          tenant_id: string
+          tipo: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          job_id?: string | null
+          price_cents?: number
+          quantidade: number
+          saldo_apos: number
+          tenant_id: string
+          tipo: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          job_id?: string | null
+          price_cents?: number
+          quantidade?: number
+          saldo_apos?: number
+          tenant_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_movements_action_type_fkey"
+            columns: ["action_type"]
+            isOneToOne: false
+            referencedRelation: "billable_actions"
+            referencedColumns: ["action_type"]
+          },
+          {
+            foreignKeyName: "wallet_movements_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_movements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       prompt_templates_visible: {
@@ -1885,6 +2001,19 @@ export type Database = {
       can_edit_pipeline: { Args: { _profile_id: string }; Returns: boolean }
       can_edit_profile: { Args: { _profile_id: string }; Returns: boolean }
       can_view_profile: { Args: { _profile_id: string }; Returns: boolean }
+      credit_action_packages: {
+        Args: {
+          _action: string
+          _descricao?: string
+          _packages: number
+          _tenant: string
+        }
+        Returns: number
+      }
+      debit_action_balance: {
+        Args: { _action: string; _job?: string; _qty: number; _tenant: string }
+        Returns: string
+      }
       default_tenant_id: { Args: never; Returns: string }
       ensure_app_user: { Args: never; Returns: undefined }
       is_backoffice: { Args: never; Returns: boolean }

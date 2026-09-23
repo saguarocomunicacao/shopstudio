@@ -15,8 +15,9 @@ import { ACAO_LABELS, type BillableAction } from "@/lib/custo-core";
 import { useStudio } from "./studio-context";
 
 type Plan = { id: string; name: string; key_source: "shop_studio" | "byok"; is_active: boolean };
-type ActionPrice = { plan_id: string; action_type: BillableAction; unit_price_cents: number };
-type Tenant = { id: string; plan_id: string | null };
+type ActionPrice = { plan_id: string; action_type: BillableAction; package_qty: number; package_price_cents: number };
+type Pacote = { qty: number; price: number };
+type Tenant = { id: string; name: string; plan_id: string | null };
 
 export const PLAN_ACTIONS: BillableAction[] = [
   "roteiro", "descricao_produto", "transcricao", "cena", "video", "montagem",
@@ -50,7 +51,7 @@ function usePlansData() {
   const prices = useQuery({
     queryKey: ["plan-action-prices"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("plan_action_prices").select("plan_id, action_type, unit_price_cents");
+      const { data, error } = await supabase.from("plan_action_prices").select("plan_id, action_type, package_qty, package_price_cents");
       if (error) throw new Error(error.message);
       return (data ?? []) as ActionPrice[];
     },
@@ -58,7 +59,7 @@ function usePlansData() {
   const tenants = useQuery({
     queryKey: ["tenants"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("tenants").select("id, plan_id");
+      const { data, error } = await supabase.from("tenants").select("id, name, plan_id").order("name");
       if (error) throw new Error(error.message);
       return (data ?? []) as Tenant[];
     },
@@ -93,7 +94,7 @@ export function PlansPage() {
   const loading = plans.isLoading || prices.isLoading || tenants.isLoading;
   return <BackofficeOnly><div>
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div><p className="mb-1 text-xs font-bold uppercase text-primary">Backoffice</p><h1 className="text-2xl font-black sm:text-3xl">Planos</h1><p className="mt-2 text-sm text-muted-foreground">Cada ação tem um preço por unidade. O cliente compra quantidades que não expiram e usa quando quiser.</p></div>
+      <div><p className="mb-1 text-xs font-bold uppercase text-primary">Backoffice</p><h1 className="text-2xl font-black sm:text-3xl">Planos</h1><p className="mt-2 text-sm text-muted-foreground">Cada ação é vendida em pacote: uma quantidade por um preço. As quantidades compradas não expiram. Pacote com preço zero significa uso ilimitado.</p></div>
       {isBackoffice && <Button asChild><Link to="/app/planos/$planId" params={{ planId: "novo" }}><Plus />Novo plano</Link></Button>}
     </div>
     <section className="panel overflow-hidden p-0">
@@ -108,6 +109,7 @@ export function PlansPage() {
       </Table>}
       {!loading && !(plans.data ?? []).length && <p className="p-8 text-center text-sm text-muted-foreground">Nenhum plano cadastrado.</p>}
     </section>
+    <CreditPackageCard tenants={tenants.data ?? []} />
     <AlertDialog open={!!removeId} onOpenChange={(open) => !open && setRemoveId(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Remover este plano?</AlertDialogTitle><AlertDialogDescription>As empresas vinculadas ficarão sem plano. Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => removeId && removePlan.mutate(removeId)}>Remover plano</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
   </div></BackofficeOnly>;
 }
@@ -125,7 +127,7 @@ function PlanRows({ plan, rows, companies, open, canEdit, onToggle, onActive, on
         {canEdit && <><Button asChild variant="ghost" size="sm"><Link to="/app/planos/$planId" params={{ planId: plan.id }}><Pencil />Editar</Link></Button><Button variant="ghost" size="icon" aria-label={plan.is_active ? "Desativar plano" : "Ativar plano"} onClick={() => onActive(!plan.is_active)}><Power /></Button><Button variant="ghost" size="icon" aria-label="Remover plano" onClick={onRemove}><Trash2 /></Button></>}
       </div></TableCell>
     </TableRow>
-    {open && <TableRow className="bg-secondary/40 hover:bg-secondary/40"><TableCell/><TableCell colSpan={5}><div className="grid gap-3 py-3 sm:grid-cols-2"><Summary label="Ações configuradas" value={`${rows.filter((row) => row.unit_price_cents > 0).length} de 12`} /><Summary label="Preço unitário máximo" value={brl(Math.max(0, ...rows.map((row) => row.unit_price_cents)))} /></div></TableCell></TableRow>}
+    {open && <TableRow className="bg-secondary/40 hover:bg-secondary/40"><TableCell/><TableCell colSpan={5}><div className="grid gap-3 py-3 sm:grid-cols-2"><Summary label="Ações com pacote pago" value={`${rows.filter((row) => row.package_price_cents > 0).length} de 12`} /><Summary label="Ações ilimitadas" value={`${12 - rows.filter((row) => row.package_price_cents > 0).length} de 12`} /></div></TableCell></TableRow>}
   </>;
 }
 
@@ -142,17 +144,17 @@ export function PlanDetailPage({ planId }: { planId?: string }) {
   });
   const { data: savedPrices = [], isLoading: priceLoading } = useQuery({
     queryKey: ["plan-action-prices", planId], enabled: editing,
-    queryFn: async () => { const { data, error } = await supabase.from("plan_action_prices").select("plan_id, action_type, unit_price_cents").eq("plan_id", planId ?? ""); if (error) throw new Error(error.message); return (data ?? []) as ActionPrice[]; },
+    queryFn: async () => { const { data, error } = await supabase.from("plan_action_prices").select("plan_id, action_type, package_qty, package_price_cents").eq("plan_id", planId ?? ""); if (error) throw new Error(error.message); return (data ?? []) as ActionPrice[]; },
   });
   const [name, setName] = useState("");
   const [keySource, setKeySource] = useState<Plan["key_source"]>("shop_studio");
   const [active, setActive] = useState(true);
-  const [draft, setDraft] = useState<Record<BillableAction, number>>(() => emptyPrices());
+  const [draft, setDraft] = useState<Record<BillableAction, Pacote>>(() => emptyPrices());
   const hydrated = useMemo(() => plan ? `${plan.id}:${savedPrices.length}` : "", [plan, savedPrices.length]);
   const [lastHydrated, setLastHydrated] = useState("");
   if (plan && hydrated !== lastHydrated) {
     setLastHydrated(hydrated); setName(plan.name); setKeySource(plan.key_source); setActive(plan.is_active);
-    setDraft(Object.fromEntries(PLAN_ACTIONS.map((action) => { const row = savedPrices.find((price) => price.action_type === action); return [action, row?.unit_price_cents ?? 0]; })) as Record<BillableAction, number>);
+    setDraft(Object.fromEntries(PLAN_ACTIONS.map((action) => { const row = savedPrices.find((price) => price.action_type === action); return [action, { qty: row?.package_qty ?? 1, price: row?.package_price_cents ?? 0 }]; })) as Record<BillableAction, Pacote>);
   }
   const save = useMutation({
     mutationFn: async () => {
@@ -160,7 +162,7 @@ export function PlanDetailPage({ planId }: { planId?: string }) {
       let id = planId;
       if (id) { const { error } = await supabase.from("plans").update({ name: name.trim(), key_source: keySource, is_active: active }).eq("id", id); if (error) throw new Error(error.message); }
       else { const { data, error } = await supabase.from("plans").insert({ name: name.trim(), key_source: keySource, is_active: active } as never).select("id").single(); if (error) throw new Error(error.message); id = (data as { id: string }).id; }
-      const rows = PLAN_ACTIONS.map((action_type) => ({ plan_id: id as string, action_type, unit_price_cents: draft[action_type], included_qty: 0, overage_price_cents: 0 }));
+      const rows = PLAN_ACTIONS.map((action_type) => { const pacote = draft[action_type]; const qty = Math.max(1, Math.round(pacote.qty || 1)); return { plan_id: id as string, action_type, package_qty: qty, package_price_cents: pacote.price, unit_price_cents: Math.round(pacote.price / qty), included_qty: 0, overage_price_cents: 0 }; });
       const { error } = await supabase.from("plan_action_prices").upsert(rows as never, { onConflict: "plan_id,action_type" });
       if (error) throw new Error(error.message);
     },
@@ -176,16 +178,61 @@ export function PlanDetailPage({ planId }: { planId?: string }) {
       <label className="grid gap-1.5 text-xs font-semibold">Fonte de chave<Select value={keySource} onValueChange={(value) => setKeySource(value as Plan["key_source"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{KEY_SOURCE.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></label>
       <label className="flex h-10 items-center gap-2 text-sm font-semibold"><Switch checked={active} onCheckedChange={setActive} />Ativo</label>
     </div></section>
-    <section className="panel mt-5"><div className="mb-5"><h2 className="font-bold">Preços por ação</h2><p className="mt-1 text-sm text-muted-foreground">Defina quanto custa comprar uma unidade de cada ação. As quantidades compradas não expiram e são usadas conforme o consumo.</p></div>
-      <div className="overflow-hidden"><table className="w-full table-fixed text-sm"><thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="w-1/2 p-2 sm:w-2/5">Ação</th><th className="p-2">Preço unitário <span className="hidden sm:inline">(R$ por unidade)</span><span className="sm:hidden">(R$)</span></th></tr></thead><tbody className="divide-y">{PLAN_ACTIONS.map((action) => <tr key={action}><td className="p-2 font-medium">{ACAO_LABELS[action]}</td><td className="p-2"><MoneyInput value={draft[action]} onChange={(value) => setDraftValue(setDraft, draft, action, value)} /></td></tr>)}</tbody></table></div>
+    <section className="panel mt-5"><div className="mb-5"><h2 className="font-bold">Pacotes por ação</h2><p className="mt-1 text-sm text-muted-foreground">Defina quantas unidades vêm em um pacote e quanto custa esse pacote. As quantidades compradas não expiram. Deixe o preço em R$ 0,00 para a ação ficar ilimitada.</p></div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[520px] table-fixed text-sm"><thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="w-2/5 p-2">Ação</th><th className="p-2">Quantidade do pacote</th><th className="p-2">Preço do pacote <span className="hidden sm:inline">(R$)</span></th></tr></thead><tbody className="divide-y">{PLAN_ACTIONS.map((action) => <tr key={action}><td className="p-2 font-medium">{ACAO_LABELS[action]}</td><td className="p-2"><Input inputMode="numeric" value={String(draft[action].qty)} onChange={(event) => setDraftValue(setDraft, action, { qty: Math.max(1, Number(event.target.value.replace(/\D/g, "")) || 1) })} /></td><td className="p-2"><MoneyInput value={draft[action].price} onChange={(value) => setDraftValue(setDraft, action, { price: value })} /></td></tr>)}</tbody></table></div>
     </section>
     <div className="mt-5 flex justify-end gap-2"><Button variant="ghost" onClick={() => navigate({ to: "/app/planos" })}>Cancelar</Button><Button disabled={save.isPending || !name.trim()} onClick={() => save.mutate()}>{save.isPending && <Loader2 className="size-4 animate-spin" />}Salvar plano</Button></div>
   </div>;
 }
 
-function emptyPrices() { return Object.fromEntries(PLAN_ACTIONS.map((action) => [action, 0])) as Record<BillableAction, number>; }
-function setDraftValue(setter: React.Dispatch<React.SetStateAction<Record<BillableAction, number>>>, current: Record<BillableAction, number>, action: BillableAction, value: number) { setter({ ...current, [action]: value }); }
+function emptyPrices() { return Object.fromEntries(PLAN_ACTIONS.map((action) => [action, { qty: 1, price: 0 }])) as Record<BillableAction, Pacote>; }
+function setDraftValue(setter: React.Dispatch<React.SetStateAction<Record<BillableAction, Pacote>>>, action: BillableAction, patch: Partial<Pacote>) { setter((current) => ({ ...current, [action]: { ...current[action], ...patch } })); }
 function MoneyInput({ value, onChange }: { value: number; onChange: (value: number) => void }) { return <Input inputMode="numeric" value={brl(value)} onChange={(event) => onChange(toCents(event.target.value))} />; }
 
 /** Compatibilidade temporária para imports antigos. */
 export const PlansCard = PlansPage;
+/** Backoffice: lança manualmente a compra de pacotes para uma empresa. */
+function CreditPackageCard({ tenants }: { tenants: Tenant[] }) {
+  const qc = useQueryClient();
+  const [tenantId, setTenantId] = useState("");
+  const [action, setAction] = useState<BillableAction>("cena");
+  const [packages, setPackages] = useState("1");
+
+  const creditar = useMutation({
+    mutationFn: async () => {
+      if (!tenantId) throw new Error("Escolha a empresa.");
+      const qtd = Number(packages);
+      if (!Number.isFinite(qtd) || qtd === 0) throw new Error("Informe quantos pacotes creditar.");
+      const { data, error } = await supabase.rpc("credit_action_packages", {
+        _tenant: tenantId,
+        _action: action,
+        _packages: Math.round(qtd),
+      });
+      if (error) throw new Error(error.message);
+      return data as number;
+    },
+    onSuccess: (saldo) => {
+      toast.success(`Pacote creditado. Saldo atual: ${saldo}.`);
+      qc.invalidateQueries({ queryKey: ["saldos"] });
+      qc.invalidateQueries({ queryKey: ["saldo-movimentos"] });
+    },
+    onError: (error) => toast.error(errMessage(error)),
+  });
+
+  return <section className="panel mt-5">
+    <h2 className="font-bold">Creditar pacote para uma empresa</h2>
+    <p className="mt-1 text-sm text-muted-foreground">Lançamento manual enquanto o pagamento automático não existe. A quantidade do pacote vem do plano da empresa.</p>
+    <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px_auto] md:items-end">
+      <label className="grid gap-1.5 text-xs font-semibold">Empresa
+        <Select value={tenantId} onValueChange={setTenantId}><SelectTrigger><SelectValue placeholder="Escolha a empresa" /></SelectTrigger><SelectContent>{tenants.map((tenant) => <SelectItem key={tenant.id} value={tenant.id}>{tenant.name || "Sem nome"}</SelectItem>)}</SelectContent></Select>
+      </label>
+      <label className="grid gap-1.5 text-xs font-semibold">Ação
+        <Select value={action} onValueChange={(value) => setAction(value as BillableAction)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{PLAN_ACTIONS.map((item) => <SelectItem key={item} value={item}>{ACAO_LABELS[item]}</SelectItem>)}</SelectContent></Select>
+      </label>
+      <label className="grid gap-1.5 text-xs font-semibold">Pacotes
+        <Input inputMode="numeric" value={packages} onChange={(event) => setPackages(event.target.value.replace(/[^\d-]/g, ""))} />
+      </label>
+      <Button disabled={creditar.isPending} onClick={() => creditar.mutate()}>{creditar.isPending && <Loader2 className="size-4 animate-spin" />}Creditar</Button>
+    </div>
+  </section>;
+}

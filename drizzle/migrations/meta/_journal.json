@@ -407,6 +407,13 @@
       "when": 1790188922644,
       "tag": "0057_planos_quantidade_etapa_a",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1790190867507,
+      "tag": "0058_carteira_saldo_pacotes",
+      "breakpoints": true
     }
   ]
 }

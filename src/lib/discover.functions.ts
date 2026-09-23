@@ -57,6 +57,8 @@ export const discoverProducts = createServerFn({ method: "POST" })
     if (data.profileId) {
       const { assertOrcamento } = await import("./orcamento.server");
       await assertOrcamento(data.profileId, { barata: true });
+      const { assertSaldoPerfil } = await import("./saldo.server");
+      await assertSaldoPerfil(data.profileId, { busca_produto: 1 });
     }
 
     const { activeProductSource } = await import("./product-source.server");
@@ -141,6 +143,8 @@ export const enrichProductDetails = createServerFn({ method: "POST" })
     await assertTenantKeys(tenantId, ["kalodata"]);
     const { assertOrcamento } = await import("./orcamento.server");
     await assertOrcamento(pending[0]?.profile_id ?? null, { barata: true });
+    const { assertSaldo } = await import("./saldo.server");
+    await assertSaldo(tenantId, { atualizacao_produto: pending.length });
 
     const { recordConsumo } = await import("./consumo.server");
     let enriched = 0;

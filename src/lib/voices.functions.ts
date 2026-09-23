@@ -48,6 +48,8 @@ async function buildPreview(
 ) {
   const { assertOrcamento } = await import("./orcamento.server");
   await assertOrcamento(profileId, { barata: true });
+  const { assertSaldoPerfil } = await import("./saldo.server");
+  await assertSaldoPerfil(profileId, { [acao]: 1 });
 
   const res = await fetch(`${API}/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
     method: "POST",

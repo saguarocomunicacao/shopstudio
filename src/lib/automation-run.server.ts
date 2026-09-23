@@ -452,6 +452,32 @@ async function processarAgenda(
     // 2) TRAVA DUPLA antes de gastar qualquer coisa.
     await checarCusto(admin, schedule, diaBrasilia);
 
+    // 2b) Saldo em quantidade: o vídeo inteiro precisa de roteiro, cenas,
+    // animações, montagem e (quando há voz) narração.
+    {
+      const { assertSaldo, needsVideoCompleto } = await import("./saldo.server");
+      const { data: cfg } = await admin
+        .from("profile_video_settings")
+        .select("takes_count, voice_ref")
+        .eq("profile_id", schedule.profile_id)
+        .maybeSingle();
+      const cenas = schedule.cenas_count ?? cfg?.takes_count ?? 3;
+      try {
+        await assertSaldo(
+          schedule.tenant_id,
+          needsVideoCompleto({
+            cenas,
+            comRoteiro: true,
+            comNarracao: !!(schedule.voice_ref ?? cfg?.voice_ref),
+          }),
+        );
+      } catch (e) {
+        const motivo = e instanceof Error ? e.message : "Sem saldo para gerar o vídeo.";
+        await pausarAgenda(admin, schedule.id, motivo);
+        return await finalizar("pausado", motivo);
+      }
+    }
+
     // 3) Produto novo que passa pelos filtros.
     const { data: profile } = await admin
       .from("profiles")

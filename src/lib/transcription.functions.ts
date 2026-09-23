@@ -40,6 +40,8 @@ export const transcribeAudio = createServerFn({ method: "POST" })
 
     const { assertOrcamento } = await import("./orcamento.server");
     await assertOrcamento(data.profileId, { barata: true });
+    const { assertSaldoPerfil } = await import("./saldo.server");
+    await assertSaldoPerfil(data.profileId, { transcricao: 1 });
 
     const { resolveApiKey, tenantIdOfProfile } = await import("./api-keys.server");
     const tenantId = await tenantIdOfProfile(context.supabase, data.profileId);

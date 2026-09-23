@@ -193,6 +193,8 @@ export async function generateScriptForJob(supabase: any, jobId: string, skipPer
 
     const { assertOrcamento } = await import("./orcamento.server");
     await assertOrcamento(job.profile_id, { barata: true });
+    const { assertSaldoPerfil } = await import("./saldo.server");
+    await assertSaldoPerfil(job.profile_id, { roteiro: 1 });
 
     const { script: generated, usage } = await callLovableAi(prompt);
 

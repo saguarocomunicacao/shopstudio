@@ -21,6 +21,8 @@ export const syncCategories = createServerFn({ method: "POST" })
     const { fetchOfficialCategories } = await import("./product-source.server");
     const { withTenantKeys, tenantIdOfUser } = await import("./api-keys.server");
     const tenantId = await tenantIdOfUser(context.supabase, context.userId);
+    const { assertSaldo } = await import("./saldo.server");
+    await assertSaldo(tenantId, { atualizacao_categorias: 1 });
     const categories = await withTenantKeys(tenantId, () => fetchOfficialCategories(1));
     if (!categories.length) return { count: 0 };
 
