@@ -44,7 +44,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { relativeTime, useJobs, useProducts, useTrashedJobs, type DbJob } from "@/lib/content";
+import { jobStatusLabel, relativeTime, useJobs, useProducts, useTrashedJobs, type DbJob } from "@/lib/content";
 import { restoreOriginalRecording } from "@/lib/recording.functions";
 import {
   approveDraft,
@@ -70,7 +70,6 @@ import { actionError } from "@/lib/api-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
 import { VideoDownloadButton } from "./video-download-button";
-import { jobStatusLabel } from "@/lib/content";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
