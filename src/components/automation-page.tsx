@@ -523,9 +523,9 @@ function ScheduleDialog({
 
 function AutomationContent() {
   const { activeProfileId, activeProfile } = useStudio();
-  const { data: schedules = [], isLoading } = useAutomationSchedules(activeProfileId);
-  const { data: runs = [], isLoading: runsLoading } = useAutomationRuns(activeProfileId);
-  const { data: insights, isLoading: insightsLoading } = useAutomationInsights(activeProfileId, runs);
+  const { data: schedules = [], isLoading, isError } = useAutomationSchedules(activeProfileId);
+  const { data: runs = [], isLoading: runsLoading, isError: runsError } = useAutomationRuns(activeProfileId);
+  const { data: insights, isLoading: insightsLoading, isError: insightsError } = useAutomationInsights(activeProfileId, runs);
   const toggle = useToggleSchedule();
   const remove = useDeleteSchedule();
   const [dialog, setDialog] = useState<{ open: boolean; initial: AutomationSchedule | null }>({ open: false, initial: null });
@@ -581,7 +581,10 @@ function AutomationContent() {
             {isLoading && (
               <TableRow><TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>
             )}
-            {!isLoading && !schedules.length && (
+            {!isLoading && isError && (
+              <TableRow><TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">Não foi possível carregar as agendas. Tente novamente.</TableCell></TableRow>
+            )}
+            {!isLoading && !isError && !schedules.length && (
               <TableRow>
                 <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
                   <Bot className="mx-auto mb-2 h-6 w-6" />
@@ -659,6 +662,7 @@ function AutomationContent() {
             runs={runs}
             insights={insights}
             isLoading={runsLoading || insightsLoading}
+            isError={runsError || insightsError}
           />
         </TabsContent>
       </Tabs>
@@ -735,12 +739,14 @@ function RunsLog({
   runs,
   insights,
   isLoading,
+  isError,
 }: {
   profileId: string | null;
   schedules: AutomationSchedule[];
   runs: import("@/lib/automation").AutomationRun[];
   insights: import("@/lib/automation").AutomationInsights | undefined;
   isLoading: boolean;
+  isError: boolean;
 }) {
   const [scheduleFilter, setScheduleFilter] = useState("todas");
   const [period, setPeriod] = useState<RunPeriod>("mes");
@@ -786,6 +792,7 @@ function RunsLog({
           Cada vez que o robô roda um horário da agenda, ele registra o resultado aqui.
         </p>
       </div>
+      {isError && <div className="panel text-center text-sm text-muted-foreground">Não foi possível carregar as execuções. Tente novamente.</div>}
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="panel">
           <p className="text-xs font-semibold text-muted-foreground">Gasto hoje</p>

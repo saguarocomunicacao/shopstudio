@@ -274,12 +274,15 @@ export function useCustoPeriodo(
   etapas: EtapaVisual[],
   tenantId?: string | null,
 ) {
-  const { data: precos } = useTarifas();
-  const { data: eventos, isLoading } = useEventosPeriodo(desde, ate, profileIds, tenantId);
+  const precosQuery = useTarifas();
+  const eventosQuery = useEventosPeriodo(desde, ate, profileIds, tenantId);
+  const precos = precosQuery.data;
+  const eventos = eventosQuery.data;
   const chaveEtapas = [...etapas].sort().join(",");
   const pronto = !!precos && !!eventos;
   return {
-    isLoading: isLoading || !pronto,
+    isLoading: eventosQuery.isLoading || precosQuery.isLoading,
+    isError: eventosQuery.isError || precosQuery.isError,
     data: pronto ? agregarPeriodo(eventos!, precos!.tarifas, precos!.cotacao, etapas, precos!.taxas) : null,
     chaveEtapas,
   };
