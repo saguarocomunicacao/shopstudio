@@ -198,18 +198,6 @@ function ScheduleDialog({
 
           <section className="space-y-3">
             <h3 className="text-sm font-bold">Quando rodar</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Vídeos por dia</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={form.videos_por_dia}
-                  onChange={(e) => set("videos_por_dia", Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
-                />
-              </div>
-            </div>
             <div className="space-y-2">
               <Label>Horários de disparo</Label>
               <div className="flex flex-wrap gap-2">
@@ -239,7 +227,9 @@ function ScheduleDialog({
                   <Plus className="mr-1.5 h-4 w-4" /> Horário
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">Horário de Brasília. É quando a geração começa a rodar.</p>
+              <p className="text-xs text-muted-foreground">
+                Cada horário abaixo gera um vídeo. {form.horarios.filter(Boolean).length} horário(s) = {form.horarios.filter(Boolean).length} vídeo(s) por dia. Horário de Brasília, é quando a geração começa a rodar.
+              </p>
             </div>
           </section>
 
