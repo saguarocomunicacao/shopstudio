@@ -40,12 +40,27 @@ async function storeImages(prefix: string, images: ImageInput[]) {
   return urls;
 }
 
+/** Normaliza a tag da persona: minúscula, sem acento e sem espaço. */
+export function slugifyTag(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 24);
+}
+
+export const TAG_REGEX = /^[a-z0-9_]{2,24}$/;
+
 const avatarInput = z.object({
   profileId: z.string().uuid(),
   avatarId: z.string().uuid().optional(),
   name: z.string().trim().min(2, "Dê um nome para o avatar.").max(80),
+  tag: z.string().trim().max(24).default(""),
   description: z.string().trim().max(600).default(""),
   images: z.array(imageSchema).max(MAX_AVATAR_IMAGES).default([]),
+  primaryIndex: z.number().int().min(0).max(MAX_AVATAR_IMAGES - 1).default(0),
 });
 
 /** Cria ou atualiza um avatar da biblioteca do perfil. */
