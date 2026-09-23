@@ -250,8 +250,17 @@ async function escolherProduto(
 
   for (let page = 1; page <= 3; page += 1) {
     const query = queryDaAgenda(schedule, profile.category_id, page);
-    const result: any = await withTenantKeys(schedule.tenant_id, () => source.search(query as never));
+    // Filtro sem resultado faz a fonte devolver erro: isso é "nada novo",
+    // não uma falha da agenda.
+    let result: any = null;
+    try {
+      result = await withTenantKeys(schedule.tenant_id, () => source.search(query as never));
+    } catch (e) {
+      console.error("[automacao] busca sem resultado", schedule.id, erro(e));
+      break;
+    }
     const itens: any[] = Array.isArray(result?.items) ? result.items : [];
+
 
     await recordConsumo({
       jobId: null,
