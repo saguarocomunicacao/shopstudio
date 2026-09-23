@@ -105,6 +105,20 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
       <p className="text-sm text-muted-foreground">
         Revise as cenas antes de animar. Regerar uma imagem é barato; a animação é a parte cara.
       </p>
+      {personas.some((p) => p.tag) && (
+        <div className="rounded-xl border bg-secondary/50 px-4 py-3 text-xs">
+          <p className="font-bold">Pessoas deste perfil</p>
+          <p className="mt-1 text-muted-foreground">
+            Escreva a etiqueta na descrição da cena para colocar a pessoa na imagem, ex.{" "}
+            <code className="rounded bg-background px-1">{`{{${personas.find((p) => p.tag)!.tag}}} segura o produto`}</code>.
+          </p>
+          <p className="mt-2 flex flex-wrap gap-1.5">
+            {personas.filter((p) => p.tag).map((p) => (
+              <code key={p.id} className="rounded bg-background px-1.5 py-0.5 font-bold">{`{{${p.tag}}}`}</code>
+            ))}
+          </p>
+        </div>
+      )}
       {faltando > 0 && (
         <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {faltando === 1 ? "1 cena ficou sem imagem" : `${faltando} cenas ficaram sem imagem`}. As demais já estão
