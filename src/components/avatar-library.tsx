@@ -73,10 +73,14 @@ export function AvatarPhotosField({
   photos,
   onChange,
   disabled,
+  primaryIndex,
+  onPrimaryChange,
 }: {
   photos: AvatarPhoto[];
   onChange: (photos: AvatarPhoto[]) => void;
   disabled?: boolean;
+  primaryIndex?: number;
+  onPrimaryChange?: (index: number) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
