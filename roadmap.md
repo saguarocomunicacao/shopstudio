@@ -74,7 +74,7 @@
 - [ ] Validar tipos, build e fluxos críticos
 
 ## Foto de identidade do perfil
-- [ ] Adicionar campo e armazenamento isolado por empresa/perfil
-- [ ] Criar upload JPG/PNG de até 15 MB com recorte circular
-- [ ] Exibir foto no seletor superior e na listagem de Perfis
-- [ ] Validar upload real, fallback e visualização desktop/mobile
+- [x] Adicionar campo e armazenamento isolado por empresa/perfil
+- [x] Criar upload JPG/PNG de até 15 MB com recorte circular
+- [x] Exibir foto no seletor superior e na listagem de Perfis
+- [x] Validar upload real, fallback e visualização desktop/mobile
