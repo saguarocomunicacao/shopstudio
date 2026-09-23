@@ -79,6 +79,110 @@ export type Database = {
           },
         ]
       }
+      automation_schedules: {
+        Row: {
+          ativa: boolean
+          avatar_id: string | null
+          avatar_modo: string
+          cenas_count: number | null
+          created_at: string
+          created_by: string | null
+          filtros: Json
+          fonte: string
+          horarios: Json
+          id: string
+          nome: string
+          pausada_motivo: string | null
+          profile_id: string
+          qualidade: string | null
+          take_duration: number | null
+          tenant_id: string
+          teto_diario_cents: number | null
+          teto_mensal_cents: number | null
+          ultimo_disparo_em: string | null
+          updated_at: string
+          videos_por_dia: number
+          voice_ref: string | null
+        }
+        Insert: {
+          ativa?: boolean
+          avatar_id?: string | null
+          avatar_modo?: string
+          cenas_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          filtros?: Json
+          fonte?: string
+          horarios?: Json
+          id?: string
+          nome?: string
+          pausada_motivo?: string | null
+          profile_id: string
+          qualidade?: string | null
+          take_duration?: number | null
+          tenant_id?: string
+          teto_diario_cents?: number | null
+          teto_mensal_cents?: number | null
+          ultimo_disparo_em?: string | null
+          updated_at?: string
+          videos_por_dia?: number
+          voice_ref?: string | null
+        }
+        Update: {
+          ativa?: boolean
+          avatar_id?: string | null
+          avatar_modo?: string
+          cenas_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          filtros?: Json
+          fonte?: string
+          horarios?: Json
+          id?: string
+          nome?: string
+          pausada_motivo?: string | null
+          profile_id?: string
+          qualidade?: string | null
+          take_duration?: number | null
+          tenant_id?: string
+          teto_diario_cents?: number | null
+          teto_mensal_cents?: number | null
+          ultimo_disparo_em?: string | null
+          updated_at?: string
+          videos_por_dia?: number
+          voice_ref?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_schedules_avatar_id_fkey"
+            columns: ["avatar_id"]
+            isOneToOne: false
+            referencedRelation: "profile_avatars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_schedules_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_schedules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_schedules_voice_ref_fkey"
+            columns: ["voice_ref"]
+            isOneToOne: false
+            referencedRelation: "voices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billable_actions: {
         Row: {
           action_type: string

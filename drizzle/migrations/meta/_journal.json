@@ -372,6 +372,13 @@
       "when": 1790119389694,
       "tag": "0052_ai_video_thumbnail_path",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1790167011351,
+      "tag": "0053_create_automation_schedules",
+      "breakpoints": true
     }
   ]
 }
