@@ -206,8 +206,10 @@ export const setJobAvatar = createServerFn({ method: "POST" })
           .insert({
             profile_id: job.profile_id,
             name: data.name.trim(),
+            tag: slugifyTag(data.name) || null,
             description,
             reference_urls: urls,
+            primary_url: urls[0] ?? null,
             created_by: context.userId,
           })
           .select("id")
