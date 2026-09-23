@@ -14,7 +14,7 @@
 - [x] Validar as quatro correções no mobile sem regressão no desktop
 
 ## Editor de vídeo
-- [ ] Adicionar filmstrip assíncrona à timeline de aparar e tesoura
+- [x] Adicionar filmstrip assíncrona à timeline de aparar e tesoura
 - [x] Original preservado no armazenamento; versão editada salva em paralelo
 - [x] Botão "Editar" na revisão, com linha do tempo, barra de progresso e aviso no celular
 - [x] "Restaurar original" na fila de rascunhos
