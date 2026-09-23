@@ -393,6 +393,13 @@
       "when": 1790170738259,
       "tag": "0055_job_scene_overrides",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1790171560836,
+      "tag": "0056_enable_pg_cron_pg_net",
+      "breakpoints": true
     }
   ]
 }
