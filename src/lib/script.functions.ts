@@ -121,14 +121,16 @@ async function callLovableAi(prompt: string): Promise<{ script: GeneratedScript;
 export const composeScript = (s: GeneratedScript) =>
   `GANCHO (0-3s)\n${s.hook}\n\nCORPO\n${s.body}\n\nCTA\n${s.cta}`;
 
-/** Gera o roteiro de um job com a IA nativa do Lovable e avança o status uma etapa. */
-export const generateJobScript = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ jobId: z.string().uuid() }).parse(data))
-  .handler(async ({ data, context }) => {
-    const { supabase } = context;
+/**
+ * Núcleo da geração de roteiro. `skipPermission` é usado SOMENTE pela automação
+ * (cron), que roda sem sessão e já validou a agenda/tenant antes de chamar.
+ */
+export async function generateScriptForJob(supabase: any, jobId: string, skipPermission = false) {
+  {
+    const data = { jobId };
 
     const { data: job, error: jobError } = await supabase
+
       .from("jobs")
       .select("id, product_id, profile_id, status, title")
       .eq("id", data.jobId)
@@ -136,9 +138,12 @@ export const generateJobScript = createServerFn({ method: "POST" })
     if (jobError) throw new Error(jobError.message);
     if (!job) throw new Error("Job não encontrado ou sem permissão de acesso.");
 
-    const { data: canEdit, error: permError } = await supabase.rpc("can_edit_pipeline", { _profile_id: job.profile_id });
-    if (permError) throw new Error(permError.message);
-    if (!canEdit) throw new Error("Você não tem permissão para gerar roteiro neste perfil.");
+    if (!skipPermission) {
+      const { data: canEdit, error: permError } = await supabase.rpc("can_edit_pipeline", { _profile_id: job.profile_id });
+      if (permError) throw new Error(permError.message);
+      if (!canEdit) throw new Error("Você não tem permissão para gerar roteiro neste perfil.");
+    }
+
 
     const [{ data: product }, { data: identity }, { data: profile }] = await Promise.all([
       job.product_id
@@ -235,4 +240,12 @@ export const generateJobScript = createServerFn({ method: "POST" })
     if (updateError) throw new Error(updateError.message);
 
     return { ...generated, status: nextStatus };
-  });
+  }
+}
+
+/** Gera o roteiro de um job com a IA nativa do Lovable e avança o status uma etapa. */
+export const generateJobScript = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ jobId: z.string().uuid() }).parse(data))
+  .handler(async ({ data, context }) => generateScriptForJob(context.supabase, data.jobId));
+
