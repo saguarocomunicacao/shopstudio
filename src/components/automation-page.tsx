@@ -44,11 +44,15 @@ import {
 const brlFromCents = (v: number | null) =>
   v === null || v === undefined ? "—" : (v / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const centsFromInput = (v: string) => {
-  const n = Number(v.replace(",", "."));
-  return v.trim() === "" || Number.isNaN(n) ? null : Math.round(n * 100);
+/** Máscara de R$ para campos de dinheiro: armazena centavos, exibe "R$ 30,00". */
+const brlMask = (cents: number | null) =>
+  cents === null || cents === undefined ? "" : (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+/** Converte o texto mascarado de volta a centavos; vazio => null. */
+const toCentsMask = (v: string): number | null => {
+  const digits = v.replace(/\D/g, "");
+  if (!digits) return null;
+  return Number(digits);
 };
-const inputFromCents = (v: number | null) => (v === null || v === undefined ? "" : String(v / 100));
 const numOrNull = (v: string) => {
   const n = Number(v.replace(",", "."));
   return v.trim() === "" || Number.isNaN(n) ? null : n;
