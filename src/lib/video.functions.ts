@@ -192,7 +192,7 @@ async function assertVideoKeys(supabase: any, job: JobRow) {
 async function loadJob(supabase: any, jobId: string, skipPermission = false): Promise<JobRow> {
   const { data: job, error } = await supabase
     .from("jobs")
-    .select("id, product_id, profile_id, tenant_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato, ai_status, ai_render_stage, avatar_id, avatar_reference_urls, avatar_description")
+    .select("id, product_id, profile_id, tenant_id, status, script, caption, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, formato, ai_status, ai_render_stage, avatar_id, avatar_reference_urls, avatar_description, cenas_count, take_duration")
     .eq("id", jobId)
     .maybeSingle();
   if (error) throw new Error(error.message);
