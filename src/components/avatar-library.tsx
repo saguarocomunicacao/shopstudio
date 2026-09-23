@@ -172,7 +172,7 @@ export function AvatarFormDialog({
   profileId: string;
   avatar: LibraryAvatar | null;
   onOpenChange: (open: boolean) => void;
-  initialTag?: string;
+  initialTag?: string | undefined;
   onSaved?: (tag: string) => void;
 }) {
   const qc = useQueryClient();
