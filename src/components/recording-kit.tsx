@@ -90,7 +90,7 @@ export function NewOwnVideoDialog({
       const { jobId } = await createJob({
         data:
           modo === "organizar"
-            ? { profileId: activeProfileId, modo, assunto: "", roteiroOrigem: roteiroPronto.trim() }
+            ? { profileId: activeProfileId, modo, roteiroOrigem: roteiroPronto.trim() }
             : { profileId: activeProfileId, modo, assunto: assunto.trim() },
       });
       await generate({ data: { jobId } });

@@ -306,27 +306,26 @@ function tituloProvisorio(texto: string) {
 export const createOwnVideoJob = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z
-      .object({
+    z.discriminatedUnion("modo", [
+      z.object({
         profileId: z.string().uuid(),
-        modo: z.enum(["criar", "organizar"]).default("criar"),
-        assunto: textoLivre(3, "Conte o assunto do vídeo em pelo menos 3 caracteres.").default(""),
-        roteiroOrigem: textoLivre(0, "").optional(),
-      })
-      .superRefine((valor, ctx) => {
-        if (valor.modo === "organizar" && (valor.roteiroOrigem ?? "").trim().length < 30) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Cole, dite ou envie o roteiro que você já tem para a inteligência artificial organizar.",
-          });
-        }
-      })
-      .parse(data),
+        modo: z.literal("criar"),
+        assunto: textoLivre(3, "Conte o assunto do vídeo em pelo menos 3 caracteres."),
+      }),
+      z.object({
+        profileId: z.string().uuid(),
+        modo: z.literal("organizar"),
+        roteiroOrigem: textoLivre(
+          30,
+          "Cole, dite ou envie o roteiro que você já tem para a inteligência artificial organizar.",
+        ),
+      }),
+    ]).parse(data),
   )
   .handler(async ({ data, context }) => {
     await assertCanEdit(context.supabase, data.profileId);
-    const origem = (data.modo === "organizar" ? (data.roteiroOrigem ?? "") : data.assunto).trim();
-    const titulo = tituloProvisorio(data.assunto.trim() || origem) || "Vídeo próprio";
+    const origem = (data.modo === "organizar" ? data.roteiroOrigem : data.assunto).trim();
+    const titulo = tituloProvisorio(origem) || "Vídeo próprio";
     const { data: job, error } = await context.supabase
       .from("jobs")
       .insert({
