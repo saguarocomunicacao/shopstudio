@@ -50,17 +50,19 @@ export function useProfileAvatars(profileId: string | null) {
     queryFn: async (): Promise<LibraryAvatar[]> => {
       const { data, error } = await supabase
         .from("profile_avatars")
-        .select("id, name, description, reference_urls")
+        .select("id, name, tag, description, reference_urls, primary_url")
         .eq("profile_id", profileId!)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data ?? []).map((row) => ({
         id: row.id,
         name: row.name,
+        tag: row.tag ?? "",
         description: row.description ?? "",
         reference_urls: Array.isArray(row.reference_urls)
           ? (row.reference_urls as unknown[]).filter((u): u is string => typeof u === "string" && !!u)
           : [],
+        primary_url: row.primary_url ?? null,
       }));
     },
   });
