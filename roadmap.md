@@ -78,3 +78,9 @@
 - [x] Criar upload JPG/PNG de até 15 MB com recorte circular
 - [x] Exibir foto no seletor superior e na listagem de Perfis
 - [x] Validar upload real, fallback e visualização desktop/mobile
+
+## Estado da geração por IA em vídeo próprio
+- [ ] Sincronizar a etapa de IA com o estado principal do job
+- [ ] Exibir geração de cenas, animação e vídeo pronto em Rascunhos
+- [ ] Mover o card pelas colunas corretas do Pipeline
+- [ ] Validar progressão preservando as versões gravadas
