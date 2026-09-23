@@ -232,7 +232,8 @@ function ScheduleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-2xl overflow-y-auto">
+      <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-2xl flex-col overflow-hidden p-0">
+        <div className="flex-1 space-y-6 overflow-y-auto p-6">
         <DialogHeader>
           <DialogTitle>{initial ? "Editar agenda" : "Nova agenda"}</DialogTitle>
         </DialogHeader>
