@@ -432,6 +432,7 @@ function DraftsContent() {
                       <Trash2 />
                     </Button>
                   )}
+                  </div>
                 </div>
                 <div className="mt-3 grid gap-2">
                   {isTrash ? (
