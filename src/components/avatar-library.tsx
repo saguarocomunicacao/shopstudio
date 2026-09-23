@@ -103,16 +103,37 @@ export function AvatarPhotosField({
       <div className="flex flex-wrap gap-3">
         {photos.map((photo, i) => (
           <div key={photo.url ?? i} className="relative">
-            <img src={photo.preview} alt="" className="size-20 rounded-xl object-cover" />
+            <img
+              src={photo.preview}
+              alt=""
+              className={`size-20 rounded-xl object-cover ${onPrimaryChange && primaryIndex === i ? "ring-2 ring-primary ring-offset-2" : ""}`}
+            />
             <button
               type="button"
               aria-label="Remover foto"
               disabled={disabled}
               className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow"
-              onClick={() => onChange(photos.filter((_, idx) => idx !== i))}
+              onClick={() => {
+                onChange(photos.filter((_, idx) => idx !== i));
+                if (onPrimaryChange && primaryIndex !== undefined && primaryIndex >= i) {
+                  onPrimaryChange(Math.max(0, primaryIndex - (primaryIndex === i ? primaryIndex : 1)));
+                }
+              }}
             >
               <X className="size-3.5" />
             </button>
+            {onPrimaryChange && (
+              <button
+                type="button"
+                aria-label="Marcar como foto principal"
+                title="Foto principal"
+                disabled={disabled}
+                className={`absolute -left-2 -top-2 grid size-6 place-items-center rounded-full border bg-background shadow ${primaryIndex === i ? "text-primary" : "text-muted-foreground"}`}
+                onClick={() => onPrimaryChange(i)}
+              >
+                <Star className={`size-3.5 ${primaryIndex === i ? "fill-current" : ""}`} />
+              </button>
+            )}
           </div>
         ))}
         {photos.length < MAX_AVATAR_IMAGES && (
