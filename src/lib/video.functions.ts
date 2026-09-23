@@ -959,7 +959,7 @@ export const generateAvatarReference = createServerFn({ method: "POST" })
     return { url: stored.url };
   });
 
-/** Salva até 5 fotos enviadas pelo usuário como referência da pessoa fixa. */
+/** Salva até 5 fotos de até 15 MB enviadas pelo usuário como referência da pessoa fixa. */
 export const saveAvatarReferences = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
@@ -970,7 +970,7 @@ export const saveAvatarReferences = createServerFn({ method: "POST" })
           .array(
             z.union([
               z.object({
-                base64: z.string().min(16).max(9_000_000),
+                base64: z.string().min(16).max(Math.ceil(((15 * 1024 * 1024) * 4) / 3) + 4, "A foto deve ter no máximo 15 MB."),
                 mimeType: z.enum(["image/jpeg", "image/png", "image/jpg", "image/webp"]),
               }),
               z.object({ url: z.string().url() }),

@@ -9,10 +9,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 
 export const MAX_AVATAR_IMAGES = 5;
+export const MAX_AVATAR_FILE_BYTES = 15 * 1024 * 1024;
+const MAX_AVATAR_BASE64_LENGTH = Math.ceil((MAX_AVATAR_FILE_BYTES * 4) / 3) + 4;
 
 const imageSchema = z.union([
   z.object({
-    base64: z.string().min(16).max(9_000_000),
+    base64: z.string().min(16).max(MAX_AVATAR_BASE64_LENGTH, "A foto deve ter no máximo 15 MB."),
     mimeType: z.enum(["image/jpeg", "image/png", "image/jpg", "image/webp"]),
   }),
   z.object({ url: z.string().url() }),
