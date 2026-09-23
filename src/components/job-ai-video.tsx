@@ -164,7 +164,19 @@ export function JobAiVideo({ job, canEdit }: { job: DbJob; canEdit: boolean }) {
       {!rodando && aiStatus === "video_pronto" && (
         <div className="grid gap-3">
           {dados?.aiUrl ? (
-            <video src={dados.aiUrl} controls playsInline className="aspect-[9/16] w-full rounded-xl bg-black object-contain" />
+            <>
+              <video src={dados.aiUrl} controls playsInline className="aspect-[9/16] w-full rounded-xl bg-black object-contain" />
+              <VideoDownloadButton
+                versions={[
+                  { key: "ia", label: "Versão gerada por IA", source: dados.aiUrl },
+                  { key: "gravado", label: "Gravação original", source: dados.originalUrl },
+                  { key: "gravado-editado", label: "Gravação editada", source: dados.editedUrl },
+                ]}
+                title={job.title}
+                size="lg"
+                className="w-full"
+              />
+            </>
           ) : (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
