@@ -152,7 +152,7 @@ function ScheduleDialog({
         profile_id: profileId,
         nome: form.nome.trim() || "Agenda de automação",
         ativa: initial?.ativa ?? false,
-        videos_por_dia: form.videos_por_dia,
+        videos_por_dia: horarios.length,
         horarios,
         fonte: form.fonte,
         filtros: {
@@ -170,8 +170,8 @@ function ScheduleDialog({
         cenas_count: form.cenas_count.trim() ? Number(form.cenas_count) : null,
         take_duration: form.take_duration.trim() ? Number(form.take_duration) : null,
         qualidade: form.qualidade === "herdar" ? null : form.qualidade,
-        teto_diario_cents: centsFromInput(form.teto_diario),
-        teto_mensal_cents: centsFromInput(form.teto_mensal),
+        teto_diario_cents: form.teto_diario,
+        teto_mensal_cents: form.teto_mensal,
       },
       {
         onSuccess: () => {
