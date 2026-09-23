@@ -17,8 +17,10 @@ export function useVideoDriver(jobs: DbJob[]) {
     const pending = jobs.filter((j) =>
       // Vídeo próprio: a versão por IA roda na trilha ai_*, com as mesmas pausas de aprovação.
       j.formato === "gravacao"
-        ? !!j.ai_render_stage && j.ai_render_stage !== "render"
-        : (j.status === "gerando_video" || j.status === "roteiro_pronto") &&
+        ? (j.status === "gerando_cenas" || j.status === "gerando_video") &&
+          !!j.ai_render_stage &&
+          j.ai_render_stage !== "render"
+        : (j.status === "gerando_cenas" || j.status === "gerando_video") &&
           !!j.render_stage &&
           j.render_stage !== "render",
     );

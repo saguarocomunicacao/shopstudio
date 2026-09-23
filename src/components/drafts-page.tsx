@@ -70,6 +70,7 @@ import { actionError } from "@/lib/api-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
 import { VideoDownloadButton } from "./video-download-button";
+import { jobStatusLabel } from "@/lib/content";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
@@ -85,7 +86,9 @@ const QUEUES: { key: QueueKey; label: string; status?: DbJob["status"]; badge: s
 
 /** Roteiros concluídos do formato de gravação que ainda aguardam a pessoa gravar. */
 const roteiroPronto = (job: DbJob) =>
-  job.formato === "gravacao" && job.status === "roteiro_pronto" && !job.recorded_at;
+  job.formato === "gravacao" &&
+  ["roteiro_pronto", "gerando_cenas", "cenas_geradas", "gerando_video"].includes(job.status) &&
+  !job.recorded_at;
 
 export function DraftsPage({ initialJobId }: { initialJobId?: string | undefined }) {
   return (
@@ -383,13 +386,16 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
           {list.map((job) => {
             const pendente = isTrash
               ? job.deleted_from_status === "roteiro_pronto"
-              : queue === "roteiros";
-            const abrir = () => (pendente ? openRecordingKit(job.id, false) : setOpenId(job.id));
+              : queue === "roteiros" && job.status === "roteiro_pronto";
+            const fluxoIaProprio = !isTrash && queue === "roteiros" && job.formato === "gravacao";
+            const abrir = () => (fluxoIaProprio ? openRecordingKit(job.id, false) : setOpenId(job.id));
             const badgeLabel = isTrash
               ? "Na lixeira"
-              : pendente
-                ? "Pendente de gravação"
-                : current?.label;
+              : fluxoIaProprio && job.status !== "roteiro_pronto"
+                ? jobStatusLabel(job)
+                : pendente
+                  ? "Pendente de gravação"
+                  : current?.label;
             return (
               <article key={job.id} className="panel">
                 {pendente && !job.video_path ? (

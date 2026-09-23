@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { JOB_STATUSES, JOB_STATUS_LABELS, PREVIOUS_STATUS, relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
+import { JOB_STATUSES, JOB_STATUS_LABELS, PREVIOUS_STATUS, jobStatusLabel, relativeTime, useJobs, useProducts, type DbJob } from "@/lib/content";
 import { generateJobScript } from "@/lib/script.functions";
 import { RENDER_STAGE_LABELS, generateJobScenes } from "@/lib/video.functions";
 import { useVideoDriver } from "@/lib/video-driver";
@@ -24,6 +24,7 @@ const statusClass: Record<string, string> = {
   novo: "status-neutral",
   produto_escolhido: "status-blue",
   roteiro_pronto: "status-violet",
+  gerando_cenas: "status-cyan",
   cenas_geradas: "status-orange",
   gerando_video: "status-cyan",
   video_pronto: "status-lime",
@@ -186,6 +187,12 @@ function PipelineContent() {
                     {job.formato === "gravacao" ? (
                       <>
                         <p className="mt-2 inline-flex rounded-full bg-secondary px-2.5 py-1 text-[11px] font-bold">Gravar eu mesmo</p>
+                        {(job.status === "gerando_cenas" || job.status === "gerando_video") && (
+                          <p className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+                            <Loader2 className="size-3 animate-spin" />
+                            {jobStatusLabel(job)}...
+                          </p>
+                        )}
                         {canEditJob(job) && (
                           <Button size="sm" className="mt-3 w-full" onClick={(e) => { e.stopPropagation(); setRecording(job); }}>
                             <Video />

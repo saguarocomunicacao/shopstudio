@@ -49,8 +49,8 @@ type JobRow = {
 
 /**
  * Trilha de IA do vídeo próprio ("Gravar eu mesmo").
- * O job gravado continua com status/render_stage/vídeo intactos: a geração por
- * IA acontece em colunas espelhadas (ai_*), então a gravação nunca é perdida.
+ * A mídia gravada continua intacta. A geração por IA usa colunas ai_* para os
+ * artefatos, enquanto o status principal acompanha a ação em andamento.
  */
 const AI_TRACK_KEYS: Record<string, string> = {
   status: "ai_status",
@@ -79,9 +79,11 @@ function jobStage(job: JobRow): string | null {
 /** Converte um patch do pipeline para as colunas da trilha certa. */
 export function trackPatch<T extends Record<string, unknown>>(job: { formato?: string | null }, patch: T): T {
   if (!isAiTrack(job)) return patch;
-  return Object.fromEntries(
+  const mirrored = Object.fromEntries(
     Object.entries(patch).map(([key, value]) => [AI_TRACK_KEYS[key] ?? key, value]),
-  ) as T;
+  );
+  if (Object.prototype.hasOwnProperty.call(patch, "status")) mirrored["status"] = patch["status"];
+  return mirrored as T;
 }
 
 
@@ -328,13 +330,13 @@ export async function startJobScenes(supabase: any, jobId: string, skipPermissio
     .from("jobs")
     .update({
       ...trackPatch(job, {
+        status: "gerando_cenas",
         render_stage: resume ? "cenas" : "planejando",
         render_started_at: new Date().toISOString(),
         render_error: null,
         render_id: null,
         video_url: null,
         video_thumbnail_url: null,
-        ...(isAiTrack(job) ? { status: "roteiro_pronto" } : {}),
       }),
       ...(resume ? {} : { scenes: [], gemini_images_count: 0, veo_takes_count: 0 }),
     })
@@ -532,7 +534,7 @@ export async function advanceJobVideoCore(supabase: any, jobId: string, skipPerm
 
   const stageAtual = jobStage(job);
   const running =
-    (jobStatus(job) === "roteiro_pronto" || jobStatus(job) === "gerando_video") &&
+    (jobStatus(job) === "gerando_cenas" || jobStatus(job) === "gerando_video") &&
     !!stageAtual &&
     stageAtual !== "render";
   if (!running) return { stage: stageAtual, done: true, progress: null };

@@ -51,6 +51,7 @@ export const JOB_STATUSES = [
   "novo",
   "produto_escolhido",
   "roteiro_pronto",
+  "gerando_cenas",
   "cenas_geradas",
   "gerando_video",
   "video_pronto",
@@ -63,6 +64,7 @@ export const JOB_STATUS_LABELS: Record<JobStatusKey, string> = {
   novo: "Novo",
   produto_escolhido: "Produto escolhido",
   roteiro_pronto: "Roteiro pronto",
+  gerando_cenas: "Gerando cenas",
   cenas_geradas: "Cenas geradas",
   gerando_video: "Gerando vídeo",
   video_pronto: "Vídeo pronto",
@@ -77,8 +79,20 @@ export const PREVIOUS_STATUS: Partial<Record<JobStatusKey, JobStatusKey>> = {
   rascunho_enviado: "video_pronto",
   video_pronto: "cenas_geradas",
   cenas_geradas: "roteiro_pronto",
+  gerando_cenas: "roteiro_pronto",
   roteiro_pronto: "produto_escolhido",
 };
+
+/** Rótulo da etapa visível, detalhando a geração por IA quando ela está ativa. */
+export function jobStatusLabel(job: Pick<DbJob, "status" | "ai_render_stage">): string {
+  if (job.status === "gerando_cenas") return "Gerando cenas";
+  if (job.status === "gerando_video") {
+    if (job.ai_render_stage === "takes") return "Animando vídeo";
+    if (job.ai_render_stage === "narracao") return "Gerando narração";
+    if (job.ai_render_stage === "montagem" || job.ai_render_stage === "render") return "Montando vídeo";
+  }
+  return JOB_STATUS_LABELS[job.status];
+}
 
 export type RoteiroBloco = { tempo: string; orientacao: string; fala: string };
 
@@ -294,7 +308,7 @@ export function useJobs(profileId: string | null, enabled = true) {
     // Enquanto houver etapa em andamento (cenas ou vídeo), reconsulta para o card avançar sozinho.
     refetchInterval: (query) =>
       (query.state.data ?? []).some(
-        (j: DbJob) => j.status === "gerando_video" || !!j.render_stage || !!j.ai_render_stage,
+        (j: DbJob) => j.status === "gerando_cenas" || j.status === "gerando_video" || !!j.render_stage || !!j.ai_render_stage,
       )
         ? 6000
         : false,

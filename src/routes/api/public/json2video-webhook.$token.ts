@@ -99,6 +99,7 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
             .update(
               aiTrack
                 ? {
+                    status: "video_pronto",
                     ai_status: "video_pronto",
                     ai_render_stage: null,
                     ai_video_url: url,
@@ -123,6 +124,7 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
             .update(
               aiTrack
                 ? {
+                    status: "cenas_geradas",
                     ai_status: "cenas_geradas",
                     ai_render_stage: null,
                     ai_render_error: "A renderização do vídeo falhou. Tente gerar novamente.",
