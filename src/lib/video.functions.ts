@@ -435,19 +435,27 @@ export const regenerateJobScene = createServerFn({ method: "POST" })
     ]);
 
     const imagePrompt = data.prompt?.trim() || scene.image_prompt;
+    const personas = await resolveScenePersonas(supabase, job.profile_id, imagePrompt);
     const avatar = avatarForScene(job, settingsRow, scenes, data.index);
-    const personRefs = await pipeline.loadPersonReferences(avatar.urls);
+    const personRefs = await pipeline.loadPersonReferences(personas ? personas.urls : avatar.urls);
     const productRefs = await pipeline.loadProductReferences(pipeline.productImageUrls(product));
     const references: { base64: string; mimeType: string }[] = [...personRefs, ...productRefs];
 
-    const identityRequirement = personRefs.length ? `${pipeline.SAME_PERSON_SUFFIX}\n\n` : personDescriptionBlock(avatar.description);
-    const referenceGuide = pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
+    const sceneText = personas ? personas.prompt : imagePrompt;
+    const identityRequirement = personas
+      ? `${pipeline.personaIdentityBlock(personas.labels)}\n\n`
+      : personRefs.length
+        ? `${pipeline.SAME_PERSON_SUFFIX}\n\n`
+        : personDescriptionBlock(avatar.description);
+    const referenceGuide = personas
+      ? pipeline.buildPersonaGuide(personas.labels, productRefs.length)
+      : pipeline.buildReferenceGuide(personRefs.length, productRefs.length);
 
     const { withTenantKeys } = await import("./api-keys.server");
     const generated = await withTenantKeys(job.tenant_id, () =>
       pipeline.generateSceneImage({
         model: settingsRow?.gemini_model ?? "gemini-3.1-flash-image",
-        prompt: `${identityRequirement}${referenceGuide}\n\nSCENE: ${imagePrompt} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
+        prompt: `${identityRequirement}${referenceGuide}\n\nSCENE: ${sceneText} Vertical 9:16 framing. ${pipeline.PRODUCT_FIDELITY_SUFFIX}`,
         references,
       }),
     );
