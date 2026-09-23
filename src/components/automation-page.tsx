@@ -44,11 +44,15 @@ import {
 const brlFromCents = (v: number | null) =>
   v === null || v === undefined ? "—" : (v / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-const centsFromInput = (v: string) => {
-  const n = Number(v.replace(",", "."));
-  return v.trim() === "" || Number.isNaN(n) ? null : Math.round(n * 100);
+/** Máscara de R$ para campos de dinheiro: armazena centavos, exibe "R$ 30,00". */
+const brlMask = (cents: number | null) =>
+  cents === null || cents === undefined ? "" : (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+/** Converte o texto mascarado de volta a centavos; vazio => null. */
+const toCentsMask = (v: string): number | null => {
+  const digits = v.replace(/\D/g, "");
+  if (!digits) return null;
+  return Number(digits);
 };
-const inputFromCents = (v: number | null) => (v === null || v === undefined ? "" : String(v / 100));
 const numOrNull = (v: string) => {
   const n = Number(v.replace(",", "."));
   return v.trim() === "" || Number.isNaN(n) ? null : n;
@@ -57,7 +61,6 @@ const numOrNull = (v: string) => {
 type FormState = {
   id?: string;
   nome: string;
-  videos_por_dia: number;
   horarios: string[];
   fonte: AutomationFonte;
   comissao_min: string;
@@ -73,13 +76,12 @@ type FormState = {
   cenas_count: string;
   take_duration: string;
   qualidade: string;
-  teto_diario: string;
-  teto_mensal: string;
+  teto_diario: number | null;
+  teto_mensal: number | null;
 };
 
 const emptyForm = (): FormState => ({
   nome: "Agenda de automação",
-  videos_por_dia: 1,
   horarios: ["09:00"],
   fonte: "garimpo",
   comissao_min: "",
@@ -95,14 +97,13 @@ const emptyForm = (): FormState => ({
   cenas_count: "",
   take_duration: "",
   qualidade: "herdar",
-  teto_diario: "",
-  teto_mensal: "",
+  teto_diario: null,
+  teto_mensal: null,
 });
 
 const formFrom = (s: AutomationSchedule): FormState => ({
   id: s.id,
   nome: s.nome,
-  videos_por_dia: s.videos_por_dia,
   horarios: s.horarios.length ? s.horarios : ["09:00"],
   fonte: s.fonte,
   comissao_min: s.filtros.comissao_min != null ? String(s.filtros.comissao_min) : "",
@@ -118,8 +119,8 @@ const formFrom = (s: AutomationSchedule): FormState => ({
   cenas_count: s.cenas_count != null ? String(s.cenas_count) : "",
   take_duration: s.take_duration != null ? String(s.take_duration) : "",
   qualidade: s.qualidade ?? "herdar",
-  teto_diario: inputFromCents(s.teto_diario_cents),
-  teto_mensal: inputFromCents(s.teto_mensal_cents),
+  teto_diario: s.teto_diario_cents,
+  teto_mensal: s.teto_mensal_cents,
 });
 
 function ScheduleDialog({
@@ -151,7 +152,7 @@ function ScheduleDialog({
         profile_id: profileId,
         nome: form.nome.trim() || "Agenda de automação",
         ativa: initial?.ativa ?? false,
-        videos_por_dia: form.videos_por_dia,
+        videos_por_dia: horarios.length,
         horarios,
         fonte: form.fonte,
         filtros: {
@@ -169,8 +170,8 @@ function ScheduleDialog({
         cenas_count: form.cenas_count.trim() ? Number(form.cenas_count) : null,
         take_duration: form.take_duration.trim() ? Number(form.take_duration) : null,
         qualidade: form.qualidade === "herdar" ? null : form.qualidade,
-        teto_diario_cents: centsFromInput(form.teto_diario),
-        teto_mensal_cents: centsFromInput(form.teto_mensal),
+        teto_diario_cents: form.teto_diario,
+        teto_mensal_cents: form.teto_mensal,
       },
       {
         onSuccess: () => {
@@ -197,18 +198,6 @@ function ScheduleDialog({
 
           <section className="space-y-3">
             <h3 className="text-sm font-bold">Quando rodar</h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Vídeos por dia</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={form.videos_por_dia}
-                  onChange={(e) => set("videos_por_dia", Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
-                />
-              </div>
-            </div>
             <div className="space-y-2">
               <Label>Horários de disparo</Label>
               <div className="flex flex-wrap gap-2">
@@ -238,7 +227,9 @@ function ScheduleDialog({
                   <Plus className="mr-1.5 h-4 w-4" /> Horário
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">Horário de Brasília. É quando a geração começa a rodar.</p>
+              <p className="text-xs text-muted-foreground">
+                Cada horário abaixo gera um vídeo. {form.horarios.filter(Boolean).length} horário(s) = {form.horarios.filter(Boolean).length} vídeo(s) por dia. Horário de Brasília, é quando a geração começa a rodar.
+              </p>
             </div>
           </section>
 
@@ -372,11 +363,21 @@ function ScheduleDialog({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Limite por dia (R$)</Label>
-                <Input inputMode="decimal" value={form.teto_diario} onChange={(e) => set("teto_diario", e.target.value)} placeholder="Sem limite" />
+                <Input
+                  inputMode="numeric"
+                  value={brlMask(form.teto_diario)}
+                  onChange={(e) => set("teto_diario", toCentsMask(e.target.value))}
+                  placeholder="Sem limite"
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Limite por mês (R$)</Label>
-                <Input inputMode="decimal" value={form.teto_mensal} onChange={(e) => set("teto_mensal", e.target.value)} placeholder="Sem limite" />
+                <Input
+                  inputMode="numeric"
+                  value={brlMask(form.teto_mensal)}
+                  onChange={(e) => set("teto_mensal", toCentsMask(e.target.value))}
+                  placeholder="Sem limite"
+                />
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -460,7 +461,7 @@ function AutomationContent() {
                 <TableCell className="font-semibold">{s.nome}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{s.fonte === "radar" ? "Radar de emergentes" : "Garimpo normal"}</TableCell>
                 <TableCell className="text-sm">{s.horarios.join(", ")}</TableCell>
-                <TableCell>{s.videos_por_dia}</TableCell>
+                <TableCell>{s.horarios.length}</TableCell>
                 <TableCell>{brlFromCents(s.teto_diario_cents)}</TableCell>
                 <TableCell>{brlFromCents(s.teto_mensal_cents)}</TableCell>
                 <TableCell>
