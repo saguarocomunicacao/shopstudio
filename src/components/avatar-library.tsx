@@ -160,16 +160,20 @@ export function AvatarPhotosField({
   );
 }
 
-function AvatarFormDialog({
+export function AvatarFormDialog({
   open,
   profileId,
   avatar,
   onOpenChange,
+  initialTag,
+  onSaved,
 }: {
   open: boolean;
   profileId: string;
   avatar: LibraryAvatar | null;
   onOpenChange: (open: boolean) => void;
+  initialTag?: string | undefined;
+  onSaved?: (tag: string) => void;
 }) {
   const qc = useQueryClient();
   const save = useServerFn(saveProfileAvatar);
@@ -183,14 +187,14 @@ function AvatarFormDialog({
   useEffect(() => {
     if (!open) return;
     setName(avatar?.name ?? "");
-    setTag(avatar?.tag ?? "");
-    setTagTocada(!!avatar?.tag);
+    setTag(avatar?.tag ?? initialTag ?? "");
+    setTagTocada(!!(avatar?.tag || initialTag));
     setDescription(avatar?.description ?? "");
     const urls = avatar?.reference_urls ?? [];
     setPhotos(urls.map((url) => ({ preview: url, url })));
     const idx = avatar?.primary_url ? urls.indexOf(avatar.primary_url) : 0;
     setPrimaryIndex(idx >= 0 ? idx : 0);
-  }, [open, avatar]);
+  }, [open, avatar, initialTag]);
 
   const tagFinal = slugifyTag(tagTocada && tag ? tag : name);
 
@@ -207,9 +211,10 @@ function AvatarFormDialog({
           primaryIndex: Math.min(primaryIndex, Math.max(0, photos.length - 1)),
         },
       }),
-    onSuccess: () => {
+    onSuccess: async (res) => {
       toast.success(avatar ? "Avatar atualizado." : "Avatar salvo na biblioteca.");
-      qc.invalidateQueries({ queryKey: ["profile-avatars"] });
+      await qc.invalidateQueries({ queryKey: ["profile-avatars"] });
+      onSaved?.(res?.tag ?? tagFinal);
       onOpenChange(false);
     },
     onError: (e) => toast.error(errMessage(e)),
@@ -520,5 +525,91 @@ export function JobAvatarSelect({ jobId, profileId, canEdit }: { jobId: string; 
         </Button>
       )}
     </section>
+  );
+}
+
+/** Tags {{...}} citadas no roteiro/cenas (mesma regra do servidor). */
+export function personaTagsIn(texts: Array<string | null | undefined>): string[] {
+  const all = texts.filter(Boolean).join("\n");
+  return [...new Set([...all.matchAll(/\{\{\s*([A-Za-z0-9_-]{2,24})\s*\}\}/g)].map((m) => m[1]!.toLowerCase()))];
+}
+
+/** Tags citadas que ainda não têm avatar na biblioteca do perfil. */
+export function usePendingPersonaTags(profileId: string | null, texts: Array<string | null | undefined>) {
+  const avatars = useProfileAvatars(profileId);
+  const tags = personaTagsIn(texts);
+  const known = new Set((avatars.data ?? []).map((a) => a.tag.toLowerCase()).filter(Boolean));
+  return avatars.data ? tags.filter((t) => !known.has(t)) : [];
+}
+
+export function warnPendingPersonas(pending: string[]) {
+  if (!pending.length) return;
+  toast.warning(
+    `Sem avatar para ${pending.map((t) => `{{${t}}}`).join(", ")}: ${pending.length > 1 ? "essas personas vão sair" : "essa persona vai sair"} sem referência (a IA inventa o rosto).`,
+  );
+}
+
+/** Resumo "Personagens deste vídeo" com criação de avatar na hora. */
+export function PersonaTagsSummary({
+  profileId,
+  texts,
+  canEdit,
+}: {
+  profileId: string;
+  texts: Array<string | null | undefined>;
+  canEdit: boolean;
+}) {
+  const avatars = useProfileAvatars(profileId);
+  const [open, setOpen] = useState(false);
+  const [tagNova, setTagNova] = useState("");
+  const tags = personaTagsIn(texts);
+  const byTag = new Map((avatars.data ?? []).filter((a) => a.tag).map((a) => [a.tag.toLowerCase(), a]));
+  const pendentes = tags.filter((t) => !byTag.has(t));
+
+  const abrir = (tag: string) => { setTagNova(tag); setOpen(true); };
+
+  return (
+    <div className="grid gap-2 rounded-xl border p-3" data-testid="persona-summary">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold">Personagens deste vídeo</p>
+        {canEdit && (
+          <Button type="button" size="sm" variant="ghost" onClick={() => abrir("")}>
+            <Plus />Criar avatar
+          </Button>
+        )}
+      </div>
+      {avatars.isLoading ? (
+        <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />Carregando avatares...</p>
+      ) : !tags.length ? (
+        <p className="text-xs text-muted-foreground">Nenhuma etiqueta {"{{...}}"} no roteiro. Use {"{{nome}}"} nas cenas para colocar uma persona.</p>
+      ) : (
+        <ul className="grid gap-2">
+          {tags.map((tag) => {
+            const av = byTag.get(tag);
+            const foto = av ? (av.primary_url ?? av.reference_urls[0]) : null;
+            return (
+              <li key={tag} className="flex items-center gap-3">
+                {foto ? (
+                  <img src={foto} alt="" className="size-9 rounded-lg object-cover" />
+                ) : (
+                  <span className={`grid size-9 place-items-center rounded-lg ${av ? "bg-secondary" : "border border-dashed"} text-muted-foreground`}><UserRound className="size-4" /></span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <code className="text-xs font-bold">{`{{${tag}}}`}</code>
+                  <p className="truncate text-xs text-muted-foreground">{av ? av.name : "Pendente: sem avatar, a IA vai inventar"}</p>
+                </div>
+                {av ? (
+                  <span className="text-xs font-medium text-primary">OK</span>
+                ) : canEdit ? (
+                  <Button type="button" size="sm" variant="outline" onClick={() => abrir(tag)}>Criar avatar {`{{${tag}}}`}</Button>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {pendentes.length > 1 && <p className="text-xs text-muted-foreground">{pendentes.length} personas pendentes.</p>}
+      <AvatarFormDialog open={open} profileId={profileId} avatar={null} onOpenChange={setOpen} initialTag={tagNova || undefined} />
+    </div>
   );
 }
