@@ -13,6 +13,7 @@ import { ETAPA_VISUAL_ORDEM, useCustoPeriodo } from "@/lib/custo-periodo";
 import { formatFollowers } from "@/lib/studio-data";
 import { useStudio } from "./studio-context";
 import { actionError } from "@/lib/api-keys";
+import { ProfileImage } from "./profile-image";
 
 const statusClass: Record<string, string> = { Ativo: "status-lime", Pausado: "status-neutral" };
 function StatusBadge({ children }: { children: string }) {
@@ -279,7 +280,7 @@ export function ProfilesPage() {
                             <ChevronDown className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                           </Button>
                         </td>
-                        <td className="px-2 py-2"><div className={`avatar avatar-${i % 5} size-9`}>{p.initials}</div></td>
+                        <td className="px-2 py-2"><ProfileImage profile={p} className={`avatar avatar-${i % 5} size-9`} /></td>
                         <td className="min-w-0 px-3 py-2">
                           <Tooltip><TooltipTrigger asChild><span className="block min-w-0 truncate font-semibold">{p.name}</span></TooltipTrigger><TooltipContent className="max-w-sm">{p.name}</TooltipContent></Tooltip>
                         </td>
@@ -306,7 +307,7 @@ export function ProfilesPage() {
                     <Button variant="ghost" size="icon" className="size-8" onClick={() => toggle(p.id)} aria-expanded={isExpanded} aria-label={`${isExpanded ? "Recolher" : "Expandir"} ${p.name}`}>
                       <ChevronDown className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                     </Button>
-                    <div className={`avatar avatar-${i % 5} size-9`}>{p.initials}</div>
+                    <ProfileImage profile={p} className={`avatar avatar-${i % 5} size-9`} />
                     <div className="min-w-0">
                       <span className="block min-w-0 truncate font-semibold">{p.name}</span>
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">{p.handle ? `@${p.handle}` : "sem conta"} · {formatFollowers(p.followers)}</p>
