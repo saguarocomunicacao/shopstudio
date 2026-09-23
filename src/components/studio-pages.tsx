@@ -23,7 +23,7 @@ export function DashboardPage() { return <ProfileGate><DashboardContent /></Prof
 
 function DashboardContent() {
   const { activeProfile, activeProfileId, profiles } = useStudio();
-  const { data: scoped = [], isLoading, isError } = useJobs(activeProfileId);
+  const { data: scoped = [] } = useJobs(activeProfileId);
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
   const stats = [
     { icon: Video, value: scoped.filter((j) => j.status === "video_pronto").length, label: "Vídeos prontos" },
@@ -45,7 +45,7 @@ export function VideosPage() { return <ProfileGate><VideosContent /></ProfileGat
 
 function VideosContent() {
   const { activeProfileId, profiles, can } = useStudio();
-  const { data: scoped = [] } = useJobs(activeProfileId);
+  const { data: scoped = [], isLoading, isError } = useJobs(activeProfileId);
   const videos = scoped.filter((j) => !!j.video_url);
   const rendering = scoped.filter((j) => j.status === "gerando_video");
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";

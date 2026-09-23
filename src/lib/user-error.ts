@@ -44,7 +44,7 @@ const parseSerialized = (message: string): unknown => {
  */
 export function userErrorMessage(error: unknown, fallback = "Algo deu errado, tente novamente."): string {
   const directIssue = firstIssueMessage(error);
-  if (directIssue) return directIssue;
+  if (directIssue) return TECHNICAL_MESSAGE.test(directIssue) ? fallback : directIssue;
 
   const raw =
     typeof error === "string"
@@ -59,7 +59,7 @@ export function userErrorMessage(error: unknown, fallback = "Algo deu errado, te
 
   const serialized = parseSerialized(message);
   const serializedIssue = firstIssueMessage(serialized);
-  if (serializedIssue) return serializedIssue;
+  if (serializedIssue) return TECHNICAL_MESSAGE.test(serializedIssue) ? fallback : serializedIssue;
 
   const authMatch = AUTH_MESSAGES.find(([pattern]) => pattern.test(message));
   if (authMatch) return authMatch[1];

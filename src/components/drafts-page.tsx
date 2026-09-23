@@ -212,8 +212,8 @@ function DraftThumb({
 
 function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) {
   const { activeProfileId, activeProfile, can } = useStudio();
-  const { data: jobs = [], isLoading } = useJobs(activeProfileId);
-  const { data: trashed = [] } = useTrashedJobs(activeProfileId);
+  const { data: jobs = [], isLoading, isError } = useJobs(activeProfileId);
+  const { data: trashed = [], isError: trashError } = useTrashedJobs(activeProfileId);
   const canViewProducts = can("produtos", "visualizar");
   const { data: products = [] } = useProducts(activeProfileId, canViewProducts);
   const [queue, setQueue] = useState<QueueKey>("roteiros");
@@ -362,6 +362,10 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
           <Loader2 className="size-4 animate-spin" />
           Carregando rascunhos...
         </p>
+      ) : isError || trashError ? (
+        <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+          Não foi possível carregar os rascunhos. Tente novamente.
+        </div>
       ) : list.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {list.map((job) => {
