@@ -73,8 +73,8 @@ const SELECT =
 
 const toRow = (row: Record<string, unknown>): AutomationSchedule => ({
   ...(row as unknown as AutomationSchedule),
-  horarios: Array.isArray(row.horarios) ? (row.horarios as unknown[]).map(String) : [],
-  filtros: (row.filtros ?? {}) as AutomationFiltros,
+  horarios: Array.isArray(row["horarios"]) ? (row["horarios"] as unknown[]).map(String) : [],
+  filtros: (row["filtros"] ?? {}) as AutomationFiltros,
 });
 
 export function useAutomationSchedules(profileId: string | null) {
@@ -94,7 +94,7 @@ export function useAutomationSchedules(profileId: string | null) {
 }
 
 export type AutomationInput = Omit<AutomationSchedule, "id" | "created_at" | "pausada_motivo" | "ultimo_disparo_em"> & {
-  id?: string;
+  id?: string | undefined;
 };
 
 export function useSaveSchedule() {
@@ -102,7 +102,11 @@ export function useSaveSchedule() {
   return useMutation({
     mutationFn: async (input: AutomationInput) => {
       const { id, ...payload } = input;
-      const body = { ...payload, filtros: payload.filtros as unknown as object, horarios: payload.horarios };
+      const body = {
+        ...payload,
+        filtros: payload.filtros as unknown as Record<string, never>,
+        horarios: payload.horarios as unknown as Record<string, never>,
+      };
       const query = id
         ? supabase.from("automation_schedules").update(body).eq("id", id).select(SELECT).single()
         : supabase.from("automation_schedules").insert(body).select(SELECT).single();
