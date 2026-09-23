@@ -93,6 +93,38 @@ export function useAutomationSchedules(profileId: string | null) {
   });
 }
 
+export type AutomationRun = {
+  id: string;
+  schedule_id: string;
+  job_id: string | null;
+  dia: string;
+  horario: string;
+  status: string;
+  mensagem: string | null;
+  created_at: string;
+};
+
+/** Últimas execuções das agendas do perfil (registro simples do cron). */
+export function useAutomationRuns(profileId: string | null) {
+  return useQuery({
+    queryKey: ["automation-runs", profileId],
+    enabled: !!profileId,
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("automation_runs")
+        .select("id, schedule_id, job_id, dia, horario, status, mensagem, created_at")
+        .eq("profile_id", profileId!)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw new Error(error.message);
+      return (data ?? []) as AutomationRun[];
+    },
+  });
+}
+
+
+
 export type AutomationInput = Omit<AutomationSchedule, "id" | "created_at" | "pausada_motivo" | "ultimo_disparo_em"> & {
   id?: string | undefined;
 };
