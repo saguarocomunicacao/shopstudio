@@ -62,4 +62,4 @@
 
 ## Validação do roteiro próprio
 - [x] Separar os campos obrigatórios dos modos Criar e Organizar
-- [ ] Validar os dois modos sem regressão
+- [x] Validar os dois modos sem regressão
