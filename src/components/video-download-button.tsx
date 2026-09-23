@@ -37,14 +37,18 @@ export function VideoDownloadButton({
   versions,
   title,
   profileName,
-  label = "Baixar vídeo",
+  label,
   size = "lg",
   variant = "default",
   className,
 }: Props) {
   const [baixando, setBaixando] = useState(false);
+  const isMobile = useIsMobile();
   const disponiveis = versions.filter((v) => !!v.source);
   if (!disponiveis.length) return null;
+
+  const rotulo = label ?? (isMobile ? "Compartilhar / Baixar" : "Baixar vídeo");
+  const carregando = isMobile ? "Preparando..." : "Baixando...";
 
   const baixar = async (version: VideoVersion) => {
     setBaixando(true);
@@ -52,15 +56,21 @@ export function VideoDownloadButton({
       const ext = videoExtension(version.source ?? null);
       const sufixo = disponiveis.length > 1 ? `-${version.key.replace(/_/g, "-")}` : "";
       const nome = videoFileName(`${title ?? "video"}${sufixo}`, profileName, ext);
-      await downloadVideo(version.source as string | Blob, nome);
+      const nomeAmigavel = [title ?? "Vídeo", profileName].filter(Boolean).join(" — ");
+      if (isMobile) await shareOrDownloadVideo(version.source as string | Blob, nome, nomeAmigavel);
+      else await downloadVideo(version.source as string | Blob, nome);
     } catch {
-      toast.error("Não foi possível baixar o vídeo. Tente novamente.");
+      toast.error(
+        isMobile
+          ? "Não foi possível compartilhar o vídeo. Tente novamente."
+          : "Não foi possível baixar o vídeo. Tente novamente.",
+      );
     } finally {
       setBaixando(false);
     }
   };
 
-  const icone = baixando ? <Loader2 className="animate-spin" /> : <Download />;
+  const icone = baixando ? <Loader2 className="animate-spin" /> : isMobile ? <Share /> : <Download />;
 
   if (disponiveis.length === 1) {
     return (
