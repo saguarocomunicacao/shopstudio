@@ -105,6 +105,8 @@ export async function generateAndSaveDescription(
 ): Promise<string> {
   const { assertOrcamento } = await import("./orcamento.server");
   await assertOrcamento(row.profile_id, { barata: true });
+  const { assertSaldoPerfil } = await import("./saldo.server");
+  await assertSaldoPerfil(row.profile_id, { descricao_produto: 1 });
 
   const images = [...new Set([row.image_url ?? "", ...(row.extra_image_urls ?? [])].filter(Boolean))];
   const { description, usage } = await describeProductWithAi({ name: row.name, category: row.niche ?? null, images });

@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useInvalidateAccess } from "@/lib/access";
 import { ACAO_LABELS, type BillableAction } from "@/lib/custo-core";
+import { ehIlimitado, useMovimentos, usePacotesDoPlano, useSaldos } from "@/lib/saldo";
+import { PLAN_ACTIONS } from "./plans-card";
 import { useStudio } from "./studio-context";
 
 /** Gera a URL temporária da foto guardada no bucket privado. */
@@ -34,11 +36,11 @@ function usePlan(userId: string | null) {
       if (!me?.tenant_id) return null;
       const { data, error } = await supabase
         .from("tenants")
-        .select("id, name, plans:plan_id ( id, name, plan_action_prices ( action_type, unit_price_cents ) )")
+        .select("id, name, plan_id, plans:plan_id ( id, name )")
         .eq("id", me.tenant_id)
         .maybeSingle();
       if (error) throw new Error(error.message);
-      return data as { id: string; name: string; plans: { id: string; name: string; plan_action_prices: Array<{ action_type: BillableAction; unit_price_cents: number }> } | null } | null;
+      return data as { id: string; name: string; plan_id: string | null; plans: { id: string; name: string } | null } | null;
     },
   });
 }
@@ -94,7 +96,6 @@ export function AccountPage() {
 
   const initials = (me?.name || me?.email || "?").slice(0, 2).toUpperCase();
   const planName = tenant?.plans?.name ?? "Sem plano definido";
-  const actionPrices = tenant?.plans?.plan_action_prices ?? [];
 
   return (
     <>
@@ -167,21 +168,76 @@ export function AccountPage() {
               <p className="text-sm font-semibold" data-testid="plano-atual">{planName}</p>
               <p className="text-xs text-muted-foreground">
                 {tenant?.plans
-                  ? "Você compra quantidades que não expiram e usa uma unidade a cada ação realizada."
+                  ? "Você compra pacotes de quantidade que não expiram e usa uma unidade a cada ação realizada."
                   : "Aguardando definição do administrador."}
               </p>
-              {actionPrices.length > 0 && <div className="mt-4 grid gap-2 border-t pt-3 sm:grid-cols-2">
-                {actionPrices.map((price) => <div key={price.action_type} className="flex items-center justify-between gap-3 text-xs">
-                  <span className="text-muted-foreground">{ACAO_LABELS[price.action_type]}</span>
-                  <strong className="shrink-0 font-semibold text-foreground">{(price.unit_price_cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}/un.</strong>
-                </div>)}
-              </div>}
             </div>
           )}
           <p className="mt-3 text-xs text-muted-foreground">Para mudar de plano, fale com o administrador.</p>
           {tenant?.name && <p className="mt-4 border-t pt-4 text-xs text-muted-foreground">Conta: <strong className="font-semibold text-foreground">{tenant.name}</strong></p>}
         </section>
       </div>
+
+      <SaldoPanel tenantId={tenant?.id ?? null} planId={tenant?.plan_id ?? null} />
     </>
+  );
+}
+
+const dataHora = (iso: string) => new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+
+/** Saldo restante por ação, em quantidade, e o histórico de compras e consumos. */
+function SaldoPanel({ tenantId, planId }: { tenantId: string | null; planId: string | null }) {
+  const { data: saldos, isLoading } = useSaldos(tenantId);
+  const { data: pacotes } = usePacotesDoPlano(planId);
+  const { data: movimentos } = useMovimentos(tenantId);
+
+  const linhas = PLAN_ACTIONS.map((action) => ({
+    action,
+    ilimitado: ehIlimitado(pacotes, action),
+    saldo: (saldos ?? []).find((s) => s.action_type === action)?.saldo ?? 0,
+  }));
+
+  return (
+    <section className="panel mt-4">
+      <h2 className="font-bold">Meu saldo</h2>
+      <p className="mt-1 text-sm text-muted-foreground">Quantidade restante de cada ação. As quantidades compradas não expiram.</p>
+
+      {isLoading ? (
+        <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando saldo...</p>
+      ) : (
+        <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {linhas.map((linha) => (
+            <div key={linha.action} className="flex items-center justify-between gap-3 rounded-xl bg-secondary px-4 py-3">
+              <span className="text-sm text-muted-foreground">{ACAO_LABELS[linha.action]}</span>
+              <strong className={`shrink-0 text-sm font-bold ${!linha.ilimitado && linha.saldo <= 0 ? "text-destructive" : ""}`}>
+                {linha.ilimitado ? "Ilimitado" : linha.saldo}
+              </strong>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <h3 className="mt-6 text-sm font-bold">Compras e consumos</h3>
+      {!(movimentos ?? []).length ? (
+        <p className="mt-2 text-sm text-muted-foreground">Nenhuma movimentação registrada ainda.</p>
+      ) : (
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead><tr className="border-b text-left text-xs text-muted-foreground"><th className="p-2">Data</th><th className="p-2">Ação</th><th className="p-2">Movimento</th><th className="p-2 text-right">Quantidade</th><th className="p-2 text-right">Saldo depois</th></tr></thead>
+            <tbody className="divide-y">
+              {(movimentos ?? []).map((m) => (
+                <tr key={m.id}>
+                  <td className="p-2 text-muted-foreground">{dataHora(m.created_at)}</td>
+                  <td className="p-2 font-medium">{ACAO_LABELS[m.action_type]}</td>
+                  <td className="p-2">{m.tipo === "credito" ? "Compra de pacote" : m.descricao || "Consumo"}</td>
+                  <td className={`p-2 text-right font-semibold ${m.tipo === "credito" ? "text-primary" : ""}`}>{m.tipo === "credito" ? "+" : "-"}{Math.abs(m.quantidade)}</td>
+                  <td className="p-2 text-right text-muted-foreground">{m.saldo_apos}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }

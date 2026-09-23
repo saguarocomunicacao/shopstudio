@@ -64,32 +64,15 @@ const ACAO_POR_ETAPA: Record<ConsumoEvento["etapa"], BillableAction> = {
 const PLATFORM_TENANT_ID = "f7192d96-160f-4157-8599-eced5990bf8b";
 
 /**
- * Preço unitário da ferramenta para esta ação no plano vigente do cliente.
- * É gravado como snapshot no evento e nunca recalculado depois.
+ * Preço de UMA unidade da ação, derivado do pacote vigente do plano do cliente
+ * (quantidade do pacote / preço do pacote). Gravado como snapshot no evento.
  */
-async function toolPriceCents(
-  supabaseAdmin: { from: (t: string) => any },
-  tenantId: string,
-  acao: BillableAction,
-): Promise<{ price: number; mode: "unitario" }> {
+async function toolPriceCents(tenantId: string, acao: BillableAction): Promise<{ price: number; mode: "unitario" }> {
   try {
-    const { data: tenant } = await supabaseAdmin
-      .from("tenants")
-      .select("plan_id")
-      .eq("id", tenantId)
-      .maybeSingle();
-    const planId = tenant?.plan_id ?? null;
-    if (!planId) return { price: 0, mode: "unitario" };
-    const { data: price } = await supabaseAdmin
-      .from("plan_action_prices")
-      .select("unit_price_cents")
-      .eq("plan_id", planId)
-      .eq("action_type", acao)
-      .maybeSingle();
-    if (!price) return { price: 0, mode: "unitario" };
-
-    const unitario = Number(price.unit_price_cents ?? 0) || 0;
-    return { price: unitario, mode: "unitario" };
+    const { planPricing } = await import("./saldo.server");
+    const pacote = (await planPricing(tenantId)).get(acao);
+    if (!pacote || pacote.priceCents <= 0) return { price: 0, mode: "unitario" };
+    return { price: Math.round(pacote.priceCents / Math.max(1, pacote.qty)), mode: "unitario" };
   } catch (e) {
     console.error("[consumo] falha ao resolver preço da ação", e);
     return { price: 0, mode: "unitario" };
@@ -190,7 +173,11 @@ export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
 
     const acao = evento.acao ?? ACAO_POR_ETAPA[evento.etapa];
     const agora = new Date().toISOString();
-    const toolPrice = await toolPriceCents(supabaseAdmin as never, tenantId, acao);
+    const toolPrice = await toolPriceCents(tenantId, acao);
+
+    // Débito atômico de 1 unidade da carteira (nulo quando o pacote é gratuito).
+    const { debitAction } = await import("./saldo.server");
+    const walletMovementId = await debitAction(tenantId, acao, evento.jobId ?? null);
     const { credito, semTarifa } = await resolverCreditoETarifa(supabaseAdmin as never, evento, acao, agora);
 
     if (semTarifa) {
@@ -216,6 +203,7 @@ export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
       action_type: acao,
       tool_price_cents: toolPrice.price,
       billing_mode: toolPrice.mode,
+      wallet_movement_id: walletMovementId,
       modelo: evento.modelo,
       quantidade: evento.quantidade,
       unidade: evento.unidade as never,
