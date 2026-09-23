@@ -39,7 +39,10 @@ type JobRow = {
   avatar_id?: string | null;
   avatar_reference_urls?: unknown;
   avatar_description?: string | null;
+  cenas_count?: number | null;
+  take_duration?: number | null;
 };
+
 
 /**
  * Trilha de IA do vídeo próprio ("Gravar eu mesmo").
