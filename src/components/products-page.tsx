@@ -67,7 +67,7 @@ export function ProductsPage() { return <ProfileGate><ProductsContent /></Profil
 function ProductsContent() {
   const { can, userId, activeProfileId, activeProfile } = useStudio();
   const qc = useQueryClient();
-  const { data: products = [], isLoading } = useProducts(activeProfileId, can("produtos", "visualizar"));
+  const { data: products = [], isLoading, isError } = useProducts(activeProfileId, can("produtos", "visualizar"));
 
   const enrichDetails = useServerFn(enrichProductDetails);
   const generateDescription = useServerFn(generateProductDescription);
@@ -292,7 +292,7 @@ function ProductsContent() {
             </div>
           )}
         />
-        {!products.length && <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{isLoading ? "Carregando produtos..." : "Nenhum produto no catálogo."}</div>}
+        {!products.length && <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{isLoading ? "Carregando produtos..." : isError ? "Não foi possível carregar os produtos. Tente novamente." : "Nenhum produto no catálogo."}</div>}
       </div>
 
       <Dialog open={!!details} onOpenChange={(open) => { if (!open) { setDetails(null); setEditing(false); } }}>
@@ -310,10 +310,10 @@ function ProductsContent() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <DetailRow label="Categoria">{details.niche || "—"}</DetailRow>
                 <DetailRow label="Hype score">{details.hype}</DetailRow>
-                <DetailRow label="Preço">{brl(details.price)}</DetailRow>
+                <DetailRow label="Preço">{typeof details.price === "number" ? brl(details.price) : "—"}</DetailRow>
                 <DetailRow label="Comissão">
-                  {details.commission}%
-                  <span className="ml-2 font-bold text-primary">{brl(details.price * (details.commission / 100))} por venda</span>
+                  {typeof details.commission === "number" ? `${details.commission}%` : "—"}
+                  {typeof details.price === "number" && typeof details.commission === "number" ? <span className="ml-2 font-bold text-primary">{brl(details.price * (details.commission / 100))} por venda</span> : null}
                 </DetailRow>
                 <DetailRow label="Vendas">{details.sales_volume?.toLocaleString("pt-BR") ?? "—"}</DetailRow>
                 <DetailRow label="Crescimento">{details.growth_rate ? `${details.growth_rate}%` : "—"}</DetailRow>

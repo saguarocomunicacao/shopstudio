@@ -92,13 +92,14 @@ export function PlansPage() {
   });
 
   const loading = plans.isLoading || prices.isLoading || tenants.isLoading;
+  const failed = plans.isError || prices.isError || tenants.isError;
   return <BackofficeOnly><div>
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div><p className="mb-1 text-xs font-bold uppercase text-primary">Backoffice</p><h1 className="text-2xl font-black sm:text-3xl">Planos</h1><p className="mt-2 text-sm text-muted-foreground">Cada ação é vendida em pacote: uma quantidade por um preço. As quantidades compradas não expiram. Pacote com preço zero significa uso ilimitado.</p></div>
       {isBackoffice && <Button asChild><Link to="/app/planos/$planId" params={{ planId: "novo" }}><Plus />Novo plano</Link></Button>}
     </div>
     <section className="panel overflow-hidden p-0">
-      {loading ? <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando planos...</p> : <Table>
+      {loading ? <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando planos...</p> : failed ? <p className="p-8 text-center text-sm text-muted-foreground">Não foi possível carregar os planos. Tente novamente.</p> : <Table>
         <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-10"/><TableHead>Plano</TableHead><TableHead>Fonte de chave</TableHead><TableHead>Status</TableHead><TableHead>Empresas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
         <TableBody>{(plans.data ?? []).map((plan) => {
           const open = expanded === plan.id;
@@ -107,7 +108,7 @@ export function PlansPage() {
           return <PlanRows key={plan.id} plan={plan} rows={rows} companies={companies} open={open} canEdit={isBackoffice} onToggle={() => setExpanded(open ? null : plan.id)} onActive={(is_active) => updatePlan.mutate({ id: plan.id, is_active })} onRemove={() => setRemoveId(plan.id)} />;
         })}</TableBody>
       </Table>}
-      {!loading && !(plans.data ?? []).length && <p className="p-8 text-center text-sm text-muted-foreground">Nenhum plano cadastrado.</p>}
+      {!loading && !failed && !(plans.data ?? []).length && <p className="p-8 text-center text-sm text-muted-foreground">Nenhum plano cadastrado.</p>}
     </section>
     <CreditPackageCard tenants={tenants.data ?? []} />
     <AlertDialog open={!!removeId} onOpenChange={(open) => !open && setRemoveId(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Remover este plano?</AlertDialogTitle><AlertDialogDescription>As empresas vinculadas ficarão sem plano. Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => removeId && removePlan.mutate(removeId)}>Remover plano</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>

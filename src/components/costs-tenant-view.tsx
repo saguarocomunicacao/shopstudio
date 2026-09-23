@@ -65,7 +65,7 @@ export function TenantCostsView() {
   const intervalo = useMemo(() => intervaloDe(periodo, de, ate), [periodo, de, ate]);
 
   const buscar = useServerFn(consumoConsolidado);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["consumo-consolidado", intervalo.desde, intervalo.ate],
     staleTime: 30_000,
     queryFn: () => buscar({ data: { desde: intervalo.desde, ate: intervalo.ate } }),
@@ -99,7 +99,9 @@ export function TenantCostsView() {
         )}
       </div>
 
-      {isLoading || !data ? (
+      {isError ? (
+        <div className="panel text-center text-sm text-muted-foreground">Não foi possível carregar os custos. Tente novamente.</div>
+      ) : isLoading || !data ? (
         <p className="text-sm text-muted-foreground">Carregando custos...</p>
       ) : data.eventos === 0 ? (
         <div className="panel text-center">

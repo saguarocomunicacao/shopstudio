@@ -40,13 +40,17 @@ async function setStatus(
 async function copyToStorage(url: string, path: string, contentType: string) {
   const started = Date.now();
   const res = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
-  if (!res.ok) throw new Error(`download HTTP ${res.status} em ${path}`);
+  if (!res.ok) {
+    console.error("[video-storage] download", res.status, path);
+    throw new Error("Não foi possível salvar o vídeo. Tente novamente.");
+  }
   const blob = await res.blob();
   const downloadMs = Date.now() - started;
   const db = await admin();
   const { error } = await db.storage.from("job-media").upload(path, blob, { contentType, upsert: true });
   if (error) {
-    throw new Error(`upload falhou (${blob.size} bytes, download ${downloadMs}ms): ${error.message}`);
+    console.error("[video-storage] upload", { path, bytes: blob.size, downloadMs, error });
+    throw new Error("Não foi possível salvar o vídeo. Tente novamente.");
   }
   console.log(
     `[video-storage] ${path} salvo: ${blob.size} bytes, download ${downloadMs}ms, total ${Date.now() - started}ms`,

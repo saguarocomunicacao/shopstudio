@@ -26,6 +26,7 @@ import {
   type FornecedorKey,
 } from "@/lib/investimento";
 import { useAppConfig } from "@/lib/orcamento";
+import { userErrorMessage } from "@/lib/user-error";
 import { useMeuTenantId, useTenants } from "@/lib/tenants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStudio } from "./studio-context";
@@ -104,7 +105,7 @@ function AporteDialog({
           setObs("");
           onSaved?.();
         },
-        onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível registrar."),
+        onError: (e) => { console.error("[investment] register", e); toast.error(userErrorMessage(e, "Não foi possível registrar o aporte. Tente novamente.")); },
       },
     );
   };
@@ -181,7 +182,7 @@ function PlanoForm({ carteira, tenantId }: { carteira: CarteiraFornecedor; tenan
       { fornecedor: carteira.def.key, creditos_mes: c, valor_mensal: v, dia_renovacao: d, ativo: true },
       {
         onSuccess: () => toast.success("Plano salvo."),
-        onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível salvar."),
+        onError: (e) => { console.error("[investment] save plan", e); toast.error(userErrorMessage(e, "Não foi possível salvar o plano. Tente novamente.")); },
       },
     );
   };
@@ -376,7 +377,7 @@ function CarteiraCard({
                             if (!window.confirm("Remover este aporte?")) return;
                             remover.mutate(a.id, {
                               onSuccess: () => toast.success("Aporte removido."),
-                              onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível remover."),
+                              onError: (e) => { console.error("[investment] remove", e); toast.error(userErrorMessage(e, "Não foi possível remover o aporte. Tente novamente.")); },
                             });
                           }}
                         >
@@ -409,7 +410,7 @@ function AlertaConfig({ alertaPercent, bloqueio }: { alertaPercent: number; bloq
       toast.success("Configuração salva.");
       qc.invalidateQueries({ queryKey: ["app-config-all"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível salvar."),
+    onError: (e) => { console.error("[investment] settings", e); toast.error(userErrorMessage(e, "Não foi possível salvar a configuração. Tente novamente.")); },
   });
 
   return (

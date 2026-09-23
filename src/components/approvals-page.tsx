@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { SUPER_ADMIN_EMAIL } from "@/lib/access";
 import { sendCompanyPasswordReset } from "@/lib/company-admin.functions";
+import { userErrorMessage } from "@/lib/user-error";
 import { useStudio } from "./studio-context";
 
 type CompanyUser = { id: string; email: string; name: string; status: string; created_at: string; tenant_id: string };
@@ -18,7 +19,14 @@ type Filter = "todos" | "pendente" | "aprovado" | "recusado";
 
 const STATUS_LABEL: Record<string, string> = { pendente: "Pendente", aprovado: "Aprovado", recusado: "Recusado" };
 const STATUS_CLASS: Record<string, string> = { pendente: "status-pink", aprovado: "status-lime", recusado: "status-neutral" };
-const fmt = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+const fmt = (iso: string) => {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+};
+const approvalError = (error: unknown, fallback: string) => {
+  console.error("[companies]", error);
+  return userErrorMessage(error, fallback);
+};
 
 export function ApprovalsPage() {
   const { isBackoffice } = useStudio();
@@ -45,19 +53,19 @@ export function ApprovalsPage() {
   const review = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "aprovado" | "recusado" }) => { const { error } = await supabase.from("app_users").update({ status }).eq("id", id); if (error) throw new Error(error.message); },
     onSuccess: (_data, values) => { toast.success(values.status === "aprovado" ? "Cadastro liberado." : "Cadastro recusado."); qc.invalidateQueries({ queryKey: ["companies"] }); qc.invalidateQueries({ queryKey: ["team"] }); },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível concluir."),
+    onError: (error) => toast.error(approvalError(error, "Não foi possível concluir. Tente novamente.")),
   });
 
   const assignPlan = useMutation({
     mutationFn: async ({ tenantId, planId }: { tenantId: string; planId: string }) => { const { error } = await supabase.from("tenants").update({ plan_id: planId }).eq("id", tenantId); if (error) throw new Error(error.message); },
     onSuccess: () => { toast.success("Plano da empresa atualizado."); qc.invalidateQueries({ queryKey: ["companies"] }); qc.invalidateQueries({ queryKey: ["tenants"] }); },
-    onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível trocar o plano."),
+    onError: (error) => toast.error(approvalError(error, "Não foi possível trocar o plano. Tente novamente.")),
   });
 
   const resetPassword = useMutation({
     mutationFn: async (userId: string) => sendPasswordReset({ data: { userId } }),
     onSuccess: () => toast.success("E-mail de redefinição enviado."),
-    onError: (error) => toast.error(error instanceof Error ? error.message : "Não foi possível enviar o e-mail."),
+    onError: (error) => toast.error(approvalError(error, "Não foi possível enviar o e-mail. Tente novamente.")),
   });
 
   const data = companies.data ?? { users: [], tenants: [], plans: [] };
@@ -68,7 +76,7 @@ export function ApprovalsPage() {
   return <div>
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="mb-1 text-xs font-bold uppercase text-primary">Controle de acesso</p><h1 className="text-2xl font-black sm:text-3xl">Empresas</h1><p className="mt-2 max-w-2xl text-sm text-muted-foreground">Aprove cadastros, atribua planos e envie redefinições de senha.</p></div><div className="w-full sm:w-52"><Select value={filter} onValueChange={(value) => setFilter(value as Filter)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="todos">Todos os status</SelectItem><SelectItem value="pendente">Pendentes ({pendingCount})</SelectItem><SelectItem value="aprovado">Aprovados</SelectItem><SelectItem value="recusado">Recusados</SelectItem></SelectContent></Select></div></div>
     <section className="panel overflow-hidden p-0">
-      {companies.isLoading ? <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando empresas...</p> : <Table><TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-10"/><TableHead>E-mail</TableHead><TableHead>Empresa</TableHead><TableHead>Plano atual</TableHead><TableHead>Status</TableHead><TableHead>Cadastro</TableHead></TableRow></TableHeader><TableBody>{rows.map((user) => {
+      {companies.isLoading ? <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando empresas...</p> : companies.isError ? <p className="p-8 text-center text-sm text-muted-foreground">Não foi possível carregar as empresas. Tente novamente.</p> : <Table><TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-10"/><TableHead>E-mail</TableHead><TableHead>Empresa</TableHead><TableHead>Plano atual</TableHead><TableHead>Status</TableHead><TableHead>Cadastro</TableHead></TableRow></TableHeader><TableBody>{rows.map((user) => {
         const tenant = data.tenants.find((item) => item.id === user.tenant_id);
         const plan = data.plans.find((item) => item.id === tenant?.plan_id);
         const open = expanded === user.id;
@@ -76,7 +84,7 @@ export function ApprovalsPage() {
         const Icon = open ? ChevronDown : ChevronRight;
         return <CompanyRows key={user.id} user={user} tenant={tenant} plan={plan} plans={data.plans} open={open} protectedAccount={protectedAccount} busy={review.isPending || assignPlan.isPending || resetPassword.isPending} onToggle={() => setExpanded(open ? null : user.id)} onReview={(status) => review.mutate({ id: user.id, status })} onPlan={(planId) => tenant && assignPlan.mutate({ tenantId: tenant.id, planId })} onReset={() => resetPassword.mutate(user.id)} />;
       })}</TableBody></Table>}
-      {!companies.isLoading && !rows.length && <p className="p-8 text-center text-sm text-muted-foreground">Nenhuma empresa neste filtro.</p>}
+      {!companies.isLoading && !companies.isError && !rows.length && <p className="p-8 text-center text-sm text-muted-foreground">Nenhuma empresa neste filtro.</p>}
     </section>
   </div>;
 }

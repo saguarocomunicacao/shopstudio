@@ -26,9 +26,12 @@ async function withUserTenant<T>(context: { supabase: any; userId: string }, fn:
 
 const bytesFromBase64 = (base64: string) => Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
-async function readError(res: Response) {
+async function providerError(res: Response) {
   const body = await res.text();
-  return `ElevenLabs respondeu ${res.status}: ${body.slice(0, 400)}`;
+  console.error("[voices] ElevenLabs", res.status, body.slice(0, 500));
+  if (res.status === 401 || res.status === 403) return new Error("A chave da ElevenLabs foi recusada. Verifique a configuração.");
+  if (res.status === 429) return new Error("O serviço de voz está ocupado. Tente novamente em instantes.");
+  return new Error("Não foi possível concluir a ação de voz. Tente novamente.");
 }
 
 const generoFrom = (value: unknown): "masculino" | "feminino" | "neutro" | null => {
@@ -56,7 +59,7 @@ async function buildPreview(
     headers: { "xi-api-key": await apiKey(), "Content-Type": "application/json" },
     body: JSON.stringify({ text: texto, model_id: PREVIEW_MODEL }),
   });
-  if (!res.ok) throw new Error(await readError(res));
+  if (!res.ok) throw await providerError(res);
   const audio = new Uint8Array(await res.arrayBuffer());
 
   const pipeline = await import("./video-pipeline.server");
@@ -82,7 +85,7 @@ export const listElevenLabsVoices = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const json = await withUserTenant(context as any, async () => {
       const res = await fetch(`${API}/voices`, { headers: { "xi-api-key": await apiKey() } });
-      if (!res.ok) throw new Error(await readError(res));
+      if (!res.ok) throw await providerError(res);
       return (await res.json()) as { voices?: Record<string, unknown>[] };
     });
     return {
@@ -157,7 +160,7 @@ export const cloneVoice = createServerFn({ method: "POST" })
     }
 
     const res = await fetch(`${API}/voices/add`, { method: "POST", headers: { "xi-api-key": await apiKey() }, body: form });
-    if (!res.ok) throw new Error(await readError(res));
+    if (!res.ok) throw await providerError(res);
     const json = (await res.json()) as { voice_id?: string };
     const voiceId = json.voice_id;
     if (!voiceId) throw new Error("A ElevenLabs não devolveu o identificador da voz clonada.");

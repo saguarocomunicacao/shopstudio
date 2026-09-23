@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { generateVoicePreview, refreshVoicePreview } from "@/lib/voices.functions";
+import { userErrorMessage } from "@/lib/user-error";
 
 type Props = {
   /** Id da voz no catálogo interno (para renovar o link quando expira). */
@@ -46,8 +47,9 @@ export function VoicePlayButton({ voiceRowId, previewUrl, label = "Ouvir voz" }:
         const created = await generate({ data: { id: voiceRowId } });
         url = created.url;
       } catch (e) {
+        console.error("[voice-preview] generate", e);
         setLoading(false);
-        toast.error(e instanceof Error ? e.message : "Não foi possível gerar o preview.");
+        toast.error(userErrorMessage(e, "Não foi possível gerar o preview. Tente novamente."));
         return;
       }
       setLoading(false);
@@ -67,7 +69,8 @@ export function VoicePlayButton({ voiceRowId, previewUrl, label = "Ouvir voz" }:
         const renewed = await refresh({ data: { id: voiceRowId } });
         await play(renewed.url);
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Não foi possível tocar o preview.");
+        console.error("[voice-preview] play", e);
+        toast.error(userErrorMessage(e, "Não foi possível tocar o preview. Tente novamente."));
       }
     }
   };

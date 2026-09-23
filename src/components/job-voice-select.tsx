@@ -8,6 +8,7 @@ import { VoicePlayButton } from "@/components/voice-play-button";
 import { supabase } from "@/integrations/supabase/client";
 import { FONTE_LABELS, GENERO_LABELS, useVoices, type VoiceGenero } from "@/lib/voices";
 import type { DbJob } from "@/lib/content";
+import { userErrorMessage } from "@/lib/user-error";
 import { useQuery } from "@tanstack/react-query";
 
 const FILTROS: { value: VoiceGenero | "todos"; label: string }[] = [
@@ -62,7 +63,10 @@ export function JobVoiceSelect({ job, canEdit }: { job: DbJob; canEdit: boolean 
       toast.success("Voz do vídeo atualizada.");
       qc.invalidateQueries({ queryKey: ["jobs"] });
     },
-    onError: (e) => toast.error(e instanceof Error ? e.message : "Não foi possível salvar a voz."),
+    onError: (e) => {
+      console.error("[job-voice]", e);
+      toast.error(userErrorMessage(e, "Não foi possível salvar a voz. Tente novamente."));
+    },
   });
 
   const escolher = (valor: string | null) => {

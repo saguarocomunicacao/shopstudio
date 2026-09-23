@@ -45,7 +45,7 @@ export function VideosPage() { return <ProfileGate><VideosContent /></ProfileGat
 
 function VideosContent() {
   const { activeProfileId, profiles, can } = useStudio();
-  const { data: scoped = [] } = useJobs(activeProfileId);
+  const { data: scoped = [], isLoading, isError } = useJobs(activeProfileId);
   const videos = scoped.filter((j) => !!j.video_url);
   const rendering = scoped.filter((j) => j.status === "gerando_video");
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
@@ -57,12 +57,12 @@ function VideosContent() {
     <Heading eyebrow={`${videos.length} ${videos.length === 1 ? "peça" : "peças"}`} title="Biblioteca de vídeos" action={<Button disabled={!canCreate} onClick={() => setNovoOpen(true)}><Plus />Novo vídeo próprio</Button>} />
     <NewOwnVideoDialog open={novoOpen} onOpenChange={setNovoOpen} onCreated={(jobId) => setRecordingId(jobId)} />
     {recordingJob && <RecordingKitDialog job={recordingJob} canEdit={canCreate} onClose={() => setRecordingId(null)} />}
-    {rendering.length > 0 && <p className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{rendering.length} vídeo(s) renderizando...</p>}
-    {videos.length ? (
+    {isLoading ? <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando vídeos...</p> : isError ? <Empty>Não foi possível carregar os vídeos. Tente novamente.</Empty> : rendering.length > 0 && <p className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{rendering.length} vídeo(s) renderizando...</p>}
+    {!isLoading && !isError && (videos.length ? (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {videos.map((job) => (
           <article className="panel" key={job.id}>
-            <video src={job.video_url!} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="aspect-[9/16] w-full rounded-xl bg-black object-cover" />
+            <video src={job.video_url ?? undefined} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="aspect-[9/16] w-full rounded-xl bg-black object-cover" />
             <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>
             <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
             <VideoDownloadButton
@@ -81,7 +81,7 @@ function VideosContent() {
       </div>
     ) : (
       <Empty>Nenhum vídeo ainda. Eles aparecerão aqui quando forem gerados.</Empty>
-    )}
+    ))}
   </>;
 }
 

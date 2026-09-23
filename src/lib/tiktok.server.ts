@@ -80,7 +80,7 @@ async function callTokenEndpoint(endpoint: string, params: Record<string, string
     console.error(
       `[tiktok-oauth] ${endpoint.endsWith("refresh") ? "token/refresh" : "token/get"} falhou http=${res.status} code=${code ?? "-"} message=${message || text.slice(0, 200)}`,
     );
-    throw new Error(message || `TikTok recusou a autorização (código ${code ?? res.status}).`);
+    throw new Error("O TikTok recusou a autorização. Revise a conexão e tente novamente.");
   }
 
   const data = (payload["data"] ?? {}) as Record<string, unknown>;

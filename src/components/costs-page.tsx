@@ -159,7 +159,7 @@ export function CostsPage() {
   // o filtro de perfil só entra quando escolhido explicitamente.
   const intervalo = useMemo(() => intervaloDe(periodo, de, ate), [periodo, de, ate]);
   const perfilFiltro = perfisEscolhidos.length ? perfisEscolhidos : null;
-  const { data, isLoading } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapasSel, tenantId);
+  const { data, isLoading, isError } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapasSel, tenantId);
   const gasto = useGastoMes(activeProfileId);
 
   const jobsLinhas = useMemo(() => {
@@ -229,6 +229,10 @@ export function CostsPage() {
         </div>
       </div>
     );
+  }
+
+  if (isError) {
+    return <div className="panel text-center text-sm text-muted-foreground">Não foi possível carregar os custos. Tente novamente.</div>;
   }
 
   const semSelecao = !tenantId;

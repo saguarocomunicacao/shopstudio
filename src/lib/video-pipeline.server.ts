@@ -107,8 +107,9 @@ function googleError(status: number, body: string): Error {
     return new GoogleApiError("A chave do Google foi recusada. Verifique a chave configurada.", false);
   }
   if (status === 400) {
+    console.error("[google] conteúdo recusado", status, body.slice(0, 500));
     return new GoogleApiError(
-      `O Google recusou o conteúdo desta cena (400). Ajuste a descrição da imagem e tente de novo. ${body.slice(0, 160)}`,
+      "O Google recusou o conteúdo desta cena. Ajuste a descrição da imagem e tente novamente.",
       false,
     );
   }
@@ -118,7 +119,8 @@ function googleError(status: number, body: string): Error {
       true,
     );
   }
-  return new GoogleApiError(`O Google recusou a requisição (${status}). ${body.slice(0, 200)}`, false);
+  console.error("[google] requisição recusada", status, body.slice(0, 500));
+  return new GoogleApiError("Não foi possível processar esta cena. Tente novamente.", false);
 }
 
 
@@ -377,7 +379,8 @@ export async function pollVeoTake(
         : `A cena foi bloqueada pelo filtro de conteúdo do Google (não é erro técnico): ${detail}. Ajuste a descrição da cena e gere de novo.`,
     );
   }
-  throw new Error(`A animação terminou sem gerar vídeo. Resposta do Google: ${JSON.stringify(payload.response ?? {}).slice(0, 600)}`);
+  console.error("[veo] resposta sem vídeo", JSON.stringify(payload.response ?? {}).slice(0, 1000));
+  throw new Error("A animação terminou sem gerar vídeo. Tente gerar a cena novamente.");
 }
 
 /** Baixa o MP4 do Veo: da URI (Files API, exige a chave) ou do base64 devolvido na operação. */
@@ -561,7 +564,8 @@ export async function synthesizeNarration(opts: {
   });
   if (!plain.ok) {
     const detail = await plain.text();
-    throw new Error(`A ElevenLabs recusou a narração (${plain.status}). ${detail.slice(0, 200)}`);
+    console.error("[narration] ElevenLabs", plain.status, detail.slice(0, 500));
+    throw new Error("Não foi possível gerar a narração. Tente novamente.");
   }
   const bytes = new Uint8Array(await plain.arrayBuffer());
   // mp3 128 kbps = 16.000 bytes por segundo.
@@ -698,9 +702,10 @@ export async function planScenes(prompt: string, takes: number): Promise<ScenePl
 
   if (!res.ok || !res.body) {
     const detail = await res.text().catch(() => "");
+    console.error("[scene-planning] gateway", res.status, detail.slice(0, 500));
     if (res.status === 429) throw new Error("A IA está sobrecarregada. Tente de novo em instantes.");
     if (res.status === 402) throw new Error("Os créditos de IA acabaram. Adicione créditos para continuar.");
-    throw new Error(`Não foi possível planejar as cenas. (${res.status}) ${detail.slice(0, 160)}`);
+    throw new Error("Não foi possível planejar as cenas. Tente novamente.");
   }
 
   const reader = res.body.getReader();

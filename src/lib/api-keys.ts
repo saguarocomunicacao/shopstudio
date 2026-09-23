@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { userErrorMessage } from "@/lib/user-error";
 
 /** Provedores cujas chaves podem ser do próprio cliente (plano BYOK). */
 export const KEY_PROVIDERS = ["gemini", "json2video", "elevenlabs", "kalodata"] as const;
@@ -42,7 +43,7 @@ export function actionError(error: unknown, fallback = "Não foi possível concl
     }
     return `Configure sua chave de ${PROVIDER_LABEL[provider]} para continuar.`;
   }
-  return error instanceof Error ? error.message : fallback;
+  return userErrorMessage(error, fallback);
 }
 
 type TenantKeysInfo = { byok: boolean; missing: KeyProvider[]; configured: KeyProvider[] };

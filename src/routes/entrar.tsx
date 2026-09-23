@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAppTransition } from "@/components/app-transition";
 import { supabase } from "@/integrations/supabase/client";
+import { userErrorMessage } from "@/lib/user-error";
 import { resetSessionExpired } from "@/lib/session-guard";
 import logoLightAsset from "@/assets/logo-light.png.asset.json";
 
@@ -70,8 +71,8 @@ function AuthPage() {
       await runTransition("entering");
       goToApp();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Não foi possível continuar.";
-      setError(message.includes("Invalid login credentials") ? "Email ou senha incorretos." : message);
+      console.error("[auth]", err);
+      setError(userErrorMessage(err, "Não foi possível continuar. Tente novamente."));
     } finally {
       setBusy(false);
     }
