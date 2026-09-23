@@ -122,7 +122,7 @@ export function JobScenesReview({ job, canEdit }: { job: DbJob; canEdit: boolean
       {faltando > 0 && (
         <p className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {faltando === 1 ? "1 cena ficou sem imagem" : `${faltando} cenas ficaram sem imagem`}. As demais já estão
-          prontas e serão mantidas — refaça só as que faltam pelo botão “Gerar esta cena”.
+          prontas e serão mantidas — refaça só as que faltam pelo botão “Tentar novamente”.
         </p>
       )}
       {scenes.map((scene, index) => (
