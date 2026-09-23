@@ -50,9 +50,10 @@ export async function describeProductWithAi(input: {
 
   if (!res.ok || !res.body) {
     const detail = await res.text().catch(() => "");
+    console.error("[product-description] gateway", res.status, detail.slice(0, 500));
     if (res.status === 429) throw new Error("A IA está sobrecarregada no momento. Tente de novo em instantes.");
     if (res.status === 402) throw new Error("Os créditos de IA do espaço de trabalho acabaram. Adicione créditos para continuar.");
-    throw new Error(`Não foi possível gerar a descrição. (${res.status}) ${detail.slice(0, 200)}`);
+    throw new Error("Não foi possível gerar a descrição. Tente novamente.");
   }
 
   const reader = res.body.getReader();
