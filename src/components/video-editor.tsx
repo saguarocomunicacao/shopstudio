@@ -46,6 +46,115 @@ function initialCrop(aspectRatio: RecordingAspectRatio, source: VideoSourceSize,
 
 type EditorSnapshot = { start: number; end: number; cuts: CutOperation[]; crop: CropOperation | null };
 
+const FILMSTRIP_MIN_FRAMES = 8;
+const FILMSTRIP_MAX_FRAMES = 15;
+
+function waitForVideoEvent(video: HTMLVideoElement, eventName: "loadedmetadata" | "seeked") {
+  return new Promise<void>((resolve, reject) => {
+    const cleanup = () => {
+      video.removeEventListener(eventName, resolveEvent);
+      video.removeEventListener("error", rejectEvent);
+    };
+    const resolveEvent = () => {
+      cleanup();
+      resolve();
+    };
+    const rejectEvent = () => {
+      cleanup();
+      reject(new Error("Não foi possível ler um frame do vídeo."));
+    };
+    video.addEventListener(eventName, resolveEvent, { once: true });
+    video.addEventListener("error", rejectEvent, { once: true });
+  });
+}
+
+/** Tira visual leve, extraída localmente sem alterar nem reencodar o vídeo. */
+function VideoFilmstrip({ source, duration }: { source: Blob; duration: number }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [frameCount, setFrameCount] = useState(FILMSTRIP_MIN_FRAMES);
+  const [frames, setFrames] = useState<(string | null)[]>(() => Array(FILMSTRIP_MIN_FRAMES).fill(null));
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry?.contentRect.width ?? 0;
+      if (width <= 0) return;
+      setFrameCount(Math.min(FILMSTRIP_MAX_FRAMES, Math.max(FILMSTRIP_MIN_FRAMES, Math.round(width / 72))));
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (duration <= 0 || frameCount <= 0) return;
+    let cancelled = false;
+    const objectUrl = URL.createObjectURL(source);
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    video.src = objectUrl;
+    setFrames(Array(frameCount).fill(null));
+
+    const extract = async () => {
+      try {
+        if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+          video.load();
+          await waitForVideoEvent(video, "loadedmetadata");
+        }
+        const usableDuration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : duration;
+        const canvas = document.createElement("canvas");
+        canvas.width = 112;
+        canvas.height = 64;
+        const context = canvas.getContext("2d", { alpha: false });
+        if (!context || !video.videoWidth || !video.videoHeight) return;
+
+        const sourceRatio = video.videoWidth / video.videoHeight;
+        const targetRatio = canvas.width / canvas.height;
+        const sourceWidth = sourceRatio > targetRatio ? video.videoHeight * targetRatio : video.videoWidth;
+        const sourceHeight = sourceRatio > targetRatio ? video.videoHeight : video.videoWidth / targetRatio;
+        const sourceX = (video.videoWidth - sourceWidth) / 2;
+        const sourceY = (video.videoHeight - sourceHeight) / 2;
+
+        for (let index = 0; index < frameCount && !cancelled; index += 1) {
+          const target = Math.min(Math.max(0.01, ((index + 0.5) / frameCount) * usableDuration), Math.max(0.01, usableDuration - 0.03));
+          if (Math.abs(video.currentTime - target) > 0.01) {
+            const seeked = waitForVideoEvent(video, "seeked");
+            video.currentTime = target;
+            await seeked;
+          }
+          if (cancelled) break;
+          context.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
+          const frame = canvas.toDataURL("image/jpeg", 0.58);
+          setFrames((current) => current.map((value, frameIndex) => (frameIndex === index ? frame : value)));
+          await new Promise<void>((resolve) => window.setTimeout(resolve, 20));
+        }
+      } catch (error) {
+        if (!cancelled) console.warn("Editor de vídeo: não foi possível gerar a tira de miniaturas", error);
+      }
+    };
+
+    void extract();
+    return () => {
+      cancelled = true;
+      video.removeAttribute("src");
+      video.load();
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [duration, frameCount, source]);
+
+  return (
+    <div ref={containerRef} className="pointer-events-none absolute inset-0 z-0 flex overflow-hidden rounded-md bg-muted" aria-hidden="true">
+      {frames.map((frame, index) => (
+        <div key={index} className="min-w-0 flex-1 border-r border-background/30 last:border-r-0">
+          {frame ? <img src={frame} alt="" className="size-full object-cover" draggable={false} /> : <div className="size-full animate-pulse bg-muted-foreground/15" />}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function VideoEditor({
   source,
   onCancel,
@@ -585,24 +694,31 @@ export function VideoEditor({
             <span className="text-center">Final {formatTime(resultingDuration(duration, operations))}</span>
             <span className="text-right">Fim {formatTime(end)}</span>
           </div>
-          <div ref={trackRef} data-trim-track className="relative h-14 select-none overflow-visible rounded-md bg-muted" aria-label="Linha do tempo do vídeo" onPointerDown={(event) => seek(timeFromPointer(event.clientX))}>
-            <div className="absolute inset-y-0 rounded-md bg-primary/25" style={{ left: `${pct(start)}%`, right: `${100 - pct(end)}%` }} />
+          <div ref={trackRef} data-trim-track className="relative h-16 select-none overflow-visible rounded-md bg-muted ring-1 ring-border" aria-label="Linha do tempo do vídeo" onPointerDown={(event) => seek(timeFromPointer(event.clientX))}>
+            <VideoFilmstrip source={source} duration={duration} />
+            {mode === "trim" && (
+              <>
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] rounded-l-md bg-background/70" style={{ width: `${pct(start)}%` }} />
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-[5] rounded-r-md bg-background/70" style={{ width: `${100 - pct(end)}%` }} />
+                <div className="pointer-events-none absolute inset-y-0 z-[6] border-y-2 border-primary" style={{ left: `${pct(start)}%`, right: `${100 - pct(end)}%` }} />
+              </>
+            )}
             {cuts.map((cut, index) => (
-              <div key={`${cut.start}-${cut.end}-${index}`} className="absolute inset-y-0 bg-destructive/65" style={{ left: `${pct(cut.start)}%`, width: `${pct(cut.end - cut.start)}%` }} />
+              <div key={`${cut.start}-${cut.end}-${index}`} className="pointer-events-none absolute inset-y-0 z-10 bg-destructive/65" style={{ left: `${pct(cut.start)}%`, width: `${pct(cut.end - cut.start)}%` }} />
             ))}
             {mode === "cut" && cutEnd > cutStart && (
-              <div className="absolute inset-y-0 z-10 border-x-2 border-primary bg-primary/30" style={{ left: `${pct(cutStart)}%`, width: `${pct(cutEnd - cutStart)}%` }} />
+              <div className="pointer-events-none absolute inset-y-0 z-10 border-x-2 border-destructive bg-destructive/35" style={{ left: `${pct(cutStart)}%`, width: `${pct(cutEnd - cutStart)}%` }} />
             )}
-            <div className="pointer-events-none absolute inset-y-0 w-0.5 bg-foreground" style={{ left: `${pct(currentTime)}%` }} />
+            <div className="pointer-events-none absolute -inset-y-1 z-30 w-0.5 bg-foreground shadow-sm" style={{ left: `${pct(currentTime)}%` }} />
             {mode === "trim" ? (
               <>
-                <Button type="button" variant="default" aria-label="Início do trecho" data-trim-handle="start" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(start)}%` }} onPointerDown={dragHandle("start")} />
-                <Button type="button" variant="default" aria-label="Fim do trecho" data-trim-handle="end" className="absolute top-0 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(end)}%` }} onPointerDown={dragHandle("end")} />
+                <Button type="button" variant="default" aria-label="Início do trecho" data-trim-handle="start" className="absolute top-0 z-20 h-16 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(start)}%` }} onPointerDown={dragHandle("start")} />
+                <Button type="button" variant="default" aria-label="Fim do trecho" data-trim-handle="end" className="absolute top-0 z-20 h-16 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(end)}%` }} onPointerDown={dragHandle("end")} />
               </>
             ) : mode === "cut" ? (
               <>
-                <Button type="button" variant="destructive" aria-label="Início do corte interno" data-cut-handle="start" className="absolute top-0 z-20 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutStart)}%` }} onPointerDown={dragHandle("cutStart")} />
-                <Button type="button" variant="destructive" aria-label="Fim do corte interno" data-cut-handle="end" className="absolute top-0 z-20 h-14 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutEnd)}%` }} onPointerDown={dragHandle("cutEnd")} />
+                <Button type="button" variant="destructive" aria-label="Início do corte interno" data-cut-handle="start" className="absolute top-0 z-20 h-16 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutStart)}%` }} onPointerDown={dragHandle("cutStart")} />
+                <Button type="button" variant="destructive" aria-label="Fim do corte interno" data-cut-handle="end" className="absolute top-0 z-20 h-16 w-8 -translate-x-1/2 touch-none rounded-md border-2 border-background p-0" style={{ left: `${pct(cutEnd)}%` }} onPointerDown={dragHandle("cutEnd")} />
               </>
 
             ) : null}
