@@ -509,3 +509,90 @@ export const saveDraftThumbnail = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+/**
+ * Duplica um job em qualquer status: cópia fiel e independente (textos, configs,
+ * personas, estilo, voz e arquivos copiados no storage), sempre nascendo em rascunho.
+ */
+export const duplicateJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(jobInput)
+  .handler(async ({ data, context }) => {
+    const { data: job, error } = await context.supabase.from("jobs").select("*").eq("id", data.jobId).maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!job) throw new Error("Vídeo não encontrado.");
+    await assertCanEditDraft(context.supabase, job.profile_id);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const stamp = Date.now();
+    const copied: string[] = [];
+    const copyFile = async (path: string | null) => {
+      if (!path) return null;
+      const ext = path.includes(".") ? path.slice(path.lastIndexOf(".")) : "";
+      const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/") + 1) : "";
+      const target = `${dir}copia-${crypto.randomUUID()}-${stamp}${ext}`;
+      const { error: cpError } = await supabaseAdmin.storage.from("job-media").copy(path, target);
+      if (cpError) {
+        console.error("Falha ao copiar arquivo do job", { jobId: job.id, path, message: cpError.message });
+        throw new Error("Não foi possível copiar os arquivos de vídeo. Tente novamente.");
+      }
+      copied.push(target);
+      return target;
+    };
+
+    try {
+      // Mesmo arquivo pode estar em mais de uma coluna: copia uma vez só.
+      const cache = new Map<string, string | null>();
+      const dup = async (p: string | null) => {
+        if (!p) return null;
+        if (!cache.has(p)) cache.set(p, await copyFile(p));
+        return cache.get(p)!;
+      };
+      const {
+        id: _id, created_at: _c, updated_at: _u, created_by: _cb,
+        ...rest
+      } = job as Record<string, unknown> & typeof job;
+      const title = job.title.trim().endsWith("(cópia)") ? job.title : `${job.title} (cópia)`;
+      const insert = {
+        ...rest,
+        title,
+        created_by: context.userId,
+        status: "roteiro_pronto" as const,
+        recorded_at: null,
+        approved_at: null,
+        published_at: null,
+        published_url: null,
+        rejection_reason: null,
+        deleted_at: null,
+        deleted_from_status: null,
+        automation_schedule_id: null,
+        render_id: null,
+        render_error: null,
+        render_stage: null,
+        render_started_at: null,
+        ai_status: null,
+        ai_render_stage: null,
+        ai_render_id: null,
+        ai_render_error: null,
+        ai_render_started_at: null,
+        video_storage_attempts: 0,
+        video_storage_error: null,
+        video_path: await dup(job.video_path),
+        video_original_path: await dup(job.video_original_path),
+        video_edited_path: await dup(job.video_edited_path),
+        video_thumbnail_path: await dup(job.video_thumbnail_path),
+        ai_video_path: await dup(job.ai_video_path),
+        ai_video_thumbnail_path: await dup(job.ai_video_thumbnail_path),
+      };
+      const { data: novo, error: insError } = await context.supabase
+        .from("jobs")
+        .insert(insert as never)
+        .select("id")
+        .single();
+      if (insError) throw new Error(insError.message);
+      return { jobId: novo.id as string };
+    } catch (e) {
+      if (copied.length) await supabaseAdmin.storage.from("job-media").remove(copied);
+      throw e;
+    }
+  });

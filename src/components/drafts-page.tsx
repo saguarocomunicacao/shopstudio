@@ -52,6 +52,7 @@ import {
   getDraftKit,
   getDraftPreviews,
   moveDraftBack,
+  duplicateJob,
   purgeDraft,
   restoreDraft,
   trashDraft,
@@ -228,6 +229,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
   const undoTrash = useServerFn(restoreDraft);
   const purge = useServerFn(purgeDraft);
   const stepBack = useServerFn(moveDraftBack);
+  const duplicate = useServerFn(duplicateJob);
 
   useEffect(() => {
     if (!initialJobId || isLoading) return;
@@ -288,6 +290,16 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
     onSuccess: () => {
       toast.success("Vídeo voltou para a etapa anterior.");
       refreshLists();
+    },
+    onError: (e) => toast.error(errMessage(e)),
+  });
+
+  const dupMut = useMutation({
+    mutationFn: (jobId: string) => duplicate({ data: { jobId } }),
+    onSuccess: () => {
+      toast.success("Cópia criada como rascunho (roteiro pronto).");
+      refreshLists();
+      setQueue("roteiros");
     },
     onError: (e) => toast.error(errMessage(e)),
   });
@@ -469,6 +481,17 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                     </div>
                   ) : (
                     <Button className="min-w-0" onClick={abrir}>Abrir kit de postagem</Button>
+                  )}
+                  {!isTrash && canRemove(job) && (
+                    <Button
+                      variant="ghost"
+                      className="min-w-0"
+                      disabled={dupMut.isPending}
+                      onClick={() => dupMut.mutate(job.id)}
+                    >
+                      {dupMut.isPending && dupMut.variables === job.id ? <Loader2 className="animate-spin" /> : <Copy />}
+                      Duplicar
+                    </Button>
                   )}
                   {!isTrash && canRemove(job) && canStepBack(job) && (
                     <Button
