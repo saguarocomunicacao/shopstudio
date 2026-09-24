@@ -1032,8 +1032,9 @@ export function RecordingStudio({
               Há uma gravação ou edição ainda não salva. Você pode guardá-la como rascunho para continuar depois.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="grid gap-2 sm:grid-cols-3">
+          <AlertDialogFooter className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end sm:space-x-0">
             <AlertDialogCancel
+              className="w-full whitespace-nowrap sm:w-auto"
               disabled={salvar.isPending}
               onClick={() => {
                 if (reopenEditorOnCancel) setEditorAberto(true);
@@ -1043,7 +1044,7 @@ export function RecordingStudio({
               Continuar editando
             </AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="w-full whitespace-nowrap bg-destructive text-destructive-foreground hover:bg-destructive/90 sm:w-auto"
               disabled={salvar.isPending}
               onClick={(event) => {
                 event.preventDefault();
@@ -1054,7 +1055,11 @@ export function RecordingStudio({
             >
               Sair sem salvar
             </AlertDialogAction>
-            <Button disabled={salvar.isPending} onClick={() => salvar.mutate()}>
+            <Button
+              className="w-full whitespace-nowrap sm:w-auto"
+              disabled={salvar.isPending}
+              onClick={() => salvar.mutate()}
+            >
               {salvar.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
               Salvar como rascunho
             </Button>
