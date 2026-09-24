@@ -101,7 +101,7 @@ export async function iniciarDownload(tenantId: string, rede: Rede, url: string)
   return json.data.id;
 }
 
-export type RunInfo = { status: string; datasetId?: string | undefined; custoUsd: number };
+export type RunInfo = { status: string; datasetId?: string | undefined; kvId?: string | undefined; custoUsd: number };
 
 export async function lerRun(tenantId: string, runId: string): Promise<RunInfo> {
   const res = await apifyFetch(tenantId, `/actor-runs/${runId}`);
@@ -226,8 +226,9 @@ export function extrairMeta(rede: Rede, item: Record<string, unknown>): RedeMeta
 
 /** Baixa o MP4 do Apify (com credencial se preciso). */
 export async function baixarArquivo(tenantId: string, url: string): Promise<{ bytes: ArrayBuffer; mime: string }> {
-  let res = await fetch(url);
-  if (res.status === 401 || res.status === 403) {
+  const cdn = !/api\.apify\.com/.test(url);
+  let res = await fetch(url, cdn ? { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36", Referer: url.includes("tiktok") ? "https://www.tiktok.com/" : url.includes("cdninstagram") ? "https://www.instagram.com/" : "" } } : undefined);
+  if (!cdn && (res.status === 401 || res.status === 403)) {
     const path = url.replace(/^https?:\/\/api\.apify\.com\/v2/, "");
     res = await apifyFetch(tenantId, path);
   }
