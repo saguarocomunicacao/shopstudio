@@ -547,6 +547,13 @@
       "when": 1790286947053,
       "tag": "0077_video_analises_arquivo_info",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1790287886994,
+      "tag": "0078_metricas_fase1",
+      "breakpoints": true
     }
   ]
 }

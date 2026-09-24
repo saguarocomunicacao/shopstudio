@@ -19,7 +19,7 @@ export const PROVIDER_USE: Record<KeyProvider, string> = {
   json2video: "montar o vídeo final com legendas e trilha",
   elevenlabs: "gerar a narração em voz",
   kalodata: "buscar produtos e vídeos campeões",
-  apify: "baixar vídeos de links do TikTok, YouTube e Instagram",
+  apify: "baixar vídeos de links do TikTok, YouTube e Instagram e coletar as métricas dos perfis",
 };
 
 const MISSING_KEY_TAG = "MISSING_TENANT_KEY";

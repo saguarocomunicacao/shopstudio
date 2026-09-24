@@ -14,7 +14,9 @@ export const Route = createFileRoute("/api/public/cron/apify-downloads")({
           const { varrerDownloadsParados, varrerAnalises } = await import("@/lib/video-analise.server");
           const results = await varrerDownloadsParados(10);
           const analises = await varrerAnalises(3);
-          return Response.json({ ok: true, results, analises });
+          const { varrerColetas } = await import("@/lib/metricas.server");
+          const metricas = await varrerColetas(10);
+          return Response.json({ ok: true, results, analises, metricas });
         } catch (e) {
           console.error("[cron apify-downloads]", e);
           return Response.json({ ok: false }, { status: 500 });

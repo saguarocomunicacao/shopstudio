@@ -926,6 +926,8 @@ export type Database = {
           take_duration: number | null
           tenant_id: string
           texto_tela: string | null
+          tiktok_video_id: string | null
+          tiktok_video_url: string | null
           title: string
           updated_at: string
           veo_takes_count: number
@@ -999,6 +1001,8 @@ export type Database = {
           take_duration?: number | null
           tenant_id?: string
           texto_tela?: string | null
+          tiktok_video_id?: string | null
+          tiktok_video_url?: string | null
           title?: string
           updated_at?: string
           veo_takes_count?: number
@@ -1072,6 +1076,8 @@ export type Database = {
           take_duration?: number | null
           tenant_id?: string
           texto_tela?: string | null
+          tiktok_video_id?: string | null
+          tiktok_video_url?: string | null
           title?: string
           updated_at?: string
           veo_takes_count?: number
@@ -1156,6 +1162,57 @@ export type Database = {
         }
         Relationships: []
       }
+      metricas_coleta: {
+        Row: {
+          iniciado_em: string | null
+          profile_id: string
+          run_id: string | null
+          status: string
+          tenant_id: string
+          ultima_coleta_em: string | null
+          ultimo_erro: string | null
+          ultimo_manual_em: string | null
+          updated_at: string
+        }
+        Insert: {
+          iniciado_em?: string | null
+          profile_id: string
+          run_id?: string | null
+          status?: string
+          tenant_id: string
+          ultima_coleta_em?: string | null
+          ultimo_erro?: string | null
+          ultimo_manual_em?: string | null
+          updated_at?: string
+        }
+        Update: {
+          iniciado_em?: string | null
+          profile_id?: string
+          run_id?: string | null
+          status?: string
+          tenant_id?: string
+          ultima_coleta_em?: string | null
+          ultimo_erro?: string | null
+          ultimo_manual_em?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metricas_coleta_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metricas_coleta_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes: {
         Row: {
           created_at: string
@@ -1200,6 +1257,57 @@ export type Database = {
           },
           {
             foreignKeyName: "notificacoes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      perfil_metricas: {
+        Row: {
+          created_at: string
+          curtidas_total: number | null
+          data: string
+          id: string
+          profile_id: string
+          seguidores: number | null
+          seguindo: number | null
+          tenant_id: string
+          videos_total: number | null
+        }
+        Insert: {
+          created_at?: string
+          curtidas_total?: number | null
+          data: string
+          id?: string
+          profile_id: string
+          seguidores?: number | null
+          seguindo?: number | null
+          tenant_id: string
+          videos_total?: number | null
+        }
+        Update: {
+          created_at?: string
+          curtidas_total?: number | null
+          data?: string
+          id?: string
+          profile_id?: string
+          seguidores?: number | null
+          seguindo?: number | null
+          tenant_id?: string
+          videos_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "perfil_metricas_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "perfil_metricas_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2302,6 +2410,143 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_metricas: {
+        Row: {
+          comentarios: number | null
+          compartilhamentos: number | null
+          created_at: string
+          data: string
+          id: string
+          job_id: string | null
+          likes: number | null
+          profile_id: string
+          reposts: number | null
+          salvos: number | null
+          tenant_id: string
+          tiktok_video_id: string
+          views: number | null
+        }
+        Insert: {
+          comentarios?: number | null
+          compartilhamentos?: number | null
+          created_at?: string
+          data: string
+          id?: string
+          job_id?: string | null
+          likes?: number | null
+          profile_id: string
+          reposts?: number | null
+          salvos?: number | null
+          tenant_id: string
+          tiktok_video_id: string
+          views?: number | null
+        }
+        Update: {
+          comentarios?: number | null
+          compartilhamentos?: number | null
+          created_at?: string
+          data?: string
+          id?: string
+          job_id?: string | null
+          likes?: number | null
+          profile_id?: string
+          reposts?: number | null
+          salvos?: number | null
+          tenant_id?: string
+          tiktok_video_id?: string
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_metricas_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_metricas_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_metricas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos_nao_vinculados: {
+        Row: {
+          capa_url: string | null
+          created_at: string
+          duracao: number | null
+          id: string
+          legenda: string | null
+          profile_id: string
+          publicado_em: string | null
+          tenant_id: string
+          tiktok_video_id: string
+          url: string
+          vinculado_job_id: string | null
+          visto_em: string
+        }
+        Insert: {
+          capa_url?: string | null
+          created_at?: string
+          duracao?: number | null
+          id?: string
+          legenda?: string | null
+          profile_id: string
+          publicado_em?: string | null
+          tenant_id: string
+          tiktok_video_id: string
+          url: string
+          vinculado_job_id?: string | null
+          visto_em?: string
+        }
+        Update: {
+          capa_url?: string | null
+          created_at?: string
+          duracao?: number | null
+          id?: string
+          legenda?: string | null
+          profile_id?: string
+          publicado_em?: string | null
+          tenant_id?: string
+          tiktok_video_id?: string
+          url?: string
+          vinculado_job_id?: string | null
+          visto_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_nao_vinculados_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "videos_nao_vinculados_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "videos_nao_vinculados_vinculado_job_id_fkey"
+            columns: ["vinculado_job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
         ]

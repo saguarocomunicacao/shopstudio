@@ -7,7 +7,7 @@ import type { DbJob } from "@/lib/content";
 import { cn } from "@/lib/utils";
 
 const JOB_COLS =
-  "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status, visual_style_override, visual_style_custom, favorito";
+  "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, tiktok_video_id, tiktok_video_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status, visual_style_override, visual_style_custom, favorito";
 
 /** Favoritos do perfil, de qualquer etapa (inclusive lixeira). */
 export function useFavoriteJobs(profileId: string | null) {

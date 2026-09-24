@@ -1,3 +1,5 @@
+import { ehLinkTiktok } from "@/lib/metricas-calc";
+import { TiktokLinkInline, VincularExternoDialog } from "./tiktok-link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -19,6 +21,7 @@ import {
   Trash2,
   Undo2,
   Video,
+  Link2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useSearch } from "@tanstack/react-router";
@@ -282,6 +285,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
   const [recordingId, setRecordingId] = useState<string | null>(null);
   const [openStudioDirectly, setOpenStudioDirectly] = useState(false);
   const [novoOpen, setNovoOpen] = useState(false);
+  const [externoOpen, setExternoOpen] = useState(false);
   const [trashing, setTrashing] = useState<DbJob | null>(null);
   const [purging, setPurging] = useState<DbJob | null>(null);
   const qc = useQueryClient();
@@ -442,10 +446,18 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
           </p>
         </div>
         {canCreate && (
-          <Button onClick={() => setNovoOpen(true)}>
-            <Video />
-            Novo vídeo próprio
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {queue === "publicado" && activeProfileId && (
+              <Button variant="secondary" onClick={() => setExternoOpen(true)}>
+                <Link2 />
+                Vincular vídeo externo
+              </Button>
+            )}
+            <Button onClick={() => setNovoOpen(true)}>
+              <Video />
+              Novo vídeo próprio
+            </Button>
+          </div>
         )}
       </div>
 
@@ -523,6 +535,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                   <InlineTitle jobId={job.id} title={job.title} canEdit={canRemove(job)} className="text-sm font-bold" />
                 </div>
                 <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
+                {!isTrash && job.status === "publicado" && !job.tiktok_video_id && <TiktokLinkInline jobId={job.id} canEdit={canRemove(job)} />}
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <span
@@ -649,6 +662,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
           }}
         />
       )}
+      {activeProfileId && <VincularExternoDialog profileId={activeProfileId} open={externoOpen} onOpenChange={setExternoOpen} />}
       <NewOwnVideoDialog open={novoOpen} onOpenChange={setNovoOpen} onCreated={(jobId) => setRecordingId(jobId)} />
 
       <AlertDialog open={!!trashing} onOpenChange={(open) => !open && setTrashing(null)}>
@@ -858,7 +872,7 @@ function DraftKitDialog({ jobId, job, canEdit, onClose, onResumeRecording }: { j
   });
 
   const publishMut = useMutation({
-    mutationFn: () => publish({ data: { jobId, url: postUrl.trim() || undefined } }),
+    mutationFn: () => publish({ data: { jobId, url: postUrl.trim() } }),
     onSuccess: () => {
       toast.success("Marcado como publicado.");
       setPublishOpen(false);
@@ -1082,22 +1096,23 @@ function DraftKitDialog({ jobId, job, canEdit, onClose, onResumeRecording }: { j
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Marcar como publicado</DialogTitle>
-            <DialogDescription>Se quiser, cole o link do post no TikTok para alimentar as métricas.</DialogDescription>
+            <DialogDescription>Cole o link do vídeo no TikTok. Ele é usado para acompanhar as métricas deste vídeo.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
-            <Label htmlFor="post-url">Link do post (opcional)</Label>
+            <Label htmlFor="post-url">Link do vídeo no TikTok</Label>
             <Input
               id="post-url"
               value={postUrl}
               onChange={(e) => setPostUrl(e.target.value)}
               placeholder="https://www.tiktok.com/@perfil/video/..."
             />
+            {postUrl.trim() && !ehLinkTiktok(postUrl) && <p className="text-xs text-destructive">Cole um link do tiktok.com.</p>}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setPublishOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
+            <Button onClick={() => publishMut.mutate()} disabled={publishMut.isPending || !ehLinkTiktok(postUrl)}>
               {publishMut.isPending && <Loader2 className="animate-spin" />}
               Confirmar
             </Button>
