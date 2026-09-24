@@ -543,7 +543,7 @@ export async function runAssistente(ctx: Ctx, msgs: ChatMsg[], rota: string | nu
     else if (p.type === "tool-call" && p.toolName) opts.onTool?.(p.toolName);
     else if (p.type === "error") throw p.error;
   }
-  let uso = { inputTokens: 0, outputTokens: 0 } as { inputTokens?: number; outputTokens?: number };
+  let uso = { inputTokens: 0, outputTokens: 0 } as { inputTokens?: number | undefined; outputTokens?: number | undefined };
   try { uso = await result.totalUsage; } catch { /* abortado */ }
   return { texto, ferramentas, consultas, uso: { input: uso.inputTokens ?? 0, output: uso.outputTokens ?? 0 } };
 }

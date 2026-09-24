@@ -60,7 +60,7 @@ export const Route = createFileRoute("/api/assistente")({
               const desde = new Date(Date.now() - RATE_JANELA_MIN * 60_000).toISOString();
               const { data: usos } = await db.from("assistente_uso").select("created_at").eq("user_id", userId).gte("created_at", desde).order("created_at", { ascending: true });
               if ((usos?.length ?? 0) >= RATE_MAX) {
-                const primeiro = new Date(usos![0].created_at).getTime();
+                const primeiro = new Date(usos![0]!.created_at).getTime();
                 send({ t: "limite", segundos: Math.max(1, Math.ceil((primeiro + RATE_JANELA_MIN * 60_000 - Date.now()) / 1000)) });
                 return;
               }
@@ -86,7 +86,7 @@ export const Route = createFileRoute("/api/assistente")({
 
               const { data: hist } = await db.from("assistente_mensagens").select("papel, conteudo").eq("conversa_id", conversaId).in("papel", ["user", "assistant"]).order("criado_em", { ascending: false }).limit(20);
               const msgs = (hist ?? []).reverse().map((m) => ({ role: m.papel as "user" | "assistant", content: m.conteudo }));
-              if (!msgs.length || msgs[msgs.length - 1].role !== "user") msgs.push({ role: "user", content: body.pergunta });
+              if (!msgs.length || msgs[msgs.length - 1]!.role !== "user") msgs.push({ role: "user", content: body.pergunta });
 
               const ctx = { db: db as never, userId, profileId: body.profileId, tenantId: access.tenantId, access };
               const r = await runAssistente(ctx, msgs, body.rota, {
