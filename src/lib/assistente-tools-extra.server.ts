@@ -8,6 +8,28 @@ import { JOB_STATUS_LABELS, type JobStatusKey } from "./content";
 import { computeEventoCusto, type ConsumoEventoRow } from "./custo-core";
 import { agregarPeriodo, SELECT_EVENTOS_CUSTO } from "./custo-calculo";
 import type { Ctx } from "./assistente.server";
+import { formatoLabel, linhasVideos, resumirMetricas, type JobMetricaBase, type PerfilSnap, type VideoSnap } from "./metricas-calc";
+
+/** Mesma leitura da tela Métricas (getMetricas), com o login do usuário. */
+async function lerMetricas(db: Any, profileId: string, dias: number) {
+  const desde = new Date(Date.now() - (Math.max(dias, 30) + 8) * 86400_000).toISOString().slice(0, 10);
+  const [perfil, coleta, prof, jobs, videos] = await Promise.all([
+    db.from("perfil_metricas").select("data, seguidores, seguindo, curtidas_total, videos_total").eq("profile_id", profileId).gte("data", desde).order("data"),
+    db.from("metricas_coleta").select("status, ultima_coleta_em, ultimo_erro").eq("profile_id", profileId).maybeSingle(),
+    db.from("profiles").select("handle").eq("id", profileId).maybeSingle(),
+    db.from("jobs").select("id, title, formato, video_choice, published_at, tiktok_video_id, tiktok_video_url").eq("profile_id", profileId).eq("status", "publicado").is("deleted_at", null).limit(200),
+    db.from("video_metricas").select("tiktok_video_id, job_id, data, views, likes, comentarios, compartilhamentos, salvos, reposts").eq("profile_id", profileId).gte("data", desde).order("data").limit(10000),
+  ]);
+  const js = (jobs.data ?? []) as JobMetricaBase[];
+  return {
+    handle: String(prof.data?.handle ?? "").replace(/^@/, "").trim(),
+    coleta: coleta.data as Any,
+    perfil: (perfil.data ?? []) as PerfilSnap[],
+    videos: (videos.data ?? []) as VideoSnap[],
+    jobs: js,
+    pubPorVideo: new Map(js.filter((j) => j.tiktok_video_id).map((j) => [j.tiktok_video_id!, j.published_at])),
+  };
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -414,10 +436,48 @@ export function buildToolsExtra(ctx: Ctx) {
       },
     }),
 
-    metricas: tool({
-      description: "Métricas de desempenho (views, vendas, comissão).",
-      inputSchema: z.object({}),
-      execute: async () => ({ mensagem: "Métricas ainda não disponíveis nesta versão.", link: "/app/metricas" }),
+    resumo_metricas: tool({
+      description: "Métricas do perfil no TikTok (mesma fonte da tela Métricas): seguidores e variação, views, likes, comentários, compartilhamentos, salvos, repostados e taxa de engajamento no período, vídeos publicados no período, data da última coleta e alertas. Valores já prontos: copie, não calcule.",
+      inputSchema: z.object({ profile_id: perfilArg, dias: z.number().nullable().describe("Período em dias. Padrão 7.") }),
+      execute: async ({ profile_id, dias }) => {
+        const p = pid(ctx, profile_id);
+        if (!p) return { erro: "Nenhum perfil selecionado." };
+        if (!ctx.access.isBackoffice && !ctx.access.can("metricas", "visualizar", p)) return semAcesso("Métricas");
+        const d = await lerMetricas(db, p, dias || 7);
+        if (!d.handle) return { mensagem: "Informe o @ do perfil para coletar métricas.", link: "/app/metricas" };
+        const r = resumirMetricas({ perfil: d.perfil, videos: d.videos, jobs: d.jobs, dias: dias || 7, publicadoPorVideo: d.pubPorVideo });
+        return {
+          perfil_tiktok: `@${d.handle}`, periodo_dias: dias || 7,
+          ultima_coleta: quando(d.coleta?.ultima_coleta_em), alerta_coleta: d.coleta?.status === "erro" ? d.coleta.ultimo_erro : null,
+          seguidores: r.seguidores, variacao_seguidores: r.seguidoresVariacao,
+          views: r.views, likes: r.likes, comentarios: r.comentarios, compartilhamentos: r.compartilhamentos, salvos: r.salvos, repostados: r.reposts,
+          taxa_engajamento: r.engajamentoPct == null ? null : `${r.engajamentoPct.toFixed(1).replace(".", ",")}%`,
+          videos_publicados_no_periodo: r.videosPublicados,
+          observacao: "Views/likes do período = crescimento no período (último registro menos o registro antes do início).",
+          link: "/app/metricas",
+        };
+      },
+    }),
+
+    metricas_video: tool({
+      description: "Métricas atuais de um vídeo publicado (job): views, likes, comentários, compartilhamentos, salvos, repostados, engajamento, formato, link do TikTok e curva de views dos últimos 14 dias.",
+      inputSchema: z.object({ job_id: z.string() }),
+      execute: async ({ job_id }) => {
+        const { data: job } = await db.from("jobs").select("id, title, profile_id, formato, video_choice, published_at, tiktok_video_id, tiktok_video_url").eq("id", job_id).maybeSingle();
+        if (!job) return { erro: "Vídeo não encontrado." };
+        const j = job as Any;
+        if (!ctx.access.isBackoffice && !ctx.access.can("metricas", "visualizar", j.profile_id)) return semAcesso("Métricas");
+        if (!j.tiktok_video_id) return { titulo: j.title, mensagem: "Esse vídeo ainda não tem o link do TikTok. Adicione em Rascunhos > Publicados.", link: "/app/rascunhos?tab=publicados" };
+        const { data: snaps } = await db.from("video_metricas").select("tiktok_video_id, job_id, data, views, likes, comentarios, compartilhamentos, salvos, reposts").eq("profile_id", j.profile_id).eq("tiktok_video_id", j.tiktok_video_id).order("data");
+        const [l] = linhasVideos([j], (snaps ?? []) as VideoSnap[]);
+        if (!l || l.semDados) return { titulo: j.title, mensagem: "Ainda sem números: aguardando a próxima coleta.", link_tiktok: j.tiktok_video_url };
+        return {
+          titulo: j.title, formato: formatoLabel(j), publicado_em: quando(j.published_at), link_tiktok: j.tiktok_video_url,
+          views: l.views, likes: l.likes, comentarios: l.comentarios, compartilhamentos: l.compartilhamentos, salvos: l.salvos, repostados: l.reposts,
+          taxa_engajamento: l.engajamentoPct == null ? null : `${l.engajamentoPct.toFixed(1).replace(".", ",")}%`,
+          curva_14_dias: l.curva, link: "/app/metricas",
+        };
+      },
     }),
 
     configuracoes_sistema: tool({
@@ -497,7 +557,8 @@ export const TOOL_LABELS_EXTRA: Record<string, string> = {
   config_perfil: "Consultando configuração do perfil...",
   notificacoes: "Consultando notificações...",
   lixeira: "Consultando lixeira...",
-  metricas: "Consultando métricas...",
+  resumo_metricas: "Consultando métricas...",
+  metricas_video: "Consultando métricas do vídeo...",
   configuracoes_sistema: "Consultando configurações...",
   minhas_apis: "Consultando APIs...",
   progresso_guia: "Consultando o guia...",
