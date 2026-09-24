@@ -180,7 +180,7 @@ function PipelineContent() {
                         </button>
                       )}
                     </div>
-                    <p className="text-sm font-bold">{job.title || productName(job.product_id)}</p>
+                    <p className="pr-16 text-sm font-bold">{job.title || productName(job.product_id)}</p>
                     <p className="mt-2 text-xs text-muted-foreground">{productName(job.product_id)}</p>
                     <p className="mt-4 text-[11px] text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
                     <JobCostBadge jobId={job.id} />
