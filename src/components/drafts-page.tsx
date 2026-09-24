@@ -208,7 +208,7 @@ function DraftThumb({
   return (
     <button type="button" onClick={onOpen} className="block w-full overflow-hidden rounded-xl">
       {posterUrl ? (
-        <img src={posterUrl} alt={job.title || "Rascunho"} className="aspect-[9/16] w-full bg-black object-cover" />
+        <img src={posterUrl} alt={job.title || "Rascunho"} className="aspect-[9/16] w-full bg-video-bg object-cover" />
       ) : loadingPreview && !loadTimedOut ? (
         <div className="draft-thumbnail-placeholder aspect-[9/16] w-full">
           <span className="route-loader-mark scale-75" aria-hidden="true">
@@ -847,7 +847,7 @@ function DraftKitDialog({ jobId, onClose, onResumeRecording }: { jobId: string; 
                     controls
                     playsInline
                     poster={data.thumbnailUrl ?? undefined}
-                    className="aspect-[9/16] w-full rounded-xl bg-black object-cover"
+                    className="aspect-[9/16] w-full rounded-xl bg-video-bg object-cover"
                   />
                 )}
                 <VideoDownloadButton

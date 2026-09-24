@@ -62,6 +62,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-overlay: var(--overlay);
   --color-video: var(--video-text);
+  --color-video-bg: var(--video-bg);
   --color-brand-cyan: var(--brand-cyan);
   --color-cyan-ink: var(--cyan-ink);
   --color-success-soft: var(--success-soft);
@@ -128,6 +129,7 @@
   --danger-soft: oklch(0.951 0.026 2.8);
   --overlay: oklch(0.08 0 0 / 82%);
   --video-text: oklch(1 0 0);
+  --video-bg: oklch(0 0 0);
   --landing-bg: oklch(0.145 0.003 285);
   --landing-surface: oklch(0.205 0.004 285);
   --landing-surface-raised: oklch(0.245 0.005 285);
@@ -186,6 +188,7 @@
   --danger-soft: oklch(0.647 0.238 17.7 / 16%);
   --overlay: oklch(0.02 0 0 / 82%);
   --video-text: oklch(1 0 0);
+  --video-bg: oklch(0 0 0);
 }
 
 @layer base {

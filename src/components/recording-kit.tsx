@@ -402,7 +402,7 @@ export function RecordingKitDialog({
                   <p className="mb-2 text-sm font-bold">Vídeo gravado</p>
                   {download.data?.url ? (
                     <>
-                      <video src={download.data.url} controls playsInline className={`${RECORDING_FORMATS[recordingAspectRatio].mediaClass} w-full rounded-xl bg-black object-contain`} />
+                      <video src={download.data.url} controls playsInline className={`${RECORDING_FORMATS[recordingAspectRatio].mediaClass} w-full rounded-xl bg-video-bg object-contain`} />
                       <VideoDownloadButton
                         versions={[
                           { key: "ativa", label: "Versão em uso", source: download.data.url },

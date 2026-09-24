@@ -675,7 +675,7 @@ export function RecordingStudio({
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid h-screen w-screen place-items-center overflow-hidden bg-black supports-[height:100dvh]:h-[100dvh] max-sm:box-border max-sm:pl-[env(safe-area-inset-left)] max-sm:pr-[env(safe-area-inset-right)]">
+    <div className="fixed inset-0 z-50 grid h-screen w-screen place-items-center overflow-hidden bg-video-bg supports-[height:100dvh]:h-[100dvh] max-sm:box-border max-sm:pl-[env(safe-area-inset-left)] max-sm:pr-[env(safe-area-inset-right)]">
       {loadingSaved ? (
         <div className="recording-transition" role="status" aria-live="polite" aria-label="Preparando gravação">
           <div className="recording-transition-grid" aria-hidden="true" />
@@ -689,14 +689,14 @@ export function RecordingStudio({
           </div>
         </div>
       ) : !supported ? (
-        <div className="m-6 rounded-xl bg-white/10 p-6 text-center text-sm text-white">
+        <div className="m-6 rounded-xl bg-video/10 p-6 text-center text-sm text-video">
           Este navegador não permite gravar vídeo. Abra o Shop Studio pelo Chrome ou Safari atualizado, no celular ou no
           computador, para usar o estúdio.
         </div>
       ) : (
-        <div className={`relative shrink-0 overflow-hidden bg-black ${RECORDING_FORMATS["9:16"].frameClass} ${RECORDING_FORMATS["9:16"].mediaClass}`}>
-          <div className="absolute inset-0 grid place-items-center overflow-hidden bg-black">
-            <div className={`relative w-full max-h-full overflow-hidden bg-black ${outputFormat.mediaClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
+        <div className={`relative shrink-0 overflow-hidden bg-video-bg ${RECORDING_FORMATS["9:16"].frameClass} ${RECORDING_FORMATS["9:16"].mediaClass}`}>
+          <div className="absolute inset-0 grid place-items-center overflow-hidden bg-video-bg">
+            <div className={`relative w-full max-h-full overflow-hidden bg-video-bg ${outputFormat.mediaClass}`} data-recording-aspect-ratio={selectedAspectRatio}>
               {previewUrl ? (
                 <video
                   ref={reviewVideoRef}
@@ -704,7 +704,7 @@ export function RecordingStudio({
                   playsInline
                   preload="metadata"
                   aria-label="Revisão do vídeo gravado"
-                  className="size-full bg-black object-cover"
+                  className="size-full bg-video-bg object-cover"
                   onPlay={() => setReviewPlaying(true)}
                   onPause={() => setReviewPlaying(false)}
                   onEnded={() => setReviewPlaying(false)}
@@ -723,14 +723,14 @@ export function RecordingStudio({
                     ref={canvasRef}
                     width={outWidth}
                     height={outHeight}
-                    className={`block size-full bg-black ${facing === "user" ? "-scale-x-100" : ""}`}
+                    className={`block size-full bg-video-bg ${facing === "user" ? "-scale-x-100" : ""}`}
                   />
                 </>
               )}
             </div>
           </div>
 
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/70 to-transparent px-3 pb-10 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 bg-gradient-to-b from-black/70 to-transparent px-3 pb-10 pt-[max(0.75rem,env(safe-area-inset-top))] text-video">
             <p className="min-w-0 truncate pt-2 text-sm font-bold">{job.title || "Gravar vídeo"}</p>
             {onGenerateAi && !previewUrl && !recording && (
               <Button
@@ -743,13 +743,13 @@ export function RecordingStudio({
                 Gerar por IA
               </Button>
             )}
-            <Button type="button" variant="ghost" size="icon" aria-label="Fechar estúdio" title="Fechar estúdio" className="pointer-events-auto shrink-0 bg-black/30 text-white backdrop-blur-md hover:bg-black/50 hover:text-white" onClick={closeStudio}>
+            <Button type="button" variant="ghost" size="icon" aria-label="Fechar estúdio" title="Fechar estúdio" className="pointer-events-auto shrink-0 bg-video-bg/30 text-video backdrop-blur-md hover:bg-video-bg/50 hover:text-video" onClick={closeStudio}>
               <X className="size-5" />
             </Button>
           </div>
 
           {error && (
-            <div className="absolute inset-x-4 top-20 z-30 rounded-xl bg-black/80 p-4 text-sm text-white backdrop-blur-md">
+            <div className="absolute inset-x-4 top-20 z-30 rounded-xl bg-video-bg/80 p-4 text-sm text-video backdrop-blur-md">
               {error}
               <Button variant="secondary" size="sm" className="mt-3" onClick={() => void startCamera(facing, reduzirRuido)}>
                 <RefreshCw />
@@ -777,12 +777,12 @@ export function RecordingStudio({
                     style={{ transform: espelhado ? "scaleX(-1)" : undefined }}
                   >
                     {item.orientacao && (
-                      <p className="mb-2 text-sm font-medium leading-relaxed text-white/60">
+                      <p className="mb-2 text-sm font-medium leading-relaxed text-video/60">
                         Dica: {item.orientacao}
                       </p>
                     )}
                     <p
-                      className="font-bold leading-snug text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]"
+                      className="font-bold leading-snug text-video drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]"
                       style={{ fontSize: `${fonte}px` }}
                     >
                       {item.fala}
@@ -796,7 +796,7 @@ export function RecordingStudio({
 
           {recording && (
             <span className="absolute left-3 top-16 z-20 inline-flex items-center gap-2 rounded-full bg-destructive px-3 py-1 text-xs font-bold text-destructive-foreground">
-              <span className="size-2 animate-pulse rounded-full bg-white" />
+              <span className="size-2 animate-pulse rounded-full bg-video" />
               {tempo}
             </span>
           )}
@@ -804,29 +804,29 @@ export function RecordingStudio({
           {!previewUrl ? (
             <>
               <div className="absolute right-3 top-24 z-20 flex flex-col gap-3">
-                <Button variant="secondary" size="icon" aria-label="Ajustes da câmera" title="Ajustes da câmera" className="rounded-full bg-black/45 text-white backdrop-blur-md hover:bg-black/65 hover:text-white" onClick={() => setPainel((p) => p === "ajustes" ? null : "ajustes")}>
+                <Button variant="secondary" size="icon" aria-label="Ajustes da câmera" title="Ajustes da câmera" className="rounded-full bg-video-bg/45 text-video backdrop-blur-md hover:bg-video-bg/65 hover:text-video" onClick={() => setPainel((p) => p === "ajustes" ? null : "ajustes")}>
                   <SlidersHorizontal />
                 </Button>
-                <Button variant="secondary" size="icon" aria-label="Ajustes do texto" title="Ajustes do texto" className="rounded-full bg-black/45 text-white backdrop-blur-md hover:bg-black/65 hover:text-white" onClick={() => setPainel((p) => p === "texto" ? null : "texto")}>
+                <Button variant="secondary" size="icon" aria-label="Ajustes do texto" title="Ajustes do texto" className="rounded-full bg-video-bg/45 text-video backdrop-blur-md hover:bg-video-bg/65 hover:text-video" onClick={() => setPainel((p) => p === "texto" ? null : "texto")}>
                   <Type />
                 </Button>
               </div>
 
               <div className="absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-3 sm:px-4">
-                <div className="flex min-w-0 items-center gap-0.5 justify-self-start rounded-full bg-black/55 p-1 text-white shadow-xl backdrop-blur-md sm:gap-1 sm:p-1.5">
-                  <Button variant="ghost" size="icon" aria-label={rolando ? "Pausar texto" : "Rolar texto"} title={rolando ? "Pausar texto" : "Rolar texto"} className="size-10 shrink-0 rounded-full text-white hover:bg-white/15 hover:text-white sm:size-11" onClick={alternarRolagem}>{rolando ? <Pause /> : <Play />}</Button>
-                  <Button variant="ghost" size="icon" aria-label="Diminuir velocidade do texto" title="Diminuir velocidade" className="size-10 shrink-0 rounded-full text-white hover:bg-white/15 hover:text-white sm:size-11" onClick={() => setVelocidade((v) => Math.max(8, v - 6))}><Minus /></Button>
+                <div className="flex min-w-0 items-center gap-0.5 justify-self-start rounded-full bg-video-bg/55 p-1 text-video shadow-xl backdrop-blur-md sm:gap-1 sm:p-1.5">
+                  <Button variant="ghost" size="icon" aria-label={rolando ? "Pausar texto" : "Rolar texto"} title={rolando ? "Pausar texto" : "Rolar texto"} className="size-10 shrink-0 rounded-full text-video hover:bg-video/15 hover:text-video sm:size-11" onClick={alternarRolagem}>{rolando ? <Pause /> : <Play />}</Button>
+                  <Button variant="ghost" size="icon" aria-label="Diminuir velocidade do texto" title="Diminuir velocidade" className="size-10 shrink-0 rounded-full text-video hover:bg-video/15 hover:text-video sm:size-11" onClick={() => setVelocidade((v) => Math.max(8, v - 6))}><Minus /></Button>
                   <span className="min-w-7 shrink-0 text-center text-xs font-bold" aria-live="polite">{velocidade}</span>
-                  <Button variant="ghost" size="icon" aria-label="Aumentar velocidade do texto" title="Aumentar velocidade" className="size-10 shrink-0 rounded-full text-white hover:bg-white/15 hover:text-white sm:size-11" onClick={() => setVelocidade((v) => Math.min(90, v + 6))}><Plus /></Button>
-                  <Button variant="ghost" size="icon" aria-label="Voltar texto ao início" title="Voltar ao início" className="size-10 shrink-0 rounded-full text-white hover:bg-white/15 hover:text-white sm:size-11" onClick={resetScrolling}><ArrowUpToLine /></Button>
+                  <Button variant="ghost" size="icon" aria-label="Aumentar velocidade do texto" title="Aumentar velocidade" className="size-10 shrink-0 rounded-full text-video hover:bg-video/15 hover:text-video sm:size-11" onClick={() => setVelocidade((v) => Math.min(90, v + 6))}><Plus /></Button>
+                  <Button variant="ghost" size="icon" aria-label="Voltar texto ao início" title="Voltar ao início" className="size-10 shrink-0 rounded-full text-video hover:bg-video/15 hover:text-video sm:size-11" onClick={resetScrolling}><ArrowUpToLine /></Button>
                 </div>
-                <Button size="icon" aria-label={recording ? "Parar gravação" : "Iniciar gravação"} title={recording ? "Parar gravação" : "Iniciar gravação"} className={`size-14 shrink-0 justify-self-end rounded-full border-4 border-white shadow-xl sm:size-16 ${recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`} disabled={!!error} onClick={() => (recording ? stop() : start())}>
+                <Button size="icon" aria-label={recording ? "Parar gravação" : "Iniciar gravação"} title={recording ? "Parar gravação" : "Iniciar gravação"} className={`size-14 shrink-0 justify-self-end rounded-full border-4 border-video shadow-xl sm:size-16 ${recording ? "bg-destructive text-destructive-foreground" : "bg-primary text-primary-foreground"}`} disabled={!!error} onClick={() => (recording ? stop() : start())}>
                   {recording ? <Square className="size-6 fill-current" /> : <span className="size-7 rounded-full bg-current" />}
                 </Button>
               </div>
 
               {painel && (
-                <div className="absolute inset-0 z-30 flex items-end bg-black/35" onPointerDown={() => setPainel(null)}>
+                <div className="absolute inset-0 z-30 flex items-end bg-video-bg/35" onPointerDown={() => setPainel(null)}>
                   <section aria-label={painel === "ajustes" ? "Ajustes da câmera" : "Ajustes do texto"} className="max-h-[68%] w-full overflow-y-auto rounded-t-2xl bg-popover/95 px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 text-popover-foreground shadow-2xl backdrop-blur-xl" onPointerDown={(event) => event.stopPropagation()}>
                     <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted-foreground/35" />
                     <div className="mb-4 flex items-center justify-between gap-3">
@@ -910,7 +910,7 @@ export function RecordingStudio({
                 {reviewPlaying ? <Pause className="size-6" /> : <Play className="size-6" />}
               </Button>
               <div className="absolute inset-x-0 bottom-0 z-20 grid gap-2 bg-gradient-to-t from-black/85 via-black/55 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-16">
-              <p className="text-center text-sm font-semibold text-white">Revise sua gravação</p>
+              <p className="text-center text-sm font-semibold text-video">Revise sua gravação</p>
               {onGenerateAi && (
                 <Button
                   variant="secondary"
@@ -969,12 +969,12 @@ export function RecordingStudio({
                />
               {editedBlob && (
                 <>
-                  <p className="text-center text-xs text-white/70">Mostrando a versão editada. O vídeo original continua guardado.</p>
+                  <p className="text-center text-xs text-video/70">Mostrando a versão editada. O vídeo original continua guardado.</p>
                   <Button
                     variant="ghost"
                     size="lg"
                     disabled={salvar.isPending}
-                    className="text-white hover:bg-white/10 hover:text-white"
+                    className="text-video hover:bg-video/10 hover:text-video"
                     onClick={() => {
                       if (editedUrl) URL.revokeObjectURL(editedUrl);
                       setEditedBlob(null);

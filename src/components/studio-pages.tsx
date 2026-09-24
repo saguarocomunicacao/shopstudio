@@ -63,7 +63,7 @@ function VideosContent() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {videos.map((job) => (
           <article className="panel" key={job.id}>
-            <video src={job.video_url ?? undefined} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="aspect-[9/16] w-full rounded-xl bg-black object-cover" />
+            <video src={job.video_url ?? undefined} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="aspect-[9/16] w-full rounded-xl bg-video-bg object-cover" />
             <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>
             <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
             <VideoDownloadButton

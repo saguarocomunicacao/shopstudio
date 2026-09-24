@@ -36,9 +36,9 @@ function SharedVideoPage() {
   if (!data.ok) {
     return (
       <SharedShell>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
-          <p className="text-sm font-bold text-white">Este vídeo não está mais disponível.</p>
-          <p className="mt-2 text-xs text-white/60">O link pode ter expirado ou sido revogado.</p>
+        <div className="rounded-2xl border border-video/10 bg-video/5 p-8 text-center">
+          <p className="text-sm font-bold text-video">Este vídeo não está mais disponível.</p>
+          <p className="mt-2 text-xs text-video/60">O link pode ter expirado ou sido revogado.</p>
         </div>
       </SharedShell>
     );
@@ -52,7 +52,7 @@ function SharedVideoPage() {
         controls
         autoPlay
         playsInline
-        className="aspect-[9/16] w-full rounded-2xl bg-black object-cover shadow-[0_0_60px_rgba(254,44,85,0.25)]"
+        className="aspect-[9/16] w-full rounded-2xl bg-video-bg object-cover shadow-[0_0_60px_rgba(254,44,85,0.25)]"
       />
     </SharedShell>
   );

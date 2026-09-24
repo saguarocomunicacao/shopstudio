@@ -178,7 +178,7 @@ export function JobAiVideo({ job, canEdit }: { job: DbJob; canEdit: boolean }) {
         <div className="grid gap-3">
           {dados?.aiUrl ? (
             <>
-              <video src={dados.aiUrl} controls playsInline className="aspect-[9/16] w-full rounded-xl bg-black object-contain" />
+              <video src={dados.aiUrl} controls playsInline className="aspect-[9/16] w-full rounded-xl bg-video-bg object-contain" />
               <VideoDownloadButton
                 versions={[
                   { key: "ia", label: "Versão gerada por IA", source: dados.aiUrl },

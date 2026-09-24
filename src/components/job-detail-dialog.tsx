@@ -183,7 +183,7 @@ export function JobDetailDialog({
 
           {job?.video_url && (
             <div className="grid gap-3">
-              <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[300px] rounded-xl bg-black" />
+              <video src={job.video_url} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="mx-auto max-h-[300px] rounded-xl bg-video-bg" />
               <VideoDownloadButton
                 versions={[
                   { key: "ativa", label: "Vídeo montado", source: job.video_url },
