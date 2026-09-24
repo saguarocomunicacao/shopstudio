@@ -74,7 +74,7 @@ function RadarContent() {
       </div>}
     />
     <NewOwnVideoDialog
-      open={!!roteiro} onOpenChange={(v) => !v && setRoteiro(null)} assuntoInicial={roteiro?.assunto}
+      open={!!roteiro} onOpenChange={(v) => !v && setRoteiro(null)} assuntoInicial={roteiro?.assunto ?? ""}
       onCreated={(jobId) => { if (roteiro) void marcar({ data: { id: roteiro.id, status: "usado" } }).then(recarregar); setRecordingId(jobId); }}
     />
     {recordingJob && <RecordingKitDialog job={recordingJob} canEdit={canCreate} onClose={() => setRecordingId(null)} />}

@@ -13,7 +13,7 @@ function percentil(vals: number[], p: number) {
   if (!vals.length) return Infinity;
   const s = [...vals].sort((a, b) => a - b);
   const i = Math.min(s.length - 1, Math.max(0, Math.ceil(p * s.length) - 1));
-  return s[i];
+  return s[i] ?? Infinity;
 }
 
 function engajamento(m: Any) {
