@@ -554,6 +554,13 @@
       "when": 1790287886994,
       "tag": "0078_metricas_fase1",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1790289132969,
+      "tag": "0079_referencias_perfis",
+      "breakpoints": true
     }
   ]
 }

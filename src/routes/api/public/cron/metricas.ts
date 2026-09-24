@@ -12,7 +12,10 @@ export const Route = createFileRoute("/api/public/cron/metricas")({
         if (!ok) return new Response("Unauthorized", { status: 401 });
         try {
           const { iniciarColetasDiarias } = await import("@/lib/metricas.server");
-          return Response.json({ ok: true, perfis: await iniciarColetasDiarias() });
+          const perfis = await iniciarColetasDiarias();
+          const { iniciarColetasDiariasRef } = await import("@/lib/referencias.server");
+          const referencias = await iniciarColetasDiariasRef();
+          return Response.json({ ok: true, perfis, referencias });
         } catch (e) {
           console.error("[cron metricas]", e);
           return Response.json({ ok: false }, { status: 500 });

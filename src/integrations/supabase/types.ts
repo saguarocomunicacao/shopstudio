@@ -1871,6 +1871,305 @@ export type Database = {
         }
         Relationships: []
       }
+      referencia_perfil_metricas: {
+        Row: {
+          created_at: string
+          curtidas_total: number | null
+          data: string
+          id: string
+          profile_id: string
+          referencia_id: string
+          seguidores: number | null
+          seguindo: number | null
+          tenant_id: string
+          videos_total: number | null
+        }
+        Insert: {
+          created_at?: string
+          curtidas_total?: number | null
+          data: string
+          id?: string
+          profile_id: string
+          referencia_id: string
+          seguidores?: number | null
+          seguindo?: number | null
+          tenant_id: string
+          videos_total?: number | null
+        }
+        Update: {
+          created_at?: string
+          curtidas_total?: number | null
+          data?: string
+          id?: string
+          profile_id?: string
+          referencia_id?: string
+          seguidores?: number | null
+          seguindo?: number | null
+          tenant_id?: string
+          videos_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referencia_perfil_metricas_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referencia_perfil_metricas_referencia_id_fkey"
+            columns: ["referencia_id"]
+            isOneToOne: false
+            referencedRelation: "referencia_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referencia_perfil_metricas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referencia_perfis: {
+        Row: {
+          acompanhar: boolean
+          created_at: string
+          created_by: string | null
+          fonte_roteirista: boolean
+          foto_path: string | null
+          handle: string
+          id: string
+          iniciado_em: string | null
+          insights: string | null
+          insights_em: string | null
+          meu_perfil_id: string | null
+          nome: string | null
+          profile_id: string
+          qtd_videos: number
+          run_id: string | null
+          status: string
+          tenant_id: string
+          ultima_coleta_em: string | null
+          ultimo_erro: string | null
+          ultimo_manual_em: string | null
+          updated_at: string
+        }
+        Insert: {
+          acompanhar?: boolean
+          created_at?: string
+          created_by?: string | null
+          fonte_roteirista?: boolean
+          foto_path?: string | null
+          handle: string
+          id?: string
+          iniciado_em?: string | null
+          insights?: string | null
+          insights_em?: string | null
+          meu_perfil_id?: string | null
+          nome?: string | null
+          profile_id: string
+          qtd_videos?: number
+          run_id?: string | null
+          status?: string
+          tenant_id: string
+          ultima_coleta_em?: string | null
+          ultimo_erro?: string | null
+          ultimo_manual_em?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acompanhar?: boolean
+          created_at?: string
+          created_by?: string | null
+          fonte_roteirista?: boolean
+          foto_path?: string | null
+          handle?: string
+          id?: string
+          iniciado_em?: string | null
+          insights?: string | null
+          insights_em?: string | null
+          meu_perfil_id?: string | null
+          nome?: string | null
+          profile_id?: string
+          qtd_videos?: number
+          run_id?: string | null
+          status?: string
+          tenant_id?: string
+          ultima_coleta_em?: string | null
+          ultimo_erro?: string | null
+          ultimo_manual_em?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referencia_perfis_meu_perfil_id_fkey"
+            columns: ["meu_perfil_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referencia_perfis_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referencia_perfis_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referencia_video_metricas: {
+        Row: {
+          comentarios: number | null
+          compartilhamentos: number | null
+          created_at: string
+          data: string
+          id: string
+          likes: number | null
+          profile_id: string
+          referencia_id: string
+          reposts: number | null
+          salvos: number | null
+          tenant_id: string
+          tiktok_video_id: string
+          views: number | null
+        }
+        Insert: {
+          comentarios?: number | null
+          compartilhamentos?: number | null
+          created_at?: string
+          data: string
+          id?: string
+          likes?: number | null
+          profile_id: string
+          referencia_id: string
+          reposts?: number | null
+          salvos?: number | null
+          tenant_id: string
+          tiktok_video_id: string
+          views?: number | null
+        }
+        Update: {
+          comentarios?: number | null
+          compartilhamentos?: number | null
+          created_at?: string
+          data?: string
+          id?: string
+          likes?: number | null
+          profile_id?: string
+          referencia_id?: string
+          reposts?: number | null
+          salvos?: number | null
+          tenant_id?: string
+          tiktok_video_id?: string
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referencia_video_metricas_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referencia_video_metricas_referencia_id_fkey"
+            columns: ["referencia_id"]
+            isOneToOne: false
+            referencedRelation: "referencia_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referencia_video_metricas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referencia_videos: {
+        Row: {
+          analise_id: string | null
+          capa_path: string | null
+          created_at: string
+          duracao: number | null
+          id: string
+          legenda: string | null
+          profile_id: string
+          publicado_em: string | null
+          referencia_id: string
+          tenant_id: string
+          tiktok_video_id: string
+          url: string
+        }
+        Insert: {
+          analise_id?: string | null
+          capa_path?: string | null
+          created_at?: string
+          duracao?: number | null
+          id?: string
+          legenda?: string | null
+          profile_id: string
+          publicado_em?: string | null
+          referencia_id: string
+          tenant_id: string
+          tiktok_video_id: string
+          url: string
+        }
+        Update: {
+          analise_id?: string | null
+          capa_path?: string | null
+          created_at?: string
+          duracao?: number | null
+          id?: string
+          legenda?: string | null
+          profile_id?: string
+          publicado_em?: string | null
+          referencia_id?: string
+          tenant_id?: string
+          tiktok_video_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referencia_videos_analise_id_fkey"
+            columns: ["analise_id"]
+            isOneToOne: false
+            referencedRelation: "video_analises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referencia_videos_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referencia_videos_referencia_id_fkey"
+            columns: ["referencia_id"]
+            isOneToOne: false
+            referencedRelation: "referencia_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referencia_videos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           permission_id: string
@@ -2308,6 +2607,7 @@ export type Database = {
           pergunta: string | null
           profile_id: string
           rede_meta: Json | null
+          referencia_id: string | null
           resultado: Json | null
           so_download: boolean
           status: string
@@ -2344,6 +2644,7 @@ export type Database = {
           pergunta?: string | null
           profile_id: string
           rede_meta?: Json | null
+          referencia_id?: string | null
           resultado?: Json | null
           so_download?: boolean
           status?: string
@@ -2380,6 +2681,7 @@ export type Database = {
           pergunta?: string | null
           profile_id?: string
           rede_meta?: Json | null
+          referencia_id?: string | null
           resultado?: Json | null
           so_download?: boolean
           status?: string
@@ -2403,6 +2705,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_analises_referencia_id_fkey"
+            columns: ["referencia_id"]
+            isOneToOne: false
+            referencedRelation: "referencia_perfis"
             referencedColumns: ["id"]
           },
           {

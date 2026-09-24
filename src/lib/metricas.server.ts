@@ -16,6 +16,63 @@ async function salvarColeta(profileId: string, tenantId: string, patch: Record<s
   await db.from("metricas_coleta").upsert({ profile_id: profileId, tenant_id: tenantId, ...patch, updated_at: new Date().toISOString() } as never, { onConflict: "profile_id" });
 }
 
+/**
+ * Compartilhado com Perfis de referência: inicia o run do ator em modo perfil.
+ * Lança erro amigável se não der.
+ */
+export async function iniciarRunPerfil(tenantId: string, handle: string, qtd: number): Promise<string> {
+  const input = {
+    profiles: [handle],
+    resultsPerPage: qtd,
+    profileScrapeSections: ["videos"],
+    shouldDownloadVideos: false,
+    shouldDownloadCovers: false,
+    shouldDownloadSubtitles: false,
+    shouldDownloadSlideshowImages: false,
+    commentsPerPost: 0,
+    scrapeRelatedVideos: false,
+  };
+  const res = await apifyFetch(tenantId, `/acts/${ATOR}/runs?timeout=600`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    console.error("[metricas] iniciar", res.status, (await res.text().catch(() => "")).slice(0, 300));
+    throw new Error(res.status === 402 ? "A conta de coleta está sem saldo. Avise o suporte." : "Não foi possível começar a coleta de métricas.");
+  }
+  const runId = ((await res.json()) as { data?: { id?: string } }).data?.id;
+  if (!runId) throw new Error("Não foi possível começar a coleta de métricas.");
+  return runId;
+}
+
+export type ItensPerfil = { autor: Any | null; videos: Any[]; erro: string | null };
+
+/** Compartilhado: lê o dataset do run e separa autor e vídeos do @. */
+export async function lerItensPerfil(tenantId: string, datasetId: string, handle: string, dicaErro = "Confira o @ na aba Dados do perfil."): Promise<ItensPerfil> {
+  const res = await apifyFetch(tenantId, `/datasets/${datasetId}/items?limit=100&clean=true`);
+  const itens = (res.ok ? await res.json().catch(() => []) : []) as Any[];
+  const h = handle.toLowerCase();
+  const videos = itens.filter((i) => i && i.id && !i.error && (!i.authorMeta?.name || String(i.authorMeta.name).toLowerCase() === h));
+  const autorAchado = itens.find((i) => i?.authorMeta && String(i.authorMeta.name ?? "").toLowerCase() === h)?.authorMeta as Any | undefined;
+  if (!videos.length && !autorAchado) {
+    const erroItem = itens.find((i) => i?.error)?.error as string | undefined;
+    const erro = erroItem && /not.?found|doesn.?t exist|no.?user|invalid/i.test(erroItem)
+      ? `Não encontramos a conta @${h} no TikTok. ${dicaErro}`
+      : `Não foi possível ler a conta @${h} no TikTok. Tente atualizar de novo.`;
+    return { autor: null, videos: [], erro };
+  }
+  const autor = autorAchado ?? videos[0].authorMeta ?? {};
+  if (autor.privateAccount) return { autor, videos, erro: `A conta @${h} é privada. Deixe a conta pública para coletar métricas.` };
+  return { autor, videos, erro: null };
+}
+
+/** Compartilhado: linha de números de um vídeo (mesmos campos das duas tabelas). */
+export const numerosVideo = (i: Any) => ({
+  views: num(i.playCount), likes: num(i.diggCount), comentarios: num(i.commentCount), compartilhamentos: num(i.shareCount), salvos: num(i.collectCount), reposts: num(i.repostCount),
+});
+export const numerosPerfil = (a: Any) => ({ seguidores: num(a.fans), seguindo: num(a.following), curtidas_total: num(a.heart), videos_total: num(a.video) });
+
 /** Inicia a coleta de um perfil. Lança erro amigável se não der. */
 export async function iniciarColeta(profileId: string, manual: boolean): Promise<void> {
   const db = await admin();
@@ -35,45 +92,29 @@ export async function iniciarColeta(profileId: string, manual: boolean): Promise
       throw new Error(`Esse perfil já foi atualizado na última hora. Tente de novo às ${hora}.`);
     }
   }
-  const input = {
-    profiles: [handle],
-    resultsPerPage: 50,
-    profileScrapeSections: ["videos"],
-    shouldDownloadVideos: false,
-    shouldDownloadCovers: false,
-    shouldDownloadSubtitles: false,
-    shouldDownloadSlideshowImages: false,
-    commentsPerPost: 0,
-    scrapeRelatedVideos: false,
-  };
-  const res = await apifyFetch(p.tenant_id, `/acts/${ATOR}/runs?timeout=600`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) {
-    console.error("[metricas] iniciar", res.status, (await res.text().catch(() => "")).slice(0, 300));
-    const msg = res.status === 402 ? "A conta de coleta está sem saldo. Avise o suporte." : "Não foi possível começar a coleta de métricas.";
+  let runId: string;
+  try {
+    runId = await iniciarRunPerfil(p.tenant_id, handle, 50);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Não foi possível começar a coleta de métricas.";
     await salvarColeta(profileId, p.tenant_id, { status: "erro", ultimo_erro: msg });
     throw new Error(msg);
   }
-  const runId = ((await res.json()) as { data?: { id?: string } }).data?.id;
-  if (!runId) throw new Error("Não foi possível começar a coleta de métricas.");
   const agora = new Date().toISOString();
   await salvarColeta(profileId, p.tenant_id, { status: "coletando", run_id: runId, iniciado_em: agora, ...(manual ? { ultimo_manual_em: agora } : {}) });
 }
 
-async function registrarCusto(profileId: string, runId: string, usd: number) {
+export async function registrarCusto(profileId: string, runId: string, usd: number, extra: Record<string, unknown> = {}) {
   if (!usd) return;
   const { recordConsumo } = await import("./consumo.server");
   await recordConsumo({
     profileId, etapa: "apify_download" as never, acao: "analise_video", modelo: "apify:metricas",
     unidade: "usd_real" as never, quantidade: usd, semDebito: true,
-    metadados: { tipo: "coleta_metricas", run_id: runId, custo_usd: usd },
+    metadados: { tipo: "coleta_metricas", run_id: runId, custo_usd: usd, ...extra },
   });
 }
 
-async function guardarCapa(tenantId: string, profileId: string, videoId: string, url: string): Promise<string | null> {
+export async function guardarCapa(tenantId: string, profileId: string, videoId: string, url: string): Promise<string | null> {
   try {
     const r = await fetch(url);
     if (!r.ok) return null;
@@ -118,28 +159,18 @@ export async function processarColeta(profileId: string): Promise<string> {
     await falhar(run.status === "TIMED-OUT" ? "A coleta demorou demais. Tente atualizar de novo." : "A coleta de métricas falhou. Tente atualizar de novo.");
     return "falhou";
   }
-  const res = await apifyFetch(p.tenant_id, `/datasets/${run.datasetId}/items?limit=100&clean=true`);
-  const itens = (res.ok ? await res.json().catch(() => []) : []) as Any[];
   const handle = limparHandle(p.handle).toLowerCase();
-  const videos = itens.filter((i) => i && i.id && !i.error && (!i.authorMeta?.name || String(i.authorMeta.name).toLowerCase() === handle));
-  const autor = itens.find((i) => i?.authorMeta && String(i.authorMeta.name ?? "").toLowerCase() === handle)?.authorMeta as Any | undefined;
-  if (!videos.length && !autor) {
-    const erroItem = itens.find((i) => i?.error)?.error as string | undefined;
-    const msg = erroItem && /not.?found|doesn.?t exist|no.?user|invalid/i.test(erroItem)
-      ? `Não encontramos a conta @${handle} no TikTok. Confira o @ na aba Dados do perfil.`
-      : `Não foi possível ler a conta @${handle} no TikTok. Tente atualizar de novo.`;
-    await falhar(msg);
-    return "sem_dados";
+  const lidos = await lerItensPerfil(p.tenant_id, run.datasetId, handle);
+  if (lidos.erro) {
+    await falhar(lidos.erro);
+    return lidos.autor ? "privada" : "sem_dados";
   }
+  const videos = lidos.videos;
+  const a = lidos.autor;
   const hoje = hojeBr();
-  const a = autor ?? videos[0].authorMeta ?? {};
-  if (a.privateAccount) {
-    await falhar(`A conta @${handle} é privada. Deixe a conta pública para coletar métricas.`);
-    return "privada";
-  }
   await db.from("perfil_metricas").upsert({
     tenant_id: p.tenant_id, profile_id: profileId, data: hoje,
-    seguidores: num(a.fans), seguindo: num(a.following), curtidas_total: num(a.heart), videos_total: num(a.video),
+    ...numerosPerfil(a),
   } as never, { onConflict: "profile_id,data" });
   if (!videos.length) {
     await salvarColeta(profileId, p.tenant_id, { status: "ok", run_id: null, ultima_coleta_em: new Date().toISOString(), ultimo_erro: null });
@@ -152,7 +183,7 @@ export async function processarColeta(profileId: string): Promise<string> {
   await db.from("video_metricas").upsert(
     videos.map((i) => ({
       tenant_id: p.tenant_id, profile_id: profileId, tiktok_video_id: String(i.id), job_id: jobPorVideo.get(String(i.id)) ?? null, data: hoje,
-      views: num(i.playCount), likes: num(i.diggCount), comentarios: num(i.commentCount), compartilhamentos: num(i.shareCount), salvos: num(i.collectCount), reposts: num(i.repostCount),
+      ...numerosVideo(i),
     })) as never,
     { onConflict: "profile_id,tiktok_video_id,data" },
   );

@@ -441,6 +441,58 @@ export function buildToolsExtra(ctx: Ctx) {
       },
     }),
 
+    listar_referencias: tool({
+      description: "Perfis de referência (Inteligência) do perfil: @, seguidores e variação, vídeos coletados, vídeos analisados, última coleta, status, se é 'meu perfil' e se é fonte do roteirista.",
+      inputSchema: z.object({ profile_id: perfilArg }),
+      execute: async ({ profile_id }) => {
+        const p = pid(ctx, profile_id);
+        if (!p) return { erro: "Nenhum perfil selecionado." };
+        if (!ctx.access.isBackoffice && !ctx.access.can("metricas", "visualizar", p)) return semAcesso("Perfis de referência");
+        const { data: refs } = await db.from("referencia_perfis").select("*").eq("profile_id", p).order("created_at");
+        const { lerDadosReferencia } = await import("./referencias-dados");
+        const out = [];
+        for (const r of (refs ?? []) as Any[]) {
+          const d = await lerDadosReferencia(db, r);
+          const ult = d.perfil[d.perfil.length - 1] ?? null;
+          const ant = d.perfil[d.perfil.length - 2] ?? null;
+          out.push({
+            referencia_id: r.id, perfil_tiktok: `@${r.handle}`, meu_perfil: !!r.meu_perfil_id, acompanhar_diariamente: r.acompanhar, fonte_roteirista: r.fonte_roteirista,
+            seguidores: ult?.seguidores ?? null, variacao_vs_coleta_anterior: ult && ant && ult.seguidores != null && ant.seguidores != null ? ult.seguidores - ant.seguidores : null,
+            videos_coletados: d.videos.length, videos_analisados: d.analises.filter((a) => a.status === "pronto").length,
+            ultima_coleta: quando(r.ultima_coleta_em), status: r.status, erro: r.ultimo_erro,
+          });
+        }
+        return { total: out.length, referencias: out, link: "/app/referencias" };
+      },
+    }),
+
+    detalhe_referencia: tool({
+      description: "Detalhe de um perfil de referência: médias (views por vídeo, engajamento médio, posts por semana, duração média), evolução de seguidores e views por dia (30 dias), top vídeos e o texto dos insights gerados. Valores já prontos: copie, não calcule.",
+      inputSchema: z.object({ referencia_id: z.string() }),
+      execute: async ({ referencia_id }) => {
+        const { data: r } = await db.from("referencia_perfis").select("*").eq("id", referencia_id).maybeSingle();
+        if (!r) return { erro: "Referência não encontrada." };
+        const ref = r as Any;
+        if (!ctx.access.isBackoffice && !ctx.access.can("metricas", "visualizar", ref.profile_id)) return semAcesso("Perfis de referência");
+        const { lerDadosReferencia } = await import("./referencias-dados");
+        const { mediasReferencia } = await import("./referencias-calc");
+        const d = await lerDadosReferencia(db, ref);
+        const m = mediasReferencia(d.videos, d.snaps);
+        const pub = new Map(d.videos.map((v) => [v.tiktok_video_id, v.publicado_em] as const));
+        const res = resumirMetricas({ perfil: d.perfil, videos: d.snaps, jobs: [], dias: 30, publicadoPorVideo: pub });
+        return {
+          perfil_tiktok: `@${ref.handle}`, meu_perfil: !!ref.meu_perfil_id, ultima_coleta: quando(ref.ultima_coleta_em),
+          seguidores: res.seguidores, curtidas_totais: d.perfil[d.perfil.length - 1]?.curtidas_total ?? null, videos_no_tiktok: d.perfil[d.perfil.length - 1]?.videos_total ?? null,
+          medias: m.textos,
+          evolucao_30_dias: res.serie.filter((s) => s.seguidores != null || s.views > 0),
+          top_videos: m.top.slice(0, 10),
+          videos_analisados: d.analises.filter((a) => a.status === "pronto").length,
+          insights: ref.insights ?? null, insights_gerados_em: quando(ref.insights_em),
+          link: "/app/referencias",
+        };
+      },
+    }),
+
     resumo_metricas: tool({
       description: "Métricas do perfil no TikTok (mesma fonte da tela Métricas): seguidores e variação, views, likes, comentários, compartilhamentos, salvos, repostados e taxa de engajamento no período, vídeos publicados no período, data da última coleta e alertas. Valores já prontos: copie, não calcule.",
       inputSchema: z.object({ profile_id: perfilArg, dias: z.number().nullable().describe("Período em dias. Padrão 7.") }),
@@ -563,6 +615,8 @@ export const TOOL_LABELS_EXTRA: Record<string, string> = {
   notificacoes: "Consultando notificações...",
   lixeira: "Consultando lixeira...",
   resumo_metricas: "Consultando métricas...",
+  listar_referencias: "Consultando perfis de referência...",
+  detalhe_referencia: "Consultando perfil de referência...",
   metricas_video: "Consultando métricas do vídeo...",
   configuracoes_sistema: "Consultando configurações...",
   minhas_apis: "Consultando APIs...",

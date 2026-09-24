@@ -38,6 +38,12 @@ Estúdio com teleprompter, enquadramento (9:16) e prévia. Editor com Aparar pon
 ## Vídeos (menu: Produzir > Vídeos, /app/videos)
 Biblioteca dos vídeos prontos e publicados.
 
+## Inteligência: Analisar vídeo (menu: Inteligência > Analisar vídeo, /app/analisar)
+Envie um arquivo ou cole um link do TikTok, YouTube ou Instagram. A IA devolve gancho, cenas, transcrição, produto, CTA, formato e ritmo. Cada análise consome 1 unidade de "Análise de vídeo".
+
+## Inteligência: Perfis de referência (menu: Inteligência > Perfis de referência, /app/referencias)
+Acompanhe um @ do TikTok (seu ou de referência) ligado ao perfil do topo. "Adicionar @": escolha 20, 50 ou 100 vídeos e se quer acompanhar diariamente (coleta às 06:00, junto com Métricas). "Atualizar" manual: 1 por hora por @. No detalhe: aba Vídeos (médias e tabela com checkbox; "Analisar selecionados" ou "Analisar os 10 mais vistos", no máximo 5 análises ao mesmo tempo), aba Evolução (seguidores e views por dia) e aba Insights (com 5 ou mais vídeos analisados: padrões acima/abaixo da mediana, 5 melhores ganchos, recomendações e comparação 5 melhores x 5 piores). "Usar como referência do roteirista" junta os ganchos dos 10 vídeos mais vistos analisados aos campeões do Kalodata no roteiro. Seus próprios perfis podem ser adicionados (marcados "meu perfil") e usam a coleta de Métricas, sem coleta duplicada. Remover um @ apaga vídeos, números e capas, mas as análises feitas continuam em Analisar vídeo.
+
 ## Métricas, Custos e Investimento (menu: Acompanhar)
 Métricas mostra o desempenho. Custos (/app/custos) mostra o gasto por período, etapa e perfil, com o orçamento. Investimento mostra o retorno. Só aparecem para quem tem permissão.
 

@@ -35,6 +35,7 @@ import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAppProdutosRouteImport } from './routes/_authenticated/app/produtos'
 import { Route as AuthenticatedAppPromptsRouteImport } from './routes/_authenticated/app/prompts'
 import { Route as AuthenticatedAppRascunhosRouteImport } from './routes/_authenticated/app/rascunhos'
+import { Route as AuthenticatedAppReferenciasRouteImport } from './routes/_authenticated/app/referencias'
 import { Route as AuthenticatedAppVideosRouteImport } from './routes/_authenticated/app/videos'
 import { Route as AuthTiktokCallbackRouteImport } from './routes/auth_.tiktok.callback'
 import { Route as AuthenticatedAppPerfisIndexRouteImport } from './routes/_authenticated/app/perfis.index'
@@ -189,6 +190,12 @@ const AuthenticatedAppRascunhosRoute =
     path: '/app/rascunhos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAppReferenciasRoute =
+  AuthenticatedAppReferenciasRouteImport.update({
+    id: '/app/referencias',
+    path: '/app/referencias',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAppVideosRoute = AuthenticatedAppVideosRouteImport.update({
   id: '/app/videos',
   path: '/app/videos',
@@ -295,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/app/produtos': typeof AuthenticatedAppProdutosRoute
   '/app/prompts': typeof AuthenticatedAppPromptsRoute
   '/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
+  '/app/referencias': typeof AuthenticatedAppReferenciasRoute
   '/app/videos': typeof AuthenticatedAppVideosRoute
   '/auth/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/app/': typeof AuthenticatedAppIndexRoute
@@ -336,6 +344,7 @@ export interface FileRoutesByTo {
   '/app/produtos': typeof AuthenticatedAppProdutosRoute
   '/app/prompts': typeof AuthenticatedAppPromptsRoute
   '/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
+  '/app/referencias': typeof AuthenticatedAppReferenciasRoute
   '/app/videos': typeof AuthenticatedAppVideosRoute
   '/auth/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/app': typeof AuthenticatedAppIndexRoute
@@ -379,6 +388,7 @@ export interface FileRoutesById {
   '/_authenticated/app/produtos': typeof AuthenticatedAppProdutosRoute
   '/_authenticated/app/prompts': typeof AuthenticatedAppPromptsRoute
   '/_authenticated/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
+  '/_authenticated/app/referencias': typeof AuthenticatedAppReferenciasRoute
   '/_authenticated/app/videos': typeof AuthenticatedAppVideosRoute
   '/auth_/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
@@ -422,6 +432,7 @@ export interface FileRouteTypes {
     | '/app/produtos'
     | '/app/prompts'
     | '/app/rascunhos'
+    | '/app/referencias'
     | '/app/videos'
     | '/auth/tiktok/callback'
     | '/app/'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/app/produtos'
     | '/app/prompts'
     | '/app/rascunhos'
+    | '/app/referencias'
     | '/app/videos'
     | '/auth/tiktok/callback'
     | '/app'
@@ -505,6 +517,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/produtos'
     | '/_authenticated/app/prompts'
     | '/_authenticated/app/rascunhos'
+    | '/_authenticated/app/referencias'
     | '/_authenticated/app/videos'
     | '/auth_/tiktok/callback'
     | '/_authenticated/app/'
@@ -727,6 +740,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRascunhosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/app/referencias': {
+      id: '/_authenticated/app/referencias'
+      path: '/app/referencias'
+      fullPath: '/app/referencias'
+      preLoaderRoute: typeof AuthenticatedAppReferenciasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/app/videos': {
       id: '/_authenticated/app/videos'
       path: '/app/videos'
@@ -844,6 +864,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppProdutosRoute: typeof AuthenticatedAppProdutosRoute
   AuthenticatedAppPromptsRoute: typeof AuthenticatedAppPromptsRoute
   AuthenticatedAppRascunhosRoute: typeof AuthenticatedAppRascunhosRoute
+  AuthenticatedAppReferenciasRoute: typeof AuthenticatedAppReferenciasRoute
   AuthenticatedAppVideosRoute: typeof AuthenticatedAppVideosRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppPerfisNovoRoute: typeof AuthenticatedAppPerfisNovoRoute
@@ -869,6 +890,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppProdutosRoute: AuthenticatedAppProdutosRoute,
   AuthenticatedAppPromptsRoute: AuthenticatedAppPromptsRoute,
   AuthenticatedAppRascunhosRoute: AuthenticatedAppRascunhosRoute,
+  AuthenticatedAppReferenciasRoute: AuthenticatedAppReferenciasRoute,
   AuthenticatedAppVideosRoute: AuthenticatedAppVideosRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppPerfisNovoRoute: AuthenticatedAppPerfisNovoRoute,
