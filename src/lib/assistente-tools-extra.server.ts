@@ -419,7 +419,7 @@ export function buildToolsExtra(ctx: Ctx) {
         if (p) q = q.eq("profile_id", p);
         const { data, error } = await q;
         if (error) return { erro: "Não consegui ler as análises." };
-        return { total: (data ?? []).length, analises: ((data ?? []) as Any[]).map((a) => ({ id: a.id, titulo: a.titulo, origem: a.origem, duracao_segundos: a.duracao, status: a.status, erro: a.erro, custo: `R$ ${(Number(a.custo_cents ?? 0) / 100).toFixed(2).replace(".", ",")}`, data: quando(a.created_at) })), link: "/app/analisar" };
+        return { total: (data ?? []).length, analises: ((data ?? []) as Any[]).map((a) => ({ id: a.id, titulo: a.titulo, origem: a.origem, duracao_segundos: a.duracao, status: a.status, erro: a.erro, custo: `R$ ${(Number(a.custo_cents ?? 0) / 100).toFixed(2).replace(".", ",")}`, data: quando(a.created_at) })), link: "/app/analises" };
       },
     }),
 
@@ -436,7 +436,7 @@ export function buildToolsExtra(ctx: Ctx) {
           rede: d.origem === "arquivo" ? "arquivo enviado" : d.origem, link_original: d.link_url ?? d.youtube_url ?? null,
           autor: m?.autor ? `@${m.autor}` : null,
           estatisticas: m ? { views: m.views, likes: m.likes, comentarios: m.comentarios, compartilhamentos: m.compartilhamentos, publicado_em: m.publicado_em } : null,
-          link: "/app/analisar",
+          link: "/app/analises",
         };
       },
     }),
