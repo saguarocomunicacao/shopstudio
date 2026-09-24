@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { baixarVideoDaAnalise, criarAnalise, executarAnalise, type ResultadoAnalise } from "@/lib/video-analise.functions";
+import { avancarAnalise, baixarVideoDaAnalise, criarAnalise, executarAnalise, type ResultadoAnalise } from "@/lib/video-analise.functions";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
 import { userErrorMessage as friendlyError } from "@/lib/user-error";
 
@@ -132,8 +132,26 @@ export function AnalisarVideoPage() {
   const [novo, setNovo] = useState(false);
   const [abertaId, setAbertaId] = useState<string | null>(null);
   const executar = useServerFn(executarAnalise);
+  const avancar = useServerFn(avancarAnalise);
   const qc = useQueryClient();
   const aberta = analises.find((a) => a.id === abertaId) ?? null;
+
+  // Enquanto houver análise em andamento, a tela empurra as etapas (uma chamada por vez).
+  const emAndamento = analises.filter((a) => a.status === "analisando").map((a) => a.id).join(",");
+  useEffect(() => {
+    if (!emAndamento) return undefined;
+    let ocupado = false;
+    const ids = emAndamento.split(",");
+    const tick = async () => {
+      if (ocupado) return;
+      ocupado = true;
+      try { for (const id of ids) await avancar({ data: { id } }).catch(() => null); }
+      finally { ocupado = false; qc.invalidateQueries({ queryKey: ["video-analises", activeProfileId] }); }
+    };
+    void tick();
+    const t = setInterval(tick, 10000);
+    return () => clearInterval(t);
+  }, [emAndamento, avancar, qc, activeProfileId]);
 
   const reanalisar = async (a: Analise) => {
     toast.message("Reanalisando o vídeo...");
@@ -206,7 +224,9 @@ export function AnalisarVideoPage() {
                   <td className="p-3">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS[a.status][1]}`}>
                       {(a.status === "analisando" || a.status === "enviando" || a.status === "baixando") && <Loader2 className="size-3 animate-spin" />}
-                      {STATUS[a.status][0]}
+                      {a.status === "analisando" && (a as { etapa?: string | null }).etapa
+                        ? ({ enviando: "Enviando à IA", processando_no_gemini: "IA processando", gerando: "Gerando análise" } as Record<string, string>)[(a as { etapa?: string | null }).etapa!] ?? STATUS[a.status][0]
+                        : STATUS[a.status][0]}
                     </span>
                   </td>
                   <td className="p-3">{brl(a.custo_cents ?? 0)}</td>
@@ -282,7 +302,7 @@ function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: 
       if (aba === "link") { toast.success("Baixando o vídeo. A análise começa assim que o download terminar."); return; }
       executar({ data: { id, reanalisar: false } })
         .then((r) => {
-          if (r.ok) toast.success("Análise pronta.");
+          if (r.ok) toast.success("Análise iniciada. Você pode acompanhar o progresso aqui.");
           else toast.error(("erro" in r && r.erro) || "Não foi possível analisar.");
         })
         .catch(() => toast.error("Não foi possível analisar o vídeo agora."))
