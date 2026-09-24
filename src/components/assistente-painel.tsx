@@ -1,5 +1,5 @@
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { Check, Copy, History, MoreVertical, Send, SquarePen, Square, Trash2, WandSparkles } from "lucide-react";
+import { Check, Copy, History, MoreVertical, Send, SquarePen, Square, Trash2 } from "lucide-react";
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useStudio } from "./studio-context";
 import { VoiceDictationButton } from "./voice-dictation-button";
+import { RobotIcon } from "./robot-icon";
 
 type Msg = { id?: string; papel: "user" | "assistant" | "aviso" | "erro"; conteudo: string; pergunta?: string };
 type Conversa = { id: string; titulo: string; atualizado_em: string };
@@ -197,17 +198,20 @@ export function AssistentePainel() {
   const fmtMin = (s: number) => s >= 60 ? `${Math.ceil(s / 60)} min` : `${s}s`;
 
   return <>
-    <button type="button" onClick={() => setOpen(true)} aria-label="Abrir assistente"
-      className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-40 grid h-12 w-12 place-items-center rounded-full border border-border bg-card text-foreground shadow-md transition-colors hover:border-muted-foreground md:bottom-6 md:right-6">
-      <WandSparkles className="h-5 w-5" />
-      {naoLida && <span className="absolute right-0.5 top-0.5 h-3 w-3 rounded-full border-2 border-card bg-brand-cyan" aria-label="Resposta não lida" />}
-    </button>
+    <Button type="button" size="icon" onClick={() => setOpen(true)} aria-label="Abrir assistente"
+      className="assistant-launcher fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] right-4 z-40 size-[52px] rounded-full border-0 p-0 text-primary-foreground [&_svg]:size-6 md:bottom-6 md:right-6">
+      <RobotIcon />
+      {naoLida && <span className="absolute right-0 top-0 size-3.5 rounded-full border-2 border-background bg-brand-cyan" aria-label="Resposta não lida" />}
+    </Button>
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 border-border bg-card p-0 text-foreground sm:max-w-[400px] [&>button]:hidden">
         <div className="flex items-start justify-between gap-2 border-b border-border px-4 py-3">
-          <div className="min-w-0">
-            <SheetTitle className="font-display text-base font-semibold">Assistente</SheetTitle>
-            <SheetDescription className="truncate text-xs text-muted-foreground">Perfil: {activeProfile?.name ?? "todos os perfis"}</SheetDescription>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"><RobotIcon className="size-5" /></span>
+            <div className="min-w-0">
+              <SheetTitle className="font-display text-base font-semibold">Assistente</SheetTitle>
+              <SheetDescription className="truncate text-xs text-muted-foreground">Perfil: {activeProfile?.name ?? "todos os perfis"}</SheetDescription>
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" aria-label="Nova conversa" onClick={() => void abrirConversa(null)} disabled={enviando}><SquarePen className="h-4 w-4" /></Button>
@@ -248,13 +252,19 @@ export function AssistentePainel() {
                   Não consegui responder agora. <button type="button" className="font-medium text-primary underline" onClick={() => void enviar(m.pergunta ?? "", true)} disabled={!m.pergunta || enviando}>Tentar de novo</button>
                 </div>
               ) : (
-                <div key={i} className="max-w-[90%] rounded-lg border border-border bg-card px-3 py-2"><Markdown text={m.conteudo} onLink={onLink} /><CopyBtn text={m.conteudo} /></div>
+                <div key={i} className="flex max-w-[94%] items-start gap-2">
+                  <span className="mt-1 grid size-5 shrink-0 place-items-center text-primary"><RobotIcon className="size-5" /></span>
+                  <div className="min-w-0 rounded-lg border border-border bg-card px-3 py-2"><Markdown text={m.conteudo} onLink={onLink} /><CopyBtn text={m.conteudo} /></div>
+                </div>
               ))}
               {streaming !== null && (
-                <div className="max-w-[90%]">
+                <div className="max-w-[94%]">
                   {toolAtual && <p className="mb-1 text-xs text-muted-foreground">{toolAtual}</p>}
-                  <div className="rounded-lg border border-border bg-card px-3 py-2">
-                    {streaming ? <Markdown text={streaming} onLink={onLink} /> : <span className="typing-dots" aria-label="Digitando"><span /><span /><span /></span>}
+                  <div className="flex items-start gap-2">
+                    <span className="mt-1 grid size-5 shrink-0 place-items-center text-primary"><RobotIcon className="size-5" /></span>
+                    <div className="min-w-0 rounded-lg border border-border bg-card px-3 py-2">
+                      {streaming ? <Markdown text={streaming} onLink={onLink} /> : <span className="typing-dots" aria-label="Digitando"><span /><span /><span /></span>}
+                    </div>
                   </div>
                 </div>
               )}

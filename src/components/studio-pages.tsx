@@ -8,6 +8,8 @@ import { Link } from "@tanstack/react-router";
 import { OnboardingBanner, openOnboarding } from "./onboarding-guide";
 import { useGastoMes } from "@/lib/orcamento";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { JOB_STATUS_LABELS, jobStatusLabel, relativeTime, useJobs, useProducts } from "@/lib/content";
@@ -18,6 +20,7 @@ import { ProfileGate } from "./profile-gate";
 import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { useStudio } from "./studio-context";
 import { VideoDownloadButton } from "./video-download-button";
+import { getDraftPreviews } from "@/lib/drafts.functions";
 
 const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando cenas": "status-cyan", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-violet", "Rascunho enviado": "status-cyan", "Publicado": "status-published", "Ativo": "status-lime", "Pausado": "status-neutral" };
 function Badge({ children }: { children: string }) { return <span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${statusClass[children] ?? "status-neutral"}`}>{children}</span>; }
@@ -30,6 +33,15 @@ function DashboardContent() {
   const { activeProfile, activeProfileId, profiles, can } = useStudio();
   const { data: scoped = [] } = useJobs(activeProfileId);
   const { data: products = [] } = useProducts(activeProfileId);
+  const loadPreviews = useServerFn(getDraftPreviews);
+  const latestJobs = scoped.slice(0, 5);
+  const previewIds = latestJobs.map((job) => job.id);
+  const { data: previewData } = useQuery({
+    queryKey: ["dashboard-job-previews", previewIds],
+    queryFn: () => loadPreviews({ data: { jobIds: previewIds } }),
+    enabled: previewIds.length > 0,
+  });
+  const previewByJob = new Map((previewData?.previews ?? []).map((preview) => [preview.id, preview]));
   const productImage = (productId: string | null) => products.find((p) => p.id === productId)?.image_url ?? null;
   const gasto = useGastoMes(activeProfileId);
   const canCost = can("custos", "visualizar", activeProfileId);
@@ -66,8 +78,14 @@ function DashboardContent() {
     ))}</div>
     <section className="mt-6 panel">
       <div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="sm" asChild><Link to="/app/pipeline">Ver pipeline</Link></Button></div>
-      <div className="divide-y divide-border">{scoped.slice(0, 5).map((job) => {
-        const thumb = job.video_thumbnail_url ?? job.ai_video_thumbnail_url ?? job.scenes?.find((s) => s.image_url)?.image_url ?? productImage(job.product_id);
+       <div className="divide-y divide-border">{latestJobs.map((job) => {
+         const preview = previewByJob.get(job.id);
+         const recordingThumb = preview?.thumbnailUrl ?? job.video_thumbnail_url;
+         const aiThumb = preview?.aiThumbnailUrl ?? job.ai_video_thumbnail_url;
+         const primaryVideoThumb = job.video_choice === "ia" ? aiThumb : recordingThumb ?? aiThumb;
+         const approvedScene = job.scenes?.find((scene) => scene.approved === true && scene.image_url)?.image_url;
+         const legacyScene = job.scenes?.find((scene) => scene.approved !== false && scene.image_url)?.image_url;
+         const thumb = primaryVideoThumb ?? approvedScene ?? legacyScene ?? recordingThumb ?? aiThumb ?? productImage(job.product_id);
         return <Link key={job.id} to="/app/rascunhos" search={{ jobId: job.id, perfil: job.profile_id }} className="-mx-2 grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-[rgba(255,255,255,0.03)]">
           {thumb ? <img src={thumb} alt="" className="size-10 rounded-md object-cover" /> : <span className="grid size-10 place-items-center rounded-md bg-muted text-muted-foreground"><ImageIcon className="size-4" /></span>}
           <div className="min-w-0"><p className="truncate text-sm font-semibold">{job.title || "Sem título"}</p><p className="truncate whitespace-pre text-xs text-muted-foreground">{profileName(job.profile_id)}{"  "}{relativeTime(job.created_at)}</p></div>
