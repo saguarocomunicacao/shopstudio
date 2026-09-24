@@ -60,7 +60,9 @@ export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
 
 export { computeJobCusto } from "./custo-calculo";
 export type { CustoEtapa, CustoJob } from "./custo-calculo";
-import { computeJobCusto } from "./custo-calculo";
+import { computeJobCusto, type CustoJob } from "./custo-calculo";
+
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
 /** Tarifas ativas + cotação do dólar configurada. */
 export function useTarifas() {
