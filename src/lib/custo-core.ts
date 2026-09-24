@@ -10,7 +10,8 @@ export type EtapaConsumo =
   | "busca_kalodata"
   | "roteiro_texto"
   | "narracao_elevenlabs"
-  | "transcricao_audio";
+  | "transcricao_audio"
+  | "analise_video";
 
 export type UnidadeTarifa =
   | "imagem"
@@ -34,7 +35,8 @@ export type BillableAction =
   | "busca_produto"
   | "atualizacao_produto"
   | "videos_campeoes"
-  | "atualizacao_categorias";
+  | "atualizacao_categorias"
+  | "analise_video";
 
 export const ACAO_LABELS: Record<BillableAction, string> = {
   roteiro: "Roteiro",
@@ -49,6 +51,7 @@ export const ACAO_LABELS: Record<BillableAction, string> = {
   atualizacao_produto: "Atualização de produto",
   videos_campeoes: "Vídeos campeões",
   atualizacao_categorias: "Atualização de categorias",
+  analise_video: "Análise de vídeo",
 };
 
 export type ConsumoEventoRow = {
@@ -141,6 +144,7 @@ export const acaoDoEvento = (evento: ConsumoEventoRow): BillableAction => {
     roteiro_texto: "roteiro",
     narracao_elevenlabs: "narracao",
     transcricao_audio: "transcricao",
+    analise_video: "analise_video",
   };
   return mapa[evento.etapa];
 };

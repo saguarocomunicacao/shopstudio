@@ -4,7 +4,7 @@
  * pelos valores reais em runtime.
  */
 
-export const PROMPT_KEYS = ["roteiro", "roteiro_gravacao", "cena", "movimento", "montagem"] as const;
+export const PROMPT_KEYS = ["roteiro", "roteiro_gravacao", "cena", "movimento", "montagem", "analise_video"] as const;
 export type PromptKey = (typeof PROMPT_KEYS)[number];
 
 /** Lê o prompt efetivo de um perfil (override > padrão global). */

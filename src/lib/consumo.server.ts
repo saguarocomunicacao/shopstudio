@@ -17,7 +17,8 @@ export type BillableAction =
   | "busca_produto"
   | "atualizacao_produto"
   | "videos_campeoes"
-  | "atualizacao_categorias";
+  | "atualizacao_categorias"
+  | "analise_video";
 
 export type ConsumoEvento = {
   jobId?: string | null;
@@ -32,7 +33,8 @@ export type ConsumoEvento = {
     | "busca_kalodata"
     | "roteiro_texto"
     | "narracao_elevenlabs"
-    | "transcricao_audio";
+    | "transcricao_audio"
+    | "analise_video";
   /** Ação cobrável correspondente; sem ela caímos no mapa padrão da etapa. */
   acao?: BillableAction;
   modelo: string;
@@ -58,6 +60,7 @@ const ACAO_POR_ETAPA: Record<ConsumoEvento["etapa"], BillableAction> = {
   roteiro_texto: "roteiro",
   narracao_elevenlabs: "narracao",
   transcricao_audio: "transcricao",
+  analise_video: "analise_video",
 };
 
 /** Tenant da plataforma, usado apenas em consumo global (sem job e sem perfil). */
