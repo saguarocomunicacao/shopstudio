@@ -526,6 +526,13 @@
       "when": 1790285473653,
       "tag": "0074_video_analises_etapas_assincronas",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1790286149796,
+      "tag": "0075_tarifas_preco_exato",
+      "breakpoints": true
     }
   ]
 }

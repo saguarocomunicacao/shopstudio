@@ -1848,6 +1848,7 @@ export type Database = {
           id: string
           modelo: string
           moeda: Database["public"]["Enums"]["moeda_tarifa"]
+          preco_exato: number | null
           preco_unitario: number
           tipo_unidade: Database["public"]["Enums"]["unidade_tarifa"]
           updated_at: string
@@ -1859,6 +1860,7 @@ export type Database = {
           id?: string
           modelo: string
           moeda?: Database["public"]["Enums"]["moeda_tarifa"]
+          preco_exato?: number | null
           preco_unitario?: number
           tipo_unidade: Database["public"]["Enums"]["unidade_tarifa"]
           updated_at?: string
@@ -1870,6 +1872,7 @@ export type Database = {
           id?: string
           modelo?: string
           moeda?: Database["public"]["Enums"]["moeda_tarifa"]
+          preco_exato?: number | null
           preco_unitario?: number
           tipo_unidade?: Database["public"]["Enums"]["unidade_tarifa"]
           updated_at?: string
