@@ -194,7 +194,7 @@ export function MetricasContent() {
       </div>
 
       <div className="mb-6 grid gap-4 lg:grid-cols-2">
-        <Grafico titulo="Seguidores por dia (30 dias)" dados={resumo.serie} campo="seguidores" cor="var(--cyan, var(--primary))" />
+        <Grafico titulo="Seguidores por dia (30 dias)" dados={resumo.serie} campo="seguidores" cor="var(--cyan-ink)" />
         <Grafico titulo="Views por dia (30 dias)" dados={resumo.serie} campo="views" cor="var(--primary)" />
       </div>
 

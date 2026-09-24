@@ -21,6 +21,8 @@ import { SyncCategoriesButton } from "./category-select";
 import { ChampionRefsToggle } from "./champion-refs-toggle";
 import { ProfileGate } from "./profile-gate";
 import { MetricasContent } from "./metricas-page";
+import { getMetricas } from "@/lib/metricas.functions";
+import { resumirMetricas, type JobMetricaBase, type PerfilSnap, type VideoSnap } from "@/lib/metricas-calc";
 import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { useStudio } from "./studio-context";
 import { VideoDownloadButton } from "./video-download-button";
@@ -52,11 +54,12 @@ function DashboardContent() {
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
   const count = (f: (j: (typeof scoped)[number]) => boolean) => scoped.filter(f).length;
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+  const views7 = useViews7(activeProfileId);
   const gerando = count((j) => j.status === "gerando_cenas" || j.status === "gerando_video");
   const stats: { icon: typeof Video; value: string | number; label: string; context?: string | undefined; to: string; search?: Record<string, string> | undefined; bar?: number | undefined }[] = [
     { icon: Video, value: count((j) => j.status === "video_pronto"), label: "Vídeos prontos", context: `${count((j) => j.status === "video_pronto" && !j.approved_at)} aguardando revisão`, to: "/app/videos" },
     { icon: FileClock, value: count((j) => j.status === "rascunho_enviado"), label: "Rascunhos aguardando", context: `${count((j) => j.status === "rascunho_enviado" && !!j.approved_at)} aprovados para postar`, to: "/app/rascunhos" },
-    { icon: CheckCircle2, value: count((j) => j.status === "publicado" && !!j.published_at && new Date(j.published_at) >= monthStart), label: "Publicados", context: "neste mês", to: "/app/rascunhos", search: { tab: "publicados" } },
+    { icon: CheckCircle2, value: count((j) => j.status === "publicado" && !!j.published_at && new Date(j.published_at) >= monthStart), label: "Publicados", context: views7 != null ? `neste mês · ${views7.toLocaleString("pt-BR")} views nos últimos 7 dias` : "neste mês", to: "/app/rascunhos", search: { tab: "publicados" } },
     { icon: Workflow, value: scoped.length, label: "Jobs no pipeline", context: `${gerando} gerando agora`, to: "/app/pipeline" },
   ];
   if (canCost && gasto) {
@@ -146,6 +149,16 @@ function VideosContent() {
 
 
 export function MetricsPage() { return <ProfileGate><MetricsContent /></ProfileGate>; }
+
+function useViews7(profileId: string | null) {
+  const { can, isBackoffice } = useStudio();
+  const load = useServerFn(getMetricas);
+  const pode = !!profileId && (isBackoffice || can("metricas", "visualizar", profileId));
+  const { data } = useQuery({ queryKey: ["metricas", profileId, 7], queryFn: () => load({ data: { profileId: profileId!, dias: 7 } }), enabled: pode });
+  if (!data || data.semPermissao || !data.perfil.length) return null;
+  const jobs = data.jobs as JobMetricaBase[];
+  return resumirMetricas({ perfil: data.perfil as PerfilSnap[], videos: data.videos as VideoSnap[], jobs, dias: 7, publicadoPorVideo: new Map(jobs.filter((j) => j.tiktok_video_id).map((j) => [j.tiktok_video_id!, j.published_at])) }).views;
+}
 
 function MetricsContent() { return <MetricasContent />; }
 
