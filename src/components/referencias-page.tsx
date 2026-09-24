@@ -1,7 +1,10 @@
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Link } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
+import { StatusAnaliseBadge } from "./status-analise";
+import { InsightsV2View } from "./insights-view";
+import { lerInsights } from "@/lib/insights-schema";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Loader2, Pin, Plus, RefreshCw, Sparkles, Trash2, Users } from "lucide-react";
 import { PageHeader } from "./page-header";
@@ -40,11 +43,26 @@ const Badge = ({ s }: { s: string }) => {
   return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${c}`}>{(s === "coletando" || s === "processando") && <Loader2 className="size-3 animate-spin" />}{t}</span>;
 };
 
-export function ReferenciasPage() {
-  const [aberta, setAberta] = useState<string | null>(null);
+export const ABAS_REFERENCIA = ["videos", "evolucao", "insights"] as const;
+export type AbaReferencia = (typeof ABAS_REFERENCIA)[number];
+
+export function ReferenciasPage({ refId, tab }: { refId?: string; tab?: AbaReferencia | undefined } = {}) {
+  const navigate = useNavigate();
+  const router = useRouter();
   const { activeProfileId } = useStudio();
-  useEffect(() => setAberta(null), [activeProfileId]);
-  return aberta ? <DetalheReferencia refId={aberta} voltar={() => setAberta(null)} /> : <ListaReferencias abrir={setAberta} />;
+  const [perfilInicial] = useState(activeProfileId);
+  // Trocou o perfil do topo com um @ aberto: volta para a lista.
+  useEffect(() => {
+    if (refId && perfilInicial && activeProfileId && activeProfileId !== perfilInicial) void navigate({ to: "/app/referencias" });
+  }, [activeProfileId, perfilInicial, refId, navigate]);
+  const abrir = (id: string) => void navigate({ to: "/app/referencias/$id", params: { id } });
+  const voltar = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
+    else void navigate({ to: "/app/referencias" });
+  };
+  return refId
+    ? <DetalheReferencia refId={refId} tab={tab ?? "videos"} onTab={(t) => void navigate({ to: "/app/referencias/$id", params: { id: refId }, search: { tab: t }, replace: true })} voltar={voltar} />
+    : <ListaReferencias abrir={abrir} />;
 }
 
 function ListaReferencias({ abrir }: { abrir: (id: string) => void }) {
@@ -205,7 +223,7 @@ function NovoDialog({ open, onOpenChange, onCriado }: { open: boolean; onOpenCha
   );
 }
 
-function DetalheReferencia({ refId, voltar }: { refId: string; voltar: () => void }) {
+function DetalheReferencia({ refId, tab, onTab, voltar }: { refId: string; tab: AbaReferencia; onTab: (t: AbaReferencia) => void; voltar: () => void }) {
   const qc = useQueryClient();
   const load = useServerFn(getReferencia);
   const avancar = useServerFn(avancarReferencia);
@@ -289,7 +307,7 @@ function DetalheReferencia({ refId, voltar }: { refId: string; voltar: () => voi
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-warning-ink"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span>{d.coleta.ultimo_erro}</span></div>
       )}
 
-      <Tabs defaultValue="videos">
+      <Tabs value={tab} onValueChange={(v) => onTab(v as AbaReferencia)}>
         <TabsList>
           <TabsTrigger value="videos">Vídeos</TabsTrigger>
           <TabsTrigger value="evolucao">Evolução</TabsTrigger>
@@ -352,7 +370,7 @@ function DetalheReferencia({ refId, voltar }: { refId: string; voltar: () => voi
                         <TableCell className="px-3 text-right text-sm tabular-nums">{l.semDados ? "—" : fmt(l.compartilhamentos)}</TableCell>
                         <TableCell className="px-3 text-right text-sm tabular-nums">{l.semDados ? "—" : fmt(l.salvos)}</TableCell>
                         <TableCell className="px-3 text-right text-sm tabular-nums">{pct(l.engajamentoPct)}</TableCell>
-                        <TableCell className="px-3 text-sm"><StatusAnalise a={a} /></TableCell>
+                        <TableCell className="px-3 text-sm"><StatusAnaliseBadge id={a?.id} status={a?.status} etapa={a?.etapa} erro={a?.erro} /></TableCell>
                       </TableRow>
                     );
                   })}
@@ -390,7 +408,7 @@ function DetalheReferencia({ refId, voltar }: { refId: string; voltar: () => voi
         </TabsContent>
 
         <TabsContent value="insights" className="mt-4">
-          <Insights refId={refId} texto={ref.insights} em={ref.insights_em} analisadas={analisadas} podeEditar={d.podeEditar} onOk={inval} />
+          <Insights refId={refId} handle={ref.handle} texto={ref.insights} em={ref.insights_em} analises={d.analises} videos={videos} snaps={snaps} podeEditar={d.podeEditar} onOk={inval} />
         </TabsContent>
       </Tabs>
 
@@ -414,33 +432,60 @@ function DetalheReferencia({ refId, voltar }: { refId: string; voltar: () => voi
   );
 }
 
-function StatusAnalise({ a }: { a: { status: string } | undefined }) {
-  if (!a) return <span className="text-xs text-muted-foreground">Não analisada</span>;
-  if (a.status === "pronto") return <Link to="/app/analisar" className="inline-flex items-center gap-1 text-xs font-semibold text-primary underline">Pronta <ExternalLink className="size-3" /></Link>;
-  if (a.status === "erro") return <span className="text-xs text-primary">Erro</span>;
-  if (a.status === "na_fila") return <span className="text-xs text-muted-foreground">Na fila</span>;
-  return <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Loader2 className="size-3 animate-spin" />Analisando</span>;
-}
-
-function Insights({ refId, texto, em, analisadas, podeEditar, onOk }: { refId: string; texto: string | null; em: string | null; analisadas: number; podeEditar: boolean; onOk: () => void }) {
+function Insights({ refId, handle, texto, em, analises, videos, snaps, podeEditar, onOk }: {
+  refId: string; handle: string; texto: string | null; em: string | null;
+  analises: { id: string; status: string; video_id: string | null; resultado: unknown }[];
+  videos: (VideoRef & { capaUrl: string | null })[]; snaps: VideoSnap[]; podeEditar: boolean; onOk: () => void;
+}) {
   const gerar = useServerFn(gerarInsightsRef);
   const [copiado, setCopiado] = useState(false);
+  const [avisoAndamento, setAvisoAndamento] = useState(false);
+  const prontas = analises.filter((a) => a.status === "pronto").length;
+  const andamento = analises.filter((a) => ["na_fila", "baixando", "enviando", "analisando"].includes(a.status)).length;
+  const erros = analises.filter((a) => a.status === "erro").length;
   const mut = useMutation({
     mutationFn: () => gerar({ data: { refId } }),
-    onSuccess: () => { toast.success("Insights prontos."); onOk(); },
+    onSuccess: () => { toast.success("Insights prontos."); setAvisoAndamento(false); onOk(); },
     onError: (e) => toast.error(actionError(e, "Não foi possível gerar os insights.")),
   });
-  if (analisadas < 5 && !texto) return <Vazio>Os insights ficam disponíveis com 5 ou mais vídeos analisados. Analisados até agora: {analisadas}.</Vazio>;
+  const li = lerInsights(texto);
+  const contagem = [`${prontas} ${prontas === 1 ? "pronta" : "prontas"}`, andamento ? `${andamento} analisando` : null, erros ? `${erros} ${erros === 1 ? "erro" : "erros"}` : null].filter(Boolean).join(", ");
+  const pedirGerar = () => (andamento ? setAvisoAndamento(true) : mut.mutate());
+  const textoCopia = li && "v2" in li
+    ? [li.v2.resumo.join(" "), "", ...li.v2.padroes.map((p) => `${p.chave}: ${p.achado}`), "", ...li.v2.recomendacoes.map((r, i) => `${i + 1}. ${r.titulo}: ${r.explicacao}`)].join("\n")
+    : texto ?? "";
+  if (prontas < 5 && !texto) return <Vazio>Os insights ficam disponíveis com 5 ou mais vídeos analisados. Análises: {contagem}.</Vazio>;
   return (
-    <div className="panel p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">{texto ? `Gerado em ${quando(em)} com ${analisadas} vídeos analisados` : `${analisadas} vídeos analisados`}</p>
-        <div className="flex gap-2">
-          {texto && <Button variant="secondary" size="sm" onClick={() => { void navigator.clipboard.writeText(texto); setCopiado(true); setTimeout(() => setCopiado(false), 1500); }}>{copiado ? <Check /> : <Copy />}{copiado ? "Copiado" : "Copiar"}</Button>}
-          {podeEditar && <Button size="sm" disabled={mut.isPending || analisadas < 5} onClick={() => mut.mutate()}>{mut.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}{texto ? "Gerar de novo" : "Gerar insights"}</Button>}
+    <div className="space-y-4">
+      <div className="panel flex flex-wrap items-center justify-between gap-2 p-4">
+        <div className="text-sm">
+          <p className="font-medium">{texto ? `Gerado em ${quando(em)} com ${li && "v2" in li ? li.v2.n_videos : prontas} vídeos analisados` : "Insights ainda não gerados"}</p>
+          <p className="text-xs text-muted-foreground">Análises deste @: {contagem}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {texto && <Button variant="secondary" size="sm" onClick={() => { void navigator.clipboard.writeText(textoCopia); setCopiado(true); setTimeout(() => setCopiado(false), 1500); }}>{copiado ? <Check /> : <Copy />}{copiado ? "Copiado" : "Copiar"}</Button>}
+          {podeEditar && <Button size="sm" disabled={mut.isPending || prontas < 5} onClick={pedirGerar}>{mut.isPending ? <Loader2 className="animate-spin" /> : <Sparkles />}{texto ? "Gerar de novo" : "Gerar insights"}</Button>}
         </div>
       </div>
-      {texto ? <TextoMd texto={texto} /> : <p className="text-sm text-muted-foreground">Toque em "Gerar insights" para cruzar as análises com as métricas.</p>}
+      {!texto ? (
+        <p className="panel p-5 text-sm text-muted-foreground">Toque em "Gerar insights" para cruzar as análises com as métricas.</p>
+      ) : li && "v2" in li ? (
+        <InsightsV2View refId={refId} handle={handle} v={li.v2} analises={analises} videos={videos} snaps={snaps} podeEditar={podeEditar} />
+      ) : (
+        <div className="panel p-5"><TextoMd texto={texto} /></div>
+      )}
+      <AlertDialog open={avisoAndamento} onOpenChange={setAvisoAndamento}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ainda há análises em andamento</AlertDialogTitle>
+            <AlertDialogDescription>{andamento} {andamento === 1 ? "vídeo ainda está" : "vídeos ainda estão"} sendo analisados. Se gerar agora, os insights usam só as {prontas} prontas. Quer gerar mesmo assim ou esperar?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+            <AlertDialogCancel>Esperar</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); mut.mutate(); }} disabled={mut.isPending}>Gerar agora</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
