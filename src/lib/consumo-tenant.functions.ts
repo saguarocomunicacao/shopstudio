@@ -102,8 +102,18 @@ export const consumoConsolidado = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
     z.object({ desde: z.string().min(10), ate: z.string().min(10) }).parse(data),
   )
-  .handler(async ({ data, context }): Promise<ConsumoConsolidado> => {
-    const { eventos } = await eventosDoTenant(context.supabase as never, context.userId, data);
+  .handler(async ({ data, context }): Promise<ConsumoConsolidado> =>
+    montarConsumoConsolidado(context.supabase as never, context.userId, data),
+  );
+
+/** Mesma conta da tela Custos do cliente; reutilizada pelo assistente. */
+export async function montarConsumoConsolidado(
+  supabase: { from: (t: string) => any },
+  userId: string,
+  data: { desde: string; ate: string },
+): Promise<ConsumoConsolidado> {
+  {
+    const { eventos } = await eventosDoTenant(supabase, userId, data);
     const { tarifas, taxas, cotacao } = await carregarPrecos();
     const segundos = segundosPorJobDe(eventos);
 
@@ -148,7 +158,8 @@ export const consumoConsolidado = createServerFn({ method: "POST" })
       porDia: [...porDia.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([dia, valorBrl]) => ({ dia, valorBrl })),
       extrato: extrato.slice(0, 300),
     };
-  });
+  }
+}
 
 const FORNECEDOR_DE: Record<EtapaConsumo, "google" | "kalodata" | "json2video" | "elevenlabs"> = {
   cena_gemini: "google",

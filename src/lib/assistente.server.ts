@@ -8,7 +8,9 @@ import { stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
 import manual from "./assistente-manual.md?raw";
 import { JOB_STATUS_LABELS, type JobStatusKey } from "./content";
-import { ACAO_LABELS, type BillableAction } from "./custo-core";
+import { ACAO_LABELS, type BillableAction, type ConsumoEventoRow, type CreditoTaxaRow, type TarifaRow } from "./custo-core";
+import { agregarPeriodo, calcularGastoMes, computeJobCusto, ETAPA_VISUAL_LABELS, SELECT_EVENTOS_CUSTO, type AppConfigRow } from "./custo-calculo";
+import { montarConsumoConsolidado } from "./consumo-tenant.functions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
@@ -116,12 +118,55 @@ function periodo(p: string, de?: string | null, ate?: string | null) {
   return { desde: mes.toISOString(), ate: agora.toISOString(), rotulo: "este mês" };
 }
 
-async function custosPorJob(db: Db, jobIds: string[]) {
-  const m = new Map<string, number>();
-  if (!jobIds.length) return m;
-  const { data } = await db.from("consumo_eventos").select("job_id, tool_price_cents").in("job_id", jobIds).limit(2000);
-  for (const e of (data ?? []) as Array<{ job_id: string; tool_price_cents: number }>) m.set(e.job_id, (m.get(e.job_id) ?? 0) + (e.tool_price_cents ?? 0));
+const reais = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+/** Mesmas consultas de useTarifas (tela Custos), com o login do usuário. */
+async function precosDoUsuario(db: Db) {
+  const [t, x, c] = await Promise.all([
+    db.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    db.from("credito_taxas").select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
+    db.from("app_config").select("value_num").eq("key", "cotacao_usd_brl").maybeSingle(),
+  ]);
+  const tarifas = ((t.data ?? []) as any[]).map((r) => ({ ...r, preco_unitario: Number(r.preco_unitario) })) as TarifaRow[];
+  const taxas = ((x.data ?? []) as any[]).map((r) => ({ ...r, credito_por_unidade: Number(r.credito_por_unidade) })) as CreditoTaxaRow[];
+  return { tarifas, taxas, cotacao: Number(c.data?.value_num ?? 1) };
+}
+
+/** Pode ver custo de job? Mesma regra do selo de custo no Pipeline. */
+const podeVerCustoJob = (ctx: Ctx, profileId: string | null) => ctx.access.isBackoffice || ctx.access.can("custos", "visualizar", profileId);
+
+/** Custo por job exatamente como o Pipeline mostra (useJobCustos → computeJobCusto). */
+async function custosPorJob(ctx: Ctx, jobs: Array<{ id: string; profile_id: string | null }>) {
+  const m = new Map<string, ReturnType<typeof computeJobCusto>>();
+  const visiveis = jobs.filter((j) => podeVerCustoJob(ctx, j.profile_id));
+  if (!visiveis.length) return m;
+  const [precos, ev] = await Promise.all([
+    precosDoUsuario(ctx.db),
+    ctx.db.from("consumo_eventos").select(SELECT_EVENTOS_CUSTO).in("job_id", visiveis.map((j) => j.id)).order("created_at", { ascending: true }).limit(5000),
+  ]);
+  const porJob = new Map<string, ConsumoEventoRow[]>();
+  for (const e of (ev.data ?? []) as ConsumoEventoRow[]) { const l = porJob.get(e.job_id!) ?? []; l.push(e); porJob.set(e.job_id!, l); }
+  for (const [id, l] of porJob) m.set(id, computeJobCusto(l, precos.tarifas, precos.cotacao, precos.taxas));
   return m;
+}
+const custoTxt = (ctx: Ctx, profileId: string | null, c: ReturnType<typeof computeJobCusto> | undefined) =>
+  !podeVerCustoJob(ctx, profileId) ? "sem permissão" : reais(c?.totalBrl ?? 0);
+
+const inicioMesUtc = () => { const n = new Date(); return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1)).toISOString(); };
+
+/** Consumo em quantidade no período, vindo da carteira (débitos), só para ações pagas por pacote. */
+async function consumoCarteira(ctx: Ctx, desde: string, ate: string) {
+  if (!ctx.tenantId) return null;
+  const [mov, ten] = await Promise.all([
+    ctx.db.from("wallet_movements").select("action_type, quantidade").eq("tenant_id", ctx.tenantId).eq("tipo", "debito").gte("created_at", desde).lte("created_at", ate).limit(10000),
+    ctx.db.from("tenants").select("plan_id").eq("id", ctx.tenantId).maybeSingle(),
+  ]);
+  const precos = ten.data?.plan_id ? await ctx.db.from("plan_action_prices").select("action_type, package_price_cents").eq("plan_id", ten.data.plan_id) : { data: [] };
+  const pagas = ((precos.data ?? []) as Array<{ action_type: string; package_price_cents: number | null }>).filter((x) => Number(x.package_price_cents ?? 0) > 0);
+  if (!pagas.length) return "plano sem saldo por pacote (uso ilimitado)";
+  const soma: Record<string, number> = {};
+  for (const m of (mov.data ?? []) as Array<{ action_type: string; quantidade: number }>) soma[m.action_type] = (soma[m.action_type] ?? 0) + Math.abs(Number(m.quantidade ?? 0));
+  return Object.fromEntries(pagas.map((x) => [ACAO_LABELS[x.action_type as BillableAction] ?? x.action_type, soma[x.action_type] ?? 0]));
 }
 
 export function buildTools(ctx: Ctx) {
@@ -200,10 +245,10 @@ export function buildTools(ctx: Ctx) {
         const { data, error } = await q;
         if (error) return { erro: "Não consegui ler os jobs." };
         const rows = (data ?? []) as Array<any>;
-        const [custos, nomes] = await Promise.all([custosPorJob(db, rows.map((r) => r.id)), nomesUsuarios(db, rows.map((r) => r.created_by))]);
+        const [custos, nomes] = await Promise.all([custosPorJob(ctx, rows as any), nomesUsuarios(db, rows.map((r) => r.created_by))]);
         return rows.map((j) => ({
           titulo: j.title, produto: j.products?.name ?? null, formato: formatoLabel(j.formato), estado: statusLabel(j.status, j.ai_render_stage),
-          criado_por: quem(nomes, j.created_by), custo: brl(custos.get(j.id) ?? 0), criado_em: j.created_at, atualizado_em: j.updated_at, id: j.id, link: linkJob(j.id),
+          criado_por: quem(nomes, j.created_by), custo: custoTxt(ctx, j.profile_id, custos.get(j.id)), criado_em: j.created_at, atualizado_em: j.updated_at, id: j.id, link: linkJob(j.id),
         }));
       },
     }),
@@ -221,19 +266,14 @@ export function buildTools(ctx: Ctx) {
         const j = (data ?? [])[0] as any | undefined;
         if (!j) return { erro: "Não encontrei esse job." };
         const [ev, nomes, share] = await Promise.all([
-          db.from("consumo_eventos").select("etapa, tool_price_cents").eq("job_id", j.id).limit(1000),
+          custosPorJob(ctx, [j]),
           nomesUsuarios(db, [j.created_by]),
           db.from("job_shares").select("token").eq("job_id", j.id).limit(1).then((r: any) => r, () => ({ data: null })),
         ]);
-        const porEtapa: Record<string, string> = {};
-        const soma: Record<string, number> = {};
-        let total = 0;
-        for (const e of (ev.data ?? []) as Array<{ etapa: string; tool_price_cents: number }>) {
-          const l = ETAPA_LABEL[e.etapa] ?? e.etapa;
-          soma[l] = (soma[l] ?? 0) + (e.tool_price_cents ?? 0);
-          total += e.tool_price_cents ?? 0;
-        }
-        for (const [k, v] of Object.entries(soma)) porEtapa[k] = brl(v);
+        const cj = ev.get(j.id);
+        const podeCusto = podeVerCustoJob(ctx, j.profile_id);
+        const porEtapa: Record<string, string> | string = podeCusto ? Object.fromEntries((cj?.etapas ?? []).map((e) => [ETAPA_LABEL[e.etapa] ?? e.etapa, reais(e.valorBrl)])) : "sem permissão";
+        const total = cj?.totalBrl ?? 0;
         const cenas = Array.isArray(j.scenes) ? (j.scenes as Array<any>).slice(0, 20).map((c, i) => ({ numero: i + 1, descricao: String(c["prompt"] ?? c["descricao"] ?? c["description"] ?? "").slice(0, 200), aprovada: Boolean(c["approved"] ?? c["aprovada"]) })) : [];
         const formato = formatoLabel(j.formato);
         const token = (share as any)?.data?.[0]?.token;
@@ -244,7 +284,7 @@ export function buildTools(ctx: Ctx) {
           roteiro: typeof j.script === "string" ? j.script.slice(0, 1500) : null,
           cenas,
           gravacao_propria: formato === "Gravar eu mesmo" ? estadoGravacao(j) : undefined,
-          custo_total: brl(total), custo_por_etapa: porEtapa,
+          custo_total: podeCusto ? reais(total) : "sem permissão", custo_por_etapa: porEtapa,
           erro_atual: j.render_error || j.ai_render_error ? "A última tentativa falhou. Abra o job e use Tentar novamente." : null,
           aprovado: Boolean(j.approved_at), aprovado_em: j.approved_at,
           publicado: Boolean(j.published_at), publicado_em: j.published_at, link_tiktok: j.published_url,
@@ -264,46 +304,67 @@ export function buildTools(ctx: Ctx) {
         const { data } = await q;
         const j = (data ?? [])[0] as any | undefined;
         if (!j) return { erro: `Nenhum vídeo ${tipo} encontrado.` };
-        const custo = (await custosPorJob(db, [j.id])).get(j.id) ?? 0;
-        return { titulo: j.title, produto: j.products?.name, perfil: j.profiles?.name, data: tipo === "publicado" ? j.published_at : j.updated_at, custo: brl(custo), link_tiktok: j.published_url ?? null, link: linkJob(j.id) };
+        const custo = custoTxt(ctx, j.profile_id, (await custosPorJob(ctx, [j])).get(j.id));
+        return { titulo: j.title, produto: j.products?.name, perfil: j.profiles?.name, data: tipo === "publicado" ? j.published_at : j.updated_at, custo, link_tiktok: j.published_url ?? null, link: linkJob(j.id) };
       },
     }),
 
     resumo_custos: tool({
-      description: "Gasto por período, por etapa e por perfil, com a etapa que mais gastou e orçamento.",
+      description: "Gasto do período exatamente como a tela Custos mostra para este usuário (por etapa/ação e por perfil), etapa que mais gastou, orçamento (se a tela mostra) e consumo em quantidade da carteira.",
       inputSchema: z.object({ periodo: z.enum(["hoje", "semana", "mes", "intervalo"]), de: z.string().nullable(), ate: z.string().nullable(), profile_id: perfilArg }),
       execute: async ({ periodo: per, de, ate, profile_id }) => {
-        const p = pid(ctx, profile_id);
-        if (!ctx.access.can("custos", "visualizar", p) && !ctx.access.isBackoffice) return { erro: "sem permissão" };
         const r = periodo(per, de, ate);
-        let q = db.from("consumo_eventos").select("etapa, profile_id, tool_price_cents").gte("created_at", r.desde).lte("created_at", r.ate).limit(10000);
-        if (p) q = q.eq("profile_id", p);
-        const { data, error } = await q;
-        if (error) return { erro: "sem permissão" };
-        const etapa: Record<string, number> = {};
-        const perfil: Record<string, number> = {};
-        let total = 0;
-        for (const e of (data ?? []) as Array<{ etapa: string; profile_id: string | null; tool_price_cents: number }>) {
-          const v = e.tool_price_cents ?? 0;
-          total += v;
-          const l = ETAPA_LABEL[e.etapa] ?? e.etapa;
-          etapa[l] = (etapa[l] ?? 0) + v;
-          if (e.profile_id) perfil[e.profile_id] = (perfil[e.profile_id] ?? 0) + v;
+        const consumo = await consumoCarteira(ctx, r.desde, r.ate);
+
+        // Cliente (não backoffice): a tela Custos é a visão consolidada por ação, sem orçamento.
+        if (!ctx.access.isBackoffice) {
+          const c = await montarConsumoConsolidado(db, ctx.userId, { desde: r.desde, ate: r.ate });
+          const top = c.porAcao[0];
+          return {
+            periodo: r.rotulo, visao: "consolidada da empresa (igual à tela Custos)", total: reais(c.totalBrl),
+            etapa_que_mais_gastou: top && top.valorBrl > 0 ? { etapa: top.label, valor: reais(top.valorBrl), pct: Math.round(top.percentual) } : null,
+            por_acao: Object.fromEntries(c.porAcao.map((x) => [x.label, reais(x.valorBrl)])),
+            consumo_em_quantidade: consumo,
+            orcamento: "não disponível (a tela Custos não mostra orçamento para este usuário)",
+            link: "/app/custos",
+          };
         }
-        const top = Object.entries(etapa).sort((a, b) => b[1] - a[1])[0];
-        const nomesPerfis = Object.keys(perfil).length ? await db.from("profiles").select("id, name").in("id", Object.keys(perfil)) : { data: [] };
-        const nome = new Map(((nomesPerfis.data ?? []) as Array<{ id: string; name: string }>).map((x) => [x.id, x.name]));
-        let orcamento: { teto: string; usado_pct: number } | null = null;
-        const cfg = await db.from("app_config").select("key, value_num").in("key", ["orcamento_mensal_global", ...(p ? [`orcamento_perfil:${p}`] : [])]);
-        const rows = (cfg.data ?? []) as Array<{ key: string; value_num: number | null }>;
-        const teto = Number((rows.find((x) => x.key === `orcamento_perfil:${p}`) ?? rows.find((x) => x.key === "orcamento_mensal_global"))?.value_num ?? 0);
-        if (teto > 0 && per === "mes") orcamento = { teto: brl(teto * 100), usado_pct: Math.round((total / 100 / teto) * 100) };
+
+        // Backoffice: mesma consulta e agregação da tela Custos (useCustoPeriodo + useGastoMes).
+        const p = profile_id ?? null;
+        let q = db.from("consumo_eventos").select(SELECT_EVENTOS_CUSTO).gte("created_at", r.desde).lte("created_at", r.ate).order("created_at", { ascending: true });
+        if (ctx.tenantId) q = q.eq("tenant_id", ctx.tenantId);
+        if (p) q = q.eq("profile_id", p);
+        const [precos, ev] = await Promise.all([precosDoUsuario(db), q]);
+        if (ev.error) return { erro: "Não consegui ler os custos." };
+        const agg = agregarPeriodo((ev.data ?? []) as ConsumoEventoRow[], precos.tarifas, precos.cotacao, [], precos.taxas);
+        const porPerfil = new Map<string, number>();
+        for (const j of agg.jobs) if (j.profileId) porPerfil.set(j.profileId, (porPerfil.get(j.profileId) ?? 0) + j.totalBrl);
+        for (const b of agg.buscas) if (b.profileId) porPerfil.set(b.profileId, (porPerfil.get(b.profileId) ?? 0) + b.valorBrl);
+        const ids = [...porPerfil.keys(), ...(p ? [p] : [])];
+        const nomes = ids.length ? await db.from("profiles").select("id, name").in("id", ids) : { data: [] };
+        const nome = new Map(((nomes.data ?? []) as Array<{ id: string; name: string }>).map((x) => [x.id, x.name]));
+        const top = [...agg.porEtapa].sort((x, y) => y.valorBrl - x.valorBrl)[0];
+
+        // Orçamento: mesma conta da barra (useGastoMes), para o perfil selecionado no topo.
+        const perfilBarra = p ?? ctx.profileId;
+        const [cfg, mesEv] = await Promise.all([
+          db.from("app_config").select("key, value_num, value_text"),
+          db.from("consumo_eventos").select("id, job_id, profile_id, etapa, modelo, quantidade, unidade, metadados, created_at").gte("created_at", inicioMesUtc()),
+        ]);
+        let orcamento: unknown = "não configurado";
+        if (!cfg.error && !mesEv.error) {
+          const g = calcularGastoMes((mesEv.data ?? []) as ConsumoEventoRow[], precos, new Map(((cfg.data ?? []) as AppConfigRow[]).map((x) => [x.key, x])), perfilBarra);
+          const teto = g.tetoPerfil ?? g.tetoGlobal;
+          if (teto) orcamento = { gasto_mes_perfil: reais(g.perfilBrl), gasto_mes_geral: reais(g.globalBrl), teto: reais(teto), tipo_teto: g.tetoPerfil ? "do perfil" : "global", usado_pct: Math.round(g.uso * 100), alerta_80: g.alerta, bloqueado: g.bloqueado };
+        }
         return {
-          periodo: r.rotulo, perfil: p ? nome.get(p) ?? p : "todos", total: brl(total),
-          etapa_que_mais_gastou: top ? { etapa: top[0], valor: brl(top[1]), pct: total ? Math.round((top[1] / total) * 100) : 0 } : null,
-          por_etapa: Object.fromEntries(Object.entries(etapa).map(([k, v]) => [k, brl(v)])),
-          por_perfil: Object.fromEntries(Object.entries(perfil).map(([k, v]) => [nome.get(k) ?? "perfil", brl(v)])),
-          orcamento: orcamento ?? "orçamento não disponível pelo assistente ou não configurado",
+          periodo: r.rotulo, perfil: p ? nome.get(p) ?? p : "todos", total: reais(agg.totalBrl),
+          etapa_que_mais_gastou: top && top.valorBrl > 0 ? { etapa: ETAPA_VISUAL_LABELS[top.etapa], valor: reais(top.valorBrl), pct: Math.round(top.percentual) } : null,
+          por_etapa: Object.fromEntries(agg.porEtapa.map((x) => [ETAPA_VISUAL_LABELS[x.etapa], reais(x.valorBrl)])),
+          por_perfil: Object.fromEntries([...porPerfil].map(([k, v]) => [nome.get(k) ?? "perfil", reais(v)])),
+          consumo_em_quantidade: consumo,
+          orcamento,
           link: "/app/custos",
         };
       },
