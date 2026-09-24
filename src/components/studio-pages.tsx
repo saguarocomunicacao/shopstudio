@@ -44,9 +44,14 @@ function DashboardContent() {
     { icon: Workflow, value: scoped.length, label: "Jobs no pipeline", context: `${gerando} gerando agora`, to: "/app/pipeline" },
   ];
   if (canCost && gasto) {
-    const teto = gasto.tetoPerfil ?? gasto.tetoGlobal;
-    const valor = gasto.tetoPerfil ? gasto.perfilBrl : gasto.globalBrl;
-    stats.push({ icon: Wallet, value: valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), label: "Gasto do mês", context: teto ? `de ${teto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} do orçamento` : undefined, to: "/app/custos", bar: teto ? valor / teto : undefined });
+    // Mesmo perfil do topo: gasto do mês (Brasília) desse perfil, igual à tela Custos filtrada nele.
+    const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const valor = activeProfileId ? gasto.perfilBrl : gasto.globalBrl;
+    const usaTetoPerfil = !!activeProfileId && !!gasto.tetoPerfil;
+    const teto = usaTetoPerfil ? gasto.tetoPerfil : gasto.tetoGlobal;
+    const base = usaTetoPerfil || !activeProfileId ? valor : gasto.globalBrl;
+    const context = teto ? (usaTetoPerfil || !activeProfileId ? `de ${fmt(teto)} do orçamento` : `geral: ${fmt(base)} de ${fmt(teto)}`) : undefined;
+    stats.push({ icon: Wallet, value: fmt(valor), label: "Gasto do mês", context, to: "/app/custos", bar: teto ? base / teto : undefined });
   }
   return <>
     <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Visão geral" action={<Button variant="secondary" onClick={openOnboarding}>Como funciona</Button>} />

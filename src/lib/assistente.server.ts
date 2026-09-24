@@ -9,7 +9,7 @@ import { z } from "zod";
 import manual from "./assistente-manual.md?raw";
 import { JOB_STATUS_LABELS, type JobStatusKey } from "./content";
 import { ACAO_LABELS, type BillableAction, type ConsumoEventoRow, type CreditoTaxaRow, type TarifaRow } from "./custo-core";
-import { agregarPeriodo, calcularGastoMes, computeJobCusto, ETAPA_VISUAL_LABELS, SELECT_EVENTOS_CUSTO, type AppConfigRow } from "./custo-calculo";
+import { agregarPeriodo, calcularGastoMes, gastoPeriodo, intervaloBrasilia, computeJobCusto, ETAPA_VISUAL_LABELS, SELECT_EVENTOS_CUSTO, type AppConfigRow } from "./custo-calculo";
 import { montarConsumoConsolidado } from "./consumo-tenant.functions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,14 +108,11 @@ function estadoGravacao(j: any) {
 }
 
 function periodo(p: string, de?: string | null, ate?: string | null) {
-  const agora = new Date();
-  const brt = new Date(agora.getTime() - 3 * 3600_000);
-  const inicioDia = new Date(Date.UTC(brt.getUTCFullYear(), brt.getUTCMonth(), brt.getUTCDate(), 3));
-  if (p === "hoje") return { desde: inicioDia.toISOString(), ate: agora.toISOString(), rotulo: "hoje" };
-  if (p === "semana") return { desde: new Date(inicioDia.getTime() - 6 * 86400_000).toISOString(), ate: agora.toISOString(), rotulo: "últimos 7 dias" };
-  if (p === "intervalo" && de) return { desde: new Date(de).toISOString(), ate: ate ? new Date(ate).toISOString() : agora.toISOString(), rotulo: `de ${de} até ${ate ?? "hoje"}` };
-  const mes = new Date(Date.UTC(brt.getUTCFullYear(), brt.getUTCMonth(), 1, 3));
-  return { desde: mes.toISOString(), ate: agora.toISOString(), rotulo: "este mês" };
+  // Mesmo intervalo em Brasília usado pela tela Custos (intervaloBrasilia).
+  if (p === "hoje") return { ...intervaloBrasilia("hoje"), rotulo: "hoje" };
+  if (p === "semana") return { ...intervaloBrasilia("7d"), rotulo: "últimos 7 dias" };
+  if (p === "intervalo" && de) return { ...intervaloBrasilia("custom", de.slice(0, 10), ate ? ate.slice(0, 10) : null), rotulo: `de ${de} até ${ate ?? "hoje"}` };
+  return { ...intervaloBrasilia("mes"), rotulo: "este mês" };
 }
 
 const reais = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -152,7 +149,7 @@ async function custosPorJob(ctx: Ctx, jobs: Array<{ id: string; profile_id: stri
 const custoTxt = (ctx: Ctx, profileId: string | null, c: ReturnType<typeof computeJobCusto> | undefined) =>
   !podeVerCustoJob(ctx, profileId) ? "sem permissão" : reais(c?.totalBrl ?? 0);
 
-const inicioMesUtc = () => { const n = new Date(); return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1)).toISOString(); };
+
 
 /** Consumo em quantidade no período, vindo da carteira (débitos), só para ações pagas por pacote. */
 async function consumoCarteira(ctx: Ctx, desde: string, ate: string) {
@@ -331,7 +328,7 @@ export function buildTools(ctx: Ctx) {
         }
 
         // Backoffice: mesma consulta e agregação da tela Custos (useCustoPeriodo + useGastoMes).
-        const p = profile_id ?? null;
+        const p = pid(ctx, profile_id) ?? null;
         let q = db.from("consumo_eventos").select(SELECT_EVENTOS_CUSTO).gte("created_at", r.desde).lte("created_at", r.ate).order("created_at", { ascending: true });
         if (ctx.tenantId) q = q.eq("tenant_id", ctx.tenantId);
         if (p) q = q.eq("profile_id", p);
@@ -350,7 +347,7 @@ export function buildTools(ctx: Ctx) {
         const perfilBarra = p ?? ctx.profileId;
         const [cfg, mesEv] = await Promise.all([
           db.from("app_config").select("key, value_num, value_text"),
-          db.from("consumo_eventos").select("id, job_id, profile_id, etapa, modelo, quantidade, unidade, metadados, created_at").gte("created_at", inicioMesUtc()),
+          db.from("consumo_eventos").select(SELECT_EVENTOS_CUSTO).gte("created_at", intervaloBrasilia("mes").desde).lte("created_at", intervaloBrasilia("mes").ate),
         ]);
         let orcamento: unknown = "não configurado";
         if (!cfg.error && !mesEv.error) {
@@ -359,7 +356,7 @@ export function buildTools(ctx: Ctx) {
           if (teto) orcamento = { gasto_mes_perfil: reais(g.perfilBrl), gasto_mes_geral: reais(g.globalBrl), teto: reais(teto), tipo_teto: g.tetoPerfil ? "do perfil" : "global", usado_pct: Math.round(g.uso * 100), alerta_80: g.alerta, bloqueado: g.bloqueado };
         }
         return {
-          periodo: r.rotulo, perfil: p ? nome.get(p) ?? p : "todos", total: reais(agg.totalBrl),
+          periodo: r.rotulo, perfil: p ? nome.get(p) ?? p : "todos", total: reais(gastoPeriodo((ev.data ?? []) as ConsumoEventoRow[], precos, p ? [p] : null, r.desde, r.ate)),
           etapa_que_mais_gastou: top && top.valorBrl > 0 ? { etapa: ETAPA_VISUAL_LABELS[top.etapa], valor: reais(top.valorBrl), pct: Math.round(top.percentual) } : null,
           por_etapa: Object.fromEntries(agg.porEtapa.map((x) => [ETAPA_VISUAL_LABELS[x.etapa], reais(x.valorBrl)])),
           por_perfil: Object.fromEntries([...porPerfil].map(([k, v]) => [nome.get(k) ?? "perfil", reais(v)])),

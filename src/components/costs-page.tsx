@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
+import { intervaloBrasilia, diaBrasilia } from "@/lib/custo-calculo";
 import { brl } from "@/lib/custo";
 import {
   ETAPA_VISUAL_LABELS,
@@ -25,7 +26,7 @@ import {
   type LinhaJob,
 } from "@/lib/custo-periodo";
 import type { DbJob } from "@/lib/content";
-import { useGastoMes } from "@/lib/orcamento";
+import { CONFIG_KEYS, useAppConfig } from "@/lib/orcamento";
 import { useMeuTenantId, useTenants } from "@/lib/tenants";
 import { JobDetailDialog } from "./job-detail-dialog";
 import { PageHeader } from "./page-header";
@@ -57,21 +58,7 @@ const startOfToday = () => {
   return new Date(n.getFullYear(), n.getMonth(), n.getDate());
 };
 
-function intervaloDe(periodo: PeriodoKey, de: string, ate: string) {
-  const hoje = startOfToday();
-  const fim = new Date();
-  fim.setHours(23, 59, 59, 999);
-  if (periodo === "custom") {
-    const inicio = de ? new Date(`${de}T00:00:00`) : hoje;
-    const final = ate ? new Date(`${ate}T23:59:59`) : fim;
-    return { desde: inicio.toISOString(), ate: final.toISOString() };
-  }
-  const inicio = new Date(hoje);
-  if (periodo === "7d") inicio.setDate(inicio.getDate() - 6);
-  if (periodo === "30d") inicio.setDate(inicio.getDate() - 29);
-  if (periodo === "mes") inicio.setDate(1);
-  return { desde: inicio.toISOString(), ate: fim.toISOString() };
-}
+const intervaloDe = (periodo: PeriodoKey, de: string, ate: string) => intervaloBrasilia(periodo, de, ate);
 
 const dataCurta = (isoStr: string) =>
   new Date(isoStr).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -132,8 +119,8 @@ export function CostsPage() {
   const [tenantSel, setTenantSel] = useState<string | null>(null);
   const tenantId = isBackoffice ? tenantSel ?? meuTenantId ?? null : meuTenantId ?? null;
   const [periodo, setPeriodo] = useState<PeriodoKey>("mes");
-  const [de, setDe] = useState(iso(startOfToday()));
-  const [ate, setAte] = useState(iso(startOfToday()));
+  const [de, setDe] = useState(diaBrasilia());
+  const [ate, setAte] = useState(diaBrasilia());
   const [perfisSel, setPerfisSel] = useState<string[]>(() => lerListaUrl("perfis"));
   const [etapasSelRaw, setEtapasSel] = useState<EtapaVisual[]>(
     () => lerListaUrl("etapa").filter((e): e is EtapaVisual => (ETAPA_VISUAL_ORDEM as string[]).includes(e)),
@@ -161,7 +148,7 @@ export function CostsPage() {
   const intervalo = useMemo(() => intervaloDe(periodo, de, ate), [periodo, de, ate]);
   const perfilFiltro = perfisEscolhidos.length ? perfisEscolhidos : null;
   const { data, isLoading, isError } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapasSel, tenantId);
-  const gasto = useGastoMes(activeProfileId);
+  const { data: appConfig } = useAppConfig();
 
   const jobsLinhas = useMemo(() => {
     const linhas = data?.jobs ?? [];
@@ -237,15 +224,21 @@ export function CostsPage() {
   }
 
   const semSelecao = !tenantId;
-  const teto = gasto?.tetoPerfil ?? gasto?.tetoGlobal ?? null;
-  const consumidoMes = gasto ? (gasto.tetoPerfil ? gasto.perfilBrl : gasto.globalBrl) : 0;
+  // Topo = mesmo número do total da tabela (mesmo filtro de perfil e período).
+  const tetoDe = (key: string) => {
+    const v = Number(appConfig?.get(key)?.value_num ?? 0);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  };
+  const perfilUnico = perfilFiltro?.length === 1 ? perfilFiltro[0]! : null;
+  const teto = periodo === "mes" ? (perfilUnico ? tetoDe(CONFIG_KEYS.perfil(perfilUnico)) : null) ?? tetoDe(CONFIG_KEYS.tetoGlobal) : null;
+  const rotuloGasto = periodo === "mes" ? "Gasto do mês" : `Gasto (${PERIODO_LABELS[periodo].toLowerCase()})`;
 
   return (
     <TooltipProvider delayDuration={200}>
     <div className="grid gap-6">
       <PageHeader
         title="Custos"
-        description={gasto ? `Gasto do mês: ${brl(consumidoMes)}${teto ? ` de ${brl(teto)}` : ""}` : undefined}
+        description={data ? `${rotuloGasto}: ${brl(data.totalBrl)}${teto ? ` de ${brl(teto)}` : ""}` : undefined}
         actions={
           <Button variant="outline" size="sm" onClick={exportarCsv} disabled={!jobsLinhas.length}>
             <Download className="size-4" /> Exportar CSV
@@ -368,10 +361,10 @@ export function CostsPage() {
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="text-sm font-black">Orçamento do mês</p>
                 <p className="text-xs text-muted-foreground">
-                  {brl(consumidoMes)} de {brl(teto)} ({Math.round((consumidoMes / teto) * 100)}%)
+                  {brl(data.totalBrl)} de {brl(teto)} ({Math.round((data.totalBrl / teto) * 100)}%)
                 </p>
               </div>
-              <Progress value={Math.min(100, (consumidoMes / teto) * 100)} />
+              <Progress value={Math.min(100, (data.totalBrl / teto) * 100)} />
             </div>
           )}
 

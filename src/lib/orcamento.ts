@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { computeEventoCusto, findTarifa, useTarifas, type ConsumoEventoRow } from "./custo";
 
-import { calcularGastoMes, CONFIG_KEYS, type AppConfigRow, type GastoMes } from "./custo-calculo";
+import { calcularGastoMes, CONFIG_KEYS, intervaloBrasilia, SELECT_EVENTOS_CUSTO, type AppConfigRow, type GastoMes } from "./custo-calculo";
 export { CONFIG_KEYS, calcularGastoMes } from "./custo-calculo";
 export type { AppConfigRow, GastoMes } from "./custo-calculo";
 
@@ -26,10 +26,6 @@ export function useAppConfig() {
   });
 }
 
-const firstDayOfMonth = () => {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-};
 
 /** Gasto do mês corrente (perfil ativo e geral) confrontado com os tetos. */
 export function useGastoMes(profileId: string | null): GastoMes | null {
@@ -37,14 +33,16 @@ export function useGastoMes(profileId: string | null): GastoMes | null {
   const { data: config } = useAppConfig();
 
   const { data: eventos } = useQuery({
-    queryKey: ["custo-mes"],
+    queryKey: ["custo-mes", intervaloBrasilia("mes").desde],
     enabled: !!precos,
     refetchInterval: 60_000,
     queryFn: async () => {
+      const mes = intervaloBrasilia("mes");
       const { data, error } = await supabase
         .from("consumo_eventos")
-        .select("id, job_id, profile_id, etapa, modelo, quantidade, unidade, metadados, created_at")
-        .gte("created_at", firstDayOfMonth());
+        .select(SELECT_EVENTOS_CUSTO)
+        .gte("created_at", mes.desde)
+        .lte("created_at", mes.ate);
       if (error) throw new Error(error.message);
       return (data ?? []) as unknown as ConsumoEventoRow[];
     },
