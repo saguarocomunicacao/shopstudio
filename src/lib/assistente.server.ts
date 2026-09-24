@@ -91,11 +91,11 @@ async function nomesUsuarios(db: Db, ids: string[]) {
   const unicos = [...new Set(ids.filter(Boolean))];
   if (!unicos.length) return new Map<string, string>();
   const { data } = await db.from("app_users").select("id, name, email").in("id", unicos);
-  return new Map(((data ?? []) as Array<{ id: string; name: string | null; email: string }>).map((u) => [u.id, u.name || u.email.split("@")[0]]));
+  return new Map<string, string>(((data ?? []) as Array<{ id: string; name: string | null; email: string }>).map((u) => [u.id, u.name || u.email.split("@")[0] || "usuário"]));
 }
 const quem = (m: Map<string, string>, id: string | null) => (id ? m.get(id) ?? "outro membro da equipe" : "automação");
 
-function estadoGravacao(j: Record<string, unknown>) {
+function estadoGravacao(j: any) {
   const r: string[] = [];
   if (!j["video_original_path"] && !j["recorded_at"]) r.push("não gravado");
   else r.push("gravado");
@@ -199,7 +199,7 @@ export function buildTools(ctx: Ctx) {
         else if (formato) q = q.eq("formato", formato);
         const { data, error } = await q;
         if (error) return { erro: "Não consegui ler os jobs." };
-        const rows = (data ?? []) as Array<Record<string, any>>;
+        const rows = (data ?? []) as Array<any>;
         const [custos, nomes] = await Promise.all([custosPorJob(db, rows.map((r) => r.id)), nomesUsuarios(db, rows.map((r) => r.created_by))]);
         return rows.map((j) => ({
           titulo: j.title, produto: j.products?.name ?? null, formato: formatoLabel(j.formato), estado: statusLabel(j.status, j.ai_render_stage),
@@ -218,7 +218,7 @@ export function buildTools(ctx: Ctx) {
         else return { erro: "Informe o job." };
         if (!job_id && ctx.profileId) q = q.eq("profile_id", ctx.profileId);
         const { data } = await q;
-        const j = (data ?? [])[0] as Record<string, any> | undefined;
+        const j = (data ?? [])[0] as any | undefined;
         if (!j) return { erro: "Não encontrei esse job." };
         const [ev, nomes, share] = await Promise.all([
           db.from("consumo_eventos").select("etapa, tool_price_cents").eq("job_id", j.id).limit(1000),
@@ -234,7 +234,7 @@ export function buildTools(ctx: Ctx) {
           total += e.tool_price_cents ?? 0;
         }
         for (const [k, v] of Object.entries(soma)) porEtapa[k] = brl(v);
-        const cenas = Array.isArray(j.scenes) ? (j.scenes as Array<Record<string, any>>).slice(0, 20).map((c, i) => ({ numero: i + 1, descricao: String(c["prompt"] ?? c["descricao"] ?? c["description"] ?? "").slice(0, 200), aprovada: Boolean(c["approved"] ?? c["aprovada"]) })) : [];
+        const cenas = Array.isArray(j.scenes) ? (j.scenes as Array<any>).slice(0, 20).map((c, i) => ({ numero: i + 1, descricao: String(c["prompt"] ?? c["descricao"] ?? c["description"] ?? "").slice(0, 200), aprovada: Boolean(c["approved"] ?? c["aprovada"]) })) : [];
         const formato = formatoLabel(j.formato);
         const token = (share as any)?.data?.[0]?.token;
         return {
@@ -262,7 +262,7 @@ export function buildTools(ctx: Ctx) {
         if (p) q = q.eq("profile_id", p);
         q = tipo === "publicado" ? q.eq("status", "publicado").order("published_at", { ascending: false, nullsFirst: false }) : q.in("status", ["video_pronto", "rascunho_enviado"]).order("updated_at", { ascending: false });
         const { data } = await q;
-        const j = (data ?? [])[0] as Record<string, any> | undefined;
+        const j = (data ?? [])[0] as any | undefined;
         if (!j) return { erro: `Nenhum vídeo ${tipo} encontrado.` };
         const custo = (await custosPorJob(db, [j.id])).get(j.id) ?? 0;
         return { titulo: j.title, produto: j.products?.name, perfil: j.profiles?.name, data: tipo === "publicado" ? j.published_at : j.updated_at, custo: brl(custo), link_tiktok: j.published_url ?? null, link: linkJob(j.id) };
@@ -325,7 +325,7 @@ export function buildTools(ctx: Ctx) {
         const acoes = ["roteiro", "cena", "video", "montagem", "narracao"] as BillableAction[];
         return {
           saldos: acoes.map((a) => ({ acao: ACAO_LABELS[a], saldo: pago.get(a) ? saldo.get(a) ?? 0 : "ilimitado" })),
-          ultimas_movimentacoes: ((mov.data ?? []) as Array<Record<string, any>>).map((m) => ({ acao: ACAO_LABELS[m.action_type as BillableAction] ?? m.action_type, tipo: m.tipo, quantidade: m.quantidade, descricao: m.descricao, data: m.created_at })),
+          ultimas_movimentacoes: ((mov.data ?? []) as Array<any>).map((m) => ({ acao: ACAO_LABELS[m.action_type as BillableAction] ?? m.action_type, tipo: m.tipo, quantidade: m.quantidade, descricao: m.descricao, data: m.created_at })),
           link: "/app/conta",
         };
       },
@@ -343,8 +343,8 @@ export function buildTools(ctx: Ctx) {
         const ids = (data ?? []).map((s: { id: string }) => s.id);
         const runs = ids.length ? await db.from("automation_runs").select("schedule_id, dia, horario, status, mensagem, custo_estimado_cents, job_id, created_at").in("schedule_id", ids).order("created_at", { ascending: false }).limit(200) : { data: [] };
         const mes = new Date(); mes.setUTCDate(1); mes.setUTCHours(3, 0, 0, 0);
-        return (data ?? []).map((s: Record<string, any>) => {
-          const rs = ((runs.data ?? []) as Array<Record<string, any>>).filter((r) => r.schedule_id === s.id);
+        return (data ?? []).map((s: any) => {
+          const rs = ((runs.data ?? []) as Array<any>).filter((r) => r.schedule_id === s.id);
           const gastoMes = rs.filter((r) => new Date(r.created_at) >= mes).reduce((a, r) => a + (r.custo_estimado_cents ?? 0), 0);
           const hs = (Array.isArray(s.horarios) ? s.horarios : []) as string[];
           const agoraHm = new Date(Date.now() - 3 * 3600_000).toISOString().slice(11, 16);
@@ -373,7 +373,7 @@ export function buildTools(ctx: Ctx) {
         const jobs = ids.length ? await db.from("jobs").select("product_id").in("product_id", ids).is("deleted_at", null) : { data: [] };
         const qtd = new Map<string, number>();
         for (const j of (jobs.data ?? []) as Array<{ product_id: string }>) qtd.set(j.product_id, (qtd.get(j.product_id) ?? 0) + 1);
-        return (data ?? []).map((x: Record<string, any>) => {
+        return (data ?? []).map((x: any) => {
           const preco = Number(x.price ?? 0), com = Number(x.commission ?? 0);
           return {
             nome: x.name, vendedor: x.seller_name, categoria: x.niche || "Não informada", preco: brl(preco * 100),
