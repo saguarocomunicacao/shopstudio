@@ -124,7 +124,7 @@ export function AnalisarVideoPage() {
     const paths = [a.storage_path, ...(a.frames ?? []).map((f) => f.path)].filter(Boolean) as string[];
     if (paths.length) await supabase.storage.from(BUCKET).remove(paths);
     const { error: e } = await supabase.from("video_analises").delete().eq("id", a.id);
-    if (e) return toast.error("Não foi possível remover.");
+    if (e) { toast.error("Não foi possível remover."); return; }
     if (abertaId === a.id) setAbertaId(null);
     qc.invalidateQueries({ queryKey: ["video-analises", activeProfileId] });
   };
@@ -226,8 +226,8 @@ function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: 
 
   const escolher = (f: File | undefined) => {
     if (!f) return;
-    if (!TIPOS.includes(f.type)) return toast.error("Envie um vídeo MP4, MOV ou WEBM.");
-    if (f.size > MAX) return toast.error("O vídeo passa de 200 MB.");
+    if (!TIPOS.includes(f.type)) { toast.error("Envie um vídeo MP4, MOV ou WEBM."); return; }
+    if (f.size > MAX) { toast.error("O vídeo passa de 200 MB."); return; }
     setFile(f);
   };
 
