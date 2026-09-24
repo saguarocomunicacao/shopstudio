@@ -17,9 +17,9 @@ export function useAvatarUrl(path: string | null | undefined) {
   return useQuery({
     queryKey: ["avatar-url", path],
     enabled: !!path,
-    staleTime: 30 * 60_000,
+    staleTime: 10 * 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase.storage.from("avatars").createSignedUrl(path!, 60 * 60);
+      const { data, error } = await supabase.storage.from("avatars").createSignedUrl(path!, 15 * 60);
       if (error) throw new Error(error.message);
       return data.signedUrl;
     },

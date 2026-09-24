@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "./page-header";
 import { ImageLightbox } from "./image-lightbox";
+import { useAnaliseCustos, brl as custoBrl } from "@/lib/custo";
+import { AlertTriangle } from "lucide-react";
 import { useStudio } from "./studio-context";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -127,7 +129,9 @@ function useAnalises(profileId: string | null) {
 }
 
 export function AnalisarVideoPage() {
-  const { activeProfileId, can } = useStudio();
+  const { activeProfileId, can, isBackoffice } = useStudio();
+  const podeVerCusto = isBackoffice || can("custos", "visualizar", activeProfileId);
+  const { data: custos } = useAnaliseCustos(podeVerCusto ? activeProfileId : null);
   const podeCriar = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
   const { data: analises = [], isLoading, error } = useAnalises(activeProfileId);
   const [novo, setNovo] = useState(false);
@@ -203,7 +207,7 @@ export function AnalisarVideoPage() {
             <thead className="text-left text-xs text-muted-foreground">
               <tr className="border-b border-border">
                 <th className="p-3">Vídeo</th><th className="p-3">Origem</th><th className="p-3">Duração</th>
-                <th className="p-3">Data</th><th className="p-3">Status</th><th className="p-3">Custo</th><th className="p-3 text-right">Ações</th>
+                <th className="p-3">Data</th><th className="p-3">Status</th>{podeVerCusto && <th className="p-3">Custo</th>}<th className="p-3 text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -230,7 +234,14 @@ export function AnalisarVideoPage() {
                         : STATUS[a.status][0]}
                     </span>
                   </td>
-                  <td className="p-3">{brl(a.custo_cents ?? 0)}</td>
+                  {podeVerCusto && (
+                    <td className="p-3 whitespace-nowrap">
+                      {(() => {
+                        const c = custos?.get(a.id);
+                        return c && c.totalBrl > 0 ? <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-foreground" title={c.etapas.map((e) => `${e.etapa === "apify_download" ? "Download" : "IA"}: ${custoBrl(e.valorBrl)}`).join(" · ")}>{custoBrl(c.totalBrl)}{(c.estimado || c.semTarifa) && <AlertTriangle className="size-3 text-muted-foreground" />}</span> : <span className="text-muted-foreground">—</span>;
+                      })()}
+                    </td>
+                  )}
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
                       <Button size="sm" variant="ghost" onClick={() => setAbertaId(a.id)}>Abrir</Button>

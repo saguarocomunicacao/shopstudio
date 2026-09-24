@@ -68,7 +68,7 @@ export const getProfileImageUrl = createServerFn({ method: "GET" })
     if (error || !profile || profile.profile_image_path !== data.path) return { url: null };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: signed, error: signError } = await supabaseAdmin.storage.from("avatars").createSignedUrl(data.path, 60 * 60);
+    const { data: signed, error: signError } = await supabaseAdmin.storage.from("avatars").createSignedUrl(data.path, 15 * 60);
     if (signError) {
       console.error("[profile-image] sign", signError);
       return { url: null };

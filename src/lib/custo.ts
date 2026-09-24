@@ -168,3 +168,32 @@ export function useBuscaCustos(profileId: string | null, limit = 12) {
     },
   });
 }
+
+/** Custo real (Gemini + Apify) de cada análise de vídeo do perfil, indexado pela análise. */
+export function useAnaliseCustos(profileId: string | null) {
+  const { data: precos } = useTarifas();
+  return useQuery({
+    queryKey: ["custo-analises", profileId, precos?.cotacao],
+    enabled: !!profileId && !!precos,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("consumo_eventos")
+        .select(selectEventos)
+        .eq("profile_id", profileId!)
+        .in("etapa", ["analise_video", "apify_download"])
+        .order("created_at", { ascending: true });
+      if (error) throw new Error(error.message);
+      const porAnalise = new Map<string, ConsumoEventoRow[]>();
+      for (const e of (data ?? []) as unknown as ConsumoEventoRow[]) {
+        const id = (e.metadados ?? {})["analise_id"];
+        if (typeof id !== "string") continue;
+        const list = porAnalise.get(id) ?? [];
+        list.push(e);
+        porAnalise.set(id, list);
+      }
+      const result = new Map<string, CustoJob>();
+      for (const [id, list] of porAnalise) result.set(id, computeJobCusto(list, precos!.tarifas, precos!.cotacao, precos!.taxas));
+      return result;
+    },
+  });
+}

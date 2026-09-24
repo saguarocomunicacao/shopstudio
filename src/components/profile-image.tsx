@@ -9,7 +9,7 @@ export function useProfileImageUrl(profile: Pick<DbProfile, "id" | "profile_imag
   return useQuery({
     queryKey: ["profile-image-url", profile?.id, profile?.profile_image_path],
     enabled: !!profile?.id && !!profile.profile_image_path,
-    staleTime: 45 * 60_000,
+    staleTime: 10 * 60_000,
     queryFn: async () => {
       if (!profile?.profile_image_path) return null;
       const result = await getUrl({ data: { profileId: profile.id, path: profile.profile_image_path } });
