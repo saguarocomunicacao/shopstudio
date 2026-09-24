@@ -165,7 +165,7 @@ export function AnalisarVideoPage() {
     <div className="space-y-6">
       <PageHeader
         title="Analisar vídeo"
-        description="Envie um vídeo ou cole um link do YouTube e veja gancho, cenas, fala e produto."
+        description="Envie um vídeo ou cole um link do TikTok, YouTube ou Instagram e veja gancho, cenas, fala e produto."
         actions={podeCriar ? <Button onClick={() => setNovo(true)}><Upload className="size-4" />Nova análise</Button> : null}
       />
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
