@@ -456,6 +456,13 @@
       "when": 1790263262400,
       "tag": "0064_assistente_base",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1790269585267,
+      "tag": "0065_assistente_consultas_log",
+      "breakpoints": true
     }
   ]
 }
