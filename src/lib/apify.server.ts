@@ -203,6 +203,7 @@ export type RedeMeta = {
   likes: number | null;
   comentarios: number | null;
   compartilhamentos: number | null;
+  salvos: number | null;
   publicado_em: string | null;
 };
 
@@ -220,6 +221,7 @@ export function extrairMeta(rede: Rede, item: Record<string, unknown>): RedeMeta
     likes: n(pick(item, "diggCount", "likesCount", "likes")),
     comentarios: n(pick(item, "commentCount", "commentsCount")),
     compartilhamentos: n(pick(item, "shareCount", "sharesCount")),
+    salvos: n(pick(item, "collectCount", "saveCount", "savedCount", "bookmarkCount", "bookmarksCount", "saves")),
     publicado_em: publicado ? String(publicado) : null,
   };
 }
