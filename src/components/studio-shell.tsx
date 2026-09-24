@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { BookOpen, BarChart3, Bot, ChevronDown, CircleGauge, Clapperboard, FileVideo2, FileClock, KanbanSquare, KeyRound, Landmark, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, Sun, PiggyBank, Radar, UserCog, Users, UserSquare2, Wallet, X } from "lucide-react";
+import { BookOpen, BarChart3, Bot, ChevronDown, CircleGauge, Clapperboard, FileVideo2, FileClock, KanbanSquare, KeyRound, Landmark, LogOut, Menu, Moon, Package, PanelLeftClose, PanelLeftOpen, Plus, Settings, ShieldAlert, Sun, PiggyBank, Radar, Search, UserCog, Users, UserSquare2, Wallet, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
