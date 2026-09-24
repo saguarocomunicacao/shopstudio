@@ -423,7 +423,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
           <TabsList className="h-auto min-w-max justify-start">
             {QUEUES.map((q) => (
               <TabsTrigger key={q.key} value={q.key}>
-                {q.key === "favoritos" && <Heart className="size-4" />}
+                {q.key === "favoritos" && <Heart className="size-4 mr-1.5" />}
                 {q.label} ({countQueue(q)})
               </TabsTrigger>
             ))}
