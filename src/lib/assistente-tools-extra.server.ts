@@ -45,8 +45,8 @@ async function precos(db: Any) {
 }
 
 const FORNECEDOR_DE = (etapa: string) =>
-  etapa === "busca_kalodata" ? "kalodata" : etapa === "montagem_json2video" ? "json2video" : etapa === "narracao_elevenlabs" ? "elevenlabs" : "google";
-const FORNECEDOR_NOME: Record<string, string> = { google: "Google (Gemini + Veo)", kalodata: "Kalodata", json2video: "JSON2Video", elevenlabs: "ElevenLabs" };
+  etapa === "apify_download" ? "apify" : etapa === "busca_kalodata" ? "kalodata" : etapa === "montagem_json2video" ? "json2video" : etapa === "narracao_elevenlabs" ? "elevenlabs" : "google";
+const FORNECEDOR_NOME: Record<string, string> = { google: "Google (Gemini + Veo)", kalodata: "Kalodata", json2video: "JSON2Video", elevenlabs: "ElevenLabs", apify: "Apify" };
 
 export function buildToolsExtra(ctx: Ctx) {
   const { db } = ctx;
