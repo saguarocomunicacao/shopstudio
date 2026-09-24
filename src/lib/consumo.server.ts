@@ -49,6 +49,8 @@ export type ConsumoEvento = {
     | "mil_caracteres"
     | "minuto_audio";
   metadados?: Record<string, unknown>;
+  /** Não debita a carteira (ex.: segunda linha de tokens da mesma operação). */
+  semDebito?: boolean;
 };
 
 /** Ação padrão quando o ponto de consumo não informa uma explicitamente. */
@@ -176,11 +178,11 @@ export async function recordConsumo(evento: ConsumoEvento): Promise<string | nul
 
     const acao = evento.acao ?? ACAO_POR_ETAPA[evento.etapa];
     const agora = new Date().toISOString();
-    const toolPrice = await toolPriceCents(tenantId, acao);
+    const toolPrice = evento.semDebito ? { price: 0, mode: "unitario" as const } : await toolPriceCents(tenantId, acao);
 
     // Débito atômico de 1 unidade da carteira (nulo quando o pacote é gratuito).
     const { debitAction } = await import("./saldo.server");
-    const walletMovementId = await debitAction(tenantId, acao, evento.jobId ?? null);
+    const walletMovementId = evento.semDebito ? null : await debitAction(tenantId, acao, evento.jobId ?? null);
     const { credito, semTarifa } = await resolverCreditoETarifa(supabaseAdmin as never, evento, acao, agora);
 
     if (semTarifa) {

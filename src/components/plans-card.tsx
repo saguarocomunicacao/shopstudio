@@ -21,7 +21,7 @@ type Tenant = { id: string; name: string; plan_id: string | null };
 
 export const PLAN_ACTIONS: BillableAction[] = [
   "roteiro", "descricao_produto", "transcricao", "cena", "video", "montagem",
-  "narracao", "clonagem_voz", "busca_produto", "atualizacao_produto", "videos_campeoes", "atualizacao_categorias",
+  "narracao", "clonagem_voz", "busca_produto", "atualizacao_produto", "videos_campeoes", "atualizacao_categorias", "analise_video",
 ];
 
 const KEY_SOURCE = [
