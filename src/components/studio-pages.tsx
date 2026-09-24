@@ -1,3 +1,4 @@
+import { PageHeader } from "./page-header";
 import { TarifasCard } from "./tarifas-card";
 import { CreditoTaxasCard } from "./credito-taxas-card";
 import { BudgetCard } from "./budget-card";
@@ -16,7 +17,7 @@ import { VideoDownloadButton } from "./video-download-button";
 
 const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando cenas": "status-cyan", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-violet", "Rascunho enviado": "status-cyan", "Publicado": "status-published", "Ativo": "status-lime", "Pausado": "status-neutral" };
 function Badge({ children }: { children: string }) { return <span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${statusClass[children] ?? "status-neutral"}`}>{children}</span>; }
-function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) { return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>; }
+function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) { return <PageHeader title={title} description={/\d/.test(eyebrow) ? eyebrow : undefined} actions={action} />; }
 function Empty({ children = "Nenhum item por aqui ainda." }: { children?: string }) { return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{children}</div>; }
 
 export function DashboardPage() { return <ProfileGate><DashboardContent /></ProfileGate>; }

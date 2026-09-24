@@ -378,8 +378,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
     <>
       <div className="mb-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <div>
-          <p className="mb-1 text-xs font-bold uppercase text-primary">Última etapa da esteira</p>
-          <h1 className="text-2xl font-black sm:text-3xl">Fila de rascunhos</h1>
+          <h1 className="page-title">Fila de rascunhos</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Cada vídeo pronto vira um kit de postagem: baixe o vídeo, copie os textos e publique no TikTok pelo celular.
           </p>

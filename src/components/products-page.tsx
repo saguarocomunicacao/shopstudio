@@ -1,3 +1,4 @@
+import { PageHeader } from "./page-header";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Eye, Pencil, RefreshCw, Sparkles, Trash2, Wand2 } from "lucide-react";
@@ -22,7 +23,7 @@ import { actionError } from "@/lib/api-keys";
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) {
-  return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>;
+  return <PageHeader title={title} description={/\d/.test(eyebrow) ? eyebrow : undefined} actions={action} />;
 }
 
 const brl = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

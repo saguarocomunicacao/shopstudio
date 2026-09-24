@@ -1,3 +1,4 @@
+import { PageHeader } from "./page-header";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronDown, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
@@ -20,7 +21,7 @@ function StatusBadge({ children }: { children: string }) {
   return <span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${statusClass[children] ?? "status-neutral"}`}>{children}</span>;
 }
 function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: ReactNode }) {
-  return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>;
+  return <PageHeader title={title} description={/\d/.test(eyebrow) ? eyebrow : undefined} actions={action} />;
 }
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");

@@ -137,8 +137,7 @@ function PipelineContent() {
   return (
     <div className="flex h-[calc(100vh-6.5rem)] flex-col gap-4 lg:h-[calc(100vh-8.5rem)]">
       <div className="mb-2">
-        <p className="mb-1 text-xs font-bold uppercase text-primary">Produção</p>
-        <h1 className="truncate text-2xl font-black sm:text-3xl">Pipeline de conteúdo</h1>
+        <h1 className="truncate page-title">Pipeline de conteúdo</h1>
       </div>
       <SupplierBalanceBanner />
       <div ref={kanbanRef} className="kanban min-h-0 flex-1">

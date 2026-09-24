@@ -126,8 +126,7 @@ export function ApiKeysPage() {
   return (
     <>
       <div className="mb-6">
-        <p className="mb-1 text-xs font-bold uppercase text-primary">Sua conta</p>
-        <h1 className="text-2xl font-black sm:text-3xl">Minhas APIs</h1>
+        <h1 className="page-title">Minhas APIs</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
           No plano em que você usa suas próprias contas, estas chaves passam a gerar o conteúdo no lugar das chaves do Shop Studio.
           A inteligência que escreve roteiros e descrições roda sempre na plataforma. As chaves ficam guardadas de forma cifrada e nunca são

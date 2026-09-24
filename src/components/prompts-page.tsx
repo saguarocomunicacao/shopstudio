@@ -1,3 +1,4 @@
+import { PageHeader } from "./page-header";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -14,7 +15,7 @@ import { actionError } from "@/lib/api-keys";
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 function Heading({ eyebrow, title }: { eyebrow: string; title: string }) {
-  return <div className="mb-6"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>;
+  void eyebrow; return <PageHeader title={title} />;
 }
 
 export function PlaceholderList({ placeholders }: { placeholders: string[] }) {
