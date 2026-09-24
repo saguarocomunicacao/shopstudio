@@ -436,7 +436,7 @@ export function buildToolsExtra(ctx: Ctx) {
           rede: d.origem === "arquivo" ? "arquivo enviado" : d.origem, link_original: d.link_url ?? d.youtube_url ?? null,
           autor: m?.autor ? `@${m.autor}` : null,
           estatisticas: m ? { views: m.views, likes: m.likes, comentarios: m.comentarios, compartilhamentos: m.compartilhamentos, publicado_em: m.publicado_em } : null,
-          link: "/app/analises",
+          link: `/app/analises/${analise_id}`,
         };
       },
     }),
@@ -488,7 +488,7 @@ export function buildToolsExtra(ctx: Ctx) {
           top_videos: m.top.slice(0, 10),
           videos_analisados: d.analises.filter((a) => a.status === "pronto").length,
           insights: ref.insights ?? null, insights_gerados_em: quando(ref.insights_em),
-          link: "/app/referencias",
+          link: `/app/referencias/${referencia_id}`,
         };
       },
     }),
