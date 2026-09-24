@@ -9,7 +9,7 @@ import { useGastoMes } from "@/lib/orcamento";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { JOB_STATUS_LABELS, jobStatusLabel, relativeTime, useJobs } from "@/lib/content";
+import { JOB_STATUS_LABELS, jobStatusLabel, relativeTime, useJobs, useProducts } from "@/lib/content";
 import { GlobalPromptsSettings } from "./prompts-page";
 import { SyncCategoriesButton } from "./category-select";
 import { ChampionRefsToggle } from "./champion-refs-toggle";
