@@ -4,6 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { JOB_STATUS_LABELS, type JobStatusKey } from "@/lib/content";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+type JobEvento = { id: string; tipo: string; de_status: string | null; para_status: string | null; mensagem: string | null; ator: string | null; created_at: string };
+
+const stLabel = (s: string | null) => (s ? JOB_STATUS_LABELS[s as JobStatusKey] ?? s : "");
+function descreverEvento(e: JobEvento) {
+  if (e.tipo === "criado") return `Job criado em ${stLabel(e.para_status)}`;
+  if (e.tipo === "avancou") return `Avançou de ${stLabel(e.de_status)} para ${stLabel(e.para_status)}`;
+  if (e.tipo === "voltou") return `Voltou de ${stLabel(e.de_status)} para ${stLabel(e.para_status)}`;
+  if (e.tipo === "tentativa") return e.mensagem ?? "Nova tentativa";
+  if (e.tipo === "erro") return "Uma tentativa falhou";
+  return e.tipo;
+}
+
 type StageEvent = {
   id: string;
   status: JobStatusKey;
@@ -49,12 +61,32 @@ export function JobTimeline({ jobId }: { jobId: string }) {
     },
     refetchInterval: 10000,
   });
+  const { data: acoes = [] } = useQuery({
+    queryKey: ["job-eventos", jobId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("job_eventos")
+        .select("id, tipo, de_status, para_status, mensagem, ator, created_at")
+        .eq("job_id", jobId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const rows = (data ?? []) as JobEvento[];
+      const ids = [...new Set(rows.map((r) => r.ator).filter(Boolean))] as string[];
+      const nomes = new Map<string, string>();
+      if (ids.length) {
+        const { data: us } = await supabase.from("app_users").select("id, name, email").in("id", ids);
+        for (const u of us ?? []) nomes.set(u.id, u.name || u.email.split("@")[0] || "usuário");
+      }
+      return rows.map((r) => ({ ...r, quem: r.ator ? nomes.get(r.ator) ?? "outro membro da equipe" : "sistema" }));
+    },
+    refetchInterval: 10000,
+  });
 
   const FINAL_STATUSES: JobStatusKey[] = ["video_pronto", "publicado"];
   const running = events.some((e) => !e.exited_at && !FINAL_STATUSES.includes(e.status));
   const now = useNow(running);
 
-  if (events.length === 0) return null;
+  if (events.length === 0 && acoes.length === 0) return null;
 
   return (
     <div className="grid gap-2">
@@ -91,6 +123,19 @@ export function JobTimeline({ jobId }: { jobId: string }) {
           </TableBody>
         </Table>
       </div>
+      {acoes.length > 0 && (
+        <div className="grid gap-1.5 rounded-xl border bg-background p-3">
+          <p className="text-xs font-semibold text-muted-foreground">Ações e tentativas</p>
+          <ul className="grid gap-1 text-sm">
+            {acoes.map((e) => (
+              <li key={e.id} className="flex flex-wrap items-baseline justify-between gap-x-3">
+                <span className={e.tipo === "erro" ? "text-destructive" : "text-foreground"}>{descreverEvento(e)}</span>
+                <span className="text-xs text-muted-foreground">{e.quem}  {clock(e.created_at)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
