@@ -436,7 +436,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                       <span className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
                         <Camera className="size-5" />
                       </span>
-                      <p className="mt-4 text-xs font-black uppercase text-primary">Pendente de gravação</p>
+                      <p className="status-violet mt-4 rounded-lg px-2 py-0.5 text-xs font-medium">Pendente de gravação</p>
                       <h2 className="mt-2 whitespace-pre-wrap break-words text-lg font-black leading-snug">
                         {job.title || "Vídeo próprio"}
                       </h2>
