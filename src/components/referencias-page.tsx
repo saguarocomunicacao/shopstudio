@@ -434,7 +434,7 @@ function DetalheReferencia({ refId, tab, onTab, voltar }: { refId: string; tab: 
 
 function Insights({ refId, handle, texto, em, analises, videos, snaps, podeEditar, onOk }: {
   refId: string; handle: string; texto: string | null; em: string | null;
-  analises: { id: string; status: string; video_id: string | null; resultado: unknown }[];
+  analises: { id: string; status: string; video_id: string | null }[];
   videos: (VideoRef & { capaUrl: string | null })[]; snaps: VideoSnap[]; podeEditar: boolean; onOk: () => void;
 }) {
   const gerar = useServerFn(gerarInsightsRef);

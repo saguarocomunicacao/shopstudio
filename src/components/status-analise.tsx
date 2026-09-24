@@ -7,7 +7,7 @@ export type StatusAnaliseValor = "na_fila" | "enviando" | "baixando" | "analisan
 
 const ETAPA: Record<string, string> = { enviando: "Enviando à IA", processando_no_gemini: "IA processando", gerando: "Gerando análise" };
 
-export function StatusAnaliseBadge({ id, status, etapa, erro, semAnalise }: { id?: string; status?: string | null; etapa?: string | null; erro?: string | null; semAnalise?: string }) {
+export function StatusAnaliseBadge({ id, status, etapa, erro, semAnalise }: { id?: string | undefined; status?: string | null | undefined; etapa?: string | null | undefined; erro?: string | null | undefined; semAnalise?: string }) {
   if (!status) return <span className="text-xs text-muted-foreground">{semAnalise ?? "Não analisada"}</span>;
   const base = "inline-flex items-center gap-1 text-xs font-semibold";
   if (status === "na_fila") return <span className={`${base} text-muted-foreground`}><Clock className="size-3" />Na fila</span>;
