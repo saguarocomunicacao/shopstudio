@@ -189,7 +189,10 @@ export async function generateScriptForJob(supabase: any, jobId: string, skipPer
           .then((tenantId) => withTenantKeys(tenantId, () => getChampionVideos(categoriaCampeoes, job.profile_id)))
           .catch(() => [])
       : [];
-    const prompt = `${basePrompt}${championPromptBlock(campeoes)}`;
+    // Perfis de referência marcados como fonte do roteirista (10 mais vistos já analisados).
+    const { ganchosDeReferencias } = await import("./referencias.server");
+    const refs = (await ganchosDeReferencias(job.profile_id)).map((r) => ({ videoId: "", title: r.title, views: r.views, revenue: 0, creator: r.creator, url: "" }));
+    const prompt = `${basePrompt}${championPromptBlock([...refs, ...campeoes])}`;
 
 
     const { assertOrcamento } = await import("./orcamento.server");
