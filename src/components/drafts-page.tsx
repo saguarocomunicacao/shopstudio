@@ -53,6 +53,7 @@ import {
   createDraftThumbnailUpload,
   getDraftKit,
   getDraftPreviews,
+  getMissingDurationSources,
   moveDraftBack,
   duplicateJob,
   purgeDraft,
@@ -297,6 +298,8 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
     setOpenId(initialJobId);
   }, [initialJobId, isLoading, jobs]);
   const loadPreviews = useServerFn(getDraftPreviews);
+  const loadMissingDur = useServerFn(getMissingDurationSources);
+  const saveDur = useServerFn(saveVideoDurations);
 
   const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
   const canRemove = (job: DbJob) =>
