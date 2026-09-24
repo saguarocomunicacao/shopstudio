@@ -328,7 +328,7 @@ export function buildTools(ctx: Ctx) {
         }
 
         // Backoffice: mesma consulta e agregação da tela Custos (useCustoPeriodo + useGastoMes).
-        const p = profile_id ?? null;
+        const p = pid(ctx, profile_id) ?? null;
         let q = db.from("consumo_eventos").select(SELECT_EVENTOS_CUSTO).gte("created_at", r.desde).lte("created_at", r.ate).order("created_at", { ascending: true });
         if (ctx.tenantId) q = q.eq("tenant_id", ctx.tenantId);
         if (p) q = q.eq("profile_id", p);
