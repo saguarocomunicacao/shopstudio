@@ -131,7 +131,7 @@ A aba Em ascensão busca produtos que mais cresceram no período, para pegar ten
 Em Produtos, aba Descobrir, filtre por categoria, comissão, preço e período. Cada busca consome saldo de busca de produto. [Descobrir](/app/produtos?tab=descobrir)
 
 ## FAQ: Como salvar um produto no catálogo?
-No Descobrir ou Em ascensão, clique em Salvar no produto. Ele vai para o Catálogo do perfil. [Produtos](/app/produtos)
+No Descobrir, marque os produtos e clique em Salvar selecionados (no Em ascensão, use o botão de salvar do produto). Eles vão para o Catálogo do perfil. [Produtos](/app/produtos)
 
 ## FAQ: De onde vem a descrição do produto?
 Vem do Kalodata, da IA ou foi escrita manualmente. A origem aparece como selo no detalhe do produto e dá para editar. [Produtos](/app/produtos)
