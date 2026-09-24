@@ -508,7 +508,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                       Restaurar
                     </Button>
                   ) : pendente ? (
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                    <div className="grid grid-cols-1 gap-2 2xl:grid-cols-2">
                       <Button className="min-w-0" onClick={() => openRecordingKit(job.id, true)}>
                         <Camera />
                         Gravar vídeo
