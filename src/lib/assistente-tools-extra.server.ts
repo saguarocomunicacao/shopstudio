@@ -59,7 +59,7 @@ export function buildToolsExtra(ctx: Ctx) {
       execute: async ({ profile_id, dias }) => {
         const p = pid(ctx, profile_id);
         if (!ctx.access.can("produtos", "visualizar", p) && !ctx.access.isBackoffice) return semAcesso("Produtos");
-        let q = db.from("buscas_produto").select("id, origem, termo, filtros, total, user_id, created_at, profile_id").order("created_at", { ascending: false }).limit(20);
+        let q = db.from("buscas_produto").select("id, origem, termo, filtros, total, user_id, created_at, profile_id, consumo_evento_id").order("created_at", { ascending: false }).limit(20);
         if (p) q = q.eq("profile_id", p);
         if (dias) q = q.gte("created_at", new Date(Date.now() - dias * 86400_000).toISOString());
         const { data, error } = await q;
@@ -67,18 +67,18 @@ export function buildToolsExtra(ctx: Ctx) {
         const rows = (data ?? []) as Any[];
         if (!rows.length) return { buscas: [], observacao: "Nenhuma busca registrada. O histórico começou a ser guardado nesta versão e fica 30 dias." };
         const m = await nomes(db, rows.map((r) => r.user_id));
-        // Custo: mesma linha de busca da tela Custos (agregarPeriodo), casada pelo horário.
+        // Custo: linha da tela Custos (agregarPeriodo) do evento de consumo vinculado à busca.
         let custoPorBusca = new Map<string, string>();
         if (podeCustos(p)) {
-          const desde = new Date(new Date(rows[rows.length - 1].created_at).getTime() - 60_000).toISOString();
-          let ev = db.from("consumo_eventos").select(SELECT_EVENTOS_CUSTO).eq("etapa", "busca_kalodata").gte("created_at", desde).limit(2000);
-          if (p) ev = ev.eq("profile_id", p);
-          const [{ data: eventos }, pr] = await Promise.all([ev, precos(db)]);
-          const linhas = agregarPeriodo((eventos ?? []) as ConsumoEventoRow[], pr.tarifas, pr.cotacao, [], pr.taxas).buscas;
+          const evIds = rows.map((r) => r.consumo_evento_id).filter(Boolean);
+          const [{ data: eventos }, pr] = await Promise.all([
+            evIds.length ? db.from("consumo_eventos").select(SELECT_EVENTOS_CUSTO).in("id", evIds) : Promise.resolve({ data: [] }),
+            precos(db),
+          ]);
+          const linhas = new Map(agregarPeriodo((eventos ?? []) as ConsumoEventoRow[], pr.tarifas, pr.cotacao, [], pr.taxas).buscas.map((l) => [l.id, l]));
           custoPorBusca = new Map(rows.map((r) => {
-            const t = new Date(r.created_at).getTime();
-            const l = linhas.find((x) => Math.abs(new Date(x.created_at).getTime() - t) < 20_000);
-            return [r.id, l ? reais(l.valorBrl) : "não encontrado"];
+            const l = r.consumo_evento_id ? linhas.get(r.consumo_evento_id) : undefined;
+            return [r.id, l ? reais(l.valorBrl) : "sem custo registrado"];
           }));
         }
         return rows.map((r) => ({

@@ -81,13 +81,14 @@ export const discoverProducts = createServerFn({ method: "POST" })
       ...(data.deliveryType ? { deliveryType: data.deliveryType } : {}),
     }));
     // Consumo real da busca: uma linha por evento, com o termo buscado.
+    let consumoEventoId: string | null = null;
     if (data.profileId) {
       const rows = Array.isArray((result as { items?: unknown[] }).items)
         ? (result as { items: unknown[] }).items.length
         : 0;
       const { recordConsumo, findCredits } = await import("./consumo.server");
       const credits = findCredits(result);
-      await recordConsumo({
+      consumoEventoId = await recordConsumo({
         jobId: null,
         profileId: data.profileId,
         etapa: "busca_kalodata",
@@ -117,7 +118,7 @@ export const discoverProducts = createServerFn({ method: "POST" })
         await supabaseAdmin.from("buscas_produto").insert({
           tenant_id: tenantPerfil as string, profile_id: data.profileId, user_id: context.userId,
           origem: origem ?? "descobrir", termo: data.keyword ?? null, filtros: filtros as never,
-          total: items.length, resultados: items as never,
+          total: items.length, resultados: items as never, consumo_evento_id: consumoEventoId,
         });
         await supabaseAdmin.from("buscas_produto").delete().lt("created_at", new Date(Date.now() - 30 * 86400_000).toISOString());
       } catch (e) {
