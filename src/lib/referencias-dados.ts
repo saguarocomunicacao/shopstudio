@@ -6,7 +6,7 @@ import type { PerfilSnap, VideoSnap } from "./metricas-calc";
 
 type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-export type VideoRef = { tiktok_video_id: string; url: string; legenda: string | null; publicado_em: string | null; duracao: number | null; capa_path: string | null };
+export type VideoRef = { tiktok_video_id: string; url: string; legenda: string | null; publicado_em: string | null; duracao: number | null; capa_path: string | null; fixado?: boolean };
 export type AnaliseRef = { id: string; status: string; etapa: string | null; link_url: string | null; resultado: Any; custo_cents: number; erro: string | null; video_id: string | null };
 
 export const videoIdDoLink = (url: string | null | undefined) => (url ?? "").match(/\/(?:video|photo)\/(\d{8,25})/)?.[1] ?? null;
@@ -39,7 +39,7 @@ export async function lerDadosReferencia(db: Any, ref: { id: string; meu_perfil_
     const [pm, vm, vs] = await Promise.all([
       db.from("referencia_perfil_metricas").select("data, seguidores, seguindo, curtidas_total, videos_total").eq("referencia_id", ref.id).order("data").limit(400),
       db.from("referencia_video_metricas").select("tiktok_video_id, data, views, likes, comentarios, compartilhamentos, salvos, reposts").eq("referencia_id", ref.id).order("data").limit(10000),
-      db.from("referencia_videos").select("tiktok_video_id, url, legenda, publicado_em, duracao, capa_path").eq("referencia_id", ref.id).limit(500),
+      db.from("referencia_videos").select("tiktok_video_id, url, legenda, publicado_em, duracao, capa_path, fixado").eq("referencia_id", ref.id).limit(500),
     ]);
     perfil = (pm.data ?? []) as PerfilSnap[];
     snaps = ((vm.data ?? []) as Any[]).map((s) => ({ ...s, job_id: null })) as VideoSnap[];

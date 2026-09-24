@@ -23,7 +23,9 @@ async function salvarColeta(profileId: string, tenantId: string, patch: Record<s
 export async function iniciarRunPerfil(tenantId: string, handle: string, qtd: number): Promise<string> {
   const input = {
     profiles: [handle],
-    resultsPerPage: qtd,
+    // +2 para compensar vídeos fixados no topo; depois ordenamos por data e cortamos em qtd.
+    resultsPerPage: qtd + 2,
+    profileSorting: "latest",
     profileScrapeSections: ["videos"],
     shouldDownloadVideos: false,
     shouldDownloadCovers: false,
@@ -49,11 +51,15 @@ export async function iniciarRunPerfil(tenantId: string, handle: string, qtd: nu
 export type ItensPerfil = { autor: Any | null; videos: Any[]; erro: string | null };
 
 /** Compartilhado: lê o dataset do run e separa autor e vídeos do @. */
-export async function lerItensPerfil(tenantId: string, datasetId: string, handle: string, dicaErro = "Confira o @ na aba Dados do perfil."): Promise<ItensPerfil> {
-  const res = await apifyFetch(tenantId, `/datasets/${datasetId}/items?limit=100&clean=true`);
+export async function lerItensPerfil(tenantId: string, datasetId: string, handle: string, dicaErro = "Confira o @ na aba Dados do perfil.", qtd?: number): Promise<ItensPerfil> {
+  const res = await apifyFetch(tenantId, `/datasets/${datasetId}/items?limit=200&clean=true`);
   const itens = (res.ok ? await res.json().catch(() => []) : []) as Any[];
   const h = handle.toLowerCase();
-  const videos = itens.filter((i) => i && i.id && !i.error && (!i.authorMeta?.name || String(i.authorMeta.name).toLowerCase() === h));
+  // Sempre os N mais recentes por data real (fixados só entram se estiverem entre eles).
+  const videos = itens
+    .filter((i) => i && i.id && !i.error && (!i.authorMeta?.name || String(i.authorMeta.name).toLowerCase() === h))
+    .sort((x, y) => String(y.createTimeISO ?? "").localeCompare(String(x.createTimeISO ?? "")))
+    .slice(0, qtd ?? Infinity);
   const autorAchado = itens.find((i) => i?.authorMeta && String(i.authorMeta.name ?? "").toLowerCase() === h)?.authorMeta as Any | undefined;
   if (!videos.length && !autorAchado) {
     const erroItem = itens.find((i) => i?.error)?.error as string | undefined;
@@ -160,7 +166,7 @@ export async function processarColeta(profileId: string): Promise<string> {
     return "falhou";
   }
   const handle = limparHandle(p.handle).toLowerCase();
-  const lidos = await lerItensPerfil(p.tenant_id, run.datasetId, handle);
+  const lidos = await lerItensPerfil(p.tenant_id, run.datasetId, handle, undefined, 50);
   if (lidos.erro) {
     await falhar(lidos.erro);
     return lidos.autor ? "privada" : "sem_dados";
@@ -200,7 +206,7 @@ export async function processarColeta(profileId: string): Promise<string> {
         tenant_id: p.tenant_id, profile_id: profileId, tiktok_video_id: vid,
         url: i.webVideoUrl || `https://www.tiktok.com/@${handle}/video/${vid}`,
         legenda: i.text ? String(i.text).slice(0, 500) : null,
-        publicado_em: i.createTimeISO ?? null, duracao: num(i.videoMeta?.duration), visto_em: new Date().toISOString(),
+        publicado_em: i.createTimeISO ?? null, duracao: num(i.videoMeta?.duration), visto_em: new Date().toISOString(), fixado: !!i.isPinned,
         ...(capa !== undefined ? { capa_url: capa } : {}),
       });
     }

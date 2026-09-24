@@ -561,6 +561,13 @@
       "when": 1790289132969,
       "tag": "0079_referencias_perfis",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1790290213834,
+      "tag": "0080_referencias_fila_fixado",
+      "breakpoints": true
     }
   ]
 }

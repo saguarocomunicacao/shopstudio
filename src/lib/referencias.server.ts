@@ -99,7 +99,7 @@ export async function processarColetaRef(refId: string): Promise<string> {
     await falhar(run.status === "TIMED-OUT" ? "A coleta demorou demais. Tente atualizar de novo." : "A coleta falhou. Tente atualizar de novo.");
     return "falhou";
   }
-  const lidos = await lerItensPerfil(ref.tenant_id, run.datasetId, ref.handle, "Confira o @ digitado.");
+  const lidos = await lerItensPerfil(ref.tenant_id, run.datasetId, ref.handle, "Confira o @ digitado.", ref.qtd_videos);
   if (lidos.erro) {
     await falhar(lidos.erro);
     return "sem_dados";
@@ -129,10 +129,14 @@ export async function processarColetaRef(refId: string): Promise<string> {
         legenda: i.text ? String(i.text).slice(0, 500) : null,
         publicado_em: i.createTimeISO ?? null,
         duracao: Number.isFinite(Number(i.videoMeta?.duration)) ? Number(i.videoMeta.duration) : null,
+        fixado: !!i.isPinned,
         ...(capa !== undefined ? { capa_path: capa } : {}),
       });
     }
     await db.from("referencia_videos").upsert(linhas as never, { onConflict: "referencia_id,tiktok_video_id" });
+    // Mantém só os N mais recentes desta coleta (tira fixados antigos/vídeos que saíram da janela).
+    const atuais = linhas.map((l) => l.tiktok_video_id);
+    await db.from("referencia_videos").delete().eq("referencia_id", refId).not("tiktok_video_id", "in", `(${atuais.join(",")})`);
   }
   await salvar(refId, {
     status: "ok", run_id: null, ultima_coleta_em: new Date().toISOString(), ultimo_erro: null,

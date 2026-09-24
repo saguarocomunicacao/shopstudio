@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Loader2, Plus, RefreshCw, Sparkles, Trash2, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Loader2, Pin, Plus, RefreshCw, Sparkles, Trash2, Users } from "lucide-react";
 import { PageHeader } from "./page-header";
 import { useStudio } from "./studio-context";
 import { CurvaViews, GraficoMetricas } from "./metricas-graficos";
@@ -341,7 +341,7 @@ function DetalheReferencia({ refId, voltar }: { refId: string; voltar: () => voi
                         <TableCell className="px-3">
                           <a href={l.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:underline">
                             <div className="h-12 w-9 shrink-0 overflow-hidden rounded bg-muted">{v?.capaUrl && <img src={v.capaUrl} alt="" className="size-full object-cover" />}</div>
-                            <span className="line-clamp-2 max-w-64 text-sm">{l.legenda || "Sem legenda"}</span>
+                            <span className="line-clamp-2 max-w-64 text-sm">{v?.fixado && <Pin aria-label="Fixado no perfil" className="mr-1 inline size-3.5 -translate-y-px text-primary" />}{l.legenda || "Sem legenda"}</span>
                           </a>
                         </TableCell>
                         <TableCell className="px-3 text-sm">{l.publicado_em ? new Date(l.publicado_em).toLocaleDateString("pt-BR") : "—"}</TableCell>
