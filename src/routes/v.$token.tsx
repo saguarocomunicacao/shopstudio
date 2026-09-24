@@ -52,7 +52,7 @@ function SharedVideoPage() {
         controls
         autoPlay
         playsInline
-        className="aspect-[9/16] w-full rounded-2xl bg-video-bg object-cover shadow-[0_0_60px_rgba(254,44,85,0.25)]"
+        className="aspect-[9/16] w-full rounded-2xl bg-video-bg object-cover shadow-[0_0_60px_color-mix(in_oklab,var(--primary)_25%,transparent)]"
       />
     </SharedShell>
   );

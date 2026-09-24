@@ -782,7 +782,7 @@ export function RecordingStudio({
                       </p>
                     )}
                     <p
-                      className="font-bold leading-snug text-video drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]"
+                      className="font-bold leading-snug text-video drop-shadow-[0_2px_6px_var(--video-bg)]"
                       style={{ fontSize: `${fonte}px` }}
                     >
                       {item.fala}
