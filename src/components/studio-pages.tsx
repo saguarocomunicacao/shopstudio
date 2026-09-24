@@ -4,6 +4,7 @@ import { CreditoTaxasCard } from "./credito-taxas-card";
 import { BudgetCard } from "./budget-card";
 import { CheckCircle2, FileClock, ImageIcon, Loader2, Plus, Video, Wallet, Workflow } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { OnboardingBanner, openOnboarding } from "./onboarding-guide";
 import { useGastoMes } from "@/lib/orcamento";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,8 @@ function DashboardContent() {
     stats.push({ icon: Wallet, value: valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), label: "Gasto do mês", context: teto ? `de ${teto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} do orçamento` : undefined, to: "/app/custos", bar: teto ? valor / teto : undefined });
   }
   return <>
-    <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Visão geral" />
+    <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Visão geral" action={<Button variant="secondary" onClick={openOnboarding}>Como funciona</Button>} />
+    <OnboardingBanner />
     <div className={`grid gap-3 sm:grid-cols-2 ${stats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>{stats.map(({ icon: Icon, value, label, context, to, bar }) => (
       <Link key={label} to={to} className="block rounded-lg border border-border bg-card p-5 transition-colors hover:border-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <div className="flex items-center gap-2 text-[13px] text-muted-foreground"><Icon className="size-[18px]" strokeWidth={1.8} />{label}</div>

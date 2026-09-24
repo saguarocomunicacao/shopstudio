@@ -42,6 +42,9 @@ export type Database = {
           email: string
           id: string
           name: string
+          onboarding_banner_hidden: boolean
+          onboarding_seen: boolean
+          onboarding_step: number
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -53,6 +56,9 @@ export type Database = {
           email: string
           id: string
           name?: string
+          onboarding_banner_hidden?: boolean
+          onboarding_seen?: boolean
+          onboarding_step?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -64,6 +70,9 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+          onboarding_banner_hidden?: boolean
+          onboarding_seen?: boolean
+          onboarding_step?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -2039,6 +2048,10 @@ export type Database = {
       ensure_app_user: { Args: never; Returns: undefined }
       is_backoffice: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      set_my_onboarding: {
+        Args: { _banner_hidden?: boolean; _seen?: boolean; _step?: number }
+        Returns: undefined
+      }
     }
     Enums: {
       etapa_consumo:
