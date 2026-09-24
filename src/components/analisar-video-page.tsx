@@ -473,7 +473,7 @@ function OrigemBloco({ a, videoUrl, podeEditar, onReanalisar }: { a: Analise; vi
 
       {(m?.publicado_em || m?.views != null || m?.likes != null || m?.salvos != null) && (
         <div className="grid grid-cols-3 gap-3">
-          {([["Views", m?.views], ["Likes", m?.likes], ["Coment.", m?.comentarios], ["Compart.", m?.compartilhamentos], ["Salvos", m?.salvos]] as const).map(([l, v]) => (
+          {([["Views", m?.views], ["Likes", m?.likes], ["Coment.", m?.comentarios], ["Compart.", m?.compartilhamentos], ...(m?.salvos != null ? [["Salvos", m.salvos] as const] : [])] as const).map(([l, v]) => (
             <div key={l}><p className="text-xs text-muted-foreground">{l}</p><p className="font-display font-semibold">{num(v)}</p></div>
           ))}
           <div><p className="text-xs text-muted-foreground">Engajamento</p><p className="font-display font-semibold">{engajamento == null ? "—" : `${engajamento.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%`}</p></div>
@@ -661,6 +661,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
     <div className="space-y-6">
       <PageHeader
         title={<span className="line-clamp-2 whitespace-normal" title={a.titulo}>{a.titulo}</span>}
+        titleClassName="whitespace-normal"
         description={`${ORIGEM_LABEL[a.origem]} · ${new Date(a.created_at).toLocaleString("pt-BR")}${a.duracao ? ` · ${tempo(a.duracao)}` : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
