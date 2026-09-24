@@ -29,16 +29,18 @@ const StudioContext = createContext<StudioContextValue | undefined>(undefined);
 
 export function StudioProvider({ children }: { children: ReactNode }) {
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(true);
   const { userId, loading: sessionLoading } = useSession();
   const { data: access, isLoading: accessLoading } = useAccess(userId);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     const stored = window.localStorage.getItem("creator-studio-theme");
-    const nextDark = stored ? stored === "dark" : false;
+    const nextDark = stored ? stored === "dark" : true;
     setDark(nextDark);
     document.documentElement.classList.toggle("dark", nextDark);
+    // Rotas públicas não usam o tema do painel.
+    return () => document.documentElement.classList.remove("dark");
   }, []);
 
   // Restaura o perfil ativo a partir da querystring (?perfil=id) ou do ultimo escolhido.

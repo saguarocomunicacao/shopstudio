@@ -109,9 +109,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        {/* Painel (/app): tema escuro padrão, aplicado antes de montar para não piscar. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(location.pathname.indexOf('/app')===0){var t=localStorage.getItem('creator-studio-theme');if(t!=='light')document.documentElement.classList.add('dark');}}catch(e){}`,
+          }}
+        />
       </head>
       <body>
         {children}
