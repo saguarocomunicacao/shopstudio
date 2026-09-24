@@ -29,7 +29,7 @@ const pct = (n: number | null | undefined) => (n == null ? "—" : `${n.toLocale
 const quando = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—");
 const USD_BRL = 5.4;
 const usd = (v: number) => `US$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (≈ ${brl(v * USD_BRL)})`;
-const estPesquisaUsd = (qtd: number) => 0.005 + qtd * 0.0004;
+const estPesquisaUsd = (qtd: number) => qtd * 0.004;
 const estAnaliseUsd = (dur: number | null) => 0.01 + ((dur ?? 30) * 300 * 0.75 + 2500 * 3.75) / 1_000_000;
 const rotulo = (tipo: string, termo: string) => (tipo === "hashtag" ? `#${termo}` : `"${termo}"`);
 
