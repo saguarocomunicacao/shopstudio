@@ -149,9 +149,11 @@ export async function verificarDownloads(limite = 5) {
 async function verificarUm(row: Row): Promise<string> {
   const db = await admin();
   const upd = (v: Record<string, unknown>) => db.from("video_analises").update(v as never).eq("id", row.id);
+  const falhar = (erro: string) =>
+    row.so_download && row.resultado ? upd({ status: "pronto", so_download: false, apify_run_id: null, erro }) : upd({ status: "erro", erro });
   const ap = await import("./apify.server");
   const rede = row.origem as (typeof REDES)[number];
-  if (!row.apify_run_id) { await upd({ status: "erro", erro: "O download não começou. Tente novamente." }); return "sem_run"; }
+  if (!row.apify_run_id) { await falhar("O download não começou. Tente novamente."); return "sem_run"; }
   const run = await ap.lerRun(row.tenant_id, row.apify_run_id);
   const idade = Date.now() - new Date(row.download_iniciado_em ?? Date.now()).getTime();
   const registrarCusto = async () => {
@@ -168,14 +170,14 @@ async function verificarUm(row: Row): Promise<string> {
     if (idade > 10 * 60 * 1000) {
       await ap.abortarRun(row.tenant_id, row.apify_run_id);
       await registrarCusto();
-      await upd({ status: "erro", erro: "O download demorou demais (mais de 10 minutos). Tente novamente." });
+      await falhar("O download demorou demais (mais de 10 minutos). Tente novamente.");
       return "timeout";
     }
     return "aguardando";
   }
   if (run.status !== "SUCCEEDED") {
     await registrarCusto();
-    await upd({ status: "erro", erro: run.status === "TIMED-OUT" ? "O download demorou demais. Tente novamente." : "Não foi possível baixar esse vídeo. Confira se ele é público e ainda está no ar." });
+    await falhar(run.status === "TIMED-OUT" ? "O download demorou demais. Tente novamente." : "Não foi possível baixar esse vídeo. Confira se ele é público e ainda está no ar.");
     return run.status;
   }
   await registrarCusto();
@@ -183,19 +185,19 @@ async function verificarUm(row: Row): Promise<string> {
   const mp4 = item ? ap.acharMp4(item) : null;
   if (!item || !mp4) {
     console.error("[analise] item sem mp4", JSON.stringify(item ?? {}).slice(0, 600));
-    await upd({ status: "erro", erro: "Não foi possível baixar esse vídeo. Ele pode ser privado ou ter sido removido." });
+    await falhar("Não foi possível baixar esse vídeo. Ele pode ser privado ou ter sido removido.");
     return "sem_mp4";
   }
   const meta = ap.extrairMeta(rede, item);
   let arquivo;
   try { arquivo = await ap.baixarArquivo(row.tenant_id, mp4); } catch (e) {
     console.error("[analise] copiar mp4", e);
-    await upd({ status: "erro", erro: "Não foi possível copiar o vídeo baixado. Tente novamente." });
+    await falhar("Não foi possível copiar o vídeo baixado. Tente novamente.");
     return "copia";
   }
   const path = `${row.tenant_id}/${row.profile_id}/${row.id}/video`;
   const { error } = await db.storage.from("video-analises").upload(path, arquivo.bytes, { contentType: arquivo.mime, upsert: true });
-  if (error) { console.error("[analise] upload", error.message); await upd({ status: "erro", erro: "Não foi possível guardar o vídeo baixado." }); return "upload"; }
+  if (error) { console.error("[analise] upload", error.message); await falhar("Não foi possível guardar o vídeo baixado."); return "upload"; }
   const titulo = row.titulo && !/^Vídeo d/.test(row.titulo) ? row.titulo : meta.titulo || row.titulo;
   const base = {
     storage_path: path, mime_type: arquivo.mime, rede_meta: meta, titulo,
