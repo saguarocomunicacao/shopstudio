@@ -31,7 +31,7 @@ type Analise = {
   youtube_url: string | null;
   titulo: string;
   duracao: number | null;
-  status: "enviando" | "baixando" | "analisando" | "pronto" | "erro";
+  status: "na_fila" | "enviando" | "baixando" | "analisando" | "pronto" | "erro";
   erro: string | null;
   resultado: ResultadoAnalise | null;
   frames: { inicio: number; path: string }[];
@@ -74,6 +74,7 @@ const tempo = (s: number | null | undefined) => {
   return `${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`;
 };
 const STATUS: Record<Analise["status"], [string, string]> = {
+  na_fila: ["Na fila", "status-violet"],
   enviando: ["Enviando", "status-violet"],
   baixando: ["Baixando", "status-violet"],
   analisando: ["Analisando", "status-blue"],

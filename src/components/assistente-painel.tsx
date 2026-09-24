@@ -26,6 +26,7 @@ const SUGESTOES: Record<string, string[]> = {
   "/app/pipeline": ["Algum job travou com erro?", "Quantos jobs estão gerando agora?", "Liste os jobs com roteiro pronto", "O que significa cada etapa?"],
   "/app/custos": ["Quanto gastei este mês?", "Qual etapa mais gasta?", "Quanto gastei nos últimos 7 dias?", "Quanto falta do orçamento?"],
   "/app/produtos": ["Quais produtos têm maior hype?", "Quais produtos já viraram vídeo?", "Como salvo um produto?", "Quais têm maior comissão?"],
+  "/app/referencias": ["Quais perfis de referência acompanho?", "Quais ganchos mais funcionaram?", "Qual @ cresceu mais?", "Como analiso vídeos em lote?"],
   "/app/automacao": ["Minhas agendas estão ativas?", "Alguma agenda pausou por falta de saldo?", "Quando é o próximo disparo?", "Como crio uma agenda?"],
 };
 
