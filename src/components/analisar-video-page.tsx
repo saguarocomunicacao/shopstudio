@@ -447,6 +447,11 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
     const f = (a.frames ?? []).find((x) => Math.abs(x.inicio - inicio) < 0.01);
     return f ? urls[f.path] : undefined;
   };
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const lightboxItems = (r?.cenas ?? []).flatMap((c, i) => {
+    const src = frameDe(c.inicio);
+    return src ? [{ src, cena: i, inicio: c.inicio, title: `Cena ${i + 1} · ${tempo(c.inicio)} até ${tempo(c.fim)}`, caption: c.descricao_visual, fileName: `cena-${i + 1}.jpg` }] : [];
+  });
   const baixar = () => {
     const blob = new Blob([JSON.stringify(r, null, 2)], { type: "application/json" });
     const link = document.createElement("a");
@@ -558,12 +563,17 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
               <TabsContent value="cenas" className="space-y-3">
                 {r.cenas.map((c, i) => {
                   const img = frameDe(c.inicio);
+                  const li = lightboxItems.findIndex((x) => x.cena === i);
                   return (
                     <div key={i} className="flex gap-3 rounded-lg border border-border bg-card p-3">
                       {!!a.storage_path && (
-                        <div className="grid h-24 w-16 shrink-0 place-items-center overflow-hidden rounded-md bg-muted">
-                          {img ? <img src={img} alt="" className="size-full object-cover" /> : <ImageIcon className="size-4 text-muted-foreground" />}
-                        </div>
+                        img ? (
+                          <button type="button" onClick={() => setLightbox(li)} aria-label={`Ampliar frame da cena ${i + 1}`} className="grid w-[160px] shrink-0 place-items-center self-start overflow-hidden rounded-md bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                            <img src={img} alt={`Frame da cena ${i + 1}`} className="h-auto max-h-[284px] w-full object-contain transition-opacity hover:opacity-90" />
+                          </button>
+                        ) : (
+                          <div className="grid aspect-video w-[160px] shrink-0 place-items-center self-start rounded-md bg-muted"><ImageIcon className="size-4 text-muted-foreground" /></div>
+                        )
                       )}
                       <div className="min-w-0 flex-1 space-y-1 text-sm">
                         <div className="flex items-center justify-between gap-2">
