@@ -100,7 +100,7 @@ function AuthPage() {
         <img src={logoDarkAsset.url} alt="Shop Studio" className="h-8 w-auto self-start" />
         <div className="flex flex-1 items-center gap-10 py-10">
           <div className="max-w-md">
-            <h1 className="font-display text-[40px] font-semibold leading-[1.1] text-sidebar-foreground">Do produto em alta<br />ao vídeo pronto.</h1>
+            <h1 className="font-display text-[40px] font-semibold leading-[1.1] text-foreground">Do produto em alta<br />ao vídeo pronto.</h1>
             <p className="mt-4 text-base text-muted-foreground">Garimpo, roteiro, cenas, vídeo e revisão num só painel.</p>
           </div>
           <div className="shrink-0 rotate-[4deg]">
