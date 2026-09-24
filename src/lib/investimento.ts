@@ -21,7 +21,7 @@ import {
 import { consumoPorFornecedor, type ExtratoCredito } from "./consumo-tenant.functions";
 import { useAppConfig } from "./orcamento";
 
-export type FornecedorKey = "google" | "kalodata" | "json2video" | "elevenlabs";
+export type FornecedorKey = "google" | "kalodata" | "json2video" | "elevenlabs" | "apify";
 export type TipoCarteira = "prepaga" | "assinatura";
 
 export const CONFIG_INVESTIMENTO = {

@@ -3,7 +3,8 @@ import { ETAPA_LABELS, UNIDADE_LABELS, brl, useJobCustos, type CustoEtapa, type 
 import { useStudio } from "./studio-context";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const unidadeDaEtapa: Record<EtapaConsumo, "imagem" | "segundo_video" | "credito_montagem" | "bloco_linhas_kalodata" | "token_input" | "mil_caracteres" | "minuto_audio"> = {
+const unidadeDaEtapa: Record<EtapaConsumo, "imagem" | "segundo_video" | "credito_montagem" | "bloco_linhas_kalodata" | "token_input" | "mil_caracteres" | "minuto_audio" | "usd_real"> = {
+  apify_download: "usd_real",
   cena_gemini: "imagem",
   animacao_veo: "segundo_video",
   montagem_json2video: "credito_montagem",

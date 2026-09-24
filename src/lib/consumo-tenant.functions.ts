@@ -161,7 +161,8 @@ export async function montarConsumoConsolidado(
   }
 }
 
-const FORNECEDOR_DE: Record<EtapaConsumo, "google" | "kalodata" | "json2video" | "elevenlabs"> = {
+const FORNECEDOR_DE: Record<EtapaConsumo, "google" | "kalodata" | "json2video" | "elevenlabs" | "apify"> = {
+  apify_download: "apify",
   cena_gemini: "google",
   animacao_veo: "google",
   roteiro_texto: "google",
