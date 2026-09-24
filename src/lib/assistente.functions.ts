@@ -29,7 +29,11 @@ export const perguntarAssistente = createServerFn({ method: "POST" })
     try {
       const r = await runAssistente(ctx, data.messages, data.rota);
       await registrarUso(ctx, r.uso);
-      return { ok: true as const, texto: r.texto || "Não consegui montar uma resposta. Tente perguntar de outro jeito.", ferramentas: r.ferramentas };
+      const texto = r.texto || "Não consegui montar uma resposta. Tente perguntar de outro jeito.";
+      const pergunta = [...data.messages].reverse().find((m) => m.role === "user")?.content ?? "";
+      const { error: logErr } = await context.supabase.from("assistente_consultas").insert({ user_id: context.userId, tenant_id: access.tenantId, profile_id: data.profileId, pergunta, resposta: texto, consultas: r.consultas as never });
+      if (logErr) console.error("[assistente] falha ao gravar log", logErr.message);
+      return { ok: true as const, texto, ferramentas: r.ferramentas, consultas: JSON.parse(JSON.stringify(r.consultas)) as Array<{ ferramenta: string; argumentos: Record<string, string | number | boolean | null>; perfil_usado: string | null; periodo_utc: { desde: string; ate: string } | null; periodo_brasilia: { desde: string; ate: string } | null; resultado: string }> };
     } catch (e) {
       const status = (e as { statusCode?: number }).statusCode;
       console.error("[assistente] falha", e);

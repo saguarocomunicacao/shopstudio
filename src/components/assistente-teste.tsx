@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { perguntarAssistente } from "@/lib/assistente.functions";
 import { useStudio } from "@/components/studio-context";
 
-type Msg = { role: "user" | "assistant"; content: string; ferramentas?: string[] };
+type Consulta = { ferramenta: string; argumentos: unknown; perfil_usado: string | null; periodo_utc: { desde: string; ate: string } | null; periodo_brasilia: { desde: string; ate: string } | null; resultado: string };
+type Msg = { role: "user" | "assistant"; content: string; ferramentas?: string[]; consultas?: Consulta[] };
 
 export function AssistenteTeste() {
   const { activeProfileId } = useStudio();
@@ -33,7 +34,7 @@ export function AssistenteTeste() {
           rota,
         },
       });
-      if (r.ok) setMsgs([...nova, { role: "assistant", content: r.texto, ferramentas: r.ferramentas }]);
+      if (r.ok) setMsgs([...nova, { role: "assistant", content: r.texto, ferramentas: r.ferramentas, consultas: r.consultas }]);
       else setErro(r.erro);
     } catch {
       setErro("O assistente não conseguiu responder agora. Tente novamente.");
@@ -55,8 +56,22 @@ export function AssistenteTeste() {
         {msgs.map((m, i) => (
           <div key={i} className={m.role === "user" ? "ml-auto max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground" : "max-w-[95%] text-sm"}>
             <p className="whitespace-pre-wrap">{m.content}</p>
-            {m.ferramentas && m.ferramentas.length > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">Consultas: {m.ferramentas.join(", ")}</p>
+            {m.consultas && m.consultas.length > 0 && (
+              <details className="mt-2 rounded-md border border-border p-2 text-xs text-muted-foreground">
+                <summary className="cursor-pointer">Ver consultas ({m.consultas.length})</summary>
+                <div className="mt-2 grid gap-3">
+                  {m.consultas.map((c, j) => (
+                    <div key={j} className="grid gap-1">
+                      <p className="font-semibold text-foreground">{c.ferramenta}</p>
+                      <p>Argumentos: <code className="break-all">{JSON.stringify(c.argumentos)}</code></p>
+                      {c.perfil_usado && <p>Perfil usado: {c.perfil_usado}</p>}
+                      {c.periodo_utc && <p>Período UTC: {c.periodo_utc.desde} até {c.periodo_utc.ate}</p>}
+                      {c.periodo_brasilia && <p>Período Brasília: {c.periodo_brasilia.desde} até {c.periodo_brasilia.ate}</p>}
+                      <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-2">{c.resultado}</pre>
+                    </div>
+                  ))}
+                </div>
+              </details>
             )}
           </div>
         ))}
