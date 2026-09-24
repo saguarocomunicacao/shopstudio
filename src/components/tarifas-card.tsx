@@ -50,11 +50,11 @@ export function TarifasCard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tarifas")
-        .select("id, tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo")
+        .select("id, tipo_unidade, modelo, preco_unitario, preco_exato, moeda, vigente_desde, ativo")
         .order("tipo_unidade")
         .order("vigente_desde", { ascending: false });
       if (error) throw new Error(error.message);
-      return (data ?? []) as Tarifa[];
+      return (data ?? []).map((t) => ({ ...t, preco_unitario: Number(t.preco_exato ?? t.preco_unitario) })) as Tarifa[];
     },
   });
 
@@ -94,13 +94,15 @@ export function TarifasCard() {
     mutationFn: async (t: Partial<Tarifa> & { id?: string }) => {
       if (t.id) {
         const { id, ...rest } = t;
-        const { error } = await supabase.from("tarifas").update(rest).eq("id", id);
+        const patch = rest.preco_unitario !== undefined ? { ...rest, preco_exato: rest.preco_unitario } : rest;
+        const { error } = await supabase.from("tarifas").update(patch).eq("id", id);
         if (error) throw new Error(error.message);
       } else {
         const { error } = await supabase.from("tarifas").insert({
           tipo_unidade: t.tipo_unidade ?? "imagem",
           modelo: t.modelo ?? "",
           preco_unitario: t.preco_unitario ?? 0,
+          preco_exato: t.preco_unitario ?? 0,
           moeda: t.moeda ?? "USD",
           vigente_desde: t.vigente_desde ?? new Date().toISOString().slice(0, 10),
         });

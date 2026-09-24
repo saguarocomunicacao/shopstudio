@@ -33,12 +33,12 @@ const quem = (m: Map<string, string>, id: string | null, vazio = "automação") 
 
 async function precos(db: Any) {
   const [t, x, c] = await Promise.all([
-    db.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    db.from("tarifas").select("tipo_unidade, modelo, preco_unitario, preco_exato, moeda, vigente_desde, ativo"),
     db.from("credito_taxas").select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
     db.from("app_config").select("value_num").eq("key", "cotacao_usd_brl").maybeSingle(),
   ]);
   return {
-    tarifas: ((t.data ?? []) as Any[]).map((r) => ({ ...r, preco_unitario: Number(r.preco_unitario) })),
+    tarifas: ((t.data ?? []) as Any[]).map((r) => ({ ...r, preco_unitario: Number(r.preco_exato ?? r.preco_unitario) })),
     taxas: ((x.data ?? []) as Any[]).map((r) => ({ ...r, credito_por_unidade: Number(r.credito_por_unidade) })),
     cotacao: Number(c.data?.value_num ?? 1),
   };
@@ -427,12 +427,12 @@ export function buildToolsExtra(ctx: Ctx) {
         if (!ctx.access.isBackoffice) return semAcesso("Configurações");
         const [cfg, t, x] = await Promise.all([
           db.from("app_config").select("key, value_num, value_text, updated_at"),
-          db.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo").eq("ativo", true),
+          db.from("tarifas").select("tipo_unidade, modelo, preco_unitario, preco_exato, moeda, vigente_desde, ativo").eq("ativo", true),
           db.from("credito_taxas").select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo").eq("ativo", true),
         ]);
         return {
           parametros: ((cfg.data ?? []) as Any[]).map((c) => ({ chave: c.key, valor: c.value_text ?? c.value_num, atualizado_em: quando(c.updated_at) })),
-          tarifas: ((t.data ?? []) as Any[]).map((r) => ({ modelo: r.modelo, unidade: r.tipo_unidade, preco: `${r.moeda} ${Number(r.preco_unitario)}`, desde: r.vigente_desde })),
+          tarifas: ((t.data ?? []) as Any[]).map((r) => ({ modelo: r.modelo, unidade: r.tipo_unidade, preco: `${r.moeda} ${Number(r.preco_exato ?? r.preco_unitario)}`, desde: r.vigente_desde })),
           taxas_credito: ((x.data ?? []) as Any[]).map((r) => ({ acao: r.action_type, fornecedor: r.fornecedor, credito_por_unidade: Number(r.credito_por_unidade), regra: r.regra })),
           link: "/app/configuracoes",
         };

@@ -74,7 +74,7 @@ export function useTarifas() {
     staleTime: 60_000,
     queryFn: async () => {
       const [tarifasRes, taxasRes, cotacaoRes] = await Promise.all([
-        supabase.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+        supabase.from("tarifas").select("tipo_unidade, modelo, preco_unitario, preco_exato, moeda, vigente_desde, ativo"),
         supabase
           .from("credito_taxas")
           .select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
@@ -83,7 +83,7 @@ export function useTarifas() {
       if (tarifasRes.error) throw new Error(tarifasRes.error.message);
       const tarifas = (tarifasRes.data ?? []).map((t) => ({
         ...t,
-        preco_unitario: Number(t.preco_unitario),
+        preco_unitario: Number(t.preco_exato ?? t.preco_unitario),
       })) as TarifaRow[];
       const taxas = ((taxasRes.data ?? []) as Array<Record<string, unknown>>).map((t) => ({
         ...t,

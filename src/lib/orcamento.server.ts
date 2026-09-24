@@ -16,7 +16,7 @@ const SELECT_EVENTOS =
 const normalizarTarifas = (rows: unknown) =>
   ((rows ?? []) as Array<Record<string, unknown>>).map((t) => ({
     ...t,
-    preco_unitario: Number(t["preco_unitario"]),
+    preco_unitario: Number(t["preco_exato"] ?? t["preco_unitario"]),
   })) as unknown as TarifaRow[];
 
 const normalizarTaxas = (rows: unknown) =>
@@ -68,7 +68,7 @@ export async function getOrcamentoStatus(profileId: string | null): Promise<Orca
 
   const [eventosRes, tarifasRes, taxasRes, configRes] = await Promise.all([
     supabaseAdmin.from("consumo_eventos").select(SELECT_EVENTOS).gte("created_at", mes.desde).lte("created_at", mes.ate),
-    supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, preco_exato, moeda, vigente_desde, ativo"),
     supabaseAdmin
       .from("credito_taxas")
       .select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
@@ -129,7 +129,7 @@ export async function assertSaldoFornecedor(etapa: "animacao_veo") {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [eventosRes, tarifasRes, taxasRes, configRes, aportesRes] = await Promise.all([
     supabaseAdmin.from("consumo_eventos").select(SELECT_EVENTOS),
-    supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, preco_exato, moeda, vigente_desde, ativo"),
     supabaseAdmin
       .from("credito_taxas")
       .select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
