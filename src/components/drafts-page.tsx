@@ -21,6 +21,7 @@ import {
   Trash2,
   Undo2,
   Video,
+  Link2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useSearch } from "@tanstack/react-router";
@@ -284,6 +285,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
   const [recordingId, setRecordingId] = useState<string | null>(null);
   const [openStudioDirectly, setOpenStudioDirectly] = useState(false);
   const [novoOpen, setNovoOpen] = useState(false);
+  const [externoOpen, setExternoOpen] = useState(false);
   const [trashing, setTrashing] = useState<DbJob | null>(null);
   const [purging, setPurging] = useState<DbJob | null>(null);
   const qc = useQueryClient();
