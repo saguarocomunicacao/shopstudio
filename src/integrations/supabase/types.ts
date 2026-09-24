@@ -1348,8 +1348,10 @@ export type Database = {
           qtd: number
           run_id: string | null
           status: string
+          sugestoes: string[]
           tenant_id: string
           termo: string
+          termo_idioma: string | null
           tipo: string
           updated_at: string
         }
@@ -1367,8 +1369,10 @@ export type Database = {
           qtd?: number
           run_id?: string | null
           status?: string
+          sugestoes?: string[]
           tenant_id: string
           termo: string
+          termo_idioma?: string | null
           tipo: string
           updated_at?: string
         }
@@ -1386,8 +1390,10 @@ export type Database = {
           qtd?: number
           run_id?: string | null
           status?: string
+          sugestoes?: string[]
           tenant_id?: string
           termo?: string
+          termo_idioma?: string | null
           tipo?: string
           updated_at?: string
         }
@@ -1422,6 +1428,7 @@ export type Database = {
           fotos: boolean
           hashtags: string[]
           id: string
+          idioma: string | null
           idioma_pt: boolean
           legenda: string | null
           likes: number | null
@@ -1450,6 +1457,7 @@ export type Database = {
           fotos?: boolean
           hashtags?: string[]
           id?: string
+          idioma?: string | null
           idioma_pt?: boolean
           legenda?: string | null
           likes?: number | null
@@ -1478,6 +1486,7 @@ export type Database = {
           fotos?: boolean
           hashtags?: string[]
           id?: string
+          idioma?: string | null
           idioma_pt?: boolean
           legenda?: string | null
           likes?: number | null
