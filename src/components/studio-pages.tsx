@@ -28,6 +28,8 @@ export function DashboardPage() { return <ProfileGate><DashboardContent /></Prof
 function DashboardContent() {
   const { activeProfile, activeProfileId, profiles, can } = useStudio();
   const { data: scoped = [] } = useJobs(activeProfileId);
+  const { data: products = [] } = useProducts(activeProfileId);
+  const productImage = (productId: string | null) => products.find((p) => p.id === productId)?.image_url ?? null;
   const gasto = useGastoMes(activeProfileId);
   const canCost = can("custos", "visualizar", activeProfileId);
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
