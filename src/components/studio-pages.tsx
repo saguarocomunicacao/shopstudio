@@ -7,7 +7,10 @@ import { CheckCircle2, FileClock, ImageIcon, Loader2, Plus, Video, Wallet, Workf
 import { Link } from "@tanstack/react-router";
 import { OnboardingBanner, openOnboarding } from "./onboarding-guide";
 import { useGastoMes } from "@/lib/orcamento";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
