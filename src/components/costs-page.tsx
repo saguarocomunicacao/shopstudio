@@ -361,10 +361,10 @@ export function CostsPage() {
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <p className="text-sm font-black">Orçamento do mês</p>
                 <p className="text-xs text-muted-foreground">
-                  {brl(consumidoMes)} de {brl(teto)} ({Math.round((consumidoMes / teto) * 100)}%)
+                  {brl(data.totalBrl)} de {brl(teto)} ({Math.round((data.totalBrl / teto) * 100)}%)
                 </p>
               </div>
-              <Progress value={Math.min(100, (consumidoMes / teto) * 100)} />
+              <Progress value={Math.min(100, (data.totalBrl / teto) * 100)} />
             </div>
           )}
 
