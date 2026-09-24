@@ -498,6 +498,13 @@
       "when": 1790274837938,
       "tag": "0070_busca_consumo_vinculo_duracoes_notif_automacao",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1790282338053,
+      "tag": "0071_video_analises",
+      "breakpoints": true
     }
   ]
 }

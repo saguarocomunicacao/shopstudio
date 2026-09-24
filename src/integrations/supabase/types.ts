@@ -2170,6 +2170,94 @@ export type Database = {
           },
         ]
       }
+      video_analises: {
+        Row: {
+          consumo_evento_id: string | null
+          created_at: string
+          created_by: string | null
+          custo_cents: number
+          duracao: number | null
+          erro: string | null
+          frames: Json
+          id: string
+          mime_type: string | null
+          origem: string
+          pergunta: string | null
+          profile_id: string
+          resultado: Json | null
+          status: string
+          storage_path: string | null
+          tenant_id: string
+          titulo: string
+          updated_at: string
+          youtube_url: string | null
+        }
+        Insert: {
+          consumo_evento_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo_cents?: number
+          duracao?: number | null
+          erro?: string | null
+          frames?: Json
+          id?: string
+          mime_type?: string | null
+          origem: string
+          pergunta?: string | null
+          profile_id: string
+          resultado?: Json | null
+          status?: string
+          storage_path?: string | null
+          tenant_id: string
+          titulo?: string
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Update: {
+          consumo_evento_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo_cents?: number
+          duracao?: number | null
+          erro?: string | null
+          frames?: Json
+          id?: string
+          mime_type?: string | null
+          origem?: string
+          pergunta?: string | null
+          profile_id?: string
+          resultado?: Json | null
+          status?: string
+          storage_path?: string | null
+          tenant_id?: string
+          titulo?: string
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_analises_consumo_evento_id_fkey"
+            columns: ["consumo_evento_id"]
+            isOneToOne: false
+            referencedRelation: "consumo_eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_analises_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_analises_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voices: {
         Row: {
           created_at: string
@@ -2360,6 +2448,7 @@ export type Database = {
         | "narracao_elevenlabs"
         | "transcricao_audio"
         | "assistente"
+        | "analise_video"
       job_status:
         | "novo"
         | "produto_escolhido"
@@ -2516,6 +2605,7 @@ export const Constants = {
         "narracao_elevenlabs",
         "transcricao_audio",
         "assistente",
+        "analise_video",
       ],
       job_status: [
         "novo",
