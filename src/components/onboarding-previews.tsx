@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { BarChart3, Bot, Camera, CircleGauge, Clapperboard, Copy, Download, FileClock, KanbanSquare, Package, PiggyBank, Plus, Sparkles, Upload, UserSquare2, Wallet, Menu } from "lucide-react";
+import { BarChart3, Bot, Camera, CircleGauge, Clapperboard, Copy, Download, FileClock, KanbanSquare, Package, PiggyBank, Plus, Radar, Sparkles, Upload, UserSquare2, Wallet, Menu } from "lucide-react";
 import logoDarkAsset from "@/assets/logo-dark.png.asset.json";
 
 /** Prévias fiéis (dados de exemplo fixos) das telas reais usadas no guia. */
@@ -8,6 +8,7 @@ const NAV: [string | null, [string, typeof CircleGauge][]][] = [
   [null, [["Visão geral", CircleGauge]]],
   ["Configurar", [["Perfis", UserSquare2], ["Automação", Bot]]],
   ["Produzir", [["Produtos", Package], ["Pipeline", KanbanSquare], ["Rascunhos", FileClock], ["Vídeos", Clapperboard]]],
+  ["Inteligência", [["Analisar vídeo", Sparkles], ["Perfis de referência", Radar]]],
   ["Acompanhar", [["Métricas", BarChart3], ["Custos", Wallet], ["Investimento", PiggyBank]]],
 ];
 
