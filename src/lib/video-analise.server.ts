@@ -135,19 +135,55 @@ export async function comecarDownload(row: Pick<Row, "id" | "tenant_id" | "orige
   }
 }
 
-/** Chamado pelo webhook do Apify quando o run termina. Reivindica a linha para não processar duas vezes. */
-export async function concluirDownload(runId: string) {
+/**
+ * Reivindica a linha pelo run_id (atômico: só um processo — webhook ou varredura — ganha).
+ * Se o run ainda estiver rodando, devolve a linha com o horário original de início.
+ */
+async function reivindicarEProcessar(runId: string, inicioOriginal?: string | null) {
   const db = await admin();
-  const { data } = await db
+  let q = db
     .from("video_analises")
     .update({ download_iniciado_em: null } as never)
     .eq("apify_run_id", runId)
     .eq("status", "baixando")
-    .not("download_iniciado_em", "is", null)
-    .select("*");
-  const row = ((data ?? []) as unknown as Row[])[0];
-  if (!row) return "ignorado";
-  return verificarUm({ ...row, download_iniciado_em: new Date().toISOString() });
+    .not("download_iniciado_em", "is", null);
+  if (inicioOriginal) q = q.eq("download_iniciado_em", inicioOriginal);
+  const { data } = await q.select("*");
+  const antes = ((data ?? []) as unknown as Row[])[0];
+  if (!antes) return "ignorado";
+  // A linha retornada já vem com o campo zerado; buscamos o início pelo argumento ou usamos agora.
+  const inicio = inicioOriginal ?? new Date().toISOString();
+  const r = await verificarUm({ ...antes, download_iniciado_em: inicio });
+  if (r === "aguardando") {
+    await db.from("video_analises").update({ download_iniciado_em: inicio } as never)
+      .eq("id", antes.id).eq("status", "baixando").is("download_iniciado_em", null);
+  }
+  return r;
+}
+
+/** Chamado pelo webhook do Apify quando o run termina. Idempotente por run_id. */
+export async function concluirDownload(runId: string) {
+  const db = await admin();
+  const { data } = await db.from("video_analises").select("download_iniciado_em")
+    .eq("apify_run_id", runId).eq("status", "baixando").maybeSingle();
+  const inicio = (data as { download_iniciado_em: string | null } | null)?.download_iniciado_em;
+  if (!inicio) return "ignorado";
+  return reivindicarEProcessar(runId, inicio);
+}
+
+/** Rede de segurança: downloads parados há mais de 3 min sem webhook são consultados direto no Apify. */
+export async function varrerDownloadsParados(limite = 10) {
+  const db = await admin();
+  const corte = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+  const { data } = await db.from("video_analises").select("apify_run_id, download_iniciado_em")
+    .eq("status", "baixando").not("apify_run_id", "is", null).not("download_iniciado_em", "is", null)
+    .lt("download_iniciado_em", corte).order("download_iniciado_em").limit(limite);
+  const out: { run: string; r: string }[] = [];
+  for (const l of (data ?? []) as { apify_run_id: string; download_iniciado_em: string }[]) {
+    try { out.push({ run: l.apify_run_id, r: await reivindicarEProcessar(l.apify_run_id, l.download_iniciado_em) }); }
+    catch (e) { console.error("[analise] varredura", e); out.push({ run: l.apify_run_id, r: "erro" }); }
+  }
+  return out;
 }
 
 async function verificarUm(row: Row): Promise<string> {
@@ -171,10 +207,10 @@ async function verificarUm(row: Row): Promise<string> {
     return run.custoUsd;
   };
   if (["RUNNING", "READY", "UNKNOWN"].includes(run.status)) {
-    if (idade > 10 * 60 * 1000) {
+    if (idade > 15 * 60 * 1000) {
       await ap.abortarRun(row.tenant_id, row.apify_run_id);
       await registrarCusto();
-      await falhar("O download demorou demais (mais de 10 minutos). Tente novamente.");
+      await falhar("O download demorou demais. Tente novamente.");
       return "timeout";
     }
     return "aguardando";
