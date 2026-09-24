@@ -132,7 +132,7 @@ export function TenantCostsView() {
                   <XAxis dataKey="dia" tickFormatter={dataCurta} fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis fontSize={11} tickLine={false} axisLine={false} width={56} tickFormatter={(v) => brl(Number(v))} />
                   <ReTooltip formatter={(v) => brl(Number(v))} labelFormatter={(l) => dataCurta(String(l))} />
-                  <Bar dataKey="valorBrl" fill="#FE2C55" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="valorBrl" fill="var(--primary)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

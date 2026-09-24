@@ -25,11 +25,11 @@ const statusClass: Record<string, string> = {
   produto_escolhido: "status-blue",
   roteiro_pronto: "status-violet",
   gerando_cenas: "status-cyan",
-  cenas_geradas: "status-orange",
+  cenas_geradas: "status-cyan",
   gerando_video: "status-cyan",
-  video_pronto: "status-lime",
-  rascunho_enviado: "status-orange",
-  publicado: "status-pink",
+  video_pronto: "status-violet",
+  rascunho_enviado: "status-cyan",
+  publicado: "status-published",
 };
 
 
@@ -137,8 +137,7 @@ function PipelineContent() {
   return (
     <div className="flex h-[calc(100vh-6.5rem)] flex-col gap-4 lg:h-[calc(100vh-8.5rem)]">
       <div className="mb-2">
-        <p className="mb-1 text-xs font-bold uppercase text-primary">Produção</p>
-        <h1 className="truncate text-2xl font-black sm:text-3xl">Pipeline de conteúdo</h1>
+        <h1 className="truncate page-title">Pipeline de conteúdo</h1>
       </div>
       <SupplierBalanceBanner />
       <div ref={kanbanRef} className="kanban min-h-0 flex-1">
@@ -147,7 +146,7 @@ function PipelineContent() {
           return (
             <section className="kanban-column" key={stage}>
               <div className="mb-3 flex items-center justify-between">
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusClass[stage]}`}>{JOB_STATUS_LABELS[stage]}</span>
+                <span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${statusClass[stage]}`}>{JOB_STATUS_LABELS[stage]}</span>
                 <span className="text-xs text-muted-foreground">{items.length}</span>
               </div>
               <div className="space-y-2">

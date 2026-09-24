@@ -109,8 +109,7 @@ export function AccountPage() {
   return (
     <>
       <div className="mb-6">
-        <p className="mb-1 text-xs font-bold uppercase text-primary">Sua conta</p>
-        <h1 className="text-2xl font-black sm:text-3xl">Minha conta</h1>
+        <h1 className="page-title">Minha conta</h1>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

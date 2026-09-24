@@ -434,7 +434,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
           <button type="button" onClick={goBack} className="mb-1 inline-flex items-center gap-1 text-xs font-bold uppercase text-primary">
             <ArrowLeft className="size-3.5" />Perfis
           </button>
-          <h1 className="truncate text-2xl font-black sm:text-3xl">{profile ? profile.name || "Editar perfil" : "Adicionar perfil"}</h1>
+          <h1 className="truncate page-title">{profile ? profile.name || "Editar perfil" : "Adicionar perfil"}</h1>
         </div>
         <div className="flex items-center gap-2">
           {dirty && <span className="hidden text-xs font-semibold text-muted-foreground sm:inline">Alterações não salvas</span>}

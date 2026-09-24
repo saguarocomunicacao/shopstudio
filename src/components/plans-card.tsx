@@ -95,7 +95,7 @@ export function PlansPage() {
   const failed = plans.isError || prices.isError || tenants.isError;
   return <BackofficeOnly><div>
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div><p className="mb-1 text-xs font-bold uppercase text-primary">Backoffice</p><h1 className="text-2xl font-black sm:text-3xl">Planos</h1><p className="mt-2 text-sm text-muted-foreground">Cada ação é vendida em pacote: uma quantidade por um preço. As quantidades compradas não expiram. Pacote com preço zero significa uso ilimitado.</p></div>
+      <div><h1 className="page-title">Planos</h1><p className="mt-2 text-sm text-muted-foreground">Cada ação é vendida em pacote: uma quantidade por um preço. As quantidades compradas não expiram. Pacote com preço zero significa uso ilimitado.</p></div>
       {isBackoffice && <Button asChild><Link to="/app/planos/$planId" params={{ planId: "novo" }}><Plus />Novo plano</Link></Button>}
     </div>
     <section className="panel overflow-hidden p-0">
@@ -122,7 +122,7 @@ function PlanRows({ plan, rows, companies, open, canEdit, onToggle, onActive, on
       <TableCell><Icon className="size-4 text-muted-foreground" /></TableCell>
       <TableCell className="font-semibold">{plan.name}</TableCell>
       <TableCell>{plan.key_source === "byok" ? "Próprio cliente" : "Shop Studio"}</TableCell>
-      <TableCell><span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${plan.is_active ? "status-lime" : "status-neutral"}`}>{plan.is_active ? "Ativo" : "Inativo"}</span></TableCell>
+      <TableCell><span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${plan.is_active ? "status-lime" : "status-neutral"}`}>{plan.is_active ? "Ativo" : "Inativo"}</span></TableCell>
       <TableCell>{companies}</TableCell>
       <TableCell onClick={(event) => event.stopPropagation()}><div className="flex justify-end gap-1">
         {canEdit && <><Button asChild variant="ghost" size="sm"><Link to="/app/planos/$planId" params={{ planId: plan.id }}><Pencil />Editar</Link></Button><Button variant="ghost" size="icon" aria-label={plan.is_active ? "Desativar plano" : "Ativar plano"} onClick={() => onActive(!plan.is_active)}><Power /></Button><Button variant="ghost" size="icon" aria-label="Remover plano" onClick={onRemove}><Trash2 /></Button></>}
@@ -173,7 +173,7 @@ export function PlanDetailPage({ planId }: { planId?: string }) {
   if (!isBackoffice) return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Você não tem acesso a esta página.</div>;
   if (editing && (planLoading || priceLoading)) return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando plano...</p>;
   return <div className="w-full">
-    <div className="mb-6"><p className="mb-1 text-xs font-bold uppercase text-primary">Planos</p><h1 className="text-2xl font-black sm:text-3xl">{editing ? "Editar plano" : "Novo plano"}</h1></div>
+    <div className="mb-6"><h1 className="page-title">{editing ? "Editar plano" : "Novo plano"}</h1></div>
     <section className="panel"><div className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(240px,1fr)_auto] md:items-end">
       <label className="grid gap-1.5 text-xs font-semibold">Nome do plano<Input value={name} onChange={(event) => setName(event.target.value)} /></label>
       <label className="grid gap-1.5 text-xs font-semibold">Fonte de chave<Select value={keySource} onValueChange={(value) => setKeySource(value as Plan["key_source"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{KEY_SOURCE.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></label>

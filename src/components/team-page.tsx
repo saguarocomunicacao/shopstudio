@@ -111,8 +111,7 @@ export function TeamPage() {
     <>
       <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4">
         <div className="min-w-0">
-          <p className="mb-1 text-xs font-bold uppercase text-primary">Administração</p>
-          <h1 className="truncate text-2xl font-black sm:text-3xl">Equipe e permissões</h1>
+          <h1 className="truncate page-title">Equipe e permissões</h1>
         </div>
         <Dialog>
           <DialogTrigger asChild><Button><UserPlus />Adicionar usuário</Button></DialogTrigger>

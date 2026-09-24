@@ -77,10 +77,10 @@ type QueueKey = "roteiros" | "revisao" | "aprovado" | "publicado" | "lixeira";
 
 const QUEUES: { key: QueueKey; label: string; status?: DbJob["status"]; badge: string }[] = [
   { key: "roteiros", label: "Roteiros prontos", badge: "status-violet" },
-  { key: "revisao", label: "Aguardando revisão", status: "video_pronto", badge: "status-lime" },
-  { key: "aprovado", label: "Aprovados", status: "rascunho_enviado", badge: "status-orange" },
-  { key: "publicado", label: "Publicados", status: "publicado", badge: "status-pink" },
-  { key: "lixeira", label: "Lixeira", badge: "status-violet" },
+  { key: "revisao", label: "Aguardando revisão", status: "video_pronto", badge: "status-violet" },
+  { key: "aprovado", label: "Aprovados", status: "rascunho_enviado", badge: "status-cyan" },
+  { key: "publicado", label: "Publicados", status: "publicado", badge: "status-published" },
+  { key: "lixeira", label: "Lixeira", badge: "status-neutral" },
 ];
 
 /** Roteiros concluídos do formato de gravação que ainda aguardam a pessoa gravar. */
@@ -208,7 +208,7 @@ function DraftThumb({
   return (
     <button type="button" onClick={onOpen} className="block w-full overflow-hidden rounded-xl">
       {posterUrl ? (
-        <img src={posterUrl} alt={job.title || "Rascunho"} className="aspect-[9/16] w-full bg-black object-cover" />
+        <img src={posterUrl} alt={job.title || "Rascunho"} className="aspect-[9/16] w-full bg-video-bg object-cover" />
       ) : loadingPreview && !loadTimedOut ? (
         <div className="draft-thumbnail-placeholder aspect-[9/16] w-full">
           <span className="route-loader-mark scale-75" aria-hidden="true">
@@ -378,8 +378,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
     <>
       <div className="mb-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <div>
-          <p className="mb-1 text-xs font-bold uppercase text-primary">Última etapa da esteira</p>
-          <h1 className="text-2xl font-black sm:text-3xl">Fila de rascunhos</h1>
+          <h1 className="page-title">Fila de rascunhos</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Cada vídeo pronto vira um kit de postagem: baixe o vídeo, copie os textos e publique no TikTok pelo celular.
           </p>
@@ -436,7 +435,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                       <span className="inline-flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
                         <Camera className="size-5" />
                       </span>
-                      <p className="mt-4 text-xs font-black uppercase text-primary">Pendente de gravação</p>
+                      <p className="status-violet mt-4 rounded-lg px-2 py-0.5 text-xs font-medium">Pendente de gravação</p>
                       <h2 className="mt-2 whitespace-pre-wrap break-words text-lg font-black leading-snug">
                         {job.title || "Vídeo próprio"}
                       </h2>
@@ -459,12 +458,12 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${isTrash ? "bg-secondary text-muted-foreground" : (current?.badge ?? "status-violet")}`}
+                      className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${isTrash ? "bg-secondary text-muted-foreground" : (current?.badge ?? "status-violet")}`}
                     >
                       {badgeLabel}
                     </span>
                     {!isTrash && !pendente && !job.video_path && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                      <span className="status-pink inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium">
                         <AlertTriangle className="size-3" />
                         não salvo
                       </span>
@@ -848,7 +847,7 @@ function DraftKitDialog({ jobId, onClose, onResumeRecording }: { jobId: string; 
                     controls
                     playsInline
                     poster={data.thumbnailUrl ?? undefined}
-                    className="aspect-[9/16] w-full rounded-xl bg-black object-cover"
+                    className="aspect-[9/16] w-full rounded-xl bg-video-bg object-cover"
                   />
                 )}
                 <VideoDownloadButton

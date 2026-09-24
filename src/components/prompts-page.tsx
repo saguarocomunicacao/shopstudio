@@ -1,3 +1,4 @@
+import { PageHeader } from "./page-header";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -14,7 +15,7 @@ import { actionError } from "@/lib/api-keys";
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 function Heading({ eyebrow, title }: { eyebrow: string; title: string }) {
-  return <div className="mb-6"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>;
+  void eyebrow; return <PageHeader title={title} />;
 }
 
 export function PlaceholderList({ placeholders }: { placeholders: string[] }) {
@@ -96,7 +97,7 @@ function ProfilePromptCard({ profileId, template, override, canEdit }: { profile
           <h2 className="font-bold">{template.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{template.description}</p>
         </div>
-        <span className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${inherited ? "status-neutral" : "status-pink"}`}>
+        <span className={`inline-flex shrink-0 rounded-lg px-2 py-0.5 text-xs font-medium ${inherited ? "status-neutral" : "status-pink"}`}>
           {inherited ? "Herdando padrão global" : "Override deste perfil"}
         </span>
       </div>

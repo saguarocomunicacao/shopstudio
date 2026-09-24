@@ -1,3 +1,4 @@
+import { PageHeader } from "./page-header";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Eye, Pencil, RefreshCw, Sparkles, Trash2, Wand2 } from "lucide-react";
@@ -22,7 +23,7 @@ import { actionError } from "@/lib/api-keys";
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
 function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) {
-  return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>;
+  return <PageHeader title={title} description={/\d/.test(eyebrow) ? eyebrow : undefined} actions={action} />;
 }
 
 const brl = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -224,13 +225,13 @@ function ProductsContent() {
           <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.round((bulk.done / Math.max(1, bulk.total)) * 100)}%` }} />
         </div>
       ) : null}
-      <div className="mb-4 inline-flex gap-1 rounded-xl bg-secondary p-1">
+      <div className="mb-4 flex gap-5 border-b border-border" role="tablist">
         {([["catalogo", "Catálogo"], ["descobrir", "Descobrir"], ["ascensao", "Em ascensão"]] as const).map(([key, label]) => (
           <button
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${tab === key ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            role="tab" aria-selected={tab === key} className={`-mb-px h-10 border-b-2 px-0.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${tab === key ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
             {label}
           </button>

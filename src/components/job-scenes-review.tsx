@@ -19,7 +19,7 @@ const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a
 function MultiPersonaHint({ text }: { text: string }) {
   if (sceneTags(text).length < 2) return null;
   return (
-    <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+    <p className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-xs text-warning-ink">
       <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
       Esta cena tem mais de uma pessoa marcada. Juntar várias pessoas específicas na mesma imagem é difícil para a IA:
       pode ser preciso regerar a cena algumas vezes até sair certo.

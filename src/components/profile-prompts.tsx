@@ -62,7 +62,7 @@ function PromptRow({
           <p className="truncate text-sm font-semibold">{template.title}</p>
           <p className="truncate text-xs text-muted-foreground">{template.description}</p>
         </div>
-        <span className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${igualAoPadrao ? "status-neutral" : "status-pink"}`}>
+        <span className={`inline-flex shrink-0 rounded-lg px-2 py-0.5 text-xs font-medium ${igualAoPadrao ? "status-neutral" : "status-pink"}`}>
           {igualAoPadrao ? "Igual ao padrão do sistema" : "Personalizado"}
         </span>
       </button>

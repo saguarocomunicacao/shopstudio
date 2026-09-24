@@ -1,3 +1,4 @@
+import { PageHeader } from "./page-header";
 import { TarifasCard } from "./tarifas-card";
 import { CreditoTaxasCard } from "./credito-taxas-card";
 import { BudgetCard } from "./budget-card";
@@ -14,9 +15,9 @@ import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { useStudio } from "./studio-context";
 import { VideoDownloadButton } from "./video-download-button";
 
-const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando cenas": "status-cyan", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-lime", "Rascunho enviado": "status-orange", "Publicado": "status-pink", "Ativo": "status-lime", "Pausado": "status-neutral" };
-function Badge({ children }: { children: string }) { return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusClass[children] ?? "status-neutral"}`}>{children}</span>; }
-function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) { return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>; }
+const statusClass: Record<string, string> = { "Novo": "status-neutral", "Produto escolhido": "status-blue", "Roteiro pronto": "status-violet", "Gerando cenas": "status-cyan", "Gerando vídeo": "status-cyan", "Vídeo pronto": "status-violet", "Rascunho enviado": "status-cyan", "Publicado": "status-published", "Ativo": "status-lime", "Pausado": "status-neutral" };
+function Badge({ children }: { children: string }) { return <span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${statusClass[children] ?? "status-neutral"}`}>{children}</span>; }
+function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) { return <PageHeader title={title} description={/\d/.test(eyebrow) ? eyebrow : undefined} actions={action} />; }
 function Empty({ children = "Nenhum item por aqui ainda." }: { children?: string }) { return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{children}</div>; }
 
 export function DashboardPage() { return <ProfileGate><DashboardContent /></ProfileGate>; }
@@ -62,7 +63,7 @@ function VideosContent() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {videos.map((job) => (
           <article className="panel" key={job.id}>
-            <video src={job.video_url ?? undefined} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="aspect-[9/16] w-full rounded-xl bg-black object-cover" />
+            <video src={job.video_url ?? undefined} controls playsInline poster={job.video_thumbnail_url ?? undefined} className="aspect-[9/16] w-full rounded-xl bg-video-bg object-cover" />
             <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>
             <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p>
             <VideoDownloadButton
@@ -122,7 +123,7 @@ export function SettingsPage() {
             <p className="mt-1 text-sm text-muted-foreground">De onde vêm os produtos em alta garimpados na aba “Descobrir”.</p>
             <div className="mt-5 flex items-center justify-between gap-4 rounded-xl bg-secondary px-4 py-3">
               <div><p className="text-sm font-semibold">Kalodata</p><p className="text-xs text-muted-foreground">TikTok Shop Brasil · somente produtos com programa de afiliado</p></div>
-              <span className="inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold status-lime">Ativa</span>
+              <span className="inline-flex rounded-lg px-2 py-0.5 text-xs font-medium status-lime">Ativa</span>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">As chaves de acesso ficam guardadas com segurança no servidor.</p>
             <div className="mt-4 border-t pt-4">
