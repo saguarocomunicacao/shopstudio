@@ -99,7 +99,7 @@ export async function processarColetaRef(refId: string): Promise<string> {
     await falhar(run.status === "TIMED-OUT" ? "A coleta demorou demais. Tente atualizar de novo." : "A coleta falhou. Tente atualizar de novo.");
     return "falhou";
   }
-  const lidos = await lerItensPerfil(ref.tenant_id, run.datasetId, ref.handle, "Confira o @ digitado.");
+  const lidos = await lerItensPerfil(ref.tenant_id, run.datasetId, ref.handle, "Confira o @ digitado.", ref.qtd_videos);
   if (lidos.erro) {
     await falhar(lidos.erro);
     return "sem_dados";
@@ -129,6 +129,7 @@ export async function processarColetaRef(refId: string): Promise<string> {
         legenda: i.text ? String(i.text).slice(0, 500) : null,
         publicado_em: i.createTimeISO ?? null,
         duracao: Number.isFinite(Number(i.videoMeta?.duration)) ? Number(i.videoMeta.duration) : null,
+        fixado: !!i.isPinned,
         ...(capa !== undefined ? { capa_path: capa } : {}),
       });
     }
