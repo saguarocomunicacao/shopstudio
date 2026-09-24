@@ -66,16 +66,16 @@ function Nav({ compact, close }: { compact?: boolean; close?: () => void }) {
   const navigate = useNavigate();
   const noProfile = !loading && profiles.length === 0;
   const itemClass = `relative flex h-10 w-full items-center gap-3 overflow-hidden rounded-lg text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-hover hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground data-[status=active]:before:absolute data-[status=active]:before:inset-y-0 data-[status=active]:before:left-0 data-[status=active]:before:w-[3px] data-[status=active]:before:bg-brand-cyan ${compact ? "justify-center px-0" : "px-3"}`;
-  const wrap = (node: ReactNode, label: string) => (compact ? (
-    <Tooltip><TooltipTrigger asChild>{node}</TooltipTrigger><TooltipContent side="right" className="rounded-lg font-medium">{label}</TooltipContent></Tooltip>
+  const wrap = (node: ReactNode, label: string, force = false) => (compact || force ? (
+    <Tooltip><TooltipTrigger asChild>{node}</TooltipTrigger><TooltipContent side="right" className="rounded-lg border border-border bg-card px-3 py-1.5 text-[13px] font-normal text-foreground shadow-md">{label}</TooltipContent></Tooltip>
   ) : node);
   return <TooltipProvider delayDuration={300}><nav className="flex-1 overflow-y-auto px-3 pb-16 pt-2">{visible.map(([group, list], i) => {
     const locked = noProfile && NEEDS_PROFILE.has(group);
     return <div key={group || "top"} className={i > 0 ? "mt-3 border-t border-sidebar-border pt-3" : ""}>{!compact && group && <p className="px-3 pb-1.5 text-xs font-medium text-sidebar-label">{group}</p>}<div className="space-y-0.5">{list.map(([label, to, Icon]) => {
       const inner = <><Icon strokeWidth={1.8} className="h-[18px] w-[18px] shrink-0" />{!compact && <span className="truncate">{label}</span>}</>;
       if (locked) {
-        const btn = <button key={to} type="button" title="Crie um perfil primeiro" aria-label={`${label} (crie um perfil primeiro)`} onClick={() => { close?.(); toast.info("Crie um perfil primeiro."); navigate({ to: "/app/perfis" }); }} className={`${itemClass} opacity-40`}>{inner}</button>;
-        return compact ? wrap(btn, `${label} — crie um perfil primeiro`) : btn;
+        const btn = <button key={to} type="button"  aria-label={`${label} (crie um perfil primeiro)`} onClick={() => { close?.(); toast.info("Crie um perfil primeiro."); navigate({ to: "/app/perfis" }); }} className={`${itemClass} opacity-40`}>{inner}</button>;
+        return wrap(btn, compact ? `${label}: crie um perfil primeiro` : "Crie um perfil primeiro", true);
       }
       const link = <Link key={to} to={to} aria-label={label} activeOptions={{ exact: to === "/app" }} onClick={close} className={itemClass}>{inner}</Link>;
       return compact ? wrap(link, label) : link;

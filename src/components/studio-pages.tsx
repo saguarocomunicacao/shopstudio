@@ -2,7 +2,9 @@ import { PageHeader } from "./page-header";
 import { TarifasCard } from "./tarifas-card";
 import { CreditoTaxasCard } from "./credito-taxas-card";
 import { BudgetCard } from "./budget-card";
-import { CheckCircle2, CircleDollarSign, FileClock, Loader2, MoreHorizontal, Plus, Video } from "lucide-react";
+import { CheckCircle2, FileClock, ImageIcon, Loader2, Plus, Video, Wallet, Workflow } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { useGastoMes } from "@/lib/orcamento";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,21 +25,45 @@ function Empty({ children = "Nenhum item por aqui ainda." }: { children?: string
 export function DashboardPage() { return <ProfileGate><DashboardContent /></ProfileGate>; }
 
 function DashboardContent() {
-  const { activeProfile, activeProfileId, profiles } = useStudio();
+  const { activeProfile, activeProfileId, profiles, can } = useStudio();
   const { data: scoped = [] } = useJobs(activeProfileId);
+  const gasto = useGastoMes(activeProfileId);
+  const canCost = can("custos", "visualizar", activeProfileId);
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
-  const stats = [
-    { icon: Video, value: scoped.filter((j) => j.status === "video_pronto").length, label: "Vídeos prontos" },
-    { icon: FileClock, value: scoped.filter((j) => j.status === "rascunho_enviado").length, label: "Rascunhos aguardando" },
-    { icon: CheckCircle2, value: scoped.filter((j) => j.status === "publicado").length, label: "Publicados" },
-    { icon: CircleDollarSign, value: scoped.length, label: "Jobs no pipeline" },
+  const count = (f: (j: (typeof scoped)[number]) => boolean) => scoped.filter(f).length;
+  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+  const gerando = count((j) => j.status === "gerando_cenas" || j.status === "gerando_video");
+  const stats: { icon: typeof Video; value: string | number; label: string; context?: string | undefined; to: string; bar?: number | undefined }[] = [
+    { icon: Video, value: count((j) => j.status === "video_pronto"), label: "Vídeos prontos", context: `${count((j) => j.status === "video_pronto" && !j.approved_at)} aguardando revisão`, to: "/app/videos" },
+    { icon: FileClock, value: count((j) => j.status === "rascunho_enviado"), label: "Rascunhos aguardando", context: `${count((j) => j.status === "rascunho_enviado" && !!j.approved_at)} aprovados para postar`, to: "/app/rascunhos" },
+    { icon: CheckCircle2, value: count((j) => j.status === "publicado" && !!j.published_at && new Date(j.published_at) >= monthStart), label: "Publicados", context: "neste mês", to: "/app/rascunhos" },
+    { icon: Workflow, value: scoped.length, label: "Jobs no pipeline", context: `${gerando} gerando agora`, to: "/app/pipeline" },
   ];
+  if (canCost && gasto) {
+    const teto = gasto.tetoPerfil ?? gasto.tetoGlobal;
+    const valor = gasto.tetoPerfil ? gasto.perfilBrl : gasto.globalBrl;
+    stats.push({ icon: Wallet, value: valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }), label: "Gasto do mês", context: teto ? `de ${teto.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} do orçamento` : undefined, to: "/app/custos", bar: teto ? valor / teto : undefined });
+  }
   return <>
     <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Visão geral" />
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{stats.map(({ icon: Icon, value, label }) => <div className="panel metric-card" key={label}><div className="mb-8 flex items-start justify-between"><span className="icon-box"><Icon /></span></div><strong className="text-2xl font-black">{value}</strong><p className="mt-1 text-sm text-muted-foreground">{label}</p></div>)}</div>
+    <div className={`grid gap-3 sm:grid-cols-2 ${stats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>{stats.map(({ icon: Icon, value, label, context, to, bar }) => (
+      <Link key={label} to={to} className="block rounded-lg border border-border bg-card p-5 transition-colors hover:border-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <div className="flex items-center gap-2 text-[13px] text-muted-foreground"><Icon className="size-[18px]" strokeWidth={1.8} />{label}</div>
+        <strong className="mt-2 block font-display text-[36px] font-semibold leading-tight">{value}</strong>
+        {context && <p className="mt-1 text-[13px] text-muted-foreground">{context}</p>}
+        {bar !== undefined && <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${bar >= 1 ? "bg-primary" : bar >= 0.8 ? "bg-warning" : "bg-brand-cyan"}`} style={{ width: `${Math.min(100, bar * 100)}%` }} /></div>}
+      </Link>
+    ))}</div>
     <section className="mt-6 panel">
-      <div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="icon"><MoreHorizontal /></Button></div>
-      <div className="divide-y divide-border">{scoped.slice(0, 5).map((job) => <div key={job.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3"><div className="min-w-0"><p className="whitespace-pre-wrap break-words text-sm font-semibold">{job.title || "Sem título"}</p><p className="whitespace-pre-wrap break-words text-xs text-muted-foreground">{profileName(job.profile_id)} · {relativeTime(job.created_at)}</p></div><Badge>{jobStatusLabel(job)}</Badge></div>)}{!scoped.length && <Empty>Nenhum job ainda. Escolha um produto para começar.</Empty>}</div>
+      <div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="sm" asChild><Link to="/app/pipeline">Ver pipeline</Link></Button></div>
+      <div className="divide-y divide-border">{scoped.slice(0, 5).map((job) => {
+        const thumb = job.video_thumbnail_url ?? job.ai_video_thumbnail_url ?? job.scenes?.find((s) => s.image_url)?.image_url;
+        return <Link key={job.id} to="/app/rascunhos" search={{ jobId: job.id, perfil: job.profile_id }} className="-mx-2 grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-[rgba(255,255,255,0.03)]">
+          {thumb ? <img src={thumb} alt="" className="size-10 rounded-md object-cover" /> : <span className="grid size-10 place-items-center rounded-md bg-muted text-muted-foreground"><ImageIcon className="size-4" /></span>}
+          <div className="min-w-0"><p className="truncate text-sm font-semibold">{job.title || "Sem título"}</p><p className="truncate whitespace-pre text-xs text-muted-foreground">{profileName(job.profile_id)}{"  "}{relativeTime(job.created_at)}</p></div>
+          <Badge>{jobStatusLabel(job)}</Badge>
+        </Link>;
+      })}{!scoped.length && <Empty>Nenhum job ainda. Escolha um produto para começar.</Empty>}</div>
     </section>
   </>;
 }
