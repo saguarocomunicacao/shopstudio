@@ -37,7 +37,7 @@ const statusLabel = (s: string, stage?: string | null) => {
   return JOB_STATUS_LABELS[s as JobStatusKey] ?? s;
 };
 const formatoLabel = (f: string | null) =>
-  f === "gravar" || f === "gravar_eu_mesmo" ? "Gravar eu mesmo" : f === "proprio" || f === "video_proprio" ? "Vídeo próprio" : "Completo";
+  f === "gravacao" ? "Gravar eu mesmo" : f === "proprio" ? "Vídeo próprio" : "Completo";
 const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const linkJob = (id: string) => `/app/pipeline?jobId=${id}`;
 
@@ -71,7 +71,8 @@ export async function loadAccess(db: Db, userId: string, email: string | undefin
     byRole.get(rp.role_id)!.add(k);
   }
   const isAdmin = isSuper || assignments.some((a) => adminIds.has(a.role_id));
-  const isBackoffice = isSuper || (approved && assignments.some((a) => byRole.get(a.role_id)?.has("backoffice:visualizar") || [...(byRole.get(a.role_id) ?? [])].some((k) => k.startsWith("backoffice:"))));
+  const bo = await db.rpc("is_backoffice");
+  const isBackoffice = isSuper || bo.data === true;
   const can = (mod: string, act: string, profileId?: string | null) => {
     if (!approved) return false;
     if (isAdmin) return true;
@@ -141,8 +142,8 @@ export function buildTools(ctx: Ctx) {
         ]);
         const cfg = new Map(((pvs.data ?? []) as Array<{ profile_id: string; avatar_mode: string; voice_ref: string | null }>).map((r) => [r.profile_id, r]));
         const voiceIds = [...cfg.values()].map((c) => c.voice_ref).filter(Boolean);
-        const vozes = voiceIds.length ? await db.from("voices").select("id, name").in("id", voiceIds) : { data: [] };
-        const nomeVoz = new Map(((vozes.data ?? []) as Array<{ id: string; name: string }>).map((v) => [v.id, v.name]));
+        const vozes = voiceIds.length ? await db.from("voices").select("id, nome").in("id", voiceIds) : { data: [] };
+        const nomeVoz = new Map(((vozes.data ?? []) as Array<{ id: string; nome: string }>).map((v) => [v.id, v.nome]));
         const qtdAv = new Map<string, number>();
         for (const a of (av.data ?? []) as Array<{ profile_id: string }>) qtdAv.set(a.profile_id, (qtdAv.get(a.profile_id) ?? 0) + 1);
         return (data ?? []).map((p: { id: string; name: string; handle: string; niche: string; status: string }) => {
@@ -185,7 +186,7 @@ export function buildTools(ctx: Ctx) {
         profile_id: perfilArg,
         estado: z.enum(["novo", "produto_escolhido", "roteiro_pronto", "gerando_cenas", "cenas_geradas", "gerando_video", "video_pronto", "rascunho_enviado", "publicado"]).nullable(),
         dias: z.number().nullable().describe("Só jobs criados nos últimos N dias."),
-        formato: z.enum(["completo", "gravar", "proprio"]).nullable(),
+        formato: z.enum(["completo", "gravacao"]).nullable(),
         limite: z.number().nullable(),
       }),
       execute: async ({ profile_id, estado, dias, formato, limite }) => {
@@ -195,7 +196,7 @@ export function buildTools(ctx: Ctx) {
         if (estado) q = q.eq("status", estado);
         if (dias) q = q.gte("created_at", new Date(Date.now() - dias * 86400_000).toISOString());
         if (formato === "completo") q = q.or("formato.is.null,formato.eq.completo");
-        else if (formato) q = q.ilike("formato", `%${formato}%`);
+        else if (formato) q = q.eq("formato", formato);
         const { data, error } = await q;
         if (error) return { erro: "Não consegui ler os jobs." };
         const rows = (data ?? []) as Array<Record<string, any>>;
@@ -315,7 +316,7 @@ export function buildTools(ctx: Ctx) {
         if (!ctx.tenantId) return { erro: "Empresa não identificada." };
         const [bal, mov, ten] = await Promise.all([
           db.from("tenant_action_balances").select("action_type, saldo").eq("tenant_id", ctx.tenantId),
-          db.from("wallet_movements").select("action_type, kind, quantity, created_at").eq("tenant_id", ctx.tenantId).order("created_at", { ascending: false }).limit(5),
+          db.from("wallet_movements").select("action_type, tipo, quantidade, descricao, created_at").eq("tenant_id", ctx.tenantId).order("created_at", { ascending: false }).limit(5),
           db.from("tenants").select("plan_id").eq("id", ctx.tenantId).maybeSingle(),
         ]);
         const precos = ten.data?.plan_id ? await db.from("plan_action_prices").select("action_type, package_price_cents").eq("plan_id", ten.data.plan_id) : { data: [] };
@@ -324,7 +325,7 @@ export function buildTools(ctx: Ctx) {
         const acoes = ["roteiro", "cena", "video", "montagem", "narracao"] as BillableAction[];
         return {
           saldos: acoes.map((a) => ({ acao: ACAO_LABELS[a], saldo: pago.get(a) ? saldo.get(a) ?? 0 : "ilimitado" })),
-          ultimas_movimentacoes: ((mov.data ?? []) as Array<Record<string, any>>).map((m) => ({ acao: ACAO_LABELS[m.action_type as BillableAction] ?? m.action_type, tipo: m.kind, quantidade: m.quantity, data: m.created_at })),
+          ultimas_movimentacoes: ((mov.data ?? []) as Array<Record<string, any>>).map((m) => ({ acao: ACAO_LABELS[m.action_type as BillableAction] ?? m.action_type, tipo: m.tipo, quantidade: m.quantidade, descricao: m.descricao, data: m.created_at })),
           link: "/app/conta",
         };
       },
