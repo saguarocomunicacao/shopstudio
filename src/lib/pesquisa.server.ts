@@ -25,6 +25,8 @@ export async function iniciarPesquisa(opts: { tenantId: string; profileId: strin
   const input = {
     ...(opts.tipo === "hashtag" ? { hashtags: [termo] } : { searchQueries: [termo], searchSection: "/video" }),
     resultsPerPage: opts.qtd,
+    // Região Brasil: o ator usa proxy residencial do país pedido, e o TikTok devolve resultados do BR.
+    proxyCountryCode: "BR",
     shouldDownloadVideos: false, shouldDownloadCovers: false, shouldDownloadSubtitles: false, shouldDownloadSlideshowImages: false,
     commentsPerPost: 0, scrapeRelatedVideos: false,
   };
@@ -107,7 +109,10 @@ export async function processarPesquisa(id: string): Promise<string> {
       posicao: pos++,
     });
   }
+  const idi = await detectarIdiomas(p, linhas.map((l) => l.legenda)).catch((e) => { console.error("[pesquisa] idioma", e); return null; });
+  if (idi) linhas.forEach((l, k) => { const c = idi.idiomas[k] ?? "?"; (l as Any).idioma = c; l.idioma_pt = c === "pt" || c === "?"; });
   if (linhas.length) await db.from("pesquisas_tiktok_videos").upsert(linhas as never, { onConflict: "pesquisa_id,tiktok_video_id" });
+  if (idi) await salvar(id, { termo_idioma: idi.termo, sugestoes: idi.sugestoes });
   await salvar(id, { status: linhas.length ? "ok" : "erro", erro: linhas.length ? null : "O TikTok não devolveu vídeos para esse termo.", run_id: null, n_videos: linhas.length, custo_usd: run.custoUsd ?? 0 });
   return "ok";
 }
@@ -189,4 +194,42 @@ export async function enviarRecomendacoesPesquisa(id: string) {
   const novo = [semAntigo.trim(), bloco].filter(Boolean).join("\n\n");
   if (idt) await db.from("profile_identities").update({ style_notes: novo, updated_at: new Date().toISOString() } as never).eq("profile_id", p.profile_id);
   else await db.from("profile_identities").insert({ profile_id: p.profile_id, tenant_id: p.tenant_id, style_notes: novo } as never);
+}
+
+/** Uma chamada barata ao Gemini: idioma de cada legenda (ISO 639-1, "?" sem texto), idioma do termo e sugestões em português. */
+async function detectarIdiomas(p: Any, legendas: (string | null)[]) {
+  const { resolveApiKey } = await import("./api-keys.server");
+  const { recordConsumo } = await import("./consumo.server");
+  const { GEMINI_MODEL } = await import("./video-analise.server");
+  const key = await resolveApiKey(p.tenant_id, "gemini");
+  const lista = legendas.map((t, i) => `${i}: ${(t ?? "").replace(/\s+/g, " ").slice(0, 200)}`).join("\n");
+  const prompt = `Para cada legenda de TikTok abaixo, diga o idioma principal (código ISO 639-1 como pt, en, es). Ignore hashtags e emojis ao decidir; use "?" se não houver texto suficiente. Depois diga o idioma do termo pesquisado e, se ele NÃO for português, sugira de 2 a 4 termos equivalentes usados no TikTok do Brasil (${p.tipo === "hashtag" ? "hashtags sem #" : "palavras"}). Se for português, sugestoes vazio.
+Termo pesquisado (${p.tipo}): ${p.termo}
+Legendas:
+${lista}`;
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0, responseMimeType: "application/json", responseSchema: {
+        type: "OBJECT", required: ["idiomas", "termo_idioma", "sugestoes"],
+        properties: { idiomas: { type: "ARRAY", items: { type: "STRING" } }, termo_idioma: { type: "STRING" }, sugestoes: { type: "ARRAY", items: { type: "STRING" } } },
+      } },
+    }),
+  });
+  if (!res.ok) throw new Error(`gemini ${res.status}`);
+  const body = (await res.json()) as Any;
+  const meta = { pesquisa_id: p.id, uso: "idioma_pesquisa" };
+  const tin = body.usageMetadata?.promptTokenCount ?? 0, tout = body.usageMetadata?.candidatesTokenCount ?? 0;
+  if (tin) await recordConsumo({ profileId: p.profile_id, etapa: "analise_video", acao: "analise_video", modelo: GEMINI_MODEL, unidade: "token_input", quantidade: tin, semDebito: true, metadados: meta });
+  if (tout) await recordConsumo({ profileId: p.profile_id, etapa: "analise_video", acao: "analise_video", modelo: GEMINI_MODEL, unidade: "token_output", quantidade: tout, semDebito: true, metadados: meta });
+  const txt = (body.candidates?.[0]?.content?.parts ?? []).map((x: Any) => x.text ?? "").join("");
+  const j = JSON.parse(txt) as { idiomas: string[]; termo_idioma: string; sugestoes: string[] };
+  const norm = (c: string) => (c || "?").toLowerCase().slice(0, 2).replace(/[^a-z?]/g, "") || "?";
+  const termo = norm(j.termo_idioma);
+  return {
+    idiomas: legendas.map((t, i) => (!(t ?? "").replace(/#[\p{L}\d_]+/gu, "").trim() ? "?" : norm(j.idiomas[i] ?? "?"))),
+    termo,
+    sugestoes: termo === "pt" ? [] : (j.sugestoes ?? []).map((x) => String(x).replace(/^#/, "").trim()).filter(Boolean).slice(0, 4),
+  };
 }

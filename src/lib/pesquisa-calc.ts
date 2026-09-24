@@ -17,7 +17,7 @@ export type VideoPesquisa = {
   tiktok_video_id: string; url: string; legenda: string | null; publicado_em: string | null; duracao: number | null;
   capa_path: string | null; autor_handle: string | null; autor_nome: string | null; autor_seguidores: number | null;
   views: number | null; likes: number | null; comentarios: number | null; compartilhamentos: number | null; salvos: number | null; reposts: number | null;
-  hashtags: string[]; anuncio: boolean; fotos: boolean; tiktok_shop: boolean; idioma_pt: boolean;
+  hashtags: string[]; anuncio: boolean; fotos: boolean; tiktok_shop: boolean; idioma_pt: boolean; idioma?: string | null;
 };
 
 export const engajamentoVideo = (v: Pick<VideoPesquisa, "views" | "likes" | "comentarios" | "compartilhamentos" | "salvos">) => {
