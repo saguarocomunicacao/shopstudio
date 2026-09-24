@@ -297,7 +297,8 @@ function ProductsContent() {
       </div>
 
       <Dialog open={!!details} onOpenChange={(open) => { if (!open) { setDetails(null); setEditing(false); } }}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto [scrollbar-gutter:stable]">
+        <DialogContent className="max-h-[92vh] gap-0 overflow-hidden p-0">
+          <div className="grid max-h-[92vh] gap-6 overflow-y-auto p-6 [scrollbar-gutter:stable]">
           <DialogHeader><DialogTitle className="pr-6 text-left">{details?.name}</DialogTitle></DialogHeader>
           {details && (
             <div className="grid gap-4 py-2">
@@ -392,6 +393,7 @@ function ProductsContent() {
             )}
             {canCreateJob && <Button onClick={() => { const p = details; setDetails(null); setUseTarget(p); }}><Sparkles />Usar</Button>}
           </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
