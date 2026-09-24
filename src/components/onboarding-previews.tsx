@@ -12,7 +12,7 @@ const NAV: [string | null, [string, typeof CircleGauge][]][] = [
 ];
 
 /** Alvo destacado: contorno magenta de 2px com pulsação e número opcional. */
-function T({ n, children, className = "" }: { n?: number; children: ReactNode; className?: string }) {
+function T({ n, children, className = "" }: { n?: number | undefined; children: ReactNode; className?: string }) {
   return (
     <span className={`tour-target relative inline-flex rounded-lg ${className}`}>
       {children}
@@ -202,7 +202,7 @@ export function ScreenPreview({ index }: { index: number }) {
     const mq = window.matchMedia("(max-width: 767px)");
     const upd = () => setMobile(mq.matches);
     upd(); mq.addEventListener("change", upd);
-    const ro = new ResizeObserver(([e]) => setW(e.contentRect.width));
+    const ro = new ResizeObserver(([e]) => setW(e?.contentRect.width ?? 0));
     if (ref.current) ro.observe(ref.current);
     return () => { mq.removeEventListener("change", upd); ro.disconnect(); };
   }, []);

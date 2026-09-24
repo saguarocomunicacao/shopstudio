@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DraftsPage } from "@/components/drafts-page";
 
 export const Route = createFileRoute("/_authenticated/app/rascunhos")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { jobId?: string | undefined; perfil?: string | undefined; tab?: string | undefined; guia?: string | undefined } => ({
     jobId: typeof search["jobId"] === "string" ? search["jobId"] : undefined,
     perfil: typeof search["perfil"] === "string" ? search["perfil"] : undefined,
     tab: typeof search["tab"] === "string" ? search["tab"] : undefined,
