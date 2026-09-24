@@ -104,6 +104,7 @@ export const ETAPA_VISUAL_LABELS: Record<EtapaVisual, string> = {
   montagem_json2video: "Montagem (JSON2Video)",
   narracao_elevenlabs: "Narração (ElevenLabs)",
   transcricao_audio: "Ditado por voz",
+  analise_video: "Análise de vídeo",
   busca_kalodata: "Buscas (Kalodata)",
   categorias_kalodata: "Categorias (Kalodata)",
 };
@@ -115,6 +116,7 @@ export const ETAPA_VISUAL_ORDEM: EtapaVisual[] = [
   "animacao_veo",
   "montagem_json2video",
   "narracao_elevenlabs",
+  "analise_video",
   "busca_kalodata",
   "categorias_kalodata",
 ];
@@ -126,6 +128,7 @@ const CONSUMO_LABEL: Record<EtapaVisual, (q: number, eventos: number) => string>
   montagem_json2video: (q) => `${Number(q.toFixed(2))} créditos`,
   narracao_elevenlabs: (q) => `${Number(q.toFixed(2))} mil caracteres`,
   transcricao_audio: (q) => `${Number(q.toFixed(2))} min de áudio`,
+  analise_video: (q) => `${Math.round(q)} tokens`,
   busca_kalodata: (_q, eventos) => `${eventos} ${eventos === 1 ? "chamada" : "chamadas"}`,
   categorias_kalodata: (_q, eventos) => `${eventos} ${eventos === 1 ? "chamada" : "chamadas"}`,
 };

@@ -383,6 +383,29 @@ export function buildToolsExtra(ctx: Ctx) {
       },
     }),
 
+    listar_analises: tool({
+      description: "Análises de vídeo (tela Analisar vídeo) do perfil: título, origem, duração, status, custo, data.",
+      inputSchema: z.object({ profile_id: perfilArg }),
+      execute: async ({ profile_id }) => {
+        const p = pid(ctx, profile_id);
+        let q = db.from("video_analises").select("id, titulo, origem, duracao, status, erro, custo_cents, created_at").order("created_at", { ascending: false }).limit(LIMITE);
+        if (p) q = q.eq("profile_id", p);
+        const { data, error } = await q;
+        if (error) return { erro: "Não consegui ler as análises." };
+        return { total: (data ?? []).length, analises: ((data ?? []) as Any[]).map((a) => ({ id: a.id, titulo: a.titulo, origem: a.origem, duracao_segundos: a.duracao, status: a.status, erro: a.erro, custo: `R$ ${(Number(a.custo_cents ?? 0) / 100).toFixed(2).replace(".", ",")}`, data: quando(a.created_at) })), link: "/app/analisar" };
+      },
+    }),
+
+    detalhe_analise: tool({
+      description: "Resultado completo de uma análise de vídeo: resumo, gancho, CTA, produto, cenas, transcrição, hashtags.",
+      inputSchema: z.object({ analise_id: z.string() }),
+      execute: async ({ analise_id }) => {
+        const { data, error } = await db.from("video_analises").select("titulo, origem, youtube_url, status, erro, resultado, created_at").eq("id", analise_id).maybeSingle();
+        if (error || !data) return { erro: "Análise não encontrada." };
+        return { ...(data as Any), link: "/app/analisar" };
+      },
+    }),
+
     metricas: tool({
       description: "Métricas de desempenho (views, vendas, comissão).",
       inputSchema: z.object({}),

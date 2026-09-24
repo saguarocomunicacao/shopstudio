@@ -17,7 +17,8 @@ export type BillableAction =
   | "busca_produto"
   | "atualizacao_produto"
   | "videos_campeoes"
-  | "atualizacao_categorias";
+  | "atualizacao_categorias"
+  | "analise_video";
 
 export type ConsumoEvento = {
   jobId?: string | null;
@@ -32,7 +33,8 @@ export type ConsumoEvento = {
     | "busca_kalodata"
     | "roteiro_texto"
     | "narracao_elevenlabs"
-    | "transcricao_audio";
+    | "transcricao_audio"
+    | "analise_video";
   /** Ação cobrável correspondente; sem ela caímos no mapa padrão da etapa. */
   acao?: BillableAction;
   modelo: string;
@@ -47,6 +49,8 @@ export type ConsumoEvento = {
     | "mil_caracteres"
     | "minuto_audio";
   metadados?: Record<string, unknown>;
+  /** Não debita a carteira (ex.: segunda linha de tokens da mesma operação). */
+  semDebito?: boolean;
 };
 
 /** Ação padrão quando o ponto de consumo não informa uma explicitamente. */
@@ -58,6 +62,7 @@ const ACAO_POR_ETAPA: Record<ConsumoEvento["etapa"], BillableAction> = {
   roteiro_texto: "roteiro",
   narracao_elevenlabs: "narracao",
   transcricao_audio: "transcricao",
+  analise_video: "analise_video",
 };
 
 /** Tenant da plataforma, usado apenas em consumo global (sem job e sem perfil). */
@@ -173,11 +178,11 @@ export async function recordConsumo(evento: ConsumoEvento): Promise<string | nul
 
     const acao = evento.acao ?? ACAO_POR_ETAPA[evento.etapa];
     const agora = new Date().toISOString();
-    const toolPrice = await toolPriceCents(tenantId, acao);
+    const toolPrice = evento.semDebito ? { price: 0, mode: "unitario" as const } : await toolPriceCents(tenantId, acao);
 
     // Débito atômico de 1 unidade da carteira (nulo quando o pacote é gratuito).
     const { debitAction } = await import("./saldo.server");
-    const walletMovementId = await debitAction(tenantId, acao, evento.jobId ?? null);
+    const walletMovementId = evento.semDebito ? null : await debitAction(tenantId, acao, evento.jobId ?? null);
     const { credito, semTarifa } = await resolverCreditoETarifa(supabaseAdmin as never, evento, acao, agora);
 
     if (semTarifa) {

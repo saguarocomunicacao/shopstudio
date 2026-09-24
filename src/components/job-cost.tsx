@@ -11,6 +11,7 @@ const unidadeDaEtapa: Record<EtapaConsumo, "imagem" | "segundo_video" | "credito
   roteiro_texto: "token_input",
   narracao_elevenlabs: "mil_caracteres",
   transcricao_audio: "minuto_audio",
+  analise_video: "token_input",
 };
 
 export function useJobCusto(jobId: string): CustoJob | null {

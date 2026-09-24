@@ -166,6 +166,7 @@ const FORNECEDOR_DE: Record<EtapaConsumo, "google" | "kalodata" | "json2video" |
   animacao_veo: "google",
   roteiro_texto: "google",
   transcricao_audio: "google",
+  analise_video: "google",
   busca_kalodata: "kalodata",
   montagem_json2video: "json2video",
   narracao_elevenlabs: "elevenlabs",

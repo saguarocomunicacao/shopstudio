@@ -1,5 +1,5 @@
 /** Extrai um frame do vídeo no navegador sem reencodar o arquivo original. */
-export async function captureVideoThumbnail(source: Blob | string, seekSeconds = 1): Promise<Blob> {
+export async function captureVideoThumbnail(source: Blob | string, seekSeconds = 1, maxWidth = 720): Promise<Blob> {
   const objectUrl = typeof source === "string" ? null : URL.createObjectURL(source);
   const video = document.createElement("video");
   video.preload = "auto";
@@ -26,7 +26,6 @@ export async function captureVideoThumbnail(source: Blob | string, seekSeconds =
     }
 
     if (!video.videoWidth || !video.videoHeight) throw new Error("O vídeo não informou dimensões válidas.");
-    const maxWidth = 720;
     const scale = Math.min(1, maxWidth / video.videoWidth);
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(2, Math.round(video.videoWidth * scale));
