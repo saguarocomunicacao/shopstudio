@@ -197,17 +197,17 @@ export async function processarColeta(profileId: string): Promise<string> {
   const semJob = videos.filter((i) => !jobPorVideo.has(String(i.id)));
   if (semJob.length) {
     const { data: existentes } = await db.from("videos_nao_vinculados").select("tiktok_video_id, capa_url").eq("profile_id", profileId).in("tiktok_video_id", semJob.map((i) => String(i.id)));
-    const comCapa = new Set(((existentes ?? []) as Any[]).filter((e) => e.capa_url).map((e) => e.tiktok_video_id));
+    const capaAtual = new Map(((existentes ?? []) as Any[]).filter((e) => e.capa_url).map((e) => [e.tiktok_video_id, e.capa_url as string]));
     const linhas = [];
     for (const i of semJob) {
       const vid = String(i.id);
-      const capa = comCapa.has(vid) ? undefined : i.videoMeta?.coverUrl ? await guardarCapa(p.tenant_id, profileId, vid, i.videoMeta.coverUrl) : null;
+      const capa = capaAtual.get(vid) ?? (i.videoMeta?.coverUrl ? await guardarCapa(p.tenant_id, profileId, vid, i.videoMeta.coverUrl) : null);
       linhas.push({
         tenant_id: p.tenant_id, profile_id: profileId, tiktok_video_id: vid,
         url: i.webVideoUrl || `https://www.tiktok.com/@${handle}/video/${vid}`,
         legenda: i.text ? String(i.text).slice(0, 500) : null,
         publicado_em: i.createTimeISO ?? null, duracao: num(i.videoMeta?.duration), visto_em: new Date().toISOString(), fixado: !!i.isPinned,
-        ...(capa !== undefined ? { capa_url: capa } : {}),
+        capa_url: capa,
       });
     }
     await db.from("videos_nao_vinculados").upsert(linhas as never, { onConflict: "profile_id,tiktok_video_id" });

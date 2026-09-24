@@ -118,11 +118,12 @@ export async function processarColetaRef(refId: string): Promise<string> {
       { onConflict: "referencia_id,tiktok_video_id,data" },
     );
     const { data: existentes } = await db.from("referencia_videos").select("tiktok_video_id, capa_path").eq("referencia_id", refId);
-    const comCapa = new Set(((existentes ?? []) as Any[]).filter((e) => e.capa_path).map((e) => e.tiktok_video_id));
+    const capaAtual = new Map(((existentes ?? []) as Any[]).filter((e) => e.capa_path).map((e) => [e.tiktok_video_id, e.capa_path as string]));
     const linhas = [];
     for (const i of videos) {
       const vid = String(i.id);
-      const capa = comCapa.has(vid) ? undefined : i.videoMeta?.coverUrl ? await guardarCapa(ref.tenant_id, pasta, vid, i.videoMeta.coverUrl) : null;
+      // Sempre manda capa_path: num upsert em lote, campo ausente em uma linha vira NULL em todas.
+      const capa = capaAtual.get(vid) ?? (i.videoMeta?.coverUrl ? await guardarCapa(ref.tenant_id, pasta, vid, i.videoMeta.coverUrl) : null);
       linhas.push({
         tenant_id: ref.tenant_id, referencia_id: refId, profile_id: ref.profile_id, tiktok_video_id: vid,
         url: i.webVideoUrl || `https://www.tiktok.com/@${ref.handle}/video/${vid}`,
@@ -130,7 +131,7 @@ export async function processarColetaRef(refId: string): Promise<string> {
         publicado_em: i.createTimeISO ?? null,
         duracao: Number.isFinite(Number(i.videoMeta?.duration)) ? Number(i.videoMeta.duration) : null,
         fixado: !!i.isPinned,
-        ...(capa !== undefined ? { capa_path: capa } : {}),
+        capa_path: capa,
       });
     }
     await db.from("referencia_videos").upsert(linhas as never, { onConflict: "referencia_id,tiktok_video_id" });

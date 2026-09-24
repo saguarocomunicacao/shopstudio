@@ -196,3 +196,16 @@ export const gerarInsightsRef = createServerFn({ method: "POST" })
     return { texto };
   });
 
+
+/** Insights: envia as recomendações para as observações de estilo do perfil (aba Identidade). */
+export const enviarRecomendacoesRef = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ refId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const ref = await carregarRef(context.supabase, data.refId);
+    const { data: ok, error } = await context.supabase.rpc("can_edit_profile", { _profile_id: ref.profile_id });
+    if (error || !ok) throw new Error("Você não tem permissão para editar a identidade deste perfil.");
+    const { enviarRecomendacoes } = await import("./referencias.server");
+    await enviarRecomendacoes(ref.id);
+    return { ok: true };
+  });
