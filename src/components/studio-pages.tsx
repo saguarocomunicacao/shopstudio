@@ -33,7 +33,7 @@ function DashboardContent() {
     { icon: CircleDollarSign, value: scoped.length, label: "Jobs no pipeline" },
   ];
   return <>
-    <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Painel geral" />
+    <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Visão geral" />
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{stats.map(({ icon: Icon, value, label }) => <div className="panel metric-card" key={label}><div className="mb-8 flex items-start justify-between"><span className="icon-box"><Icon /></span></div><strong className="text-2xl font-black">{value}</strong><p className="mt-1 text-sm text-muted-foreground">{label}</p></div>)}</div>
     <section className="mt-6 panel">
       <div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="icon"><MoreHorizontal /></Button></div>
