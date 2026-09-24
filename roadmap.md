@@ -115,3 +115,7 @@
 - [x] Capas: bug do upsert em lote corrigido + backfill do @cazzacuradoriaa
 - [x] Contagem prontas/analisando/erro e aviso ao gerar com análises em andamento
 - [ ] Baixar PDF (opcional, não feito)
+
+## Inteligência: Radar (fase 2)
+- [x] Detecção na coleta diária, tabela de alertas, tela /app/radar, sino, card Visão geral, tool do assistente, manual
+- [ ] Validar com dados reais após a coleta diária (depende de publicar)

@@ -1871,6 +1871,86 @@ export type Database = {
         }
         Relationships: []
       }
+      radar_alertas: {
+        Row: {
+          analise_id: string | null
+          detectado_em: string
+          em_alta_nicho: boolean
+          engajamento_pct: number | null
+          id: string
+          profile_id: string
+          razao: number | null
+          razao_texto: string
+          referencia_id: string
+          status: string
+          tenant_id: string
+          tiktok_video_id: string
+          updated_at: string
+          views: number
+        }
+        Insert: {
+          analise_id?: string | null
+          detectado_em?: string
+          em_alta_nicho?: boolean
+          engajamento_pct?: number | null
+          id?: string
+          profile_id: string
+          razao?: number | null
+          razao_texto?: string
+          referencia_id: string
+          status?: string
+          tenant_id: string
+          tiktok_video_id: string
+          updated_at?: string
+          views?: number
+        }
+        Update: {
+          analise_id?: string | null
+          detectado_em?: string
+          em_alta_nicho?: boolean
+          engajamento_pct?: number | null
+          id?: string
+          profile_id?: string
+          razao?: number | null
+          razao_texto?: string
+          referencia_id?: string
+          status?: string
+          tenant_id?: string
+          tiktok_video_id?: string
+          updated_at?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "radar_alertas_analise_id_fkey"
+            columns: ["analise_id"]
+            isOneToOne: false
+            referencedRelation: "video_analises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "radar_alertas_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "radar_alertas_referencia_id_fkey"
+            columns: ["referencia_id"]
+            isOneToOne: false
+            referencedRelation: "referencia_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "radar_alertas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referencia_perfil_metricas: {
         Row: {
           created_at: string

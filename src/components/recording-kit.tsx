@@ -62,10 +62,12 @@ export function NewOwnVideoDialog({
   open,
   onOpenChange,
   onCreated,
+  assuntoInicial,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: (jobId: string) => void;
+  assuntoInicial?: string;
 }) {
   const { activeProfileId } = useStudio();
   const qc = useQueryClient();
@@ -77,6 +79,12 @@ export function NewOwnVideoDialog({
   const [arquivoNome, setArquivoNome] = useState("");
   const [lendoArquivo, setLendoArquivo] = useState(false);
   const arquivoRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    if (open && assuntoInicial) {
+      setModo("criar");
+      setAssunto(assuntoInicial);
+    }
+  }, [open, assuntoInicial]);
 
   const limpar = () => {
     setAssunto("");

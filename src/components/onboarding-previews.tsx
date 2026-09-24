@@ -8,7 +8,7 @@ const NAV: [string | null, [string, typeof CircleGauge][]][] = [
   [null, [["Visão geral", CircleGauge]]],
   ["Configurar", [["Perfis", UserSquare2], ["Automação", Bot]]],
   ["Produzir", [["Produtos", Package], ["Pipeline", KanbanSquare], ["Rascunhos", FileClock], ["Vídeos", Clapperboard]]],
-  ["Inteligência", [["Analisar vídeo", Sparkles], ["Perfis de referência", Radar]]],
+  ["Inteligência", [["Analisar vídeo", Sparkles], ["Perfis de referência", Radar], ["Radar", Radar]]],
   ["Acompanhar", [["Métricas", BarChart3], ["Custos", Wallet], ["Investimento", PiggyBank]]],
 ];
 

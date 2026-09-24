@@ -50,7 +50,7 @@ export function InsightsV2View({ refId, handle, v, analises, videos, snaps, pode
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-border bg-white p-5">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Resumo em 3 frases</p>
+        <p className="mb-2 text-[13px] text-muted-foreground">Resumo</p>
         <div className="space-y-2 font-display text-[18px] leading-snug">{v.resumo.map((f, i) => <p key={i}>{f}</p>)}</div>
       </section>
 
