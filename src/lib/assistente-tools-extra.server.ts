@@ -445,11 +445,11 @@ export function buildToolsExtra(ctx: Ctx) {
       description: "Radar de concorrentes: vídeos novos em alta dos @ de referência acompanhados do perfil, com views, razão (ex: 4,3x a média do perfil), engajamento e se já foi analisado. Valores já prontos: copie, não calcule.",
       inputSchema: z.object({ profile_id: perfilArg, janela_horas: z.number().nullable().describe("24, 72 ou 168. Padrão 168.") }),
       execute: async ({ profile_id, janela_horas }) => {
-        const pid = profile_id ?? ctx.profileId;
-        if (!pid) return { erro: "Selecione um perfil." };
-        if (!ctx.access.isBackoffice && !ctx.access.can("metricas", "visualizar", pid)) return semAcesso("Radar");
+        const p = pid(ctx, profile_id);
+        if (!p) return { erro: "Selecione um perfil." };
+        if (!ctx.access.isBackoffice && !ctx.access.can("metricas", "visualizar", p)) return semAcesso("Radar");
         const { listarRadar } = await import("./radar.server");
-        const itens = await listarRadar(db, pid, janela_horas ?? 168);
+        const itens = await listarRadar(db, p, janela_horas ?? 168);
         return {
           total: itens.length,
           videos: itens.slice(0, 20).map((i) => ({ perfil_tiktok: `@${i.handle}`, legenda: i.legenda, views: i.views, razao: i.razaoTexto, engajamento_pct: i.engajamentoPct, em_alta_nicho: i.emAltaNicho, publicado_em: quando(i.publicadoEm), status: i.status, analise: i.analise?.status ?? null, link_tiktok: i.url })),
