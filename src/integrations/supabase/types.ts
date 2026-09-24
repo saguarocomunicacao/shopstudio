@@ -2102,6 +2102,7 @@ export type Database = {
           capa_path: string | null
           created_at: string
           duracao: number | null
+          fixado: boolean
           id: string
           legenda: string | null
           profile_id: string
@@ -2116,6 +2117,7 @@ export type Database = {
           capa_path?: string | null
           created_at?: string
           duracao?: number | null
+          fixado?: boolean
           id?: string
           legenda?: string | null
           profile_id: string
@@ -2130,6 +2132,7 @@ export type Database = {
           capa_path?: string | null
           created_at?: string
           duracao?: number | null
+          fixado?: boolean
           id?: string
           legenda?: string | null
           profile_id?: string
@@ -2798,6 +2801,7 @@ export type Database = {
           capa_url: string | null
           created_at: string
           duracao: number | null
+          fixado: boolean
           id: string
           legenda: string | null
           profile_id: string
@@ -2812,6 +2816,7 @@ export type Database = {
           capa_url?: string | null
           created_at?: string
           duracao?: number | null
+          fixado?: boolean
           id?: string
           legenda?: string | null
           profile_id: string
@@ -2826,6 +2831,7 @@ export type Database = {
           capa_url?: string | null
           created_at?: string
           duracao?: number | null
+          fixado?: boolean
           id?: string
           legenda?: string | null
           profile_id?: string
