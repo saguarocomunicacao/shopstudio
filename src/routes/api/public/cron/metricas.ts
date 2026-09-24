@@ -15,7 +15,9 @@ export const Route = createFileRoute("/api/public/cron/metricas")({
           const perfis = await iniciarColetasDiarias();
           const { iniciarColetasDiariasRef } = await import("@/lib/referencias.server");
           const referencias = await iniciarColetasDiariasRef();
-          return Response.json({ ok: true, perfis, referencias });
+          const { limparPesquisasAntigas } = await import("@/lib/pesquisa.server");
+          const pesquisasRemovidas = await limparPesquisasAntigas().catch(() => 0);
+          return Response.json({ ok: true, perfis, referencias, pesquisasRemovidas });
         } catch (e) {
           console.error("[cron metricas]", e);
           return Response.json({ ok: false }, { status: 500 });
