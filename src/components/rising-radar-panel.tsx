@@ -78,6 +78,7 @@ export function RisingRadarPanel({ products }: { products: DbProduct[] }) {
             needAll: false,
             page,
             profileId: activeProfileId,
+            origem: "radar" as const,
             ...(lancamento ? { launchDate: lancamento as "<7" } : {}),
             ...(categoria ? { categoryIds: [categoria] } : {}),
             ...(minCommission > 0 ? { commissionRate: `>${minCommission}` } : {}),

@@ -24,6 +24,7 @@ const schema = z.object({
   needAll: z.boolean().default(false),
   page: z.number().int().min(1).max(20).default(1),
   profileId: z.string().uuid().nullable().optional(),
+  origem: z.enum(["descobrir", "radar"]).optional(),
 });
 
 /** O usuário precisa poder visualizar produtos em pelo menos um escopo. */
@@ -103,6 +104,23 @@ export const discoverProducts = createServerFn({ method: "POST" })
           ...(credits !== null ? { creditos_api: credits } : {}),
         },
       });
+    }
+
+    // Guarda a busca e os resultados (30 dias) para o histórico e o assistente.
+    if (data.profileId && tenantId) {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const items = ((result as { items?: Array<Record<string, unknown>> }).items ?? []).slice(0, 50);
+        const { profileId: _p, origem, ...filtros } = data;
+        await supabaseAdmin.from("buscas_produto").insert({
+          tenant_id: tenantId, profile_id: data.profileId, user_id: context.userId,
+          origem: origem ?? "descobrir", termo: data.keyword ?? null, filtros: filtros as never,
+          total: items.length, resultados: items as never,
+        });
+        await supabaseAdmin.from("buscas_produto").delete().lt("created_at", new Date(Date.now() - 30 * 86400_000).toISOString());
+      } catch (e) {
+        console.error("[buscas] falha ao guardar busca", e);
+      }
     }
 
     return { source: source.id, sourceLabel: source.label, ...result };
