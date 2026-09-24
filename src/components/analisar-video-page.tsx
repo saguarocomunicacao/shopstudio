@@ -5,6 +5,7 @@ import { Copy, Download, FileVideo2, Loader2, Play, RefreshCw, Trash2, Upload, A
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "./page-header";
+import { ImageLightbox } from "./image-lightbox";
 import { useStudio } from "./studio-context";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -588,6 +589,20 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
                     </div>
                   );
                 })}
+                <ImageLightbox
+                  items={lightboxItems}
+                  index={lightbox}
+                  onIndexChange={setLightbox}
+                  actions={(_, i) => (
+                    <Button type="button" size="sm" onClick={() => {
+                      const it = lightboxItems[i];
+                      setLightbox(null);
+                      if (!it) return;
+                      pular(it.inicio);
+                      setTimeout(() => videoRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 150);
+                    }}><Play />Ir para este momento</Button>
+                  )}
+                />
               </TabsContent>
               <TabsContent value="transcricao">
                 <Bloco titulo="Transcrição" texto={transcricaoTxt}>
