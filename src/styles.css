@@ -124,6 +124,7 @@
   --brand-cyan: oklch(0.876 0.146 191.6);
   --brand-cyan-foreground: oklch(0.15 0.01 285.7);
   --assistant-shadow: oklch(0.647 0.238 17.7 / 35%);
+  --assistant-hover: oklch(0.608 0.224 17.7);
   --cyan-ink: oklch(0.664 0.113 191.0);
   --warning: oklch(0.782 0.158 72.3);
   --success-soft: oklch(0.968 0.024 193.6);
@@ -185,6 +186,7 @@
   --brand-cyan: oklch(0.876 0.146 191.6);
   --brand-cyan-foreground: oklch(0.15 0.01 285.7);
   --assistant-shadow: oklch(0.647 0.238 17.7 / 35%);
+  --assistant-hover: oklch(0.608 0.224 17.7);
   --cyan-ink: oklch(0.664 0.113 191.0);
   --warning: oklch(0.782 0.158 72.3);
   --success-soft: oklch(0.664 0.113 191.0 / 18%);
@@ -225,7 +227,7 @@
   background: var(--primary);
   box-shadow: 0 8px 24px var(--assistant-shadow);
 }
-.assistant-launcher:hover { background: color-mix(in oklab, var(--primary) 94%, black); }
+.assistant-launcher:hover { background: var(--assistant-hover); }
 @utility status-orange { background:var(--warning-soft); color:var(--warning-ink); }
 @utility status-pink { background:var(--danger-soft); color:var(--primary); }
 @utility status-published { background:var(--border); color:var(--foreground); }

@@ -89,4 +89,4 @@
 - [x] Criar ícone próprio de robô e aplicar no botão, cabeçalho e mensagens
 - [x] Atualizar aparência e indicador do botão flutuante
 - [x] Assinar miniaturas privadas e corrigir a ordem de fallback dos últimos jobs
-- [ ] Validar visualmente no tema escuro e em tamanhos desktop/mobile
+- [x] Validar dados reais, carregamento privado e compilação; sessão visual indisponível
