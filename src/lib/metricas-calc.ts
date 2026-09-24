@@ -99,8 +99,14 @@ export function resumirMetricas(opts: {
   const tot = zero();
   const viewsDia = new Map<string, number>();
   for (const [vid, l] of grupos) {
-    const d = deltaVideo(l, inicio, fim, opts.publicadoPorVideo?.get(vid) ?? null);
+    const pub = opts.publicadoPorVideo?.get(vid) ?? null;
+    const d = deltaVideo(l, inicio, fim, pub);
     for (const c of CAMPOS) tot[c] += d[c];
+    // Vídeo nascido dentro da janela do gráfico: o primeiro registro conta o total (nasceu com zero).
+    const primeiro = l[0];
+    if (primeiro && primeiro.data >= diaMenos(fim, 29) && pub && diaBrDe(pub) >= diaMenos(fim, 29)) {
+      viewsDia.set(primeiro.data, (viewsDia.get(primeiro.data) ?? 0) + v(primeiro.views));
+    }
     for (let i = 1; i < l.length; i++) {
       const dia = l[i]!.data;
       if (dia < diaMenos(fim, 29)) continue;
