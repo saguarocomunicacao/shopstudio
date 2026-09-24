@@ -104,13 +104,13 @@ export async function iniciarColeta(profileId: string, manual: boolean): Promise
   await salvarColeta(profileId, p.tenant_id, { status: "coletando", run_id: runId, iniciado_em: agora, ...(manual ? { ultimo_manual_em: agora } : {}) });
 }
 
-export async function registrarCusto(profileId: string, runId: string, usd: number) {
+export async function registrarCusto(profileId: string, runId: string, usd: number, extra: Record<string, unknown> = {}) {
   if (!usd) return;
   const { recordConsumo } = await import("./consumo.server");
   await recordConsumo({
     profileId, etapa: "apify_download" as never, acao: "analise_video", modelo: "apify:metricas",
     unidade: "usd_real" as never, quantidade: usd, semDebito: true,
-    metadados: { tipo: "coleta_metricas", run_id: runId, custo_usd: usd },
+    metadados: { tipo: "coleta_metricas", run_id: runId, custo_usd: usd, ...extra },
   });
 }
 
