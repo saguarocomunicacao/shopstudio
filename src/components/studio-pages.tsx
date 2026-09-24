@@ -33,7 +33,7 @@ function DashboardContent() {
   const count = (f: (j: (typeof scoped)[number]) => boolean) => scoped.filter(f).length;
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const gerando = count((j) => j.status === "gerando_cenas" || j.status === "gerando_video");
-  const stats: { icon: typeof Video; value: string | number; label: string; context?: string; to: string; bar?: number }[] = [
+  const stats: { icon: typeof Video; value: string | number; label: string; context?: string | undefined; to: string; bar?: number | undefined }[] = [
     { icon: Video, value: count((j) => j.status === "video_pronto"), label: "Vídeos prontos", context: `${count((j) => j.status === "video_pronto" && !j.approved_at)} aguardando revisão`, to: "/app/videos" },
     { icon: FileClock, value: count((j) => j.status === "rascunho_enviado"), label: "Rascunhos aguardando", context: `${count((j) => j.status === "rascunho_enviado" && !!j.approved_at)} aprovados para postar`, to: "/app/rascunhos" },
     { icon: CheckCircle2, value: count((j) => j.status === "publicado" && !!j.published_at && new Date(j.published_at) >= monthStart), label: "Publicados", context: "neste mês", to: "/app/rascunhos" },
