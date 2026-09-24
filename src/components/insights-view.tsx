@@ -23,9 +23,11 @@ type Props = {
   refId: string; handle: string; v: InsightsV2;
   analises: { id: string; status: string; video_id: string | null }[];
   videos: (VideoRef & { capaUrl: string | null })[]; snaps: VideoSnap[]; podeEditar: boolean;
+  /** Pesquisar: envia como referência do tema em vez do @. */
+  enviarFn?: () => Promise<unknown>; rotulo?: string;
 };
 
-export function InsightsV2View({ refId, handle, v, analises, videos, snaps, podeEditar }: Props) {
+export function InsightsV2View({ refId, handle, v, analises, videos, snaps, podeEditar, enviarFn, rotulo }: Props) {
   const enviar = useServerFn(enviarRecomendacoesRef);
   const [confirmar, setConfirmar] = useState(false);
   const [lightbox, setLightbox] = useState<number | null>(null);
@@ -40,7 +42,7 @@ export function InsightsV2View({ refId, handle, v, analises, videos, snaps, pode
   const itensLightbox = ganchos.filter((g) => capaPor.get(g.video_id)).map((g) => ({ id: g.video_id, src: capaPor.get(g.video_id)!, title: titulo(g.linha!) }));
 
   const mut = useMutation({
-    mutationFn: () => enviar({ data: { refId } }),
+    mutationFn: () => (enviarFn ? enviarFn() : enviar({ data: { refId } })),
     onSuccess: () => { toast.success("Recomendações salvas na Identidade do perfil. O roteirista passa a usar."); setConfirmar(false); },
     onError: (e) => toast.error(actionError(e, "Não foi possível enviar ao roteirista.")),
   });
@@ -154,7 +156,7 @@ export function InsightsV2View({ refId, handle, v, analises, videos, snaps, pode
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Enviar recomendações para o roteirista?</AlertDialogTitle>
-            <AlertDialogDescription>As {v.recomendacoes.length} recomendações de @{handle} entram nas observações de estilo do perfil (aba Identidade). Se já tiver enviado antes deste @, o bloco antigo é substituído.</AlertDialogDescription>
+            <AlertDialogDescription>As {v.recomendacoes.length} recomendações de {rotulo ?? `@${handle}`} entram nas observações de estilo do perfil (aba Identidade). Se já tiver enviado antes, o bloco antigo é substituído.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
