@@ -224,7 +224,9 @@ export function AnalisarVideoPage() {
                   <td className="p-3">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS[a.status][1]}`}>
                       {(a.status === "analisando" || a.status === "enviando" || a.status === "baixando") && <Loader2 className="size-3 animate-spin" />}
-                      {STATUS[a.status][0]}
+                      {a.status === "analisando" && (a as { etapa?: string | null }).etapa
+                        ? ({ enviando: "Enviando à IA", processando_no_gemini: "IA processando", gerando: "Gerando análise" } as Record<string, string>)[(a as { etapa?: string | null }).etapa!] ?? STATUS[a.status][0]
+                        : STATUS[a.status][0]}
                     </span>
                   </td>
                   <td className="p-3">{brl(a.custo_cents ?? 0)}</td>
