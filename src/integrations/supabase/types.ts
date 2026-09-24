@@ -121,6 +121,68 @@ export type Database = {
         }
         Relationships: []
       }
+      assistente_conversas: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          id: string
+          tenant_id: string | null
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          tenant_id?: string | null
+          titulo?: string
+          user_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          id?: string
+          tenant_id?: string | null
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      assistente_mensagens: {
+        Row: {
+          conteudo: string
+          conversa_id: string
+          criado_em: string
+          id: string
+          papel: string
+          tools_log: Json | null
+        }
+        Insert: {
+          conteudo: string
+          conversa_id: string
+          criado_em?: string
+          id?: string
+          papel: string
+          tools_log?: Json | null
+        }
+        Update: {
+          conteudo?: string
+          conversa_id?: string
+          criado_em?: string
+          id?: string
+          papel?: string
+          tools_log?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistente_mensagens_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "assistente_conversas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assistente_uso: {
         Row: {
           created_at: string

@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as SegurancaRouteImport } from './routes/seguranca'
+import { Route as ApiAssistenteRouteImport } from './routes/api/assistente'
 import { Route as VTokenRouteImport } from './routes/v.$token'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
 import { Route as AuthenticatedAppApisRouteImport } from './routes/_authenticated/app/apis'
@@ -82,6 +83,11 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
 const SegurancaRoute = SegurancaRouteImport.update({
   id: '/seguranca',
   path: '/seguranca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAssistenteRoute = ApiAssistenteRouteImport.update({
+  id: '/api/assistente',
+  path: '/api/assistente',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VTokenRoute = VTokenRouteImport.update({
@@ -245,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/privacidade': typeof PrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/seguranca': typeof SegurancaRoute
+  '/api/assistente': typeof ApiAssistenteRoute
   '/v/$token': typeof VTokenRoute
   '/app/apis': typeof AuthenticatedAppApisRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
@@ -281,6 +288,7 @@ export interface FileRoutesByTo {
   '/privacidade': typeof PrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/seguranca': typeof SegurancaRoute
+  '/api/assistente': typeof ApiAssistenteRoute
   '/v/$token': typeof VTokenRoute
   '/app/apis': typeof AuthenticatedAppApisRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   '/privacidade': typeof PrivacidadeRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/seguranca': typeof SegurancaRoute
+  '/api/assistente': typeof ApiAssistenteRoute
   '/v/$token': typeof VTokenRoute
   '/_authenticated/app/apis': typeof AuthenticatedAppApisRoute
   '/_authenticated/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
@@ -357,6 +366,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/redefinir-senha'
     | '/seguranca'
+    | '/api/assistente'
     | '/v/$token'
     | '/app/apis'
     | '/app/aprovacoes'
@@ -393,6 +403,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/redefinir-senha'
     | '/seguranca'
+    | '/api/assistente'
     | '/v/$token'
     | '/app/apis'
     | '/app/aprovacoes'
@@ -430,6 +441,7 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/redefinir-senha'
     | '/seguranca'
+    | '/api/assistente'
     | '/v/$token'
     | '/_authenticated/app/apis'
     | '/_authenticated/app/aprovacoes'
@@ -468,6 +480,7 @@ export interface RootRouteChildren {
   PrivacidadeRoute: typeof PrivacidadeRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   SegurancaRoute: typeof SegurancaRoute
+  ApiAssistenteRoute: typeof ApiAssistenteRoute
   VTokenRoute: typeof VTokenRoute
   AuthTiktokCallbackRoute: typeof AuthTiktokCallbackRoute
   ApiPublicCronAutomationRoute: typeof ApiPublicCronAutomationRoute
@@ -532,6 +545,13 @@ declare module '@tanstack/react-router' {
       path: '/seguranca'
       fullPath: '/seguranca'
       preLoaderRoute: typeof SegurancaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/assistente': {
+      id: '/api/assistente'
+      path: '/api/assistente'
+      fullPath: '/api/assistente'
+      preLoaderRoute: typeof ApiAssistenteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/v/$token': {
@@ -786,6 +806,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacidadeRoute: PrivacidadeRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   SegurancaRoute: SegurancaRoute,
+  ApiAssistenteRoute: ApiAssistenteRoute,
   VTokenRoute: VTokenRoute,
   AuthTiktokCallbackRoute: AuthTiktokCallbackRoute,
   ApiPublicCronAutomationRoute: ApiPublicCronAutomationRoute,

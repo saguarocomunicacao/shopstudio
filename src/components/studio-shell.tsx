@@ -17,6 +17,7 @@ import { StudioProvider, useStudio } from "./studio-context";
 import { UpdateGate } from "./update-gate";
 import { OnboardingHost, openOnboarding } from "./onboarding-guide";
 import { TourHighlighter } from "./tour-highlighter";
+import { AssistentePainel } from "./assistente-painel";
 import { SessionExpiredDialog } from "./session-expired-dialog";
 import { MissingKeyDialog, PendingKeysBanner } from "./missing-key-dialog";
 import logoDarkAsset from "@/assets/logo-dark.png.asset.json";
@@ -148,6 +149,7 @@ function ShellContent({ children }: { children: ReactNode }) {
     <aside className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-sidebar-border bg-sidebar transition-[width] md:flex ${collapsed ? "w-16" : "w-60"}`}><Brand compact={collapsed}/><Nav compact={collapsed}/><Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? "Expandir menu" : "Recolher menu"} className={`absolute bottom-4 text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground ${collapsed ? "left-3" : "right-3"}`}>{collapsed ? <PanelLeftOpen/> : <PanelLeftClose/>}</Button></aside>
     {mobile && <div className="fixed inset-0 z-50 md:hidden"><button aria-label="Fechar menu" className="absolute inset-0 bg-overlay" onClick={() => setMobile(false)}/><aside className="relative flex h-full w-72 flex-col bg-sidebar"><Brand/><Button variant="ghost" size="icon" className="absolute right-3 top-3 text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground" onClick={() => setMobile(false)}><X/></Button><Nav close={() => setMobile(false)}/></aside></div>}
     <div className={`transition-[padding] ${collapsed ? "md:pl-16" : "md:pl-60"}`}><header className="sticky top-0 z-20 grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-card px-4 lg:px-8"><div className="flex min-w-0 items-center gap-2"><Button variant="ghost" size="icon" className="shrink-0 md:hidden" onClick={() => setMobile(true)}><Menu/></Button><nav aria-label="Você está em" className="min-w-0 truncate text-sm text-muted-foreground">{groupOf[path] ? <>{groupOf[path]}<span className="mx-1.5">/</span></> : null}<span className="text-foreground">{titles[path] ?? "Shop Studio"}</span></nav></div><div className="flex shrink-0 items-center gap-2 sm:gap-3"><ProfilePicker/><div className="hidden items-center gap-2 px-1 text-muted-foreground sm:flex">{dark ? <Moon className="h-4 w-4"/> : <Sun className="h-4 w-4"/>}<Switch aria-label="Alternar tema" checked={!dark} onCheckedChange={(v) => setDark(!v)}/></div><UserMenu/></div></header><main className="w-full p-4 lg:p-8"><PendingKeysBanner/>{children}</main></div>
+    <AssistentePainel/>
   </div>;
 }
 

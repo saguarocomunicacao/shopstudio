@@ -31,7 +31,9 @@ export function VoiceDictationButton({
   jobId,
   disabled,
   onText,
+  compact,
 }: {
+  compact?: boolean;
   profileId: string | null;
   jobId?: string | null;
   disabled?: boolean;
@@ -123,6 +125,16 @@ export function VoiceDictationButton({
   };
 
   const parar = () => recorderRef.current?.stop();
+
+  if (compact) {
+    return (
+      <Button type="button" size="icon" variant={gravando ? "destructive" : "ghost"} disabled={disabled || !profileId || enviar.isPending}
+        aria-label={gravando ? `Parar ditado (${segundos}s)` : "Ditar por voz"} title={!profileId ? "Selecione um perfil para ditar" : undefined}
+        onClick={() => (gravando ? parar() : void iniciar())}>
+        {enviar.isPending ? <Loader2 className="animate-spin" /> : gravando ? <Square className="fill-current" /> : <Mic />}
+      </Button>
+    );
+  }
 
   if (enviar.isPending) {
     return (
