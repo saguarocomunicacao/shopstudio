@@ -1,3 +1,4 @@
+import { ImageLightbox } from "./image-lightbox";
 import { PageHeader } from "./page-header";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
