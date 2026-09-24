@@ -88,6 +88,39 @@ export type Database = {
           },
         ]
       }
+      assistente_consultas: {
+        Row: {
+          consultas: Json
+          created_at: string
+          id: string
+          pergunta: string
+          profile_id: string | null
+          resposta: string | null
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          consultas?: Json
+          created_at?: string
+          id?: string
+          pergunta: string
+          profile_id?: string | null
+          resposta?: string | null
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          consultas?: Json
+          created_at?: string
+          id?: string
+          pergunta?: string
+          profile_id?: string | null
+          resposta?: string | null
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       assistente_uso: {
         Row: {
           created_at: string

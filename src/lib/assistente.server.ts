@@ -335,9 +335,12 @@ export function buildTools(ctx: Ctx) {
         const [precos, ev] = await Promise.all([precosDoUsuario(db), q]);
         if (ev.error) return { erro: "Não consegui ler os custos." };
         const agg = agregarPeriodo((ev.data ?? []) as ConsumoEventoRow[], precos.tarifas, precos.cotacao, [], precos.taxas);
+        // Por perfil com a mesma gastoPeriodo do total (inclui eventos sem vídeo vinculado).
         const porPerfil = new Map<string, number>();
-        for (const j of agg.jobs) if (j.profileId) porPerfil.set(j.profileId, (porPerfil.get(j.profileId) ?? 0) + j.totalBrl);
-        for (const b of agg.buscas) if (b.profileId) porPerfil.set(b.profileId, (porPerfil.get(b.profileId) ?? 0) + b.valorBrl);
+        const evs = (ev.data ?? []) as ConsumoEventoRow[];
+        for (const idp of new Set(evs.map((e) => e.profile_id).filter((x): x is string => !!x))) {
+          porPerfil.set(idp, gastoPeriodo(evs, precos, [idp], r.desde, r.ate));
+        }
         const ids = [...porPerfil.keys(), ...(p ? [p] : [])];
         const nomes = ids.length ? await db.from("profiles").select("id, name").in("id", ids) : { data: [] };
         const nome = new Map(((nomes.data ?? []) as Array<{ id: string; name: string }>).map((x) => [x.id, x.name]));
@@ -479,6 +482,7 @@ export function systemPrompt(opts: { perfilNome: string | null; rota: string | n
 Regras:
 - Responda em português do Brasil, curto e direto. Nunca use travessão.
 - Nunca invente número. Todo dado vem das ferramentas; cite de onde veio (ex.: "no perfil X, este mês"). Sem dado, diga que não encontrou.
+- Valores em R$ e contagens só entram na resposta COPIADOS exatamente do resultado da ferramenta. Nunca some, subtraia ou recalcule. Para "quanto gastei", use sempre o campo "total" de resumo_custos, nunca uma linha de "por_perfil" ou "por_etapa".
 - Você só consulta e explica. Não executa ações. Se pedirem para aprovar, publicar, gerar ou apagar, explique como fazer e dê o link da tela.
 - Use links markdown para telas do painel, ex.: [Rascunhos](/app/rascunhos?tab=revisao) ou o campo "link" das ferramentas.
 - Se uma ferramenta devolver "sem permissão", diga que essa informação não está disponível para o seu usuário.
@@ -510,6 +514,7 @@ export async function runAssistente(ctx: Ctx, msgs: ChatMsg[], rota: string | nu
     headers: { "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
   });
   const ferramentas: string[] = [];
+  const consultas: Consulta[] = [];
   const result = streamText({
     model: lovable.responses(MODEL),
     system: systemPrompt({ perfilNome, rota }),
@@ -517,14 +522,54 @@ export async function runAssistente(ctx: Ctx, msgs: ChatMsg[], rota: string | nu
     tools: buildTools(ctx),
     stopWhen: stepCountIs(8),
     maxRetries: 0,
-    onStepFinish: (s) => { for (const c of s.toolCalls ?? []) ferramentas.push(c.toolName); },
+    onStepFinish: (s) => {
+      for (const c of s.toolCalls ?? []) {
+        ferramentas.push(c.toolName);
+        const res = (s.toolResults ?? []).find((r) => r.toolCallId === c.toolCallId);
+        consultas.push(descreverConsulta(ctx, c.toolName, c.input, res ? (res as { output?: unknown }).output : undefined));
+      }
+    },
     providerOptions: {
       openai: { forceReasoning: true, reasoningEffort: "low", store: false, include: ["reasoning.encrypted_content"] },
     },
   });
   const texto = await result.text;
   const uso = await result.totalUsage;
-  return { texto, ferramentas, uso: { input: uso.inputTokens ?? 0, output: uso.outputTokens ?? 0 } };
+  return { texto, ferramentas, consultas, uso: { input: uso.inputTokens ?? 0, output: uso.outputTokens ?? 0 } };
+}
+
+export type Consulta = {
+  ferramenta: string;
+  argumentos: unknown;
+  perfil_usado: string | null;
+  periodo_utc: { desde: string; ate: string } | null;
+  periodo_brasilia: { desde: string; ate: string } | null;
+  resultado: string;
+};
+
+const fmtBrt = (iso: string) => new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
+/** Diagnóstico: argumentos exatos, perfil/período resolvidos e resultado resumido. */
+function descreverConsulta(ctx: Ctx, nome: string, input: unknown, output: unknown): Consulta {
+  const a = (input ?? {}) as Record<string, unknown>;
+  const temPerfil = "profile_id" in a;
+  const perfil = temPerfil ? pid(ctx, a["profile_id"] as string | null) ?? null : null;
+  let per: { desde: string; ate: string } | null = null;
+  if (typeof a["periodo"] === "string") {
+    const r = periodo(a["periodo"] as string, a["de"] as string | null, a["ate"] as string | null);
+    per = { desde: r.desde, ate: r.ate };
+  }
+  let resultado = "";
+  try { resultado = JSON.stringify(output ?? null); } catch { resultado = String(output); }
+  if (resultado.length > 2000) resultado = resultado.slice(0, 2000) + "…";
+  return {
+    ferramenta: nome,
+    argumentos: a,
+    perfil_usado: temPerfil ? (perfil ?? "todos") : null,
+    periodo_utc: per,
+    periodo_brasilia: per ? { desde: fmtBrt(per.desde), ate: fmtBrt(per.ate) } : null,
+    resultado,
+  };
 }
 
 /** Registra tokens do assistente para custo interno. Não debita carteira. */
