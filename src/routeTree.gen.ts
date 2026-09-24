@@ -20,6 +20,7 @@ import { Route as SegurancaRouteImport } from './routes/seguranca'
 import { Route as ApiAssistenteRouteImport } from './routes/api/assistente'
 import { Route as VTokenRouteImport } from './routes/v.$token'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
+import { Route as AuthenticatedAppAnalisarRouteImport } from './routes/_authenticated/app/analisar'
 import { Route as AuthenticatedAppApisRouteImport } from './routes/_authenticated/app/apis'
 import { Route as AuthenticatedAppAprovacoesRouteImport } from './routes/_authenticated/app/aprovacoes'
 import { Route as AuthenticatedAppAutomacaoRouteImport } from './routes/_authenticated/app/automacao'
@@ -100,6 +101,12 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   path: '/app/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAppAnalisarRoute =
+  AuthenticatedAppAnalisarRouteImport.update({
+    id: '/app/analisar',
+    path: '/app/analisar',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAppApisRoute = AuthenticatedAppApisRouteImport.update({
   id: '/app/apis',
   path: '/app/apis',
@@ -253,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/seguranca': typeof SegurancaRoute
   '/api/assistente': typeof ApiAssistenteRoute
   '/v/$token': typeof VTokenRoute
+  '/app/analisar': typeof AuthenticatedAppAnalisarRoute
   '/app/apis': typeof AuthenticatedAppApisRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/automacao': typeof AuthenticatedAppAutomacaoRoute
@@ -290,6 +298,7 @@ export interface FileRoutesByTo {
   '/seguranca': typeof SegurancaRoute
   '/api/assistente': typeof ApiAssistenteRoute
   '/v/$token': typeof VTokenRoute
+  '/app/analisar': typeof AuthenticatedAppAnalisarRoute
   '/app/apis': typeof AuthenticatedAppApisRoute
   '/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/app/automacao': typeof AuthenticatedAppAutomacaoRoute
@@ -329,6 +338,7 @@ export interface FileRoutesById {
   '/seguranca': typeof SegurancaRoute
   '/api/assistente': typeof ApiAssistenteRoute
   '/v/$token': typeof VTokenRoute
+  '/_authenticated/app/analisar': typeof AuthenticatedAppAnalisarRoute
   '/_authenticated/app/apis': typeof AuthenticatedAppApisRoute
   '/_authenticated/app/aprovacoes': typeof AuthenticatedAppAprovacoesRoute
   '/_authenticated/app/automacao': typeof AuthenticatedAppAutomacaoRoute
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/seguranca'
     | '/api/assistente'
     | '/v/$token'
+    | '/app/analisar'
     | '/app/apis'
     | '/app/aprovacoes'
     | '/app/automacao'
@@ -405,6 +416,7 @@ export interface FileRouteTypes {
     | '/seguranca'
     | '/api/assistente'
     | '/v/$token'
+    | '/app/analisar'
     | '/app/apis'
     | '/app/aprovacoes'
     | '/app/automacao'
@@ -443,6 +455,7 @@ export interface FileRouteTypes {
     | '/seguranca'
     | '/api/assistente'
     | '/v/$token'
+    | '/_authenticated/app/analisar'
     | '/_authenticated/app/apis'
     | '/_authenticated/app/aprovacoes'
     | '/_authenticated/app/automacao'
@@ -566,6 +579,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app/'
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/analisar': {
+      id: '/_authenticated/app/analisar'
+      path: '/app/analisar'
+      fullPath: '/app/analisar'
+      preLoaderRoute: typeof AuthenticatedAppAnalisarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/app/apis': {
@@ -747,6 +767,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAppAnalisarRoute: typeof AuthenticatedAppAnalisarRoute
   AuthenticatedAppApisRoute: typeof AuthenticatedAppApisRoute
   AuthenticatedAppAprovacoesRoute: typeof AuthenticatedAppAprovacoesRoute
   AuthenticatedAppAutomacaoRoute: typeof AuthenticatedAppAutomacaoRoute
@@ -771,6 +792,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAppAnalisarRoute: AuthenticatedAppAnalisarRoute,
   AuthenticatedAppApisRoute: AuthenticatedAppApisRoute,
   AuthenticatedAppAprovacoesRoute: AuthenticatedAppAprovacoesRoute,
   AuthenticatedAppAutomacaoRoute: AuthenticatedAppAutomacaoRoute,
