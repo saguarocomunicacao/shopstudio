@@ -22,13 +22,17 @@ async function lerMetricas(db: Any, profileId: string, dias: number) {
     db.from("videos_nao_vinculados").select("tiktok_video_id, publicado_em").eq("profile_id", profileId).limit(500),
   ]);
   const js = (jobs.data ?? []) as JobMetricaBase[];
+  const pubPorVideo = new Map(js.filter((j) => j.tiktok_video_id).map((j) => [j.tiktok_video_id!, j.published_at]));
+  for (const r of (naoVinc.data ?? []) as { tiktok_video_id: string; publicado_em: string | null }[]) {
+    if (!pubPorVideo.has(r.tiktok_video_id)) pubPorVideo.set(r.tiktok_video_id, r.publicado_em);
+  }
   return {
     handle: String(prof.data?.handle ?? "").replace(/^@/, "").trim(),
     coleta: coleta.data as Any,
     perfil: (perfil.data ?? []) as PerfilSnap[],
     videos: (videos.data ?? []) as VideoSnap[],
     jobs: js,
-    pubPorVideo: new Map(js.filter((j) => j.tiktok_video_id).map((j) => [j.tiktok_video_id!, j.published_at])),
+    pubPorVideo,
   };
 }
 

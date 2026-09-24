@@ -42,6 +42,7 @@ export const getMetricas = createServerFn({ method: "POST" })
       jobs: jobs.data ?? [],
       videos: videos.data ?? [],
       naoVinculados: naoVinc.count ?? 0,
+      pubNaoVinc: (pubNaoVinc.data ?? []) as { tiktok_video_id: string; publicado_em: string | null }[],
     };
   });
 

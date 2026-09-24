@@ -80,7 +80,10 @@ export function MetricasContent() {
         ? resumirMetricas({
             perfil: d.perfil as PerfilSnap[], videos, jobs, dias,
             jobIds: formato === "todos" ? null : new Set(jobsFiltrados.map((j) => j.id)),
-            publicadoPorVideo: new Map(jobs.filter((j) => j.tiktok_video_id).map((j) => [j.tiktok_video_id!, j.published_at])),
+            publicadoPorVideo: new Map([
+              ...jobs.filter((j) => j.tiktok_video_id).map((j) => [j.tiktok_video_id!, j.published_at] as const),
+              ...((d.pubNaoVinc ?? []) as { tiktok_video_id: string; publicado_em: string | null }[]).map((r) => [r.tiktok_video_id, r.publicado_em] as const),
+            ]),
           })
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
