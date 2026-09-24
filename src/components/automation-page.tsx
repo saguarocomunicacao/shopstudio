@@ -560,8 +560,8 @@ function AutomationContent() {
             {schedules.length} agenda(s) · {ativas} ativa(s)
           </p>
         </div>
-        <Button onClick={() => setDialog({ open: true, initial: null })}>
-          <Plus data-tour-icon className="mr-1.5 h-4 w-4" /> Nova agenda
+        <Button data-tour="new-schedule" onClick={() => setDialog({ open: true, initial: null })}>
+          <Plus className="mr-1.5 h-4 w-4" /> Nova agenda
         </Button>
       </div>
 
