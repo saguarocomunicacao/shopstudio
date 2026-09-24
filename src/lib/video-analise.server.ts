@@ -302,7 +302,7 @@ const LOCK_MS = 5 * 60 * 1000;
 type RowAnalise = Row & {
   gemini_file_name: string | null; gemini_file_uri: string | null; etapa: string | null;
   analise_iniciada_em: string | null; tentativas: number; etapa_log: Record<string, unknown>[] | null;
-  updated_at: string;
+  updated_at: string; created_at: string;
 };
 
 /** Marca o início (ou nova tentativa) da análise. Não chama a IA. */
@@ -363,7 +363,7 @@ export async function avancarAnalise(id: string): Promise<string> {
     await mudar("erro", { status: "erro", erro: msg, passo_lock: null }, { erro: detalhe ?? msg, etapa_anterior: row.etapa });
   };
 
-  const inicio = new Date(row.analise_iniciada_em ?? row.updated_at).getTime();
+  const inicio = new Date(row.analise_iniciada_em ?? row.created_at).getTime();
   if (Date.now() - inicio > LIMITE_ANALISE_MS) {
     await falhar("A análise demorou demais. Tente novamente.", `timeout 15 min na etapa ${row.etapa ?? "desconhecida"}`);
     return "timeout";
