@@ -4,7 +4,7 @@
  * precisar abrir as plataformas externas.
  */
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, PiggyBank, Plus, Trash2, Wallet } from "lucide-react";
+import { AlertTriangle, Download, PiggyBank, Plus, Trash2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ import { userErrorMessage } from "@/lib/user-error";
 import { useMeuTenantId, useTenants } from "@/lib/tenants";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useStudio } from "./studio-context";
+import { PageHeader } from "./page-header";
 
 const hoje = () => new Date().toISOString().slice(0, 10);
 const dataCurta = (v: string) => new Date(`${v}T12:00:00`).toLocaleDateString("pt-BR");
