@@ -663,7 +663,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
               </div>
             )}
           </div>
-          <OrigemBloco a={a} videoUrl={videoUrl} podeEditar={podeEditar} onReanalisar={onReanalisar} />
+          <OrigemBloco a={a} videoUrl={videoUrl ?? undefined} podeEditar={podeEditar} onReanalisar={onReanalisar} />
         </div>
         <div>
           {a.status === "erro" ? (
