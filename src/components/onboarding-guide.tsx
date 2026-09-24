@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useStudio } from "./studio-context";
+import { ScreenPreview } from "./onboarding-previews";
 import type { JobStatusKey } from "@/lib/content";
 
 export const OPEN_ONBOARDING_EVENT = "shopstudio:open-onboarding";
@@ -14,16 +15,16 @@ export function openOnboarding() { window.dispatchEvent(new Event(OPEN_ONBOARDIN
 type Step = { title: string; text: string; todo: string[]; to: string; cta?: string; icon: LucideIcon; mock: string[] };
 
 const STEPS: Step[] = [
-  { icon: UsersRound, title: "Crie seu perfil", text: "Cada perfil é um canal do TikTok. Informe nome, @, categoria oficial, tom de voz e idioma. A categoria é o que casa os produtos com o perfil.", todo: ["Abra Perfis e clique em Adicionar perfil", "Preencha as abas Dados e Identidade", "Salve o perfil"], to: "/app/perfis", mock: ["Nome do canal", "@usuario", "Categoria oficial", "Tom de voz"] },
-  { icon: UserSquare2, title: "Escolha quem aparece nos vídeos", text: "Use uma pessoa nova a cada vídeo ou uma pessoa fixa com até 5 fotos de referência. Defina o estilo visual (realista, cartoon, 3D) e a voz da narração, padrão ou clonada.", todo: ["Abra o perfil selecionado", "Configure as abas Pessoa/Avatar e Meus avatares", "Escolha a voz na aba Voz"], to: "/app/perfis", mock: ["Pessoa fixa", "Fotos de referência", "Estilo visual", "Voz da narração"] },
-  { icon: Package, title: "Garimpe produtos em alta", text: "O Descobrir busca no TikTok Shop produtos com programa de afiliado, com preço, comissão e vendas. Em ascensão mostra os que estão subindo antes de saturar.", todo: ["Abra Produtos e vá em Descobrir", "Filtre por categoria e comissão", "Salve os melhores no catálogo"], to: "/app/produtos", mock: ["Power bank rosa", "Comissão 18%", "Em ascensão", "Salvar no catálogo"] },
-  { icon: Clapperboard, title: "Escolha o formato do vídeo", text: "Completo: a IA gera roteiro, cenas e vídeo. Gravar eu mesmo: a IA gera só o roteiro e você grava no estúdio. Novo vídeo próprio: assunto livre, sem produto.", todo: ["Clique em Usar no produto", "Escolha o formato"], to: "/app/produtos", mock: ["Completo", "Gravar eu mesmo", "Novo vídeo próprio"] },
+  { icon: UsersRound, title: "Crie seu perfil", text: "Cada perfil é um canal do TikTok. Informe nome, @, categoria oficial, tom de voz e idioma. A categoria é o que casa os produtos com o perfil.", todo: ["Abra Perfis e clique em Adicionar perfil", "Preencha as abas Dados e Identidade", "Salve o perfil"], to: "/app/perfis?guia=add-profile", mock: ["Nome do canal", "@usuario", "Categoria oficial", "Tom de voz"] },
+  { icon: UserSquare2, title: "Escolha quem aparece nos vídeos", text: "Use uma pessoa nova a cada vídeo ou uma pessoa fixa com até 5 fotos de referência. Defina o estilo visual (realista, cartoon, 3D) e a voz da narração, padrão ou clonada.", todo: ["Abra o perfil selecionado", "Configure as abas Pessoa/Avatar e Meus avatares", "Escolha a voz na aba Voz"], to: "PROFILE", mock: ["Pessoa fixa", "Fotos de referência", "Estilo visual", "Voz da narração"] },
+  { icon: Package, title: "Garimpe produtos em alta", text: "O Descobrir busca no TikTok Shop produtos com programa de afiliado, com preço, comissão e vendas. Em ascensão mostra os que estão subindo antes de saturar.", todo: ["Abra Produtos e vá em Descobrir", "Filtre por categoria e comissão", "Salve os melhores no catálogo"], to: "/app/produtos?tab=descobrir&guia=tab-descobrir", mock: ["Power bank rosa", "Comissão 18%", "Em ascensão", "Salvar no catálogo"] },
+  { icon: Clapperboard, title: "Escolha o formato do vídeo", text: "Completo: a IA gera roteiro, cenas e vídeo. Gravar eu mesmo: a IA gera só o roteiro e você grava no estúdio. Novo vídeo próprio: assunto livre, sem produto.", todo: ["Clique em Usar no produto", "Escolha o formato"], to: "/app/produtos?tab=catalogo&guia=use-product", mock: ["Completo", "Gravar eu mesmo", "Novo vídeo próprio"] },
   { icon: FileText, title: "Revise o roteiro", text: "Gancho, corpo, CTA, legenda e hashtags vêm no tom do perfil, inspirados nos vídeos que mais venderam na categoria. Tudo é editável e pode ser gerado de novo.", todo: ["Abra o Pipeline", "Abra o job e ajuste o roteiro", "Avance para a próxima etapa"], to: "/app/pipeline", mock: ["Gancho", "Corpo", "CTA", "Legenda e hashtags"] },
   { icon: Images, title: "Aprove as cenas antes do vídeo", text: "As imagens das cenas são baratas; o vídeo é a parte cara. Gere de novo as que não gostar e só então libere a animação. A estimativa de custo aparece antes.", todo: ["No job, revise as cenas", "Clique em Aprovar e gerar vídeo"], to: "/app/pipeline", mock: ["Cena 1", "Cena 2", "Cena 3", "Estimativa de custo"] },
-  { icon: Video, title: "Ou grave no estúdio", text: "O teleprompter fica sobre a câmera, em 9:16, com filtros e redução de ruído. Depois edite: apare as pontas, corte trechos e ajuste o enquadramento.", todo: ["Abra Rascunhos > Roteiros prontos", "Clique em Gravar vídeo"], to: "/app/rascunhos", mock: ["Teleprompter", "Gravar", "Aparar", "Enquadrar"] },
-  { icon: ShieldCheck, title: "Revise e aprove", text: "O vídeo pronto entra em Rascunhos > Aguardando revisão. Assista, compartilhe por link público com quem aprova e aprove para postagem.", todo: ["Abra Rascunhos > Aguardando revisão", "Clique em Aprovar para postagem"], to: "/app/rascunhos", mock: ["Assistir", "Link público", "Aprovar para postagem"] },
-  { icon: Send, title: "Poste com o kit de postagem", text: "O kit tem o vídeo para baixar, título, legenda, hashtags e o link do produto. A publicação é manual no app do TikTok: suba o vídeo, cole os textos e marque o produto no carrinho. Sem essa marcação não há comissão.", todo: ["Abra Rascunhos > Aprovados", "Clique em Abrir kit de postagem", "Marque o produto no carrinho ao publicar"], to: "/app/rascunhos", mock: ["Baixar vídeo", "Legenda", "Hashtags", "Link do produto"] },
-  { icon: Bot, title: "Deixe rodar sozinho", text: "A Automação gera vídeos por IA nos horários que você definir e para em Aguardando revisão. Nada é publicado sem você.", todo: ["Abra Automação", "Defina horários e vídeos por dia"], to: "/app/automacao", mock: ["08:00", "12:00", "19:00", "Aguardando revisão"] },
+  { icon: Video, title: "Ou grave no estúdio", text: "O teleprompter fica sobre a câmera, em 9:16, com filtros e redução de ruído. Depois edite: apare as pontas, corte trechos e ajuste o enquadramento.", todo: ["Abra Rascunhos > Roteiros prontos", "Clique em Gravar vídeo"], to: "/app/rascunhos?tab=roteiros&guia=record-video", mock: ["Teleprompter", "Gravar", "Aparar", "Enquadrar"] },
+  { icon: ShieldCheck, title: "Revise e aprove", text: "O vídeo pronto entra em Rascunhos > Aguardando revisão. Assista, compartilhe por link público com quem aprova e aprove para postagem.", todo: ["Abra Rascunhos > Aguardando revisão", "Clique em Aprovar para postagem"], to: "/app/rascunhos?tab=revisao", mock: ["Assistir", "Link público", "Aprovar para postagem"] },
+  { icon: Send, title: "Poste com o kit de postagem", text: "O kit tem o vídeo para baixar, título, legenda, hashtags e o link do produto. A publicação é manual no app do TikTok: suba o vídeo, cole os textos e marque o produto no carrinho. Sem essa marcação não há comissão.", todo: ["Abra Rascunhos > Aprovados", "Clique em Abrir kit de postagem", "Marque o produto no carrinho ao publicar"], to: "/app/rascunhos?tab=aprovados&guia=open-kit", mock: ["Baixar vídeo", "Legenda", "Hashtags", "Link do produto"] },
+  { icon: Bot, title: "Deixe rodar sozinho", text: "A Automação gera vídeos por IA nos horários que você definir e para em Aguardando revisão. Nada é publicado sem você.", todo: ["Abra Automação", "Defina horários e vídeos por dia"], to: "/app/automacao?guia=new-schedule", mock: ["08:00", "12:00", "19:00", "Aguardando revisão"] },
 ];
 
 const AFTER_ROTEIRO: JobStatusKey[] = ["roteiro_pronto", "gerando_cenas", "cenas_geradas", "gerando_video", "video_pronto", "rascunho_enviado", "publicado"];
@@ -76,7 +77,7 @@ async function saveOnboarding(p: { _seen?: boolean; _step?: number; _banner_hidd
 
 /** Mounted once in the shell: opens automatically on first login and on demand. */
 export function OnboardingHost() {
-  const { approvalStatus } = useStudio();
+  const { approvalStatus, activeProfileId } = useStudio();
   const { me, steps, done } = useOnboarding();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -97,7 +98,10 @@ export function OnboardingHost() {
     setOpen(false);
     await saveOnboarding({ _seen: true, _step: step });
     qc.invalidateQueries({ queryKey: ["onboarding-me"] });
-    if (goTo) navigate({ to: goTo });
+    if (goTo) {
+      const href = goTo === "PROFILE" ? (activeProfileId ? `/app/perfis/${activeProfileId}/editar?tab=pessoa&guia=avatar-mode` : "/app/perfis?guia=add-profile") : goTo;
+      navigate({ href });
+    }
   };
 
   const s = steps[step];
@@ -132,7 +136,7 @@ export function OnboardingHost() {
           <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-8">
             <h2 className="font-display text-2xl font-semibold">{s.title}</h2>
             <p className="mt-3 max-w-prose text-[15px] leading-relaxed text-muted-foreground">{s.text}</p>
-            <StepMock step={s} />
+            <ScreenPreview index={step} />
             <p className="mt-6 text-sm font-medium">O que fazer</p>
             <ul className="mt-2 space-y-2">
               {s.todo.map((t) => (
@@ -151,27 +155,6 @@ export function OnboardingHost() {
         </div>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function StepMock({ step }: { step: Step }) {
-  const Icon = step.icon;
-  return (
-    <div aria-hidden className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex items-center gap-1.5 border-b border-border px-3 py-2">
-        <span className="size-2 rounded-full bg-muted-foreground/40" /><span className="size-2 rounded-full bg-muted-foreground/40" /><span className="size-2 rounded-full bg-muted-foreground/40" />
-      </div>
-      <div className="flex gap-4 p-4">
-        <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-muted text-brand-cyan"><Icon className="size-6" strokeWidth={1.6} /></span>
-        <div className="grid flex-1 grid-cols-2 gap-2">
-          {step.mock.map((m, i) => (
-            <div key={m} className={`rounded-md border px-3 py-2 text-xs ${i === 0 ? "border-primary/50 text-foreground" : "border-border text-muted-foreground"}`}>
-              {m}<div className="mt-1.5 h-1 w-2/3 rounded-full bg-muted" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }
 

@@ -324,6 +324,7 @@ export function JobDetailDialog({
                 <Button
                   disabled={runApprove.isPending || orcamentoEstourado}
                   title={orcamentoEstourado ? "O orçamento do mês foi atingido." : undefined}
+                  data-tour="approve-scenes"
                   onClick={() => setConfirmVeo(true)}
                 >
                   {runApprove.isPending ? <><Loader2 className="animate-spin" />Enviando...</> : <>{job.render_error ? <RefreshCw /> : <Clapperboard />}{job.render_error ? "Tentar novamente (continua de onde parou)" : "Aprovar e gerar vídeo"}</>}
@@ -343,6 +344,7 @@ export function JobDetailDialog({
                   <Button
                     disabled={runApproveDraft.isPending}
                     title="Aprova este vídeo para postagem. Depois é só postar no TikTok e marcar como publicado na tela Rascunhos."
+                    data-tour="approve-draft"
                     onClick={() => job && runApproveDraft.mutate(job.id)}
                   >
                     {runApproveDraft.isPending ? <><Loader2 className="animate-spin" />Aprovando...</> : <><BadgeCheck />Aprovar para postagem</>}

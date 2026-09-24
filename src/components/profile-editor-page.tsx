@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
+import { Link, useBlocker, useNavigate, useSearch } from "@tanstack/react-router";
 import { AlertTriangle, ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, Loader2, Sparkles, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -138,7 +138,8 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const isNew = !profileId;
   const allowed = isNew ? can("perfis", "criar") : profileId ? can("perfis", "editar", profileId) : false;
 
-  const [tab, setTab] = useState<TabKey>("dados");
+  const tabParam = (useSearch({ strict: false }) as { tab?: string }).tab;
+  const [tab, setTab] = useState<TabKey>(TABS.some((t) => t.key === tabParam) ? (tabParam as TabKey) : "dados");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saved, setSaved] = useState<FormState>(emptyForm);
   const [avatarItems, setAvatarItems] = useState<AvatarItem[]>([]);
@@ -615,7 +616,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
               <div className="grid gap-2 sm:max-w-sm">
                 <Label htmlFor="p-avatar-mode">Modo</Label>
                 <Select value={form.avatarMode} onValueChange={(v) => setForm({ ...form, avatarMode: v })}>
-                  <SelectTrigger id="p-avatar-mode"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="p-avatar-mode" data-tour="avatar-mode"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="livre">Pessoa nova a cada vídeo</SelectItem>
                     <SelectItem value="fixo">Sempre a mesma pessoa</SelectItem>
@@ -634,6 +635,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                       <button
                         key={value}
                         type="button"
+                        data-tour={`avatar-${value}`}
                         onClick={() => setAvatarSource(value)}
                         className={`rounded-md px-3 py-1.5 text-xs font-bold transition ${avatarSource === value ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
                       >

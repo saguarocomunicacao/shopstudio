@@ -248,7 +248,7 @@ export function ProfilesPage() {
       <Heading
         eyebrow={loading ? "Carregando" : `${profiles.length} canais conectados`}
         title="Perfis do TikTok"
-        {...(canCreate ? { action: <Button asChild><Link to="/app/perfis/novo"><Plus />Adicionar perfil</Link></Button> } : {})}
+        {...(canCreate ? { action: <Button asChild data-tour="add-profile"><Link to="/app/perfis/novo"><Plus />Adicionar perfil</Link></Button> } : {})}
       />
       {profiles.length ? (
         <TooltipProvider delayDuration={250}>

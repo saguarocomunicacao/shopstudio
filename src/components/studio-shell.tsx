@@ -16,6 +16,7 @@ import { ProfileImage } from "./profile-image";
 import { StudioProvider, useStudio } from "./studio-context";
 import { UpdateGate } from "./update-gate";
 import { OnboardingHost, openOnboarding } from "./onboarding-guide";
+import { TourHighlighter } from "./tour-highlighter";
 import { SessionExpiredDialog } from "./session-expired-dialog";
 import { MissingKeyDialog, PendingKeysBanner } from "./missing-key-dialog";
 import logoDarkAsset from "@/assets/logo-dark.png.asset.json";
@@ -150,4 +151,4 @@ function ShellContent({ children }: { children: ReactNode }) {
   </div>;
 }
 
-export function StudioShell({ children }: { children: ReactNode }) { return <StudioProvider><ShellContent>{children}</ShellContent><UpdateGate/><SessionExpiredDialog/><MissingKeyDialog/><OnboardingHost/></StudioProvider>; }
+export function StudioShell({ children }: { children: ReactNode }) { return <StudioProvider><ShellContent>{children}</ShellContent><UpdateGate/><SessionExpiredDialog/><MissingKeyDialog/><OnboardingHost/><TourHighlighter/></StudioProvider>; }

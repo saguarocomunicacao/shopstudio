@@ -20,6 +20,7 @@ import {
   Video,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useSearch } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -252,7 +253,10 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
   const { data: trashed = [], isError: trashError } = useTrashedJobs(activeProfileId);
   const canViewProducts = can("produtos", "visualizar");
   const { data: products = [] } = useProducts(activeProfileId, canViewProducts);
-  const [queue, setQueue] = useState<QueueKey>("roteiros");
+  const tabParam = (useSearch({ strict: false }) as { tab?: string }).tab;
+  const fromTab = (t?: string): QueueKey | null => t === "roteiros" || t === "revisao" || t === "lixeira" ? t : t === "aprovados" ? "aprovado" : t === "publicados" ? "publicado" : null;
+  const [queue, setQueue] = useState<QueueKey>(fromTab(tabParam) ?? "roteiros");
+  useEffect(() => { const q = fromTab(tabParam); if (q) setQueue(q); }, [tabParam]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [recordingId, setRecordingId] = useState<string | null>(null);
   const [openStudioDirectly, setOpenStudioDirectly] = useState(false);
@@ -508,7 +512,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                     </Button>
                   ) : pendente ? (
                     <div className="grid grid-cols-1 gap-2 2xl:grid-cols-2">
-                      <Button className="min-w-0" onClick={() => openRecordingKit(job.id, true)}>
+                      <Button className="min-w-0" data-tour="record-video" onClick={() => openRecordingKit(job.id, true)}>
                         <Camera />
                         Gravar vídeo
                       </Button>
@@ -517,7 +521,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                       </Button>
                     </div>
                   ) : (
-                    <Button className="min-w-0" onClick={abrir}>Abrir kit de postagem</Button>
+                    <Button className="min-w-0" data-tour="open-kit" onClick={abrir}>Abrir kit de postagem</Button>
                   )}
                   {!isTrash && canRemove(job) && (
                     <Button

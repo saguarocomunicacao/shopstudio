@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowDown, ArrowUp, Copy, ExternalLink, Eye, Lock, Pencil, RefreshCw, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
+import { useSearch } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -114,7 +115,9 @@ function ProductsContent() {
   const canUpdate = can("produtos", "editar");
 
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
-  const [tab, setTab] = useState<"catalogo" | "descobrir" | "ascensao">("catalogo");
+  const tabParam = (useSearch({ strict: false }) as { tab?: string }).tab;
+  const [tab, setTab] = useState<"catalogo" | "descobrir" | "ascensao">(tabParam === "descobrir" || tabParam === "ascensao" ? tabParam : "catalogo");
+  useEffect(() => { if (tabParam === "descobrir" || tabParam === "ascensao" || tabParam === "catalogo") setTab(tabParam); }, [tabParam]);
   const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
   const [details, setDetails] = useState<DbProduct | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
@@ -268,6 +271,7 @@ function ProductsContent() {
           <button
             key={key}
             type="button"
+            data-tour={`tab-${key}`}
             onClick={() => setTab(key)}
             role="tab" aria-selected={tab === key} className={`-mb-px h-10 border-b-2 px-0.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${tab === key ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
@@ -292,7 +296,7 @@ function ProductsContent() {
           }))}
           renderActions={(p) => (
             <div className="flex items-center justify-end gap-2.5">
-              {canCreateJob && <Button size="sm" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
+              {canCreateJob && <Button size="sm" data-tour="use-product" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" className="size-8" onClick={() => setDetails(p)} aria-label={`Ver detalhes de ${p.name}`}>
