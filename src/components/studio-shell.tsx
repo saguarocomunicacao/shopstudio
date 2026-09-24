@@ -3,6 +3,7 @@ import { BarChart3, Bot, ChevronDown, CircleGauge, Clapperboard, FileClock, Kanb
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { AppTransition, useAppTransition } from "@/components/app-transition";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
@@ -20,13 +21,15 @@ import logoMarkDarkAsset from "@/assets/logo-mark-dark.png.asset.json";
 
 type NavItem = readonly [string, string, typeof CircleGauge, ModuleKey | null];
 const groups: readonly (readonly [string, readonly NavItem[]])[] = [
-  ["Produção", [["Dashboard", "/app", CircleGauge, null], ["Produtos", "/app/produtos", Package, "produtos"], ["Pipeline", "/app/pipeline", KanbanSquare, "pipeline"], ["Rascunhos", "/app/rascunhos", FileClock, "rascunhos"], ["Vídeos", "/app/videos", Clapperboard, "videos"], ["Automação", "/app/automacao", Bot, null]]],
-  ["Canais", [["Perfis", "/app/perfis", UserSquare2, "perfis"], ["Métricas", "/app/metricas", BarChart3, "metricas"]]],
-  ["Financeiro", [["Custos", "/app/custos", Wallet, "custos"], ["Investimento", "/app/investimento", PiggyBank, "investimento"]]],
-  ["Administração", [["Equipe", "/app/equipe", Users, "equipe"], ["Empresas", "/app/empresas", Landmark, "backoffice"], ["Planos", "/app/planos", Wallet, "backoffice"], ["Configurações", "/app/configuracoes", Settings, "configuracoes"]]],
+  ["", [["Visão geral", "/app", CircleGauge, null]]],
+  ["Configurar", [["Perfis", "/app/perfis", UserSquare2, "perfis"], ["Automação", "/app/automacao", Bot, null]]],
+  ["Produzir", [["Produtos", "/app/produtos", Package, "produtos"], ["Pipeline", "/app/pipeline", KanbanSquare, "pipeline"], ["Rascunhos", "/app/rascunhos", FileClock, "rascunhos"], ["Vídeos", "/app/videos", Clapperboard, "videos"]]],
+  ["Acompanhar", [["Métricas", "/app/metricas", BarChart3, "metricas"], ["Custos", "/app/custos", Wallet, "custos"], ["Investimento", "/app/investimento", PiggyBank, "investimento"]]],
+  ["Administrar", [["Equipe", "/app/equipe", Users, "equipe"], ["Empresas", "/app/empresas", Landmark, "backoffice"], ["Planos", "/app/planos", Wallet, "backoffice"], ["Configurações", "/app/configuracoes", Settings, "configuracoes"]]],
 ];
-const groupOf: Record<string, string> = Object.fromEntries(groups.flatMap(([g, list]) => list.map(([, to]) => [to, g])));
-groupOf["/app/prompts"] = "Administração"; groupOf["/app/aprovacoes"] = "Administração"; groupOf["/app/conta"] = "Conta"; groupOf["/app/apis"] = "Conta";
+const NEEDS_PROFILE = new Set(["Produzir", "Acompanhar"]);
+const groupOf: Record<string, string> = Object.fromEntries(groups.flatMap(([g, list]) => g ? list.map(([, to]) => [to, g]) : []));
+groupOf["/app/prompts"] = "Administrar"; groupOf["/app/aprovacoes"] = "Administrar"; groupOf["/app/conta"] = "Conta"; groupOf["/app/apis"] = "Conta";
 
 const titles: Record<string, string> = { "/app": "Visão geral", "/app/perfis": "Perfis", "/app/produtos": "Produtos em alta", "/app/pipeline": "Pipeline de conteúdo", "/app/automacao": "Automação", "/app/videos": "Biblioteca de vídeos", "/app/rascunhos": "Rascunhos", "/app/metricas": "Métricas", "/app/custos": "Custos", "/app/investimento": "Investimento nos fornecedores", "/app/equipe": "Equipe e permissões", "/app/prompts": "Prompts do sistema", "/app/aprovacoes": "Empresas", "/app/empresas": "Empresas", "/app/planos": "Planos", "/app/configuracoes": "Configurações" };
 
@@ -58,7 +61,18 @@ function useVisibleGroups() {
 
 function Nav({ compact, close }: { compact?: boolean; close?: () => void }) {
   const visible = useVisibleGroups();
-  return <nav className="flex-1 overflow-y-auto px-3 pb-16 pt-2">{visible.map(([group, list], i) => <div key={group} className={i > 0 ? "mt-3 border-t border-sidebar-border pt-3" : ""}>{!compact && <p className="px-3 pb-1.5 text-xs font-medium text-sidebar-label">{group}</p>}<div className="space-y-0.5">{list.map(([label, to, Icon]) => <Link key={to} to={to} title={compact ? label : undefined} aria-label={label} activeOptions={{ exact: to === "/app" }} onClick={close} className={`relative flex h-10 items-center gap-3 overflow-hidden rounded-lg text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-hover hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground data-[status=active]:before:absolute data-[status=active]:before:inset-y-0 data-[status=active]:before:left-0 data-[status=active]:before:w-[3px] data-[status=active]:before:bg-brand-cyan ${compact ? "justify-center px-0" : "px-3"}`}><Icon strokeWidth={1.8} className="h-[18px] w-[18px] shrink-0" />{!compact && <span className="truncate">{label}</span>}</Link>)}</div></div>)}</nav>;
+  const { profiles, loading } = useStudio();
+  const navigate = useNavigate();
+  const noProfile = !loading && profiles.length === 0;
+  const itemClass = `relative flex h-10 w-full items-center gap-3 overflow-hidden rounded-lg text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-hover hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[status=active]:bg-sidebar-accent data-[status=active]:text-sidebar-accent-foreground data-[status=active]:before:absolute data-[status=active]:before:inset-y-0 data-[status=active]:before:left-0 data-[status=active]:before:w-[3px] data-[status=active]:before:bg-brand-cyan ${compact ? "justify-center px-0" : "px-3"}`;
+  return <nav className="flex-1 overflow-y-auto px-3 pb-16 pt-2">{visible.map(([group, list], i) => {
+    const locked = noProfile && NEEDS_PROFILE.has(group);
+    return <div key={group || "top"} className={i > 0 ? "mt-3 border-t border-sidebar-border pt-3" : ""}>{!compact && group && <p className="px-3 pb-1.5 text-xs font-medium text-sidebar-label">{group}</p>}<div className="space-y-0.5">{list.map(([label, to, Icon]) => {
+      const inner = <><Icon strokeWidth={1.8} className="h-[18px] w-[18px] shrink-0" />{!compact && <span className="truncate">{label}</span>}</>;
+      if (locked) return <button key={to} type="button" title="Crie um perfil primeiro" aria-label={`${label} (crie um perfil primeiro)`} onClick={() => { close?.(); toast.info("Crie um perfil primeiro."); navigate({ to: "/app/perfis" }); }} className={`${itemClass} opacity-40`}>{inner}</button>;
+      return <Link key={to} to={to} title={compact ? label : undefined} aria-label={label} activeOptions={{ exact: to === "/app" }} onClick={close} className={itemClass}>{inner}</Link>;
+    })}</div></div>;
+  })}</nav>;
 }
 
 function ProfilePicker() {
