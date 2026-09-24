@@ -1,7 +1,8 @@
 import { PageHeader } from "./page-header";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Eye, Pencil, RefreshCw, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Copy, ExternalLink, Eye, Lock, Pencil, RefreshCw, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -42,25 +43,61 @@ function atualizadoHa(iso?: string | null) {
   return `há ${dias} d`;
 }
 
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+function Metric({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid min-w-0 content-start gap-1">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="break-words font-display text-lg font-semibold leading-tight">{children}</div>
+    </div>
+  );
+}
+
+function Vazio({ texto = "Não informado" }: { texto?: string }) {
+  return <span className="font-sans text-sm font-normal text-muted-foreground">{texto}</span>;
+}
+
+/** Descrição com quebras preservadas, linhas "•"/"-" viram lista e recolhe em 6 linhas. */
+function DescriptionText({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const lines = text.split(/\r?\n/);
+  const blocks: React.ReactNode[] = [];
+  let list: string[] = [];
+  const flush = () => {
+    if (list.length) {
+      blocks.push(<ul key={`l${blocks.length}`} className="list-disc pl-5">{list.map((li, i) => <li key={i}>{li}</li>)}</ul>);
+      list = [];
+    }
+  };
+  lines.forEach((raw) => {
+    const m = raw.trim().match(/^[•-]\s*(.*)$/);
+    if (m) { list.push(m[1] ?? ""); return; }
+    flush();
+    blocks.push(raw.trim() ? <p key={`p${blocks.length}`}>{raw}</p> : <div key={`b${blocks.length}`} className="h-[1.6em]" />);
+  });
+  flush();
+  const long = lines.length > 6 || text.length > 420;
   return (
     <div className="grid gap-1">
-      <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
-      <div className="text-sm font-medium break-words">{children}</div>
+      <div className={`break-words text-sm leading-[1.6] text-foreground ${long && !open ? "max-h-[9.6em] overflow-hidden" : ""}`}>{blocks}</div>
+      {long && (
+        <button type="button" onClick={() => setOpen((v) => !v)} className="justify-self-start text-sm font-medium text-muted-foreground hover:text-foreground">
+          {open ? "Mostrar menos" : "Mostrar mais"}
+        </button>
+      )}
     </div>
   );
 }
 
 /** Mostra de onde veio o texto da descrição, para indicar a confiabilidade. */
 function OriginBadge({ origem, temDescricao }: { origem?: string | null | undefined; temDescricao: boolean }) {
-  if (!temDescricao) return <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground">Sem descrição</span>;
-  const map: Record<string, { label: string; className: string }> = {
-    manual: { label: "Editada manualmente", className: "bg-primary/10 text-primary" },
-    gerada_por_ia: { label: "Gerada por IA", className: "bg-secondary text-foreground" },
-    kalodata: { label: "Da Kalodata", className: "bg-secondary text-muted-foreground" },
+  if (!temDescricao) return <Badge variant="secondary">Sem descrição</Badge>;
+  const map: Record<string, { label: string; variant: "default" | "secondary" | "success" }> = {
+    manual: { label: "Manual", variant: "secondary" },
+    gerada_por_ia: { label: "IA", variant: "success" },
+    kalodata: { label: "Kalodata", variant: "secondary" },
   };
   const item = map[origem ?? "kalodata"] ?? map["kalodata"]!;
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.className}`}>{item.label}</span>;
+  return <Badge variant={item.variant}>{item.label}</Badge>;
 }
 
 export function ProductsPage() { return <ProfileGate><ProductsContent /></ProfileGate>; }
@@ -84,6 +121,7 @@ function ProductsContent() {
   const [bulk, setBulk] = useState<{ done: number; total: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  const [zoom, setZoom] = useState<string | null>(null);
   /** Formato do job: vídeo inteiro com IA ou roteiro para a pessoa gravar. */
   const [formato, setFormato] = useState<"completo" | "gravacao">("completo");
 
@@ -297,103 +335,147 @@ function ProductsContent() {
       </div>
 
       <Dialog open={!!details} onOpenChange={(open) => { if (!open) { setDetails(null); setEditing(false); } }}>
-        <DialogContent className="max-h-[92vh] gap-0 overflow-hidden p-0">
-          <div className="grid max-h-[92vh] gap-6 overflow-y-auto p-6 [scrollbar-gutter:stable]">
-          <DialogHeader><DialogTitle className="pr-6 text-left">{details?.name}</DialogTitle></DialogHeader>
+        <DialogContent className="flex max-h-[85vh] w-[calc(100%-2rem)] max-w-[720px] flex-col gap-0 overflow-hidden bg-card p-0 max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:h-[100dvh] max-sm:max-h-[100dvh] max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:left-0 max-sm:rounded-none max-sm:border-0">
           {details && (
-            <div className="grid gap-4 py-2">
-              <div className="flex items-center gap-3">
-                {details.image_url ? <img src={details.image_url} alt="" className="size-16 rounded-xl object-cover" /> : null}
-                <p className="text-xs text-muted-foreground">
-                  Dados vindos do garimpo. Somente leitura.
-                  {atualizadoHa(details.updated_at) ? <span className="block">Atualizado {atualizadoHa(details.updated_at)}.</span> : null}
-                </p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <DetailRow label="Categoria">{details.niche || "—"}</DetailRow>
-                <DetailRow label="Hype score">{details.hype}</DetailRow>
-                <DetailRow label="Preço">{typeof details.price === "number" ? brl(details.price) : "—"}</DetailRow>
-                <DetailRow label="Comissão">
-                  {typeof details.commission === "number" ? `${details.commission}%` : "—"}
-                  {typeof details.price === "number" && typeof details.commission === "number" ? <span className="ml-2 font-bold text-primary">{brl(details.price * (details.commission / 100))} por venda</span> : null}
-                </DetailRow>
-                <DetailRow label="Vendas">{details.sales_volume?.toLocaleString("pt-BR") ?? "—"}</DetailRow>
-                <DetailRow label="Crescimento">{details.growth_rate ? `${details.growth_rate}%` : "—"}</DetailRow>
-              </div>
-              <DetailRow label="Descrição usada pela IA">
-                <div className="grid gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <OriginBadge origem={details.description_origem} temDescricao={!!details.description} />
-                    {canUpdate && (
-                      <>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          disabled={generateDesc.isPending || editing}
-                          onClick={() => details && generateDesc.mutate(details)}
-                        >
+            <>
+              <DialogHeader className="shrink-0 border-b border-border p-5 pr-12 text-left">
+                <div className="flex min-w-0 items-start gap-4">
+                  {details.image_url ? <img src={details.image_url} alt="" className="size-[72px] shrink-0 rounded-lg object-cover" /> : <div className="size-[72px] shrink-0 rounded-lg bg-muted" />}
+                  <div className="min-w-0 grid gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DialogTitle className="line-clamp-2 font-display text-xl font-semibold leading-snug">{details.name}</DialogTitle>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-sm">{details.name}</TooltipContent>
+                    </Tooltip>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
+                      {details.seller_name ? <span className="truncate">{details.seller_name}</span> : null}
+                      {details.seller_name && atualizadoHa(details.updated_at) ? <span aria-hidden>·</span> : null}
+                      {atualizadoHa(details.updated_at) ? <span>Atualizado {atualizadoHa(details.updated_at)}</span> : null}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="Somente leitura" className="inline-flex text-muted-foreground"><Lock className="size-3.5" /></button>
+                        </TooltipTrigger>
+                        <TooltipContent>Dados vindos do garimpo. Somente leitura.</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto p-5">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-5 rounded-[14px] bg-background p-4 sm:grid-cols-3">
+                  <Metric label="Preço">{typeof details.price === "number" ? brl(details.price) : <Vazio />}</Metric>
+                  <Metric label="Comissão">
+                    {typeof details.commission === "number" ? `${details.commission}%` : <Vazio />}
+                    {typeof details.price === "number" && typeof details.commission === "number" ? (
+                      <span className="mt-0.5 block font-sans text-[13px] font-medium text-cyan-ink">{brl(details.price * (details.commission / 100))} por venda</span>
+                    ) : null}
+                  </Metric>
+                  <Metric label="Vendas">{details.sales_volume != null ? details.sales_volume.toLocaleString("pt-BR") : <Vazio />}</Metric>
+                  <Metric label="Crescimento">
+                    {details.growth_rate ? (
+                      <span className={`inline-flex items-center gap-1 ${Number(details.growth_rate) < 0 ? "text-primary" : "text-cyan-ink"}`}>
+                        {Number(details.growth_rate) < 0 ? <ArrowDown className="size-4" /> : <ArrowUp className="size-4" />}
+                        {details.growth_rate}%
+                      </span>
+                    ) : <Vazio />}
+                  </Metric>
+                  <Metric label="Hype score">
+                    {details.hype ?? <Vazio />}
+                    {typeof details.hype === "number" ? (
+                      <span className="mt-2 block h-1 w-full overflow-hidden rounded-full bg-muted">
+                        <span className="block h-full rounded-full bg-brand-cyan" style={{ width: `${Math.max(0, Math.min(100, details.hype))}%` }} />
+                      </span>
+                    ) : null}
+                  </Metric>
+                  <Metric label="Categoria">{details.niche || <Vazio texto="Não informada" />}</Metric>
+                </div>
+
+                <section className="grid gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-sans text-sm font-semibold">Descrição usada pela IA</h3>
+                      <OriginBadge origem={details.description_origem} temDescricao={!!details.description} />
+                    </div>
+                    {canUpdate && !editing && (
+                      <div className="flex items-center gap-1">
+                        <Button type="button" size="sm" variant="ghost" disabled={generateDesc.isPending} onClick={() => details && generateDesc.mutate(details)}>
                           <Wand2 className={generateDesc.isPending ? "animate-spin" : ""} />
                           {details.description ? "Regerar por IA" : "Gerar descrição por IA"}
                         </Button>
-                        {editing ? null : (
-                          <Button type="button" size="sm" variant="ghost" onClick={() => { setDraft(details.description ?? ""); setEditing(true); }}>
-                            <Pencil />Editar
-                          </Button>
-                        )}
-                      </>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => { setDraft(details.description ?? ""); setEditing(true); }}>
+                          <Pencil />Editar
+                        </Button>
+                      </div>
                     )}
                   </div>
                   {editing ? (
                     <div className="grid gap-2">
-                      <Textarea
-                        value={draft}
-                        onChange={(e) => setDraft(e.target.value)}
-                        rows={6}
-                        className="border-0 bg-input font-normal"
-                        placeholder="Cole aqui a descrição real do TikTok Shop ou ajuste o texto."
-                      />
+                      <Textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={6} className="font-normal" placeholder="Cole aqui a descrição real do TikTok Shop ou ajuste o texto." />
                       <div className="flex gap-2">
                         <Button type="button" size="sm" disabled={saveDesc.isPending} onClick={() => details && saveDesc.mutate({ product: details, texto: draft })}>Salvar descrição</Button>
                         <Button type="button" size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button>
                       </div>
                     </div>
                   ) : details.description ? (
-                    <p className="whitespace-pre-wrap break-words text-sm font-normal text-muted-foreground">{details.description}</p>
+                    <DescriptionText key={details.id} text={details.description} />
                   ) : (
-                    <span className="text-muted-foreground">Sem descrição. A IA só conhece o nome e a foto principal deste produto.</span>
+                    <p className="text-sm text-muted-foreground">Sem descrição. A IA só conhece o nome e a foto principal deste produto.</p>
+                  )}
+                </section>
+
+                {details.extra_image_urls?.length ? (
+                  <section className="grid gap-2">
+                    <h3 className="font-sans text-sm font-semibold">Fotos enviadas à IA</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {details.extra_image_urls.map((src) => (
+                        <button key={src} type="button" onClick={() => setZoom(src)} className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Ampliar foto">
+                          <img src={src} alt="" className="size-16 rounded-lg object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                <section className="grid gap-2">
+                  <h3 className="font-sans text-sm font-semibold">Link do produto</h3>
+                  {details.url ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button asChild variant="secondary" size="sm">
+                        <a href={details.url} target="_blank" rel="noreferrer"><ExternalLink />Abrir no TikTok Shop</a>
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => { navigator.clipboard.writeText(details.url!).then(() => toast.success("Link copiado.")).catch(() => toast.error("Não foi possível copiar o link.")); }}>
+                        <Copy />Copiar link
+                      </Button>
+                    </div>
+                  ) : <Vazio texto="Não informado" />}
+                </section>
+              </div>
+
+              <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="max-sm:w-full">
+                  {canUpdate && details.external_id && (
+                    <Button variant="ghost" className="max-sm:w-full" disabled={refreshingId === details.id} onClick={() => details && refreshOne.mutate(details)}>
+                      <RefreshCw className={refreshingId === details.id ? "animate-spin" : ""} />
+                      Atualizar dados
+                    </Button>
                   )}
                 </div>
-              </DetailRow>
-              {details.extra_image_urls?.length ? (
-                <DetailRow label="Fotos enviadas à IA">
-                  <div className="flex flex-wrap gap-2">
-                    {details.extra_image_urls.map((src) => (
-                      <img key={src} src={src} alt="" className="size-16 rounded-xl object-cover" />
-                    ))}
-                  </div>
-                </DetailRow>
-              ) : null}
-              <DetailRow label="Link do produto">
-                {details.url ? <a href={details.url} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">{details.url}</a> : "—"}
-              </DetailRow>
-            </div>
+                <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                  <Button variant="secondary" className="max-sm:w-full" onClick={() => setDetails(null)}>Fechar</Button>
+                  {canCreateJob && <Button className="max-sm:w-full" onClick={() => { const p = details; setDetails(null); setUseTarget(p); }}><Sparkles />Usar neste perfil</Button>}
+                </div>
+              </div>
+            </>
           )}
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setDetails(null)}>Fechar</Button>
-            {canUpdate && details?.external_id && (
-              <Button
-                variant="secondary"
-                disabled={refreshingId === details.id}
-                onClick={() => details && refreshOne.mutate(details)}
-              >
-                <RefreshCw className={refreshingId === details.id ? "animate-spin" : ""} />
-                Atualizar
-              </Button>
-            )}
-            {canCreateJob && <Button onClick={() => { const p = details; setDetails(null); setUseTarget(p); }}><Sparkles />Usar</Button>}
-          </DialogFooter>
-          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!zoom} onOpenChange={(open) => !open && setZoom(null)}>
+        <DialogContent className="max-w-3xl bg-card p-2">
+          <DialogTitle className="sr-only">Foto do produto</DialogTitle>
+          {zoom ? <img src={zoom} alt="" className="max-h-[80vh] w-full rounded-lg object-contain" /> : null}
         </DialogContent>
       </Dialog>
 
