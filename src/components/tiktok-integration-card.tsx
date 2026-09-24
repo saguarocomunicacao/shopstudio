@@ -93,7 +93,7 @@ export function TiktokIntegrationCard({ profileId, canEdit }: { profileId: strin
           </p>
         </div>
         <span
-          className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+          className={`inline-flex shrink-0 rounded-lg px-2 py-0.5 text-xs font-medium ${
             conectado ? "status-lime" : comErro ? "status-orange" : "status-neutral"
           }`}
         >

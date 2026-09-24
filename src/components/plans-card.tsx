@@ -122,7 +122,7 @@ function PlanRows({ plan, rows, companies, open, canEdit, onToggle, onActive, on
       <TableCell><Icon className="size-4 text-muted-foreground" /></TableCell>
       <TableCell className="font-semibold">{plan.name}</TableCell>
       <TableCell>{plan.key_source === "byok" ? "Próprio cliente" : "Shop Studio"}</TableCell>
-      <TableCell><span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${plan.is_active ? "status-lime" : "status-neutral"}`}>{plan.is_active ? "Ativo" : "Inativo"}</span></TableCell>
+      <TableCell><span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${plan.is_active ? "status-lime" : "status-neutral"}`}>{plan.is_active ? "Ativo" : "Inativo"}</span></TableCell>
       <TableCell>{companies}</TableCell>
       <TableCell onClick={(event) => event.stopPropagation()}><div className="flex justify-end gap-1">
         {canEdit && <><Button asChild variant="ghost" size="sm"><Link to="/app/planos/$planId" params={{ planId: plan.id }}><Pencil />Editar</Link></Button><Button variant="ghost" size="icon" aria-label={plan.is_active ? "Desativar plano" : "Ativar plano"} onClick={() => onActive(!plan.is_active)}><Power /></Button><Button variant="ghost" size="icon" aria-label="Remover plano" onClick={onRemove}><Trash2 /></Button></>}

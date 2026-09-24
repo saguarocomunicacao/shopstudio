@@ -17,7 +17,7 @@ import { ProfileImage } from "./profile-image";
 
 const statusClass: Record<string, string> = { Ativo: "status-lime", Pausado: "status-neutral" };
 function StatusBadge({ children }: { children: string }) {
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusClass[children] ?? "status-neutral"}`}>{children}</span>;
+  return <span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${statusClass[children] ?? "status-neutral"}`}>{children}</span>;
 }
 function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: ReactNode }) {
   return <div className="mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4"><div className="min-w-0"><p className="mb-1 text-xs font-bold uppercase text-primary">{eyebrow}</p><h1 className="truncate text-2xl font-black sm:text-3xl">{title}</h1></div>{action}</div>;

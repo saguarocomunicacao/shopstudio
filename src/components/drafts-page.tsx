@@ -77,10 +77,10 @@ type QueueKey = "roteiros" | "revisao" | "aprovado" | "publicado" | "lixeira";
 
 const QUEUES: { key: QueueKey; label: string; status?: DbJob["status"]; badge: string }[] = [
   { key: "roteiros", label: "Roteiros prontos", badge: "status-violet" },
-  { key: "revisao", label: "Aguardando revisão", status: "video_pronto", badge: "status-lime" },
-  { key: "aprovado", label: "Aprovados", status: "rascunho_enviado", badge: "status-orange" },
-  { key: "publicado", label: "Publicados", status: "publicado", badge: "status-pink" },
-  { key: "lixeira", label: "Lixeira", badge: "status-violet" },
+  { key: "revisao", label: "Aguardando revisão", status: "video_pronto", badge: "status-violet" },
+  { key: "aprovado", label: "Aprovados", status: "rascunho_enviado", badge: "status-cyan" },
+  { key: "publicado", label: "Publicados", status: "publicado", badge: "status-published" },
+  { key: "lixeira", label: "Lixeira", badge: "status-neutral" },
 ];
 
 /** Roteiros concluídos do formato de gravação que ainda aguardam a pessoa gravar. */
@@ -459,12 +459,12 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <span
-                      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${isTrash ? "bg-secondary text-muted-foreground" : (current?.badge ?? "status-violet")}`}
+                      className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${isTrash ? "bg-secondary text-muted-foreground" : (current?.badge ?? "status-violet")}`}
                     >
                       {badgeLabel}
                     </span>
                     {!isTrash && !pendente && !job.video_path && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+                      <span className="status-pink inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium">
                         <AlertTriangle className="size-3" />
                         não salvo
                       </span>

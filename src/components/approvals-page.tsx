@@ -96,7 +96,7 @@ function CompanyRows({ user, tenant, plan, plans, open, protectedAccount, busy, 
       <TableCell><Button variant="ghost" size="icon" aria-label={open ? "Recolher empresa" : "Expandir empresa"} onClick={onToggle}><Icon /></Button></TableCell>
       <TableCell><p className="font-semibold">{user.email}</p><p className="text-xs text-muted-foreground">{user.name || "Sem nome"}</p></TableCell>
       <TableCell>{tenant?.name ?? "—"}</TableCell><TableCell>{plan?.name ?? "Sem plano"}</TableCell>
-      <TableCell><span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${STATUS_CLASS[user.status] ?? "status-neutral"}`}>{STATUS_LABEL[user.status] ?? user.status}</span></TableCell>
+      <TableCell><span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[user.status] ?? "status-neutral"}`}>{STATUS_LABEL[user.status] ?? user.status}</span></TableCell>
       <TableCell className="text-muted-foreground tabular-nums">{fmt(user.created_at)}</TableCell>
     </TableRow>
     {open && <TableRow className="bg-secondary/40 hover:bg-secondary/40"><TableCell/><TableCell colSpan={5}><div className="grid gap-5 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.8fr)]">

@@ -25,11 +25,11 @@ const statusClass: Record<string, string> = {
   produto_escolhido: "status-blue",
   roteiro_pronto: "status-violet",
   gerando_cenas: "status-cyan",
-  cenas_geradas: "status-orange",
+  cenas_geradas: "status-cyan",
   gerando_video: "status-cyan",
-  video_pronto: "status-lime",
-  rascunho_enviado: "status-orange",
-  publicado: "status-pink",
+  video_pronto: "status-violet",
+  rascunho_enviado: "status-cyan",
+  publicado: "status-published",
 };
 
 
@@ -147,7 +147,7 @@ function PipelineContent() {
           return (
             <section className="kanban-column" key={stage}>
               <div className="mb-3 flex items-center justify-between">
-                <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusClass[stage]}`}>{JOB_STATUS_LABELS[stage]}</span>
+                <span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${statusClass[stage]}`}>{JOB_STATUS_LABELS[stage]}</span>
                 <span className="text-xs text-muted-foreground">{items.length}</span>
               </div>
               <div className="space-y-2">
