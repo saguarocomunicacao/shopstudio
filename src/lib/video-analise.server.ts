@@ -236,8 +236,8 @@ async function verificarUm(row: Row): Promise<string> {
     const { data: atual } = await db.from("video_analises").select("etapa_log").eq("id", row.id).maybeSingle();
     return [...(((atual as { etapa_log?: unknown[] } | null)?.etapa_log ?? []) as unknown[]), { em: new Date().toISOString(), ...entrada }];
   };
-  const falhar = async (erro: string, detalhe?: string) => {
-    const etapa_log = await logDl({ etapa: "erro", motivo: erro, ...(detalhe ? { detalhe } : {}), run_id: row.apify_run_id });
+  const falhar = async (erro: string, detalhe?: string, definitivo = false) => {
+    const etapa_log = await logDl({ etapa: "erro", motivo: erro, ...(detalhe ? { detalhe } : {}), run_id: row.apify_run_id, definitivo });
     return row.so_download && row.resultado ? upd({ status: "pronto", so_download: false, apify_run_id: null, erro, etapa_log }) : upd({ status: "erro", erro, etapa_log });
   };
   const ap = await import("./apify.server");
@@ -271,11 +271,19 @@ async function verificarUm(row: Row): Promise<string> {
   }
   await registrarCusto();
   const item = run.datasetId ? await ap.lerItem(row.tenant_id, run.datasetId) : null;
-  const mp4 = item ? ap.acharMp4(item) : null;
+  const errApify = item && typeof item["error"] === "string" ? String(item["error"]) : null;
+  // 1) armazenamento do Apify citado no item; 2) qualquer vídeo no armazenamento do run; 3) link da rede (baixa já).
+  let mp4 = item && !errApify ? ap.acharMp4(item) : null;
+  if (!mp4 && !errApify && run.kvId) mp4 = await ap.acharMp4NoKv(row.tenant_id, run.kvId).catch(() => null);
+  if (!mp4 && item && !errApify) mp4 = ap.acharMp4Cdn(item);
   if (!item || !mp4) {
     console.error("[analise] item sem mp4", JSON.stringify(item ?? {}).slice(0, 600));
-    const errApify = item && typeof (item as Record<string, unknown>)["error"] === "string" ? String((item as Record<string, unknown>)["error"]) : null;
-    await falhar("Não foi possível baixar esse vídeo. Ele pode ser privado ou ter sido removido.", errApify ? `Apify: ${errApify}` : item ? "Apify: resultado sem arquivo de vídeo" : "Apify: nenhum resultado");
+    if (errApify) {
+      const c = ap.classificarErroItem(rede, errApify);
+      await falhar(c.msg, `Apify: ${errApify}`, c.definitivo);
+    } else {
+      await falhar("Não foi possível baixar esse vídeo. Ele pode ser privado ou ter sido removido.", item ? "Apify: resultado sem arquivo de vídeo" : "Apify: nenhum resultado", !!item);
+    }
     return "sem_mp4";
   }
   const meta = ap.extrairMeta(rede, item);

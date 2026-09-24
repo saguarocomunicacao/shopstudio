@@ -113,6 +113,7 @@ export async function lerRun(tenantId: string, runId: string): Promise<RunInfo> 
   return {
     status: String(d["status"] ?? "UNKNOWN"),
     datasetId: d["defaultDatasetId"] as string | undefined,
+    kvId: d["defaultKeyValueStoreId"] as string | undefined,
     custoUsd: Number(d["usageTotalUsd"] ?? 0) || 0,
   };
 }
@@ -143,6 +144,42 @@ export function acharMp4(item: Record<string, unknown>): string | null {
     achados.find((u) => /api\.apify\.com\/v2\/key-value-stores\/[^/]+\/records\//.test(u) && !/\.(jpe?g|png|webp)(\?|$)/i.test(u)) ??
     null
   );
+}
+
+/** Link direto de CDN da rede (válido por pouco tempo): baixar na hora. */
+export function acharMp4Cdn(item: Record<string, unknown>): string | null {
+  const cand = [
+    pick(item, "videoUrl", "videoMeta.downloadAddr", "videoMeta.playAddr", "downloadAddr", "playAddr", "video_url", "downloadUrl"),
+    ...(Array.isArray(item["mediaUrls"]) ? (item["mediaUrls"] as unknown[]) : []),
+  ];
+  for (const c of cand) {
+    if (typeof c === "string" && /^https?:\/\//.test(c) && !/\.(jpe?g|png|webp|gif)(\?|$)/i.test(c)) return c;
+  }
+  return null;
+}
+
+/** Procura no armazenamento do run um registro de vídeo com qualquer nome. */
+export async function acharMp4NoKv(tenantId: string, kvId: string): Promise<string | null> {
+  const res = await apifyFetch(tenantId, `/key-value-stores/${kvId}/keys?limit=1000`);
+  if (!res.ok) return null;
+  const d = ((await res.json().catch(() => ({}))) as { data?: { items?: { key: string; size: number }[] } }).data;
+  const ignorar = /^(INPUT|OUTPUT|PROGRESS|SDK_|AI_WINDOW|AUTHOR|VIDEO_DOWNLOAD_REQUEST|STATE|CRAWLEE)/i;
+  const itens = (d?.items ?? []).filter((i) => !ignorar.test(i.key) && i.size > 100 * 1024 && !/\.(jpe?g|png|webp|json)$/i.test(i.key));
+  itens.sort((a, b) => b.size - a.size);
+  return itens[0] ? `https://api.apify.com/v2/key-value-stores/${kvId}/records/${encodeURIComponent(itens[0].key)}` : null;
+}
+
+/** Erro devolvido no item: mensagem para a pessoa e se é definitivo. */
+export function classificarErroItem(rede: Rede, raw: string): { msg: string; definitivo: boolean } {
+  const e = raw.toLowerCase();
+  const nome = rede === "tiktok" ? "TikTok" : rede === "instagram" ? "Instagram" : "YouTube";
+  const dica = `Baixe pelo app do ${nome} e envie o arquivo aqui.`;
+  if (/sensitive|age|adult|restricted|inappropriate|login required|sign in/.test(e)) return { msg: `O ${nome} restringiu esse vídeo (conteúdo sensível ou para maiores). ${dica}`, definitivo: true };
+  if (/private|privad/.test(e)) return { msg: `Esse vídeo é privado no ${nome}. ${dica}`, definitivo: true };
+  if (/not found|removed|deleted|unavailable|doesn.?t exist|no longer/.test(e) && !/region|country/.test(e)) return { msg: `Esse vídeo foi removido ou não está mais disponível no ${nome}.`, definitivo: true };
+  if (/region|country|geo/.test(e)) return { msg: `Esse vídeo não está disponível na região do download. ${dica}`, definitivo: true };
+  if (/timeout|timed out|network|econn|rate|429|503|502/.test(e)) return { msg: "O download falhou por um problema temporário. Tente novamente.", definitivo: false };
+  return { msg: `Não foi possível baixar esse vídeo. ${dica}`, definitivo: true };
 }
 
 const pick = (o: Record<string, unknown>, ...keys: string[]): unknown => {
