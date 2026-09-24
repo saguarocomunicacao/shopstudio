@@ -101,6 +101,7 @@ export type DbJob = {
   product_id: string | null;
   profile_id: string;
   status: JobStatusKey;
+  favorito?: boolean | null;
   title: string;
   /** "completo" = vídeo inteiro com IA. "gravacao" = a pessoa grava lendo o teleprompter. */
   formato: "completo" | "gravacao";

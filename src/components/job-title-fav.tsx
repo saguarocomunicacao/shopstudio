@@ -82,7 +82,7 @@ export function FavoriteStar({ job, className, disabled }: { job: Pick<DbJob, "i
         className,
       )}
     >
-      <Star className={cn("size-4", fav ? "fill-brand-cyan text-brand-cyan" : "text-background dark:text-foreground")} />
+      <Star className={cn("size-4", fav ? "fill-brand-cyan text-brand-cyan" : "text-primary-foreground")} />
     </button>
   );
 }
