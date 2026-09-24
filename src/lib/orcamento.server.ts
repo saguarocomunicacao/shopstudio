@@ -63,11 +63,11 @@ export type OrcamentoStatus = {
 /** Situação do orçamento do mês corrente para um perfil. */
 export async function getOrcamentoStatus(profileId: string | null): Promise<OrcamentoStatus> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const inicio = new Date();
-  const desde = new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), 1)).toISOString();
+  const { intervaloBrasilia, gastoPeriodo } = await import("./custo-calculo");
+  const mes = intervaloBrasilia("mes");
 
   const [eventosRes, tarifasRes, taxasRes, configRes] = await Promise.all([
-    supabaseAdmin.from("consumo_eventos").select(SELECT_EVENTOS).gte("created_at", desde),
+    supabaseAdmin.from("consumo_eventos").select(SELECT_EVENTOS).gte("created_at", mes.desde).lte("created_at", mes.ate),
     supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
     supabaseAdmin
       .from("credito_taxas")
@@ -84,13 +84,9 @@ export async function getOrcamentoStatus(profileId: string | null): Promise<Orca
   );
   const cotacao = config.get("cotacao_usd_brl") || 1;
 
-  let globalBrl = 0;
-  let perfilBrl = 0;
-  for (const evento of eventos) {
-    const valor = custoEvento(evento, tarifas, taxas, cotacao, segundos);
-    globalBrl += valor;
-    if (evento.profile_id === profileId) perfilBrl += valor;
-  }
+  const precos = { tarifas, taxas, cotacao };
+  const globalBrl = gastoPeriodo(eventos, precos, null, mes.desde, mes.ate);
+  const perfilBrl = profileId ? gastoPeriodo(eventos, precos, [profileId], mes.desde, mes.ate) : 0;
 
   const pos = (v: number | undefined) => (v && Number.isFinite(v) && v > 0 ? v : null);
   const tetoGlobal = pos(config.get("orcamento_mensal_global"));

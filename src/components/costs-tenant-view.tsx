@@ -10,6 +10,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as ReTooltip
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { intervaloBrasilia, diaBrasilia } from "@/lib/custo-calculo";
 import { brl } from "@/lib/custo";
 import { consumoConsolidado } from "@/lib/consumo-tenant.functions";
 
@@ -32,21 +33,7 @@ const dataCurta = (v: string) => new Date(v).toLocaleDateString("pt-BR", { day: 
 const dataHora = (v: string) =>
   new Date(v).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
-function intervaloDe(periodo: PeriodoKey, de: string, ate: string) {
-  const hoje = startOfToday();
-  const fim = new Date();
-  fim.setHours(23, 59, 59, 999);
-  if (periodo === "custom") {
-    const inicio = de ? new Date(`${de}T00:00:00`) : hoje;
-    const final = ate ? new Date(`${ate}T23:59:59`) : fim;
-    return { desde: inicio.toISOString(), ate: final.toISOString() };
-  }
-  const inicio = new Date(hoje);
-  if (periodo === "7d") inicio.setDate(inicio.getDate() - 6);
-  if (periodo === "30d") inicio.setDate(inicio.getDate() - 29);
-  if (periodo === "mes") inicio.setDate(1);
-  return { desde: inicio.toISOString(), ate: fim.toISOString() };
-}
+const intervaloDe = (periodo: PeriodoKey, de: string, ate: string) => intervaloBrasilia(periodo, de, ate);
 
 function Card({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -60,8 +47,8 @@ function Card({ label, value, hint }: { label: string; value: string; hint?: str
 
 export function TenantCostsView() {
   const [periodo, setPeriodo] = useState<PeriodoKey>("mes");
-  const [de, setDe] = useState(iso(startOfToday()));
-  const [ate, setAte] = useState(iso(startOfToday()));
+  const [de, setDe] = useState(diaBrasilia());
+  const [ate, setAte] = useState(diaBrasilia());
   const intervalo = useMemo(() => intervaloDe(periodo, de, ate), [periodo, de, ate]);
 
   const buscar = useServerFn(consumoConsolidado);

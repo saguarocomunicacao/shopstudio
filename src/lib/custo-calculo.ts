@@ -345,13 +345,9 @@ export function calcularGastoMes(
   config: Map<string, AppConfigRow>,
   profileId: string | null,
 ): GastoMes {
-  let globalBrl = 0;
-  let perfilBrl = 0;
-  for (const evento of eventos) {
-    const custo = computeEventoCusto(evento, precos.tarifas, precos.cotacao, 0, precos.taxas);
-    globalBrl += custo.valorBrl;
-    if (profileId && evento.profile_id === profileId) perfilBrl += custo.valorBrl;
-  }
+  const mes = intervaloBrasilia("mes");
+  const globalBrl = gastoPeriodo(eventos, precos, null, mes.desde, mes.ate);
+  const perfilBrl = profileId ? gastoPeriodo(eventos, precos, [profileId], mes.desde, mes.ate) : 0;
   const numOf = (key: string) => {
     const v = config.get(key)?.value_num;
     const n = v === null || v === undefined ? null : Number(v);
@@ -366,3 +362,60 @@ export function calcularGastoMes(
 
 export const SELECT_EVENTOS_CUSTO =
   "id, job_id, profile_id, tenant_id, etapa, modelo, quantidade, unidade, metadados, created_at, action_type, tool_price_cents, credito_consumido, credito_unidade, credito_origem";
+
+/* ------------------------------------------------------------------ */
+/* Gasto do período: fonte única para Custos, Visão geral, orçamento   */
+/* e assistente. Intervalos sempre em dias de Brasília.                */
+/* ------------------------------------------------------------------ */
+
+export const TZ_BRASILIA = "America/Sao_Paulo";
+
+/** Data (AAAA-MM-DD) em Brasília. */
+export const diaBrasilia = (d: Date = new Date()) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: TZ_BRASILIA }).format(d);
+
+// Brasília não tem horário de verão desde 2019: UTC-3 fixo.
+const inicioDiaUtc = (ymd: string) => new Date(`${ymd}T00:00:00.000-03:00`).toISOString();
+const fimDiaUtc = (ymd: string) => new Date(`${ymd}T23:59:59.999-03:00`).toISOString();
+const somarDias = (ymd: string, n: number) => {
+  const d = new Date(`${ymd}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+
+export type PeriodoGasto = "hoje" | "7d" | "30d" | "mes" | "custom";
+
+/** Intervalo [desde, ate] em UTC, com dias começando 00:00 e terminando 23:59:59 em Brasília. */
+export function intervaloBrasilia(periodo: PeriodoGasto, de?: string | null, ate?: string | null) {
+  const hoje = diaBrasilia();
+  if (periodo === "custom") {
+    return { desde: inicioDiaUtc(de || hoje), ate: fimDiaUtc(ate || hoje) };
+  }
+  let inicio = hoje;
+  if (periodo === "7d") inicio = somarDias(hoje, -6);
+  if (periodo === "30d") inicio = somarDias(hoje, -29);
+  if (periodo === "mes") inicio = `${hoje.slice(0, 7)}-01`;
+  return { desde: inicioDiaUtc(inicio), ate: fimDiaUtc(hoje) };
+}
+
+/**
+ * gasto_periodo(perfis[], inicio, fim): soma consumo × tarifa em R$ dos eventos
+ * do intervalo. perfis nulo = todos os perfis acessíveis. É a mesma conta do
+ * total da tabela de Custos.
+ */
+export function gastoPeriodo(
+  eventos: ConsumoEventoRow[],
+  precos: { tarifas: TarifaRow[]; cotacao: number; taxas: CreditoTaxaRow[] },
+  perfis: string[] | null,
+  inicio: string,
+  fim: string,
+): number {
+  const ini = new Date(inicio).getTime();
+  const end = new Date(fim).getTime();
+  const filtrados = eventos.filter((e) => {
+    const t = new Date(e.created_at).getTime();
+    if (t < ini || t > end) return false;
+    return !perfis || (!!e.profile_id && perfis.includes(e.profile_id));
+  });
+  return agregarPeriodo(filtrados, precos.tarifas, precos.cotacao, [], precos.taxas).totalBrl;
+}
