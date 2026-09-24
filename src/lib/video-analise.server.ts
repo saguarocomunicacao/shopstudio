@@ -291,3 +291,186 @@ async function verificarUm(row: Row): Promise<string> {
   return "analisado";
 }
 
+// ===================== Análise assíncrona em etapas =====================
+// enviando → processando_no_gemini → gerando → pronto | erro
+// Cada chamada de avancarAnalise reivindica a linha (passo_lock), avança o que der e solta.
+
+type Etapa = "enviando" | "processando_no_gemini" | "gerando" | "pronto" | "erro";
+const LIMITE_ANALISE_MS = 15 * 60 * 1000;
+const LOCK_MS = 5 * 60 * 1000;
+
+type RowAnalise = Row & {
+  gemini_file_name: string | null; gemini_file_uri: string | null; etapa: string | null;
+  analise_iniciada_em: string | null; tentativas: number; etapa_log: Record<string, unknown>[] | null;
+  updated_at: string;
+};
+
+/** Marca o início (ou nova tentativa) da análise. Não chama a IA. */
+export async function iniciarAnalise(id: string, reanalisar: boolean): Promise<{ ok: boolean; erro?: string }> {
+  const db = await admin();
+  const { data } = await db.from("video_analises").select("*").eq("id", id).maybeSingle();
+  const row = data as unknown as RowAnalise | null;
+  if (!row) return { ok: false, erro: "Análise não encontrada." };
+  try {
+    if (reanalisar) {
+      const { assertSaldoPerfil } = await import("./saldo.server");
+      await assertSaldoPerfil(row.profile_id, { analise_video: 1 });
+    }
+  } catch (e) {
+    return { ok: false, erro: e instanceof Error ? e.message : "Sem saldo." };
+  }
+  if (!row.storage_path && !row.youtube_url) return { ok: false, erro: "O arquivo do vídeo não foi encontrado. Envie de novo." };
+  const agora = new Date().toISOString();
+  const tentativa = (row.tentativas ?? 0) + 1;
+  // Vídeo antigo do YouTube por URL: não há envio, vai direto para gerar.
+  const etapa: Etapa = row.storage_path ? "enviando" : "gerando";
+  await db.from("video_analises").update({
+    status: "analisando", erro: null, etapa, etapa_em: agora, analise_iniciada_em: agora, tentativas: tentativa,
+    gemini_file_name: null, gemini_file_uri: row.storage_path ? null : row.youtube_url, passo_lock: null,
+    etapa_log: [...(row.etapa_log ?? []), { etapa, em: agora, tentativa }],
+  } as never).eq("id", id);
+  return { ok: true };
+}
+
+/** Compatibilidade: inicia e já avança (usado após o download de links). */
+export async function rodarAnalise(id: string, reanalisar: boolean): Promise<{ ok: boolean; erro?: string }> {
+  const r = await iniciarAnalise(id, reanalisar);
+  if (!r.ok) return r;
+  await avancarAnalise(id);
+  return { ok: true };
+}
+
+export async function avancarAnalise(id: string): Promise<string> {
+  const db = await admin();
+  const corte = new Date(Date.now() - LOCK_MS).toISOString();
+  const { data } = await db.from("video_analises")
+    .update({ passo_lock: new Date().toISOString() } as never)
+    .eq("id", id).eq("status", "analisando")
+    .or(`passo_lock.is.null,passo_lock.lt.${corte}`)
+    .select("*");
+  const row = ((data ?? []) as unknown as RowAnalise[])[0];
+  if (!row) return "ocupado";
+
+  let log = row.etapa_log ?? [];
+  const upd = (v: Record<string, unknown>) => db.from("video_analises").update(v as never).eq("id", row.id);
+  const mudar = async (etapa: Etapa, extra: Record<string, unknown> = {}, info: Record<string, unknown> = {}) => {
+    const em = new Date().toISOString();
+    log = [...log, { etapa, em, tentativa: row.tentativas, ...info }];
+    row.etapa = etapa;
+    await upd({ etapa, etapa_em: em, etapa_log: log, passo_lock: em, ...extra });
+  };
+  const falhar = async (msg: string, detalhe?: string) => {
+    await mudar("erro", { status: "erro", erro: msg, passo_lock: null }, { erro: detalhe ?? msg, etapa_anterior: row.etapa });
+  };
+
+  const inicio = new Date(row.analise_iniciada_em ?? row.updated_at).getTime();
+  if (Date.now() - inicio > LIMITE_ANALISE_MS) {
+    await falhar("A análise demorou demais. Tente novamente.", `timeout 15 min na etapa ${row.etapa ?? "desconhecida"}`);
+    return "timeout";
+  }
+  if (!row.etapa) {
+    // Análise antiga, anterior às etapas: aguarda o limite de 15 min.
+    await upd({ passo_lock: null });
+    return "legado";
+  }
+
+  try {
+    const { resolveApiKey } = await import("./api-keys.server");
+    const key = await resolveApiKey(row.tenant_id, "gemini");
+    const mime = row.mime_type || "video/mp4";
+
+    if (row.etapa === "enviando") {
+      const t0 = Date.now();
+      const { data: s, error } = await db.storage.from("video-analises").createSignedUrl(row.storage_path!, 900);
+      if (error || !s?.signedUrl) throw new ErroAmigavel("O arquivo do vídeo não foi encontrado. Envie de novo.", error?.message);
+      const arq = await enviarParaGeminiPorPartes(key, s.signedUrl, mime);
+      row.gemini_file_name = arq.name;
+      row.gemini_file_uri = arq.uri;
+      await mudar("processando_no_gemini", { gemini_file_name: arq.name, gemini_file_uri: arq.uri },
+        { envio_segundos: Math.round((Date.now() - t0) / 1000), bytes: arq.bytes, estado_inicial: arq.state });
+    }
+
+    if (row.etapa === "processando_no_gemini") {
+      // Espera até ~60s nesta chamada; se ainda estiver processando, a próxima chamada continua.
+      for (let i = 0; i < 12; i++) {
+        const st = await estadoArquivoGemini(key, row.gemini_file_name!);
+        if (st.state === "ACTIVE") { await mudar("gerando", {}, { estado: "ACTIVE" }); break; }
+        if (st.state === "FAILED") throw new ErroAmigavel("O Gemini não conseguiu processar esse vídeo. Tente outro arquivo.", `file FAILED ${st.erro ?? ""}`);
+        if (st.state === "UNKNOWN" && st.erro && /40[34]/.test(st.erro)) throw new ErroAmigavel("O vídeo enviado expirou no serviço de análise. Tente novamente.", st.erro);
+        await new Promise((r) => setTimeout(r, 5000));
+      }
+      if (row.etapa === "processando_no_gemini") { await upd({ passo_lock: null }); return "processando"; }
+    }
+
+    if (row.etapa === "gerando") {
+      const t0 = Date.now();
+      const { resolvePrompt, renderPrompt } = await import("./prompts.server");
+      let base = "";
+      try { base = await resolvePrompt(db, row.profile_id, "analise_video"); } catch { base = "Analise o vídeo curto de venda em português do Brasil. Foco: {pergunta}"; }
+      const prompt = renderPrompt(base, { pergunta: row.pergunta || "análise padrão completa" }) +
+        "\n\nResponda somente no JSON do schema. Tempos em segundos. resumo com no máximo 3 linhas.";
+      const mimeGerar = row.storage_path ? mime : null;
+      let resultado: ResultadoAnalise | null = null;
+      let tokensIn = 0;
+      let tokensOut = 0;
+      for (let t = 0; t < 2 && !resultado; t++) {
+        const { texto, uso } = await gerar(key, row.gemini_file_uri!, mimeGerar, prompt);
+        tokensIn += uso.promptTokenCount ?? 0;
+        tokensOut += uso.candidatesTokenCount ?? 0;
+        try { resultado = ResultadoSchema.parse(JSON.parse(texto)); } catch (e) { console.error("[analise] json inválido", t, String(e).slice(0, 200)); }
+      }
+      // Tokens só são registrados depois que a resposta chegou.
+      const { recordConsumo } = await import("./consumo.server");
+      const eventoId = await recordConsumo({
+        profileId: row.profile_id, etapa: "analise_video", acao: "analise_video", modelo: GEMINI_MODEL,
+        unidade: "token_input", quantidade: tokensIn, metadados: { analise_id: row.id, origem: row.origem },
+      });
+      if (tokensOut)
+        await recordConsumo({
+          profileId: row.profile_id, etapa: "analise_video", acao: "analise_video", modelo: GEMINI_MODEL,
+          unidade: "token_output", quantidade: tokensOut, semDebito: true, metadados: { analise_id: row.id },
+        });
+      let custo = 0;
+      if (eventoId) {
+        const { data: ev } = await db.from("consumo_eventos").select("tool_price_cents").eq("id", eventoId).maybeSingle();
+        custo = Number(ev?.tool_price_cents ?? 0);
+      }
+      if (!resultado) throw new ErroAmigavel("A análise voltou incompleta. Tente novamente.", "json inválido nas 2 tentativas");
+      const titulo = !row.storage_path && resultado.titulo_video ? resultado.titulo_video.slice(0, 200) : row.titulo;
+      await mudar("pronto", {
+        status: "pronto", resultado, titulo, passo_lock: null,
+        duracao: row.duracao ?? (resultado.duracao_segundos || null),
+        consumo_evento_id: eventoId, custo_cents: Number(row.custo_cents ?? 0) + custo, frames: [],
+      }, { geracao_segundos: Math.round((Date.now() - t0) / 1000), tokens_in: tokensIn, tokens_out: tokensOut });
+      if (row.created_by) {
+        await db.from("notificacoes").insert({
+          tenant_id: row.tenant_id, user_id: row.created_by, tipo: "analise_pronta", texto: `Análise pronta: ${titulo}`, origem: "usuario",
+        });
+      }
+      return "pronto";
+    }
+    await upd({ passo_lock: null });
+    return row.etapa ?? "?";
+  } catch (e) {
+    const amigavel = e instanceof ErroAmigavel || (e instanceof Error && e.name === "SemSaldo");
+    const msg = amigavel ? (e as Error).message : "Não foi possível analisar o vídeo agora.";
+    const detalhe = e instanceof ErroAmigavel ? e.detalhe ?? e.message : e instanceof Error ? `${e.name}: ${e.message}`.slice(0, 300) : String(e);
+    console.error("[analise] falha", row.id, row.etapa, detalhe);
+    await falhar(msg, detalhe);
+    return "erro";
+  }
+}
+
+/** Varredura (cron): avança análises paradas e aplica o limite de 15 min. */
+export async function varrerAnalises(limite = 3) {
+  const db = await admin();
+  const corte = new Date(Date.now() - LOCK_MS).toISOString();
+  const { data } = await db.from("video_analises").select("id")
+    .eq("status", "analisando").or(`passo_lock.is.null,passo_lock.lt.${corte}`)
+    .order("updated_at").limit(limite);
+  const out: { id: string; r: string }[] = [];
+  for (const l of (data ?? []) as { id: string }[]) {
+    try { out.push({ id: l.id, r: await avancarAnalise(l.id) }); } catch (e) { console.error("[analise] varredura", e); }
+  }
+  return out;
+}
