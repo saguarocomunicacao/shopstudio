@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowDown, ArrowUp, ChevronDown, ChevronRight, ExternalLink, Eye, Film, Heart, Loader2, RefreshCw, TrendingUp, Users } from "lucide-react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip as ReTooltip, XAxis, YAxis } from "recharts";
+import { CurvaViews, GraficoMetricas } from "./metricas-graficos";
 import { PageHeader } from "./page-header";
 import { useStudio } from "./studio-context";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ import { actionError } from "@/lib/api-keys";
 
 const fmt = (n: number | null | undefined) => (n == null ? "—" : n.toLocaleString("pt-BR"));
 const pct = (n: number | null | undefined) => (n == null ? "—" : `${n.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`);
-const diaCurto = (d: string) => d.slice(8, 10) + "/" + d.slice(5, 7);
 const haQuanto = (iso: string | null | undefined) => {
   if (!iso) return null;
   const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3600_000);
@@ -197,8 +196,8 @@ export function MetricasContent() {
       </div>
 
       <div className="mb-6 grid gap-4 lg:grid-cols-2">
-        <Grafico titulo="Seguidores por dia (30 dias)" dados={resumo.serie} campo="seguidores" cor="var(--cyan-ink)" />
-        <Grafico titulo="Views por dia (30 dias)" dados={resumo.serie} campo="views" cor="var(--primary)" />
+        <GraficoMetricas titulo="Seguidores por dia (30 dias)" dados={resumo.serie} campo="seguidores" cor="var(--cyan-ink)" />
+        <GraficoMetricas titulo="Views por dia (30 dias)" dados={resumo.serie} campo="views" cor="var(--primary)" />
       </div>
 
       <div className="panel p-0">
@@ -265,19 +264,7 @@ export function MetricasContent() {
                           <TableCell colSpan={podeCusto ? 12 : 10} className="bg-background px-4 py-4">
                             <div className="grid gap-3 md:grid-cols-[1fr_auto]">
                               <div className="h-40">
-                                {l.curva.length > 1 ? (
-                                  <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={l.curva}>
-                                      <CartesianGrid strokeDasharray="3 3" stroke="var(--line, var(--border))" />
-                                      <XAxis dataKey="dia" tickFormatter={diaCurto} fontSize={11} />
-                                      <YAxis fontSize={11} width={60} tickFormatter={(v) => Number(v).toLocaleString("pt-BR")} />
-                                      <ReTooltip formatter={(v) => [Number(v).toLocaleString("pt-BR"), "Views"]} labelFormatter={(x) => diaCurto(String(x))} />
-                                      <Line type="monotone" dataKey="views" stroke="var(--primary)" strokeWidth={2} dot={false} />
-                                    </LineChart>
-                                  </ResponsiveContainer>
-                                ) : (
-                                  <p className="text-xs text-muted-foreground">A curva de views aparece a partir do segundo dia de coleta.</p>
-                                )}
+                                <CurvaViews curva={l.curva} />
                               </div>
                               <div className="grid content-start gap-2 text-xs">
                                 <p className="text-muted-foreground">Repostados: {fmt(l.reposts)}</p>
@@ -300,30 +287,6 @@ export function MetricasContent() {
         )}
       </div>
     </>
-  );
-}
-
-function Grafico({ titulo, dados, campo, cor }: { titulo: string; dados: { dia: string; seguidores: number | null; views: number }[]; campo: "seguidores" | "views"; cor: string }) {
-  const temDados = dados.some((d) => (campo === "seguidores" ? d.seguidores != null : d.views > 0));
-  return (
-    <div className="panel p-5">
-      <p className="mb-3 text-sm font-semibold">{titulo}</p>
-      <div className="h-56">
-        {temDados ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={dados}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--line, var(--border))" />
-              <XAxis dataKey="dia" tickFormatter={diaCurto} fontSize={11} />
-              <YAxis fontSize={11} width={64} domain={["auto", "auto"]} tickFormatter={(v) => Number(v).toLocaleString("pt-BR")} />
-              <ReTooltip formatter={(v) => [Number(v).toLocaleString("pt-BR"), campo === "views" ? "Views" : "Seguidores"]} labelFormatter={(x) => diaCurto(String(x))} />
-              <Line type="monotone" dataKey={campo} stroke={cor} strokeWidth={2} dot={false} connectNulls />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <p className="flex h-full items-center justify-center text-sm text-muted-foreground">Sem dados ainda. O gráfico se forma a cada coleta diária.</p>
-        )}
-      </div>
-    </div>
   );
 }
 
