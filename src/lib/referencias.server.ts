@@ -143,6 +143,10 @@ export async function processarColetaRef(refId: string): Promise<string> {
     status: "ok", run_id: null, ultima_coleta_em: new Date().toISOString(), ultimo_erro: null,
     nome: a.nickName ?? a.name ?? ref.nome ?? null, ...(foto ? { foto_path: foto } : {}),
   });
+  if (ref.acompanhar) {
+    const { detectarRadar } = await import("./radar.server");
+    await detectarRadar(refId).catch((e) => console.error("[radar]", e instanceof Error ? e.message : e));
+  }
   return "ok";
 }
 
