@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { AppTransition, useAppTransition } from "@/components/app-transition";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import type { ModuleKey } from "@/lib/access";
 import { OPEN_PROFILE_PICKER_EVENT } from "./profile-gate";
