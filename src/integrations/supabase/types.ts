@@ -2172,6 +2172,7 @@ export type Database = {
       }
       video_analises: {
         Row: {
+          analise_iniciada_em: string | null
           apify_run_id: string | null
           consumo_evento_id: string | null
           created_at: string
@@ -2180,11 +2181,17 @@ export type Database = {
           download_iniciado_em: string | null
           duracao: number | null
           erro: string | null
+          etapa: string | null
+          etapa_em: string | null
+          etapa_log: Json
           frames: Json
+          gemini_file_name: string | null
+          gemini_file_uri: string | null
           id: string
           link_url: string | null
           mime_type: string | null
           origem: string
+          passo_lock: string | null
           pergunta: string | null
           profile_id: string
           rede_meta: Json | null
@@ -2193,11 +2200,13 @@ export type Database = {
           status: string
           storage_path: string | null
           tenant_id: string
+          tentativas: number
           titulo: string
           updated_at: string
           youtube_url: string | null
         }
         Insert: {
+          analise_iniciada_em?: string | null
           apify_run_id?: string | null
           consumo_evento_id?: string | null
           created_at?: string
@@ -2206,11 +2215,17 @@ export type Database = {
           download_iniciado_em?: string | null
           duracao?: number | null
           erro?: string | null
+          etapa?: string | null
+          etapa_em?: string | null
+          etapa_log?: Json
           frames?: Json
+          gemini_file_name?: string | null
+          gemini_file_uri?: string | null
           id?: string
           link_url?: string | null
           mime_type?: string | null
           origem: string
+          passo_lock?: string | null
           pergunta?: string | null
           profile_id: string
           rede_meta?: Json | null
@@ -2219,11 +2234,13 @@ export type Database = {
           status?: string
           storage_path?: string | null
           tenant_id: string
+          tentativas?: number
           titulo?: string
           updated_at?: string
           youtube_url?: string | null
         }
         Update: {
+          analise_iniciada_em?: string | null
           apify_run_id?: string | null
           consumo_evento_id?: string | null
           created_at?: string
@@ -2232,11 +2249,17 @@ export type Database = {
           download_iniciado_em?: string | null
           duracao?: number | null
           erro?: string | null
+          etapa?: string | null
+          etapa_em?: string | null
+          etapa_log?: Json
           frames?: Json
+          gemini_file_name?: string | null
+          gemini_file_uri?: string | null
           id?: string
           link_url?: string | null
           mime_type?: string | null
           origem?: string
+          passo_lock?: string | null
           pergunta?: string | null
           profile_id?: string
           rede_meta?: Json | null
@@ -2245,6 +2268,7 @@ export type Database = {
           status?: string
           storage_path?: string | null
           tenant_id?: string
+          tentativas?: number
           titulo?: string
           updated_at?: string
           youtube_url?: string | null
