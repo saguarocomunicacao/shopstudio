@@ -59,7 +59,7 @@ function DashboardContent() {
     <div className={`grid gap-3 sm:grid-cols-2 ${stats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>{stats.map(({ icon: Icon, value, label, context, to, search, bar }) => (
       <Link key={label} to={to} {...(search ? { search } : {})} className="block rounded-lg border border-border bg-card p-5 transition-colors hover:border-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <div className="flex items-center gap-2 text-[13px] text-muted-foreground"><Icon className="size-[18px]" strokeWidth={1.8} />{label}</div>
-        <strong className="mt-2 block font-display text-[36px] font-semibold leading-tight">{value}</strong>
+        <strong className="mt-2 block font-display text-[36px] text-foreground font-semibold leading-tight">{value}</strong>
         {context && <p className="mt-1 text-[13px] text-muted-foreground">{context}</p>}
         {bar !== undefined && <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${bar >= 1 ? "bg-primary" : bar >= 0.8 ? "bg-warning" : "bg-brand-cyan"}`} style={{ width: `${Math.min(100, bar * 100)}%` }} /></div>}
       </Link>
