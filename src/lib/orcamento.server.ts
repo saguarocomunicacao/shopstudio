@@ -78,7 +78,6 @@ export async function getOrcamentoStatus(profileId: string | null): Promise<Orca
   const eventos = (eventosRes.data ?? []) as unknown as ConsumoEventoRow[];
   const tarifas = normalizarTarifas(tarifasRes.data);
   const taxas = normalizarTaxas(taxasRes.data);
-  const segundos = segundosPorJobDe(eventos);
   const config = new Map(
     ((configRes.data ?? []) as { key: string; value_num: number | null }[]).map((r) => [r.key, Number(r.value_num ?? 0)]),
   );

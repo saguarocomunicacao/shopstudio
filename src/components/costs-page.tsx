@@ -26,7 +26,7 @@ import {
   type LinhaJob,
 } from "@/lib/custo-periodo";
 import type { DbJob } from "@/lib/content";
-import { useGastoMes } from "@/lib/orcamento";
+import { CONFIG_KEYS, useAppConfig } from "@/lib/orcamento";
 import { useMeuTenantId, useTenants } from "@/lib/tenants";
 import { JobDetailDialog } from "./job-detail-dialog";
 import { PageHeader } from "./page-header";
@@ -148,7 +148,7 @@ export function CostsPage() {
   const intervalo = useMemo(() => intervaloDe(periodo, de, ate), [periodo, de, ate]);
   const perfilFiltro = perfisEscolhidos.length ? perfisEscolhidos : null;
   const { data, isLoading, isError } = useCustoPeriodo(intervalo.desde, intervalo.ate, perfilFiltro, etapasSel, tenantId);
-  const gasto = useGastoMes(activeProfileId);
+  const { data: appConfig } = useAppConfig();
 
   const jobsLinhas = useMemo(() => {
     const linhas = data?.jobs ?? [];
@@ -224,15 +224,21 @@ export function CostsPage() {
   }
 
   const semSelecao = !tenantId;
-  const teto = gasto?.tetoPerfil ?? gasto?.tetoGlobal ?? null;
-  const consumidoMes = gasto ? (gasto.tetoPerfil ? gasto.perfilBrl : gasto.globalBrl) : 0;
+  // Topo = mesmo número do total da tabela (mesmo filtro de perfil e período).
+  const tetoDe = (key: string) => {
+    const v = Number(appConfig?.get(key)?.value_num ?? 0);
+    return Number.isFinite(v) && v > 0 ? v : null;
+  };
+  const perfilUnico = perfilFiltro?.length === 1 ? perfilFiltro[0]! : null;
+  const teto = periodo === "mes" ? (perfilUnico ? tetoDe(CONFIG_KEYS.perfil(perfilUnico)) : null) ?? tetoDe(CONFIG_KEYS.tetoGlobal) : null;
+  const rotuloGasto = periodo === "mes" ? "Gasto do mês" : `Gasto (${PERIODO_LABELS[periodo].toLowerCase()})`;
 
   return (
     <TooltipProvider delayDuration={200}>
     <div className="grid gap-6">
       <PageHeader
         title="Custos"
-        description={gasto ? `Gasto do mês: ${brl(consumidoMes)}${teto ? ` de ${brl(teto)}` : ""}` : undefined}
+        description={data ? `${rotuloGasto}: ${brl(data.totalBrl)}${teto ? ` de ${brl(teto)}` : ""}` : undefined}
         actions={
           <Button variant="outline" size="sm" onClick={exportarCsv} disabled={!jobsLinhas.length}>
             <Download className="size-4" /> Exportar CSV
