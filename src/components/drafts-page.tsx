@@ -590,7 +590,9 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
               ? "Nenhum rascunho aprovado no momento."
               : queue === "roteiros"
                 ? "Nenhum roteiro pronto para gravar. Crie um vídeo próprio ou gere o roteiro de um produto nesse formato."
-                : queue === "lixeira"
+                : queue === "favoritos"
+                  ? "Nenhum favorito ainda. Toque na estrela de um vídeo para guardá-lo aqui."
+                  : queue === "lixeira"
                   ? "A lixeira está vazia."
                   : "Nenhum vídeo publicado ainda."}
         </div>
