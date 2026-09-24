@@ -88,7 +88,18 @@ export const executarAnalise = createServerFn({ method: "POST" })
       const r = await srv.comecarDownload(row);
       return r.ok ? { ok: true, baixando: true } : r;
     }
-    return srv.rodarAnalise(row.id, data.reanalisar);
+    const r = await srv.iniciarAnalise(row.id, data.reanalisar);
+    return r.ok ? { ok: true, emAndamento: true } : r;
+  });
+
+/** Avança uma etapa da análise (chamado pela tela enquanto ela estiver aberta; o cron é a rede de segurança). */
+export const avancarAnalise = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const row = await carregar(context, data.id);
+    const srv = await import("./video-analise.server");
+    return { r: await srv.avancarAnalise(row.id) };
   });
 
 /** Análises antigas do YouTube (por URL): baixa o MP4 sem refazer a análise. */

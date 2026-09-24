@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { baixarVideoDaAnalise, criarAnalise, executarAnalise, type ResultadoAnalise } from "@/lib/video-analise.functions";
+import { avancarAnalise, baixarVideoDaAnalise, criarAnalise, executarAnalise, type ResultadoAnalise } from "@/lib/video-analise.functions";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
 import { userErrorMessage as friendlyError } from "@/lib/user-error";
 
@@ -132,8 +132,26 @@ export function AnalisarVideoPage() {
   const [novo, setNovo] = useState(false);
   const [abertaId, setAbertaId] = useState<string | null>(null);
   const executar = useServerFn(executarAnalise);
+  const avancar = useServerFn(avancarAnalise);
   const qc = useQueryClient();
   const aberta = analises.find((a) => a.id === abertaId) ?? null;
+
+  // Enquanto houver análise em andamento, a tela empurra as etapas (uma chamada por vez).
+  const emAndamento = analises.filter((a) => a.status === "analisando").map((a) => a.id).join(",");
+  useEffect(() => {
+    if (!emAndamento) return undefined;
+    let ocupado = false;
+    const ids = emAndamento.split(",");
+    const tick = async () => {
+      if (ocupado) return;
+      ocupado = true;
+      try { for (const id of ids) await avancar({ data: { id } }).catch(() => null); }
+      finally { ocupado = false; qc.invalidateQueries({ queryKey: ["video-analises", activeProfileId] }); }
+    };
+    void tick();
+    const t = setInterval(tick, 10000);
+    return () => clearInterval(t);
+  }, [emAndamento, avancar, qc, activeProfileId]);
 
   const reanalisar = async (a: Analise) => {
     toast.message("Reanalisando o vídeo...");
@@ -282,7 +300,7 @@ function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: 
       if (aba === "link") { toast.success("Baixando o vídeo. A análise começa assim que o download terminar."); return; }
       executar({ data: { id, reanalisar: false } })
         .then((r) => {
-          if (r.ok) toast.success("Análise pronta.");
+          if (r.ok) toast.success("Análise iniciada. Você pode acompanhar o progresso aqui.");
           else toast.error(("erro" in r && r.erro) || "Não foi possível analisar.");
         })
         .catch(() => toast.error("Não foi possível analisar o vídeo agora."))

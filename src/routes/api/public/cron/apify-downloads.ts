@@ -11,9 +11,10 @@ export const Route = createFileRoute("/api/public/cron/apify-downloads")({
         const ok = esperado && token.length === esperado.length && timingSafeEqual(Buffer.from(token), Buffer.from(esperado));
         if (!ok) return new Response("Unauthorized", { status: 401 });
         try {
-          const { varrerDownloadsParados } = await import("@/lib/video-analise.server");
+          const { varrerDownloadsParados, varrerAnalises } = await import("@/lib/video-analise.server");
           const results = await varrerDownloadsParados(10);
-          return Response.json({ ok: true, results });
+          const analises = await varrerAnalises(3);
+          return Response.json({ ok: true, results, analises });
         } catch (e) {
           console.error("[cron apify-downloads]", e);
           return Response.json({ ok: false }, { status: 500 });
