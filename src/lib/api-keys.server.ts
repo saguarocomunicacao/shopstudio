@@ -12,13 +12,14 @@ import { AsyncLocalStorage } from "node:async_hooks";
  * roda na infraestrutura da plataforma.
  */
 
-export type KeyProvider = "gemini" | "json2video" | "elevenlabs" | "kalodata";
+export type KeyProvider = "gemini" | "json2video" | "elevenlabs" | "kalodata" | "apify";
 
 export const PROVIDER_LABEL: Record<KeyProvider, string> = {
   gemini: "Google (Gemini/Veo)",
   json2video: "JSON2Video",
   elevenlabs: "ElevenLabs",
   kalodata: "Kalodata",
+  apify: "Apify",
 };
 
 const ENV_BY_PROVIDER: Record<KeyProvider, string> = {
@@ -26,6 +27,7 @@ const ENV_BY_PROVIDER: Record<KeyProvider, string> = {
   json2video: "JSON2VIDEO_API_KEY",
   elevenlabs: "ELEVENLABS_API_KEY",
   kalodata: "KALODATA_API_KEY",
+  apify: "APIFY_API_KEY",
 };
 
 /** Marca usada para o front reconhecer o bloqueio e abrir o modal certo. */

@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { userErrorMessage } from "@/lib/user-error";
 
 /** Provedores cujas chaves podem ser do próprio cliente (plano BYOK). */
-export const KEY_PROVIDERS = ["gemini", "json2video", "elevenlabs", "kalodata"] as const;
+export const KEY_PROVIDERS = ["gemini", "json2video", "elevenlabs", "kalodata", "apify"] as const;
 export type KeyProvider = (typeof KEY_PROVIDERS)[number];
 
 export const PROVIDER_LABEL: Record<KeyProvider, string> = {
@@ -11,6 +11,7 @@ export const PROVIDER_LABEL: Record<KeyProvider, string> = {
   json2video: "JSON2Video",
   elevenlabs: "ElevenLabs",
   kalodata: "Kalodata",
+  apify: "Apify",
 };
 
 export const PROVIDER_USE: Record<KeyProvider, string> = {
@@ -18,6 +19,7 @@ export const PROVIDER_USE: Record<KeyProvider, string> = {
   json2video: "montar o vídeo final com legendas e trilha",
   elevenlabs: "gerar a narração em voz",
   kalodata: "buscar produtos e vídeos campeões",
+  apify: "baixar vídeos de links do TikTok, YouTube e Instagram",
 };
 
 const MISSING_KEY_TAG = "MISSING_TENANT_KEY";

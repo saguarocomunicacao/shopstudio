@@ -10,13 +10,14 @@ import { deleteTenantApiKey, saveTenantApiKey, testTenantApiKey } from "@/lib/te
 import { actionError, useTenantKeys } from "@/lib/api-keys";
 import { useStudio } from "./studio-context";
 
-type Provider = "gemini" | "json2video" | "elevenlabs" | "kalodata";
+type Provider = "gemini" | "json2video" | "elevenlabs" | "kalodata" | "apify";
 
 const PROVIDERS: { id: Provider; nome: string; descricao: string; ondeAchar: string }[] = [
   { id: "gemini", nome: "Gemini (imagens e vídeo Veo)", descricao: "Uma única chave do Google cobre a geração de imagens e a animação em vídeo.", ondeAchar: "Google AI Studio" },
   { id: "json2video", nome: "JSON2Video", descricao: "Montagem final do vídeo com legendas e trilha.", ondeAchar: "Painel do JSON2Video" },
   { id: "elevenlabs", nome: "ElevenLabs", descricao: "Narração em voz.", ondeAchar: "Painel da ElevenLabs" },
   { id: "kalodata", nome: "Kalodata", descricao: "Busca de produtos e vídeos campeões.", ondeAchar: "Painel do Kalodata" },
+  { id: "apify", nome: "Apify", descricao: "Baixa vídeos de links do TikTok, YouTube e Instagram para análise.", ondeAchar: "Apify Console > Settings > API & Integrations" },
 ];
 
 type KeyRow = { provider: Provider; status: string; last_tested_at: string | null; last_test_ok: boolean | null };
