@@ -206,7 +206,7 @@ export async function processarColeta(profileId: string): Promise<string> {
         tenant_id: p.tenant_id, profile_id: profileId, tiktok_video_id: vid,
         url: i.webVideoUrl || `https://www.tiktok.com/@${handle}/video/${vid}`,
         legenda: i.text ? String(i.text).slice(0, 500) : null,
-        publicado_em: i.createTimeISO ?? null, duracao: num(i.videoMeta?.duration), visto_em: new Date().toISOString(),
+        publicado_em: i.createTimeISO ?? null, duracao: num(i.videoMeta?.duration), visto_em: new Date().toISOString(), fixado: !!i.isPinned,
         ...(capa !== undefined ? { capa_url: capa } : {}),
       });
     }

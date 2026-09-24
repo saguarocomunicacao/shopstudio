@@ -134,6 +134,9 @@ export async function processarColetaRef(refId: string): Promise<string> {
       });
     }
     await db.from("referencia_videos").upsert(linhas as never, { onConflict: "referencia_id,tiktok_video_id" });
+    // Mantém só os N mais recentes desta coleta (tira fixados antigos/vídeos que saíram da janela).
+    const atuais = linhas.map((l) => l.tiktok_video_id);
+    await db.from("referencia_videos").delete().eq("referencia_id", refId).not("tiktok_video_id", "in", `(${atuais.join(",")})`);
   }
   await salvar(refId, {
     status: "ok", run_id: null, ultima_coleta_em: new Date().toISOString(), ultimo_erro: null,
