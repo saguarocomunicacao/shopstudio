@@ -13,7 +13,7 @@ import { formatoLabel, linhasVideos, resumirMetricas, type JobMetricaBase, type 
 /** Mesma leitura da tela Métricas (getMetricas), com o login do usuário. */
 async function lerMetricas(db: Any, profileId: string, dias: number) {
   const desde = new Date(Date.now() - (Math.max(dias, 30) + 8) * 86400_000).toISOString().slice(0, 10);
-  const [perfil, coleta, prof, jobs, videos] = await Promise.all([
+  const [perfil, coleta, prof, jobs, videos, naoVinc] = await Promise.all([
     db.from("perfil_metricas").select("data, seguidores, seguindo, curtidas_total, videos_total").eq("profile_id", profileId).gte("data", desde).order("data"),
     db.from("metricas_coleta").select("status, ultima_coleta_em, ultimo_erro").eq("profile_id", profileId).maybeSingle(),
     db.from("profiles").select("handle").eq("id", profileId).maybeSingle(),

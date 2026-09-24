@@ -32,6 +32,7 @@ export const getMetricas = createServerFn({ method: "POST" })
       db.from("jobs").select("id, title, formato, video_choice, published_at, tiktok_video_id, tiktok_video_url").eq("profile_id", data.profileId).eq("status", "publicado").is("deleted_at", null).order("published_at", { ascending: false }).limit(200),
       db.from("video_metricas").select("tiktok_video_id, job_id, data, views, likes, comentarios, compartilhamentos, salvos, reposts").eq("profile_id", data.profileId).gte("data", desde).order("data").limit(10000),
       db.from("videos_nao_vinculados").select("id", { count: "exact", head: true }).eq("profile_id", data.profileId).is("vinculado_job_id", null),
+      db.from("videos_nao_vinculados").select("tiktok_video_id, publicado_em").eq("profile_id", data.profileId).limit(500),
     ]);
     return {
       semPermissao: false as const,
