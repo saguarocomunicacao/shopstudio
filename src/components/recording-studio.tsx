@@ -28,6 +28,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import type { DbJob } from "@/lib/content";
+import { videoDuration } from "@/lib/video-duration";
 import { createRecordingUploadUrl, finishRecording, getRecordingVideoUrl, restoreOriginalRecording, saveEditedRecording, saveRecordingOperations } from "@/lib/recording.functions";
 import { withoutDuplicatedHook } from "@/lib/recording-script";
 import { RECORDING_FORMATS, cropCover, type RecordingAspectRatio } from "@/lib/recording-format";
@@ -629,7 +630,7 @@ export function RecordingStudio({
         if (!captureDirty) return;
         if (editOutputDirty && editedBlob) {
           const editedPath = await enviar(editedBlob, "editado");
-          await saveEdit({ data: { jobId: job.id, path: editedPath, operations } });
+          await saveEdit({ data: { jobId: job.id, path: editedPath, operations, editedDuracao: await videoDuration(editedBlob) } });
           await salvarMiniatura(editedBlob);
           return;
         }
@@ -638,7 +639,8 @@ export function RecordingStudio({
       }
       const path = await enviar(blob, "original");
       const editedPath = editedBlob ? await enviar(editedBlob, "editado") : null;
-      await finish({ data: { jobId: job.id, path, editedPath, operations: editedPath ? operations : null } });
+      const [originalDuracao, editedDuracao] = await Promise.all([videoDuration(blob), editedBlob ? videoDuration(editedBlob) : Promise.resolve(null)]);
+      await finish({ data: { jobId: job.id, path, editedPath, operations: editedPath ? operations : null, originalDuracao, editedDuracao } });
       await salvarMiniatura(editedBlob ?? blob);
     },
     onSuccess: () => {

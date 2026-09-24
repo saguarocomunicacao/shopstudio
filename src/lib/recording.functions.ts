@@ -603,6 +603,8 @@ export const finishRecording = createServerFn({ method: "POST" })
         path: z.string().trim().min(3).max(300),
         editedPath: z.string().trim().min(3).max(300).nullish(),
         operations: z.array(editOperation).max(20).nullish(),
+        originalDuracao: z.number().positive().max(36000).nullish(),
+        editedDuracao: z.number().positive().max(36000).nullish(),
       })
       .parse(data),
   )
@@ -628,6 +630,8 @@ export const finishRecording = createServerFn({ method: "POST" })
         video_path: visible,
         video_original_path: data.path,
         video_edited_path: data.editedPath ?? null,
+        video_original_duracao: data.originalDuracao ?? null,
+        video_edited_duracao: data.editedPath ? data.editedDuracao ?? null : null,
         video_choice: data.editedPath ? "gravado_editado" : "gravado",
         video_edits: data.operations?.length ? (data.operations as never) : null,
         video_storage_status: "salvo",
@@ -658,6 +662,7 @@ export const saveEditedRecording = createServerFn({ method: "POST" })
         jobId: z.string().uuid(),
         path: z.string().trim().min(3).max(300),
         operations: z.array(editOperation).max(20),
+        editedDuracao: z.number().positive().max(36000).nullish(),
       })
       .parse(data),
   )
@@ -682,6 +687,7 @@ export const saveEditedRecording = createServerFn({ method: "POST" })
         video_path: data.path,
         video_original_path: original,
         video_edited_path: data.path,
+        video_edited_duracao: data.editedDuracao ?? null,
         video_choice: "gravado_editado",
         video_edits: data.operations as never,
       })
@@ -738,7 +744,7 @@ export const restoreOriginalRecording = createServerFn({ method: "POST" })
 
     const { error: updateError } = await context.supabase
       .from("jobs")
-      .update({ video_path: original, video_edited_path: null, video_choice: "gravado", video_edits: null })
+      .update({ video_path: original, video_edited_path: null, video_edited_duracao: null, video_choice: "gravado", video_edits: null })
       .eq("id", data.jobId);
     if (updateError) throw new Error(updateError.message);
 
@@ -871,4 +877,31 @@ export const deleteRecordingJob = createServerFn({ method: "POST" })
     }
 
     return { ok: true };
+  });
+
+/** Backfill silencioso: grava durações que faltam, lidas do arquivo no navegador. */
+export const saveVideoDurations = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) =>
+    z.object({
+      jobId: z.string().uuid(),
+      original: z.number().positive().max(36000).nullish(),
+      edited: z.number().positive().max(36000).nullish(),
+      ai: z.number().positive().max(36000).nullish(),
+    }).parse(data),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: job } = await context.supabase
+      .from("jobs")
+      .select("id, video_original_duracao, video_edited_duracao, ai_video_duracao")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (!job) return { ok: false };
+    const patch: Record<string, number> = {};
+    if (data.original && job.video_original_duracao == null) patch["video_original_duracao"] = data.original;
+    if (data.edited && job.video_edited_duracao == null) patch["video_edited_duracao"] = data.edited;
+    if (data.ai && job.ai_video_duracao == null) patch["ai_video_duracao"] = data.ai;
+    if (!Object.keys(patch).length) return { ok: true };
+    const { error } = await context.supabase.from("jobs").update(patch as never).eq("id", data.jobId);
+    return { ok: !error };
   });

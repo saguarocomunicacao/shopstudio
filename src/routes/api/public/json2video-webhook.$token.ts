@@ -85,6 +85,8 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
         const thumbnail = typeof payload["thumbnail"] === "string" ? payload["thumbnail"] : null;
 
         if (url) {
+          const durRaw = Number(payload["duration"] ?? (payload["movie"] as Record<string, unknown> | undefined)?.["duration"]);
+          const duracao = Number.isFinite(durRaw) && durRaw > 0 ? durRaw : null;
           const pronto = {
             status: "video_pronto",
             render_stage: null,
@@ -103,6 +105,7 @@ export const Route = createFileRoute("/api/public/json2video-webhook/$token")({
                     ai_status: "video_pronto",
                     ai_render_stage: null,
                     ai_video_url: url,
+                    ...(duracao ? { ai_video_duracao: duracao } : {}),
                     ai_video_thumbnail_url: thumbnail,
                     ai_render_error: null,
                     ai_video_storage_status: "pendente",
