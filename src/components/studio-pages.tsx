@@ -157,7 +157,13 @@ function useViews7(profileId: string | null) {
   const { data } = useQuery({ queryKey: ["metricas", profileId, 7], queryFn: () => load({ data: { profileId: profileId!, dias: 7 } }), enabled: pode });
   if (!data || data.semPermissao || !data.perfil.length) return null;
   const jobs = data.jobs as JobMetricaBase[];
-  return resumirMetricas({ perfil: data.perfil as PerfilSnap[], videos: data.videos as VideoSnap[], jobs, dias: 7, publicadoPorVideo: new Map(jobs.filter((j) => j.tiktok_video_id).map((j) => [j.tiktok_video_id!, j.published_at])) }).views;
+  return resumirMetricas({
+    perfil: data.perfil as PerfilSnap[], videos: data.videos as VideoSnap[], jobs, dias: 7,
+    publicadoPorVideo: new Map([
+      ...jobs.filter((j) => j.tiktok_video_id).map((j) => [j.tiktok_video_id!, j.published_at] as const),
+      ...((data.pubNaoVinc ?? []) as { tiktok_video_id: string; publicado_em: string | null }[]).map((r) => [r.tiktok_video_id, r.publicado_em] as const),
+    ]),
+  }).views;
 }
 
 function MetricsContent() { return <MetricasContent />; }

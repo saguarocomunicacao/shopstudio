@@ -25,13 +25,14 @@ export const getMetricas = createServerFn({ method: "POST" })
     const db = context.supabase;
     if (!(await podeVerMetricas(db, data.profileId))) return { semPermissao: true as const };
     const desde = new Date(Date.now() - (Math.max(data.dias, 30) + 8) * 86400_000).toISOString().slice(0, 10);
-    const [perfil, coleta, prof, jobs, videos, naoVinc] = await Promise.all([
+    const [perfil, coleta, prof, jobs, videos, naoVinc, pubNaoVinc] = await Promise.all([
       db.from("perfil_metricas").select("data, seguidores, seguindo, curtidas_total, videos_total").eq("profile_id", data.profileId).gte("data", desde).order("data"),
       db.from("metricas_coleta").select("status, ultima_coleta_em, ultimo_erro, ultimo_manual_em, iniciado_em").eq("profile_id", data.profileId).maybeSingle(),
       db.from("profiles").select("handle").eq("id", data.profileId).maybeSingle(),
       db.from("jobs").select("id, title, formato, video_choice, published_at, tiktok_video_id, tiktok_video_url").eq("profile_id", data.profileId).eq("status", "publicado").is("deleted_at", null).order("published_at", { ascending: false }).limit(200),
       db.from("video_metricas").select("tiktok_video_id, job_id, data, views, likes, comentarios, compartilhamentos, salvos, reposts").eq("profile_id", data.profileId).gte("data", desde).order("data").limit(10000),
       db.from("videos_nao_vinculados").select("id", { count: "exact", head: true }).eq("profile_id", data.profileId).is("vinculado_job_id", null),
+      db.from("videos_nao_vinculados").select("tiktok_video_id, publicado_em").eq("profile_id", data.profileId).limit(500),
     ]);
     return {
       semPermissao: false as const,
@@ -41,6 +42,7 @@ export const getMetricas = createServerFn({ method: "POST" })
       jobs: jobs.data ?? [],
       videos: videos.data ?? [],
       naoVinculados: naoVinc.count ?? 0,
+      pubNaoVinc: (pubNaoVinc.data ?? []) as { tiktok_video_id: string; publicado_em: string | null }[],
     };
   });
 

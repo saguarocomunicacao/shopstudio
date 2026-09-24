@@ -13,21 +13,26 @@ import { formatoLabel, linhasVideos, resumirMetricas, type JobMetricaBase, type 
 /** Mesma leitura da tela Métricas (getMetricas), com o login do usuário. */
 async function lerMetricas(db: Any, profileId: string, dias: number) {
   const desde = new Date(Date.now() - (Math.max(dias, 30) + 8) * 86400_000).toISOString().slice(0, 10);
-  const [perfil, coleta, prof, jobs, videos] = await Promise.all([
+  const [perfil, coleta, prof, jobs, videos, naoVinc] = await Promise.all([
     db.from("perfil_metricas").select("data, seguidores, seguindo, curtidas_total, videos_total").eq("profile_id", profileId).gte("data", desde).order("data"),
     db.from("metricas_coleta").select("status, ultima_coleta_em, ultimo_erro").eq("profile_id", profileId).maybeSingle(),
     db.from("profiles").select("handle").eq("id", profileId).maybeSingle(),
     db.from("jobs").select("id, title, formato, video_choice, published_at, tiktok_video_id, tiktok_video_url").eq("profile_id", profileId).eq("status", "publicado").is("deleted_at", null).limit(200),
     db.from("video_metricas").select("tiktok_video_id, job_id, data, views, likes, comentarios, compartilhamentos, salvos, reposts").eq("profile_id", profileId).gte("data", desde).order("data").limit(10000),
+    db.from("videos_nao_vinculados").select("tiktok_video_id, publicado_em").eq("profile_id", profileId).limit(500),
   ]);
   const js = (jobs.data ?? []) as JobMetricaBase[];
+  const pubPorVideo = new Map(js.filter((j) => j.tiktok_video_id).map((j) => [j.tiktok_video_id!, j.published_at]));
+  for (const r of (naoVinc.data ?? []) as { tiktok_video_id: string; publicado_em: string | null }[]) {
+    if (!pubPorVideo.has(r.tiktok_video_id)) pubPorVideo.set(r.tiktok_video_id, r.publicado_em);
+  }
   return {
     handle: String(prof.data?.handle ?? "").replace(/^@/, "").trim(),
     coleta: coleta.data as Any,
     perfil: (perfil.data ?? []) as PerfilSnap[],
     videos: (videos.data ?? []) as VideoSnap[],
     jobs: js,
-    pubPorVideo: new Map(js.filter((j) => j.tiktok_video_id).map((j) => [j.tiktok_video_id!, j.published_at])),
+    pubPorVideo,
   };
 }
 
