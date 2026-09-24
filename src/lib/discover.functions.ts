@@ -107,13 +107,15 @@ export const discoverProducts = createServerFn({ method: "POST" })
     }
 
     // Guarda a busca e os resultados (30 dias) para o histórico e o assistente.
-    if (data.profileId && tenantId) {
+    if (data.profileId) {
       try {
+        const { tenantIdOfProfile } = await import("./api-keys.server");
+        const tenantPerfil = (await tenantIdOfProfile(context.supabase, data.profileId)) ?? tenantId;
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const items = ((result as { items?: Array<Record<string, unknown>> }).items ?? []).slice(0, 50);
         const { profileId: _p, origem, ...filtros } = data;
         await supabaseAdmin.from("buscas_produto").insert({
-          tenant_id: tenantId, profile_id: data.profileId, user_id: context.userId,
+          tenant_id: tenantPerfil as string, profile_id: data.profileId, user_id: context.userId,
           origem: origem ?? "descobrir", termo: data.keyword ?? null, filtros: filtros as never,
           total: items.length, resultados: items as never,
         });
