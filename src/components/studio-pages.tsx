@@ -51,7 +51,7 @@ function DashboardContent() {
     <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Visão geral" action={<Button variant="secondary" onClick={openOnboarding}>Como funciona</Button>} />
     <OnboardingBanner />
     <div className={`grid gap-3 sm:grid-cols-2 ${stats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>{stats.map(({ icon: Icon, value, label, context, to, search, bar }) => (
-      <Link key={label} to={to} search={search} className="block rounded-lg border border-border bg-card p-5 transition-colors hover:border-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Link key={label} to={to} {...(search ? { search } : {})} className="block rounded-lg border border-border bg-card p-5 transition-colors hover:border-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <div className="flex items-center gap-2 text-[13px] text-muted-foreground"><Icon className="size-[18px]" strokeWidth={1.8} />{label}</div>
         <strong className="mt-2 block font-display text-[36px] font-semibold leading-tight">{value}</strong>
         {context && <p className="mt-1 text-[13px] text-muted-foreground">{context}</p>}
