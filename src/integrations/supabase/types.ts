@@ -2475,6 +2475,14 @@ export type Database = {
       ensure_app_user: { Args: never; Returns: undefined }
       is_backoffice: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      minhas_permissoes: {
+        Args: never
+        Returns: {
+          action: string
+          module: string
+          profile_id: string
+        }[]
+      }
       set_my_onboarding: {
         Args: { _banner_hidden?: boolean; _seen?: boolean; _step?: number }
         Returns: undefined

@@ -533,6 +533,13 @@
       "when": 1790286149796,
       "tag": "0075_tarifas_preco_exato",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1790286683785,
+      "tag": "0076_seguranca_avatars_permissions",
+      "breakpoints": true
     }
   ]
 }
