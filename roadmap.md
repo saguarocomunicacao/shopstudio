@@ -95,3 +95,7 @@
 - [x] Manter o lápis visível e ampliar sua área de toque
 - [x] Destacar o campo de edição com borda magenta tracejada e acessível
 - [x] Substituir estrelas por corações nos cards, detalhe, kit e aba Favoritos
+
+## Analisar vídeo por link (Apify)
+- [ ] Conectar Apify no novo workspace
+- [ ] Download de links TikTok/YouTube/Instagram, custo real, estatísticas, "Baixar e extrair frames"
