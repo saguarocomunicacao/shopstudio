@@ -505,7 +505,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
                 </div>
               </div>
               <div className="grid gap-2"><Label htmlFor="p-name">Nome</Label><Input id="p-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Moda e Acessórios" /></div>
-              <div className="grid gap-2"><Label htmlFor="p-handle">@ da conta <span className="font-normal text-muted-foreground">(opcional)</span></Label><Input id="p-handle" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="ainda sem conta" /></div>
+              <div className="grid gap-2"><Label htmlFor="p-handle">@ da conta <span className="font-normal text-muted-foreground">(opcional)</span></Label><Input id="p-handle" value={form.handle} onChange={(e) => setForm({ ...form, handle: e.target.value })} placeholder="ainda sem conta" />{profile && <ColetaAlerta profileId={profile.id} />}</div>
               <div className="grid gap-2"><Label htmlFor="p-niche">Categoria oficial</Label><CategorySelect id="p-niche" value={form.categoryId} onChange={(categoryId, categoryName) => setForm({ ...form, categoryId, niche: categoryName })} /></div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="grid gap-2"><Label htmlFor="p-followers">Seguidores</Label><Input id="p-followers" inputMode="numeric" value={form.followers} onChange={(e) => setForm({ ...form, followers: e.target.value.replace(/\D/g, "") })} /></div>
@@ -941,4 +941,13 @@ function SectionTitle({ title, description }: { title: string; description: stri
       <p className="mt-1 text-sm text-muted-foreground">{description}</p>
     </div>
   );
+}
+
+function ColetaAlerta({ profileId }: { profileId: string }) {
+  const { data } = useQuery({
+    queryKey: ["metricas-coleta", profileId],
+    queryFn: async () => (await supabase.from("metricas_coleta").select("status, ultimo_erro").eq("profile_id", profileId).maybeSingle()).data,
+  });
+  if (data?.status !== "erro" || !data.ultimo_erro) return null;
+  return <p className="rounded-lg bg-warning-soft px-3 py-2 text-xs text-warning-ink">Métricas: {data.ultimo_erro}</p>;
 }
