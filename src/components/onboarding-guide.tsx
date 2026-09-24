@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useStudio } from "./studio-context";
+import type { JobStatusKey } from "@/lib/content";
 
 export const OPEN_ONBOARDING_EVENT = "shopstudio:open-onboarding";
 export function openOnboarding() { window.dispatchEvent(new Event(OPEN_ONBOARDING_EVENT)); }
@@ -25,8 +26,8 @@ const STEPS: Step[] = [
   { icon: Bot, title: "Deixe rodar sozinho", text: "A Automação gera vídeos por IA nos horários que você definir e para em Aguardando revisão. Nada é publicado sem você.", todo: ["Abra Automação", "Defina horários e vídeos por dia"], to: "/app/automacao", mock: ["08:00", "12:00", "19:00", "Aguardando revisão"] },
 ];
 
-const AFTER_ROTEIRO = ["roteiro_pronto", "gerando_cenas", "cenas_geradas", "gerando_video", "video_pronto", "rascunho_enviado", "publicado"];
-const AFTER_CENAS = ["gerando_video", "video_pronto", "rascunho_enviado", "publicado"];
+const AFTER_ROTEIRO: JobStatusKey[] = ["roteiro_pronto", "gerando_cenas", "cenas_geradas", "gerando_video", "video_pronto", "rascunho_enviado", "publicado"];
+const AFTER_CENAS: JobStatusKey[] = ["gerando_video", "video_pronto", "rascunho_enviado", "publicado"];
 
 async function has(q: PromiseLike<{ count: number | null; error: unknown }>) {
   const { count, error } = await q;
@@ -34,8 +35,8 @@ async function has(q: PromiseLike<{ count: number | null; error: unknown }>) {
 }
 
 export function useOnboarding() {
-  const { userId, can, activeProfileId } = useStudio();
-  const showAuto = can("automacao", "visualizar", activeProfileId);
+  const { userId } = useStudio();
+  const showAuto = true;
   const me = useQuery({
     queryKey: ["onboarding-me", userId],
     enabled: !!userId,
