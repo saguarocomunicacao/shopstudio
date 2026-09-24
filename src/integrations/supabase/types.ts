@@ -88,6 +88,27 @@ export type Database = {
           },
         ]
       }
+      assistente_uso: {
+        Row: {
+          created_at: string
+          id: string
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       automation_runs: {
         Row: {
           created_at: string
@@ -2062,6 +2083,7 @@ export type Database = {
         | "roteiro_texto"
         | "narracao_elevenlabs"
         | "transcricao_audio"
+        | "assistente"
       job_status:
         | "novo"
         | "produto_escolhido"
@@ -2217,6 +2239,7 @@ export const Constants = {
         "roteiro_texto",
         "narracao_elevenlabs",
         "transcricao_audio",
+        "assistente",
       ],
       job_status: [
         "novo",

@@ -1,3 +1,4 @@
+import { AssistenteTeste } from "@/components/assistente-teste";
 import { PageHeader } from "./page-header";
 import { TarifasCard } from "./tarifas-card";
 import { CreditoTaxasCard } from "./credito-taxas-card";
@@ -144,6 +145,7 @@ export function SettingsPage() {
             <TabsTrigger value="tarifas">Tarifas de custo</TabsTrigger>
             <TabsTrigger value="orcamento">Orçamento</TabsTrigger>
             <TabsTrigger value="prompts">Prompts padrão do sistema</TabsTrigger>
+            <TabsTrigger value="assistente">Assistente</TabsTrigger>
           </TabsList>
         </div>
 
@@ -177,6 +179,7 @@ export function SettingsPage() {
           </div>
           <GlobalPromptsSettings />
         </TabsContent>
+        <TabsContent value="assistente"><AssistenteTeste /></TabsContent>
       </Tabs>
     </>
   );
