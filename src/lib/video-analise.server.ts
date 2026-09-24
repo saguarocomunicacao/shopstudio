@@ -27,7 +27,7 @@ const RESPONSE_SCHEMA = obj({
 });
 
 class ErroAmigavel extends Error {
-  detalhe?: string;
+  detalhe: string | undefined;
   constructor(msg: string, detalhe?: string) {
     super(msg);
     this.detalhe = detalhe;
