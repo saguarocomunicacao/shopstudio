@@ -476,12 +476,17 @@ function ProductsContent() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!zoom} onOpenChange={(open) => !open && setZoom(null)}>
-        <DialogContent className="max-w-3xl bg-card p-2">
-          <DialogTitle className="sr-only">Foto do produto</DialogTitle>
-          {zoom ? <img src={zoom} alt="" className="max-h-[80vh] w-full rounded-lg object-contain" /> : null}
-        </DialogContent>
-      </Dialog>
+      {(() => {
+        const fotos = details?.extra_image_urls ?? [];
+        const idx = zoom ? fotos.indexOf(zoom) : -1;
+        return (
+          <ImageLightbox
+            items={fotos.map((src, i) => ({ src, title: `Foto ${i + 1}`, fileName: `produto-foto-${i + 1}.jpg` }))}
+            index={idx >= 0 ? idx : null}
+            onIndexChange={(i) => setZoom(i === null ? null : fotos[i] ?? null)}
+          />
+        );
+      })()}
 
       <Dialog open={!!useTarget} onOpenChange={(open) => !open && setUseTarget(null)}>
         <DialogContent>
