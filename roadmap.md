@@ -99,3 +99,11 @@
 ## Analisar vídeo por link (Apify)
 - [x] Conectar Apify no novo workspace
 - [x] Download de links TikTok/YouTube/Instagram, custo real, estatísticas, "Baixar e extrair frames"
+
+## Inteligência: Perfis de referência
+- [x] Grupo Inteligência no menu (Analisar vídeo + Perfis de referência), guia e manual
+- [x] Coleta compartilhada com Métricas (mesmas tabelas/campos para perfis próprios)
+- [x] Lista, detalhe (Vídeos, Evolução, Insights), análise em lote (máx. 5), insights com prompt configurável
+- [x] Fonte extra do roteirista, "meu perfil" sem coleta duplicada, remoção mantendo análises
+- [x] Tools listar_referencias e detalhe_referencia
+- [x] Gráfico de seguidores com 1 coleta mostra o ponto único
