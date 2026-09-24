@@ -120,8 +120,8 @@ export const opcoesReferencia = createServerFn({ method: "POST" })
     await assertEditar(context.supabase, ref.profile_id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (data.acompanhar !== undefined) patch.acompanhar = data.acompanhar;
-    if (data.fonteRoteirista !== undefined) patch.fonte_roteirista = data.fonteRoteirista;
+    if (data.acompanhar !== undefined) patch["acompanhar"] = data.acompanhar;
+    if (data.fonteRoteirista !== undefined) patch["fonte_roteirista"] = data.fonteRoteirista;
     await supabaseAdmin.from("referencia_perfis").update(patch as never).eq("id", ref.id);
     return { ok: true };
   });
