@@ -5,15 +5,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  computeEventoCusto,
-  precoFerramentaBrl,
-  useTarifas,
-  type ConsumoEventoRow,
-  type EtapaConsumo,
-  type TarifaRow,
-  type UnidadeTarifa,
-} from "./custo";
+import { useTarifas, type ConsumoEventoRow, type UnidadeTarifa } from "./custo";
 
 import { agregarPeriodo, SELECT_EVENTOS_CUSTO } from "./custo-calculo";
 export {

@@ -6,17 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { computeEventoCusto, findTarifa, useTarifas, type ConsumoEventoRow } from "./custo";
 
-export const CONFIG_KEYS = {
-  tetoGlobal: "orcamento_mensal_global",
-  bloqueioTotal: "orcamento_bloqueio_total",
-  perfil: (id: string) => `orcamento_perfil:${id}`,
-  saldoJson2video: "saldo_json2video",
-  saldoJson2videoMin: "saldo_json2video_min",
-  saldoKalodata: "saldo_kalodata",
-  saldoKalodataMin: "saldo_kalodata_min",
-} as const;
-
-export type AppConfigRow = { key: string; value_num: number | null; value_text: string | null };
+import { calcularGastoMes, CONFIG_KEYS, type AppConfigRow, type GastoMes } from "./custo-calculo";
+export { CONFIG_KEYS, calcularGastoMes } from "./custo-calculo";
+export type { AppConfigRow, GastoMes } from "./custo-calculo";
 
 /** Todas as configurações numéricas do app (orçamento, saldos, cotação). */
 export function useAppConfig() {
@@ -37,18 +29,6 @@ export function useAppConfig() {
 const firstDayOfMonth = () => {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-};
-
-export type GastoMes = {
-  globalBrl: number;
-  perfilBrl: number;
-  tetoGlobal: number | null;
-  tetoPerfil: number | null;
-  /** Fração do teto mais restritivo já consumida (0 a 1+). */
-  uso: number;
-  alerta: boolean;
-  bloqueado: boolean;
-  bloqueiaTudo: boolean;
 };
 
 /** Gasto do mês corrente (perfil ativo e geral) confrontado com os tetos. */
@@ -72,40 +52,7 @@ export function useGastoMes(profileId: string | null): GastoMes | null {
 
   if (!precos || !eventos || !config) return null;
 
-  let globalBrl = 0;
-  let perfilBrl = 0;
-  for (const evento of eventos) {
-    const custo = computeEventoCusto(evento, precos.tarifas, precos.cotacao, 0, precos.taxas);
-    globalBrl += custo.valorBrl;
-    if (profileId && evento.profile_id === profileId) perfilBrl += custo.valorBrl;
-  }
-
-  const numOf = (key: string) => {
-    const v = config.get(key)?.value_num;
-    const n = v === null || v === undefined ? null : Number(v);
-    return n !== null && Number.isFinite(n) && n > 0 ? n : null;
-  };
-
-  const tetoGlobal = numOf(CONFIG_KEYS.tetoGlobal);
-  const tetoPerfil = profileId ? numOf(CONFIG_KEYS.perfil(profileId)) : null;
-  const bloqueiaTudo = Number(config.get(CONFIG_KEYS.bloqueioTotal)?.value_num ?? 0) === 1;
-
-  const usos = [
-    tetoGlobal ? globalBrl / tetoGlobal : 0,
-    tetoPerfil ? perfilBrl / tetoPerfil : 0,
-  ];
-  const uso = Math.max(...usos);
-
-  return {
-    globalBrl,
-    perfilBrl,
-    tetoGlobal,
-    tetoPerfil,
-    uso,
-    alerta: uso >= 0.8 && uso < 1,
-    bloqueado: uso >= 1,
-    bloqueiaTudo,
-  };
+  return calcularGastoMes(eventos, precos, config, profileId);
 }
 
 export type EstimativaVeo = {
