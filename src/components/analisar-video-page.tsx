@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { ExternalLink, Pencil } from "lucide-react";
+import { shareOrDownloadVideo } from "@/lib/video-download";
 import { Copy, Download, FileVideo2, Loader2, Play, RefreshCw, Trash2, Upload, ArrowLeft, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,7 +37,14 @@ type Analise = {
   frames: { inicio: number; path: string }[];
   custo_cents: number;
   created_at: string;
+  pergunta?: string | null;
+  mime_type?: string | null;
+  arquivo_nome?: string | null;
+  arquivo_bytes?: number | null;
+  etapa_log?: EtapaLog[] | null;
 };
+
+type EtapaLog = { etapa: string; em: string; tentativa?: number; motivo?: string; detalhe?: string; erro?: string };
 
 type RedeMeta = { autor: string | null; views: number | null; likes: number | null; comentarios: number | null; compartilhamentos: number | null; publicado_em: string | null };
 
@@ -295,6 +304,7 @@ function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: 
           origem: aba,
           linkUrl: aba === "link" ? url.trim() : null,
           mimeType: file?.type ?? null,
+          arquivoBytes: file?.size ?? null,
           titulo: aba === "arquivo" ? (file?.name ?? "") : "",
           duracao,
           pergunta: pergunta.trim() || null,
@@ -410,6 +420,128 @@ function Bloco({ titulo, texto, children }: { titulo: string; texto: string; chi
   );
 }
 
+const ETAPA_NOME: Record<string, string> = {
+  enviado: "Enviado", baixando: "Baixando da rede", baixado: "Vídeo baixado", enviando: "Enviando à IA",
+  processando_no_gemini: "IA processando", gerando: "Gerando análise", pronto: "Pronto", erro: "Erro",
+};
+const bytesTxt = (b: number | null | undefined) =>
+  b == null ? "—" : b >= 1024 * 1024 ? `${(b / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB` : `${Math.max(1, Math.round(b / 1024))} KB`;
+
+function OrigemBloco({ a, videoUrl, podeEditar, onReanalisar }: { a: Analise; videoUrl?: string | undefined; podeEditar: boolean; onReanalisar: () => void }) {
+  const qc = useQueryClient();
+  const link = a.link_url || a.youtube_url;
+  const [editando, setEditando] = useState(false);
+  const [pergunta, setPergunta] = useState(a.pergunta ?? "");
+  const [salvando, setSalvando] = useState(false);
+  const [baixando, setBaixando] = useState(false);
+  const m = a.rede_meta;
+  const log = (a.etapa_log ?? []).filter((l) => l && l.etapa);
+  const ocupado = ["analisando", "enviando", "baixando"].includes(a.status);
+  const nomeArquivo = a.arquivo_nome || `${a.titulo.replace(/[^\w\s.-]+/g, "").trim().slice(0, 60) || "video"}.${a.mime_type === "video/webm" ? "webm" : a.mime_type === "video/quicktime" ? "mov" : "mp4"}`;
+
+  const salvarPergunta = async () => {
+    setSalvando(true);
+    const { error } = await supabase.from("video_analises").update({ pergunta: pergunta.trim() || null }).eq("id", a.id);
+    setSalvando(false);
+    if (error) { toast.error("Não foi possível salvar a pergunta."); return; }
+    setEditando(false);
+    await qc.invalidateQueries({ queryKey: ["video-analises", a.profile_id] });
+    onReanalisar();
+  };
+
+  return (
+    <section className="space-y-4 rounded-xl border border-border bg-card p-4 text-sm">
+      <div className="flex items-center gap-2 font-semibold">
+        <RedeIcon origem={a.origem} />
+        {a.origem === "arquivo" ? "Arquivo enviado" : ORIGEM_LABEL[a.origem]}
+        {m?.autor && <span className="font-normal text-muted-foreground">@{m.autor}</span>}
+      </div>
+
+      {a.origem !== "arquivo" && link && (
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">Link original</p>
+          <div className="flex gap-1">
+            <Input readOnly value={link} onFocus={(e) => e.currentTarget.select()} className="h-9 font-mono text-xs" aria-label="Link original" />
+            <Button size="icon" variant="outline" className="shrink-0" aria-label="Copiar link" onClick={() => { void navigator.clipboard.writeText(link); toast.success("Link copiado."); }}><Copy className="size-4" /></Button>
+            <Button size="icon" variant="outline" className="shrink-0" aria-label="Abrir link" asChild><a href={link} target="_blank" rel="noopener noreferrer"><ExternalLink className="size-4" /></a></Button>
+          </div>
+        </div>
+      )}
+
+      {(m?.publicado_em || m?.views != null || m?.likes != null) && (
+        <div className="grid grid-cols-3 gap-3">
+          {([["Views", m?.views], ["Likes", m?.likes], ["Coment.", m?.comentarios], ["Compart.", m?.compartilhamentos]] as const).map(([l, v]) => (
+            <div key={l}><p className="text-xs text-muted-foreground">{l}</p><p className="font-display font-semibold">{num(v)}</p></div>
+          ))}
+          <div className="col-span-2"><p className="text-xs text-muted-foreground">Publicado</p><p className="font-display font-semibold">{m?.publicado_em && !Number.isNaN(Date.parse(m.publicado_em)) ? new Date(m.publicado_em).toLocaleDateString("pt-BR") : "—"}</p></div>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">Arquivo</p>
+        {a.storage_path ? (
+          <>
+            <p className="break-all font-medium">{nomeArquivo}</p>
+            <p className="text-muted-foreground">{bytesTxt(a.arquivo_bytes)} · {a.duracao ? tempo(a.duracao) : "duração —"}</p>
+            <Button
+              variant="outline" size="sm" disabled={!videoUrl || baixando}
+              onClick={async () => {
+                if (!videoUrl) return;
+                setBaixando(true);
+                try { await shareOrDownloadVideo(videoUrl, nomeArquivo, a.titulo); }
+                catch { toast.error("Não foi possível baixar o vídeo."); }
+                finally { setBaixando(false); }
+              }}
+            >
+              {baixando ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}Baixar vídeo
+            </Button>
+          </>
+        ) : (
+          <p className="text-muted-foreground">{a.status === "baixando" ? "Ainda baixando da rede." : "Nenhum vídeo salvo."}{a.duracao ? ` Duração: ${tempo(a.duracao)}.` : ""}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">O que você quis saber</p>
+        {editando ? (
+          <>
+            <Textarea rows={3} maxLength={1000} value={pergunta} onChange={(e) => setPergunta(e.target.value)} placeholder="Ex: foca no produto e no gancho" />
+            <div className="flex gap-2">
+              <Button size="sm" disabled={salvando} onClick={salvarPergunta}>{salvando && <Loader2 className="size-4 animate-spin" />}Salvar e reanalisar</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setEditando(false); setPergunta(a.pergunta ?? ""); }}>Cancelar</Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className={a.pergunta ? "whitespace-pre-line" : "text-muted-foreground"}>{a.pergunta || "Nada preenchido."}</p>
+            {podeEditar && <Button size="sm" variant="ghost" className="-ml-2" disabled={ocupado} onClick={() => setEditando(true)}><Pencil className="size-4" />Editar e reanalisar</Button>}
+          </>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">Etapas</p>
+        {log.length ? (
+          <ol className="space-y-1.5">
+            {log.map((l, i) => (
+              <li key={i} className="flex gap-2">
+                <span className="w-24 shrink-0 font-mono text-xs text-muted-foreground">{new Date(l.em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
+                <span className="min-w-0">
+                  <span className={l.etapa === "erro" ? "font-medium text-destructive" : "font-medium"}>{ETAPA_NOME[l.etapa] ?? l.etapa}{l.tentativa && l.tentativa > 1 ? ` (tentativa ${l.tentativa})` : ""}</span>
+                  {(l.motivo || l.erro) && <span className="block text-muted-foreground">{l.motivo || l.erro}</span>}
+                  {l.detalhe && l.detalhe !== l.motivo && <span className="block break-words font-mono text-xs text-muted-foreground">{l.detalhe}</span>}
+                </span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="text-muted-foreground">Criada em {new Date(a.created_at).toLocaleString("pt-BR")}.{a.status === "erro" && a.erro ? ` Erro: ${a.erro}` : ""}</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise; onVoltar: () => void; onReanalisar: () => void; podeEditar: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ytStart, setYtStart] = useState(0);
@@ -512,7 +644,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
         }
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
-        <div className="lg:sticky lg:top-20 lg:self-start">
+        <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           <div className="overflow-hidden rounded-xl border border-border bg-overlay">
             {porUrl && a.youtube_url ? (
               <iframe
@@ -526,14 +658,18 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
             ) : videoUrl ? (
               <video ref={videoRef} src={videoUrl} controls playsInline className="max-h-[70vh] w-full" />
             ) : (
-              <div className="grid aspect-[9/16] max-h-[60vh] w-full place-items-center text-sm text-muted-foreground">Carregando vídeo...</div>
+              <div className="grid aspect-[9/16] max-h-[60vh] w-full place-items-center p-4 text-center text-sm text-muted-foreground">
+                {a.storage_path ? "Carregando vídeo..." : a.status === "erro" ? "O vídeo não foi baixado." : a.status === "baixando" ? "Baixando o vídeo..." : "Sem vídeo salvo."}
+              </div>
             )}
           </div>
+          <OrigemBloco a={a} videoUrl={videoUrl ?? undefined} podeEditar={podeEditar} onReanalisar={onReanalisar} />
         </div>
         <div>
           {a.status === "erro" ? (
             <div className="rounded-lg border border-border bg-card p-6 text-sm">
-              <p className="mb-3">{a.erro ?? "Não foi possível analisar o vídeo."}</p>
+              <p className="mb-1 font-medium">{a.erro ?? "Não foi possível analisar o vídeo."}</p>
+              <p className="mb-3 text-muted-foreground">Os detalhes da origem e o motivo registrado estão ao lado, em "Etapas".</p>
               {podeEditar && <Button onClick={onReanalisar}><RefreshCw className="size-4" />Tentar novamente</Button>}
             </div>
           ) : a.status !== "pronto" || !r ? (
@@ -551,17 +687,6 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
                 <TabsTrigger value="produto">Produto</TabsTrigger>
               </TabsList>
               <TabsContent value="resumo" className="space-y-4">
-                {a.rede_meta && (
-                  <section className="rounded-lg border border-border bg-card p-4">
-                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><RedeIcon origem={a.origem} />{a.rede_meta.autor ? `@${a.rede_meta.autor}` : ORIGEM_LABEL[a.origem]}</div>
-                    <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">
-                      {([["Views", a.rede_meta.views], ["Likes", a.rede_meta.likes], ["Comentários", a.rede_meta.comentarios], ["Compart.", a.rede_meta.compartilhamentos]] as const).map(([l, v]) => (
-                        <div key={l}><p className="text-xs text-muted-foreground">{l}</p><p className="font-display font-semibold">{num(v)}</p></div>
-                      ))}
-                      <div><p className="text-xs text-muted-foreground">Publicado</p><p className="font-display font-semibold">{a.rede_meta.publicado_em && !Number.isNaN(Date.parse(a.rede_meta.publicado_em)) ? new Date(a.rede_meta.publicado_em).toLocaleDateString("pt-BR") : "—"}</p></div>
-                    </div>
-                  </section>
-                )}
                 <Bloco titulo="Resumo" texto={r.resumo}><p className="whitespace-pre-line">{r.resumo}</p></Bloco>
                 <Bloco titulo="Estilo" texto={`Formato: ${r.formato}\nTom de voz: ${r.tom_de_voz}\nRitmo: ${r.ritmo.cortes_por_minuto} cortes/min. ${r.ritmo.descricao}`}>
                   <p><span className="text-muted-foreground">Formato:</span> {r.formato}</p>

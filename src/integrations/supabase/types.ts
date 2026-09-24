@@ -2177,6 +2177,8 @@ export type Database = {
         Row: {
           analise_iniciada_em: string | null
           apify_run_id: string | null
+          arquivo_bytes: number | null
+          arquivo_nome: string | null
           consumo_evento_id: string | null
           created_at: string
           created_by: string | null
@@ -2211,6 +2213,8 @@ export type Database = {
         Insert: {
           analise_iniciada_em?: string | null
           apify_run_id?: string | null
+          arquivo_bytes?: number | null
+          arquivo_nome?: string | null
           consumo_evento_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -2245,6 +2249,8 @@ export type Database = {
         Update: {
           analise_iniciada_em?: string | null
           apify_run_id?: string | null
+          arquivo_bytes?: number | null
+          arquivo_nome?: string | null
           consumo_evento_id?: string | null
           created_at?: string
           created_by?: string | null
