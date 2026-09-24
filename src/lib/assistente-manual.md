@@ -152,7 +152,7 @@ Na aba Lixeira de Rascunhos, clique em Restaurar. [Lixeira](/app/rascunhos?tab=l
 Em Rascunhos, aba Aguardando revisão, assista e clique em Aprovar para postagem. [Revisão](/app/rascunhos?tab=revisao)
 
 ## FAQ: Como regerar uma cena?
-No detalhe do job, na etapa de cenas, clique em Gerar de novo na cena que não gostou antes de aprovar o vídeo. [Pipeline](/app/pipeline)
+No detalhe do job, na etapa de cenas, clique em Regerar esta cena na cena que não gostou antes de aprovar o vídeo. [Pipeline](/app/pipeline)
 
 ## FAQ: Quanto custa cada vídeo?
 O custo de cada job aparece no Pipeline e o total do período em Custos. [Custos](/app/custos)
