@@ -421,3 +421,8 @@
     radial-gradient(60% 50% at 100% 100%, color-mix(in oklab, var(--primary) 12%, transparent), transparent 70%),
     var(--sidebar);
 }
+
+/* Guia do Shop Studio: destaque do alvo (prévia e tela real) */
+@keyframes tour-pulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 45%, transparent); } 50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--primary) 0%, transparent); } }
+.tour-target, .tour-live { outline: 2px solid var(--primary); outline-offset: 2px; animation: tour-pulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .tour-target, .tour-live { animation: none; } }
