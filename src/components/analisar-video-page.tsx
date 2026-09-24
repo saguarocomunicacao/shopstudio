@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { criarAnalise, executarAnalise, type ResultadoAnalise } from "@/lib/video-analise.functions";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
-import { friendlyError } from "@/lib/user-error";
+import { userErrorMessage as friendlyError } from "@/lib/user-error";
 
 type Analise = {
   id: string;
