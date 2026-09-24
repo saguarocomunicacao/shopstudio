@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { criarAnalise, executarAnalise, type ResultadoAnalise } from "@/lib/video-analise.functions";
+import { baixarVideoDaAnalise, criarAnalise, executarAnalise, type ResultadoAnalise } from "@/lib/video-analise.functions";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
 import { userErrorMessage as friendlyError } from "@/lib/user-error";
 
@@ -19,12 +19,14 @@ type Analise = {
   id: string;
   tenant_id: string;
   profile_id: string;
-  origem: "arquivo" | "youtube";
+  origem: "arquivo" | "youtube" | "tiktok" | "instagram";
+  link_url: string | null;
+  rede_meta: RedeMeta | null;
   storage_path: string | null;
   youtube_url: string | null;
   titulo: string;
   duracao: number | null;
-  status: "enviando" | "analisando" | "pronto" | "erro";
+  status: "enviando" | "baixando" | "analisando" | "pronto" | "erro";
   erro: string | null;
   resultado: ResultadoAnalise | null;
   frames: { inicio: number; path: string }[];
@@ -32,7 +34,26 @@ type Analise = {
   created_at: string;
 };
 
+type RedeMeta = { autor: string | null; views: number | null; likes: number | null; comentarios: number | null; compartilhamentos: number | null; publicado_em: string | null };
+
 const BUCKET = "video-analises";
+const ORIGEM_LABEL: Record<Analise["origem"], string> = { arquivo: "Arquivo", youtube: "YouTube", tiktok: "TikTok", instagram: "Instagram" };
+function redeDoLink(url: string): "youtube" | "tiktok" | "instagram" | null {
+  try {
+    const u = new URL(url.trim());
+    const h = u.hostname.toLowerCase().replace(/^www\.|^m\./, "");
+    if (h === "youtube.com" || h === "youtu.be") return "youtube";
+    if (h.endsWith("tiktok.com")) return "tiktok";
+    if (h === "instagram.com" && /^\/(reel|reels|p)\//.test(u.pathname)) return "instagram";
+  } catch { /* link incompleto */ }
+  return null;
+}
+function RedeIcon({ origem, className = "size-4" }: { origem: Analise["origem"]; className?: string }) {
+  if (origem === "arquivo") return <FileVideo2 className={className} aria-label="Arquivo" />;
+  const letra = origem === "youtube" ? "YT" : origem === "tiktok" ? "TT" : "IG";
+  return <span aria-label={ORIGEM_LABEL[origem]} className="inline-grid size-5 place-items-center rounded bg-muted font-mono text-[9px] font-bold text-foreground">{letra}</span>;
+}
+const num = (v: number | null | undefined) => (v == null ? "—" : v.toLocaleString("pt-BR", { notation: v >= 10000 ? "compact" : "standard" }));
 const MAX = 200 * 1024 * 1024;
 const TIPOS = ["video/mp4", "video/quicktime", "video/webm"];
 const brl = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -42,6 +63,7 @@ const tempo = (s: number | null | undefined) => {
 };
 const STATUS: Record<Analise["status"], [string, string]> = {
   enviando: ["Enviando", "status-violet"],
+  baixando: ["Baixando", "status-violet"],
   analisando: ["Analisando", "status-blue"],
   pronto: ["Pronto", "status-lime"],
   erro: ["Erro", "status-pink"],
@@ -116,7 +138,7 @@ export function AnalisarVideoPage() {
   const reanalisar = async (a: Analise) => {
     toast.message("Reanalisando o vídeo...");
     const r = await executar({ data: { id: a.id, reanalisar: true } }).catch((e) => ({ ok: false, erro: friendlyError(e) }));
-    if (!r.ok) toast.error(r.erro ?? "Não foi possível analisar.");
+    if (!r.ok) toast.error(("erro" in r && r.erro) || "Não foi possível analisar.");
     qc.invalidateQueries({ queryKey: ["video-analises", activeProfileId] });
   };
   const remover = async (a: Analise) => {
@@ -171,19 +193,19 @@ export function AnalisarVideoPage() {
                   <td className="p-3">
                     <button className="flex items-center gap-3 text-left" onClick={() => setAbertaId(a.id)}>
                       <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-md bg-muted">
-                        {a.thumb ? <img src={a.thumb} alt="" className="size-full object-cover" /> : a.origem === "youtube" && a.youtube_url ? (
+                        {a.thumb ? <img src={a.thumb} alt="" className="size-full object-cover" /> : a.origem === "youtube" && a.youtube_url && ytId(a.youtube_url) ? (
                           <img src={`https://i.ytimg.com/vi/${ytId(a.youtube_url)}/default.jpg`} alt="" className="size-full object-cover" />
                         ) : <ImageIcon className="size-4 text-muted-foreground" />}
                       </span>
                       <span className="line-clamp-2 font-medium">{a.titulo}</span>
                     </button>
                   </td>
-                  <td className="p-3">{a.origem === "youtube" ? "YouTube" : "Arquivo"}</td>
+                  <td className="p-3"><span className="inline-flex items-center gap-1.5"><RedeIcon origem={a.origem} />{ORIGEM_LABEL[a.origem]}</span></td>
                   <td className="p-3">{a.duracao ? tempo(a.duracao) : "—"}</td>
                   <td className="p-3 whitespace-nowrap">{new Date(a.created_at).toLocaleDateString("pt-BR")}</td>
                   <td className="p-3">
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS[a.status][1]}`}>
-                      {(a.status === "analisando" || a.status === "enviando") && <Loader2 className="size-3 animate-spin" />}
+                      {(a.status === "analisando" || a.status === "enviando" || a.status === "baixando") && <Loader2 className="size-3 animate-spin" />}
                       {STATUS[a.status][0]}
                     </span>
                   </td>
@@ -193,7 +215,7 @@ export function AnalisarVideoPage() {
                       <Button size="sm" variant="ghost" onClick={() => setAbertaId(a.id)}>Abrir</Button>
                       {podeCriar && (
                         <>
-                          <Button size="icon" variant="ghost" aria-label="Reanalisar" disabled={a.status === "analisando" || a.status === "enviando"} onClick={() => reanalisar(a)}><RefreshCw className="size-4" /></Button>
+                          <Button size="icon" variant="ghost" aria-label="Reanalisar" disabled={a.status === "analisando" || a.status === "enviando" || a.status === "baixando"} onClick={() => reanalisar(a)}><RefreshCw className="size-4" /></Button>
                           <Button size="icon" variant="ghost" aria-label="Remover" onClick={() => remover(a)}><Trash2 className="size-4" /></Button>
                         </>
                       )}
@@ -211,7 +233,7 @@ export function AnalisarVideoPage() {
 }
 
 function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: boolean; onOpenChange: (v: boolean) => void; profileId: string; onCriada: (id: string) => void }) {
-  const [aba, setAba] = useState<"arquivo" | "youtube">("arquivo");
+  const [aba, setAba] = useState<"arquivo" | "link">("arquivo");
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [pergunta, setPergunta] = useState("");
@@ -221,8 +243,8 @@ function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: 
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const avisoLink = /tiktok\.com|instagram\.com/i.test(url) ? "Por enquanto só YouTube ou arquivo." : "";
-  const linkOk = /^https?:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)[\w-]{6,}/i.test(url.trim());
+  const rede = redeDoLink(url);
+  const linkOk = !!rede;
 
   const escolher = (f: File | undefined) => {
     if (!f) return;
@@ -239,7 +261,7 @@ function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: 
         data: {
           profileId,
           origem: aba,
-          youtubeUrl: aba === "youtube" ? url.trim() : null,
+          linkUrl: aba === "link" ? url.trim() : null,
           mimeType: file?.type ?? null,
           titulo: aba === "arquivo" ? (file?.name ?? "") : "",
           duracao,
@@ -257,10 +279,11 @@ function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: 
       onOpenChange(false);
       setFile(null); setUrl(""); setPergunta("");
       onCriada(id);
+      if (aba === "link") { toast.success("Baixando o vídeo. A análise começa assim que o download terminar."); return; }
       executar({ data: { id, reanalisar: false } })
         .then((r) => {
           if (r.ok) toast.success("Análise pronta.");
-          else toast.error(r.erro ?? "Não foi possível analisar.");
+          else toast.error(("erro" in r && r.erro) || "Não foi possível analisar.");
         })
         .catch(() => toast.error("Não foi possível analisar o vídeo agora."))
         .finally(() => qc.invalidateQueries({ queryKey: ["video-analises", profileId] }));
@@ -283,7 +306,7 @@ function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: 
         <Tabs value={aba} onValueChange={(v) => setAba(v as typeof aba)}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="arquivo">Enviar arquivo</TabsTrigger>
-            <TabsTrigger value="youtube">Link do YouTube</TabsTrigger>
+            <TabsTrigger value="link">Colar link</TabsTrigger>
           </TabsList>
           <TabsContent value="arquivo">
             <button
@@ -299,9 +322,25 @@ function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: 
             </button>
             <input ref={inputRef} type="file" accept="video/mp4,video/quicktime,video/webm" className="hidden" onChange={(e) => escolher(e.target.files?.[0])} />
           </TabsContent>
-          <TabsContent value="youtube" className="space-y-2">
-            <Input placeholder="https://www.youtube.com/watch?v=..." value={url} onChange={(e) => setUrl(e.target.value)} />
-            {avisoLink ? <p className="text-xs text-primary">{avisoLink}</p> : url && !linkOk ? <p className="text-xs text-muted-foreground">Cole o link de um vídeo público do YouTube.</p> : null}
+          <TabsContent value="link" className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Input placeholder="Link do TikTok, YouTube ou Instagram" value={url} onChange={(e) => setUrl(e.target.value)} />
+              {rede && <RedeIcon origem={rede} className="size-5" />}
+            </div>
+            {url.trim() && !rede ? <p className="text-xs text-primary">Ainda não suportado. Use um link do TikTok, YouTube ou Instagram (reel ou post).</p> : null}
+            <div className="rounded-md bg-muted p-2.5 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">Custo estimado do download</p>
+              {rede === "youtube" ? (
+                <p>Cobrado pelo Apify por tamanho: cerca de US$ 0,006 por MB (um vídeo curto de 720p costuma ficar entre US$ 0,05 e US$ 0,30). O Apify reserva até US$ 0,50 por download; só o valor real é registrado.</p>
+              ) : rede === "tiktok" ? (
+                <p>Cobrado pelo Apify por vídeo baixado, normalmente poucos centavos de dólar. O valor real é registrado.</p>
+              ) : rede === "instagram" ? (
+                <p>Cobrado pelo Apify por MB baixado, normalmente poucos centavos de dólar por reel. O valor real é registrado.</p>
+              ) : (
+                <p>Depende da rede do link. O valor real do download é registrado.</p>
+              )}
+              <p className="mt-1">Mais a análise do vídeo, igual à de um arquivo enviado.</p>
+            </div>
           </TabsContent>
         </Tabs>
         <div className="space-y-1">
@@ -342,6 +381,9 @@ function Bloco({ titulo, texto, children }: { titulo: string; texto: string; chi
 function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise; onVoltar: () => void; onReanalisar: () => void; podeEditar: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ytStart, setYtStart] = useState(0);
+  const baixarVideo = useServerFn(baixarVideoDaAnalise);
+  const [baixandoVideo, setBaixandoVideo] = useState(false);
+  const porUrl = !a.storage_path && !!a.youtube_url;
   const r = a.resultado;
   const qc = useQueryClient();
 
@@ -355,7 +397,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
   // Extrai um frame por cena no navegador (uma vez).
   const extraindo = useRef(false);
   useEffect(() => {
-    if (!podeEditar || a.origem !== "arquivo" || a.status !== "pronto" || !r?.cenas?.length || (a.frames ?? []).length || !videoUrl || extraindo.current) return undefined;
+    if (!podeEditar || !a.storage_path || a.status !== "pronto" || !r?.cenas?.length || (a.frames ?? []).length || !videoUrl || extraindo.current) return undefined;
     extraindo.current = true;
     (async () => {
       const frames: { inicio: number; path: string }[] = [];
@@ -378,7 +420,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
   }, [a, r, videoUrl, podeEditar, qc]);
 
   const pular = (s: number) => {
-    if (a.origem === "youtube") setYtStart(Math.floor(s));
+    if (porUrl) setYtStart(Math.floor(s));
     else if (videoRef.current) { videoRef.current.currentTime = s; videoRef.current.play().catch(() => {}); }
   };
   const frameDe = (inicio: number) => {
@@ -405,18 +447,37 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
     <div className="space-y-6">
       <PageHeader
         title={<span className="line-clamp-2">{a.titulo}</span>}
-        description={`${a.origem === "youtube" ? "YouTube" : "Arquivo"} · ${new Date(a.created_at).toLocaleString("pt-BR")}${a.duracao ? ` · ${tempo(a.duracao)}` : ""}`}
+        description={`${ORIGEM_LABEL[a.origem]} · ${new Date(a.created_at).toLocaleString("pt-BR")}${a.duracao ? ` · ${tempo(a.duracao)}` : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={onVoltar}><ArrowLeft className="size-4" />Voltar</Button>
             {r && <Button variant="outline" onClick={baixar}><Download className="size-4" />Baixar JSON</Button>}
+            {porUrl && podeEditar && a.status === "pronto" && (
+              <Button
+                variant="outline"
+                disabled={baixandoVideo}
+                onClick={async () => {
+                  setBaixandoVideo(true);
+                  try {
+                    await baixarVideo({ data: { id: a.id } });
+                    toast.success("Baixando o vídeo. Os frames aparecem quando terminar.");
+                  } catch (e) {
+                    toast.error(friendlyError(e));
+                  } finally {
+                    setBaixandoVideo(false);
+                  }
+                }}
+              >
+                {baixandoVideo ? <Loader2 className="size-4 animate-spin" /> : <ImageIcon className="size-4" />}Baixar e extrair frames
+              </Button>
+            )}
           </div>
         }
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
         <div className="lg:sticky lg:top-20 lg:self-start">
           <div className="overflow-hidden rounded-xl border border-border bg-overlay">
-            {a.origem === "youtube" && a.youtube_url ? (
+            {porUrl && a.youtube_url ? (
               <iframe
                 key={ytStart}
                 className="aspect-video w-full"
@@ -441,7 +502,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
           ) : a.status !== "pronto" || !r ? (
             <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
-              {a.status === "enviando" ? "Enviando o vídeo..." : "Analisando o vídeo. Isso pode levar um ou dois minutos; você pode sair e voltar."}
+              {a.status === "enviando" ? "Enviando o vídeo..." : a.status === "baixando" ? "Baixando o vídeo do link. Leva de alguns segundos a poucos minutos; você pode sair e voltar." : "Analisando o vídeo. Isso pode levar um ou dois minutos; você pode sair e voltar."}
             </div>
           ) : (
             <Tabs defaultValue="resumo">
@@ -453,6 +514,17 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
                 <TabsTrigger value="produto">Produto</TabsTrigger>
               </TabsList>
               <TabsContent value="resumo" className="space-y-4">
+                {a.rede_meta && (
+                  <section className="rounded-lg border border-border bg-card p-4">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><RedeIcon origem={a.origem} />{a.rede_meta.autor ? `@${a.rede_meta.autor}` : ORIGEM_LABEL[a.origem]}</div>
+                    <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">
+                      {([["Views", a.rede_meta.views], ["Likes", a.rede_meta.likes], ["Comentários", a.rede_meta.comentarios], ["Compart.", a.rede_meta.compartilhamentos]] as const).map(([l, v]) => (
+                        <div key={l}><p className="text-xs text-muted-foreground">{l}</p><p className="font-display font-semibold">{num(v)}</p></div>
+                      ))}
+                      <div><p className="text-xs text-muted-foreground">Publicado</p><p className="font-display font-semibold">{a.rede_meta.publicado_em && !Number.isNaN(Date.parse(a.rede_meta.publicado_em)) ? new Date(a.rede_meta.publicado_em).toLocaleDateString("pt-BR") : "—"}</p></div>
+                    </div>
+                  </section>
+                )}
                 <Bloco titulo="Resumo" texto={r.resumo}><p className="whitespace-pre-line">{r.resumo}</p></Bloco>
                 <Bloco titulo="Estilo" texto={`Formato: ${r.formato}\nTom de voz: ${r.tom_de_voz}\nRitmo: ${r.ritmo.cortes_por_minuto} cortes/min. ${r.ritmo.descricao}`}>
                   <p><span className="text-muted-foreground">Formato:</span> {r.formato}</p>
@@ -468,7 +540,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
                   const img = frameDe(c.inicio);
                   return (
                     <div key={i} className="flex gap-3 rounded-lg border border-border bg-card p-3">
-                      {a.origem === "arquivo" && (
+                      {!!a.storage_path && (
                         <div className="grid h-24 w-16 shrink-0 place-items-center overflow-hidden rounded-md bg-muted">
                           {img ? <img src={img} alt="" className="size-full object-cover" /> : <ImageIcon className="size-4 text-muted-foreground" />}
                         </div>
