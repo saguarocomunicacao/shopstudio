@@ -75,14 +75,6 @@ const tempo = (s: number | null | undefined) => {
   const v = Math.max(0, Math.round(Number(s ?? 0)));
   return `${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`;
 };
-const STATUS: Record<Analise["status"], [string, string]> = {
-  na_fila: ["Na fila", "status-violet"],
-  enviando: ["Enviando", "status-violet"],
-  baixando: ["Baixando", "status-violet"],
-  analisando: ["Analisando", "status-blue"],
-  pronto: ["Pronto", "status-lime"],
-  erro: ["Erro", "status-pink"],
-};
 
 function ytId(url: string) {
   const m = url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{6,})/);
