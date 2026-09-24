@@ -28,6 +28,7 @@ import type { DbJob } from "@/lib/content";
 import { useGastoMes } from "@/lib/orcamento";
 import { useMeuTenantId, useTenants } from "@/lib/tenants";
 import { JobDetailDialog } from "./job-detail-dialog";
+import { PageHeader } from "./page-header";
 import { TenantCostsView } from "./costs-tenant-view";
 import { useStudio } from "./studio-context";
 
@@ -242,6 +243,15 @@ export function CostsPage() {
   return (
     <TooltipProvider delayDuration={200}>
     <div className="grid gap-6">
+      <PageHeader
+        title="Custos"
+        description={gasto ? `Gasto do mês: ${brl(consumidoMes)}${teto ? ` de ${brl(teto)}` : ""}` : undefined}
+        actions={
+          <Button variant="outline" size="sm" onClick={exportarCsv} disabled={!jobsLinhas.length}>
+            <Download className="size-4" /> Exportar CSV
+          </Button>
+        }
+      />
       {/* Filtros */}
       <div className="panel flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
@@ -464,18 +474,13 @@ export function CostsPage() {
           <Bloco
             title="Custo por vídeo"
             action={
-              <div className="flex items-center gap-2">
-                <Select value={ordem} onValueChange={(v) => setOrdem(v as "total" | "data")}>
-                  <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="total">Maior custo</SelectItem>
-                    <SelectItem value="data">Mais recente</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="sm" onClick={exportarCsv} disabled={!jobsLinhas.length}>
-                  <Download className="size-4" /> Exportar CSV
-                </Button>
-              </div>
+              <Select value={ordem} onValueChange={(v) => setOrdem(v as "total" | "data")}>
+                <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="total">Maior custo</SelectItem>
+                  <SelectItem value="data">Mais recente</SelectItem>
+                </SelectContent>
+              </Select>
             }
           >
             {jobsLinhas.length ? (
