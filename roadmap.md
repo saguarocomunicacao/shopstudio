@@ -119,3 +119,15 @@
 ## Inteligência: Radar (fase 2)
 - [x] Detecção na coleta diária, tabela de alertas, tela /app/radar, sino, card Visão geral, tool do assistente, manual
 - [ ] Validar com dados reais após a coleta diária (depende de publicar)
+
+## Inteligência: Pesquisar (fase 3)
+- [ ] Tabelas pesquisas_tiktok / pesquisas_tiktok_videos (retenção 90 dias)
+- [ ] Coleta Apify hashtag/palavra, custo, capas; selos Anúncio/Fotos/idioma provável
+- [ ] Telas /app/pesquisa e /app/pesquisa/:id (resumo, tabela, análise, Insights)
+- [ ] Botão "Pesquisar no TikTok" no produto; tools listar_pesquisas/detalhe_pesquisa; manual
+
+## Produtos: aba Criadores
+- [ ] Busca Kalodata creator/rank (padrão receita em vídeo, filtro 50%+ vídeo), custo
+- [ ] Ficha ao abrir a linha (creator/detail) com custo; produtos mais vendidos via video/rank
+- [ ] Adicionar a Perfis de referência (individual/múltiplo) + atalhos em Radar/Pesquisar/job
+- [ ] Buscas recentes; tool buscar_criadores
