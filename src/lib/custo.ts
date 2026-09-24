@@ -37,24 +37,6 @@ export type {
   UnidadeTarifa,
 } from "./custo-core";
 
-export type CustoEtapa = {
-  etapa: EtapaConsumo;
-  quantidade: number;
-  eventos: number;
-  valorBrl: number;
-  semTarifa: boolean;
-  estimado: boolean;
-};
-
-export type CustoJob = {
-  etapas: CustoEtapa[];
-  totalBrl: number;
-  regeneracoes: number;
-  takesDescartados: number;
-  semTarifa: boolean;
-  estimado: boolean;
-};
-
 export const ETAPA_LABELS: Record<EtapaConsumo, string> = {
   cena_gemini: "Cenas (imagens)",
   animacao_veo: "Animação",
@@ -76,68 +58,9 @@ export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
   minuto_audio: (q) => `${Number(q.toFixed(2))} min de áudio`,
 };
 
-const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
-
-/** Resumo de custo de um job, quebrado por etapa. */
-export function computeJobCusto(
-  eventos: ConsumoEventoRow[],
-  tarifas: TarifaRow[],
-  cotacao: number,
-  taxas: CreditoTaxaRow[] = [],
-): CustoJob {
-  const segundosDoJob = eventos
-    .filter((e) => e.etapa === "animacao_veo")
-    .reduce((acc, e) => acc + (e.quantidade ?? 0), 0);
-
-  const porEtapa = new Map<EtapaConsumo, CustoEtapa>();
-  let total = 0;
-  let regeneracoes = 0;
-  let takesDescartados = 0;
-
-  for (const evento of eventos) {
-    const meta = evento.metadados ?? {};
-    if (meta["origem"] === "regeneracao") regeneracoes += 1;
-    if (meta["descartado"] === true) takesDescartados += 1;
-
-    const custo = computeEventoCusto(evento, tarifas, cotacao, segundosDoJob, taxas);
-    total += custo.valorBrl;
-
-    const atual = porEtapa.get(evento.etapa) ?? {
-      etapa: evento.etapa,
-      quantidade: 0,
-      eventos: 0,
-      valorBrl: 0,
-      semTarifa: false,
-      estimado: false,
-    };
-    atual.quantidade += custo.unidadesTarifadas;
-    atual.eventos += 1;
-    atual.valorBrl += custo.valorBrl;
-    atual.semTarifa = atual.semTarifa || custo.semTarifa;
-    atual.estimado = atual.estimado || custo.estimado;
-    porEtapa.set(evento.etapa, atual);
-  }
-
-  const ordem: EtapaConsumo[] = [
-    "roteiro_texto",
-    "transcricao_audio",
-    "cena_gemini",
-    "animacao_veo",
-    "montagem_json2video",
-    "narracao_elevenlabs",
-    "busca_kalodata",
-  ];
-  const etapas = ordem.map((e) => porEtapa.get(e)).filter((e): e is CustoEtapa => !!e);
-
-  return {
-    etapas,
-    totalBrl: total,
-    regeneracoes,
-    takesDescartados,
-    semTarifa: etapas.some((e) => e.semTarifa),
-    estimado: etapas.some((e) => e.estimado),
-  };
-}
+export { computeJobCusto } from "./custo-calculo";
+export type { CustoEtapa, CustoJob } from "./custo-calculo";
+import { computeJobCusto } from "./custo-calculo";
 
 /** Tarifas ativas + cotação do dólar configurada. */
 export function useTarifas() {
