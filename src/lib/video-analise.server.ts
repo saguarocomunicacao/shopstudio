@@ -130,7 +130,7 @@ export async function comecarDownload(row: Pick<Row, "id" | "tenant_id" | "orige
   } catch (e) {
     const msg = e instanceof Error && !/MISSING_TENANT_KEY/.test(e.message) ? e.message : e instanceof Error ? e.message : "Não foi possível baixar o link.";
     if (!(e instanceof ErroAmigavel)) console.error("[analise] download", e);
-    await db.from("video_analises").update({ status: "erro", erro: msg } as never).eq("id", row.id);
+    if (!soDownload) await db.from("video_analises").update({ status: "erro", erro: msg } as never).eq("id", row.id);
     return { ok: false as const, erro: msg };
   }
 }

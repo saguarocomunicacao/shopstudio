@@ -79,10 +79,21 @@ export const FORNECEDORES: FornecedorDef[] = [
     unidade: "mil caracteres",
     unidadeLabel: (q) => `${Number(q.toFixed(2))} mil caracteres`,
   },
+  {
+    key: "apify",
+    nome: "Apify",
+    tipo: "prepaga",
+    descricao: "Download de vídeos de links (TikTok, YouTube, Instagram). Custo real em dólar informado por execução.",
+    etapas: ["apify_download"],
+    unidade: null,
+    unidadeLabel: () => "",
+  },
 ];
 
 export const fornecedorDe = (etapa: EtapaConsumo): FornecedorKey =>
-  etapa === "busca_kalodata"
+  etapa === "apify_download"
+    ? "apify"
+    : etapa === "busca_kalodata"
     ? "kalodata"
     : etapa === "montagem_json2video"
       ? "json2video"

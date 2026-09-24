@@ -11,7 +11,8 @@ export type EtapaConsumo =
   | "roteiro_texto"
   | "narracao_elevenlabs"
   | "transcricao_audio"
-  | "analise_video";
+  | "analise_video"
+  | "apify_download";
 
 export type UnidadeTarifa =
   | "imagem"
@@ -21,7 +22,8 @@ export type UnidadeTarifa =
   | "token_input"
   | "token_output"
   | "mil_caracteres"
-  | "minuto_audio";
+  | "minuto_audio"
+  | "usd_real";
 
 export type BillableAction =
   | "roteiro"
@@ -145,6 +147,7 @@ export const acaoDoEvento = (evento: ConsumoEventoRow): BillableAction => {
     narracao_elevenlabs: "narracao",
     transcricao_audio: "transcricao",
     analise_video: "analise_video",
+    apify_download: "analise_video",
   };
   return mapa[evento.etapa];
 };

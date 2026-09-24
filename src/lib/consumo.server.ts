@@ -34,7 +34,8 @@ export type ConsumoEvento = {
     | "roteiro_texto"
     | "narracao_elevenlabs"
     | "transcricao_audio"
-    | "analise_video";
+    | "analise_video"
+    | "apify_download";
   /** Ação cobrável correspondente; sem ela caímos no mapa padrão da etapa. */
   acao?: BillableAction;
   modelo: string;
@@ -47,7 +48,8 @@ export type ConsumoEvento = {
     | "token_input"
     | "token_output"
     | "mil_caracteres"
-    | "minuto_audio";
+    | "minuto_audio"
+    | "usd_real";
   metadados?: Record<string, unknown>;
   /** Não debita a carteira (ex.: segunda linha de tokens da mesma operação). */
   semDebito?: boolean;
@@ -63,6 +65,7 @@ const ACAO_POR_ETAPA: Record<ConsumoEvento["etapa"], BillableAction> = {
   narracao_elevenlabs: "narracao",
   transcricao_audio: "transcricao",
   analise_video: "analise_video",
+  apify_download: "analise_video",
 };
 
 /** Tenant da plataforma, usado apenas em consumo global (sem job e sem perfil). */
