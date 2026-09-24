@@ -9,7 +9,7 @@ import { useGastoMes } from "@/lib/orcamento";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { JOB_STATUS_LABELS, jobStatusLabel, relativeTime, useJobs } from "@/lib/content";
+import { JOB_STATUS_LABELS, jobStatusLabel, relativeTime, useJobs, useProducts } from "@/lib/content";
 import { GlobalPromptsSettings } from "./prompts-page";
 import { SyncCategoriesButton } from "./category-select";
 import { ChampionRefsToggle } from "./champion-refs-toggle";
@@ -28,16 +28,18 @@ export function DashboardPage() { return <ProfileGate><DashboardContent /></Prof
 function DashboardContent() {
   const { activeProfile, activeProfileId, profiles, can } = useStudio();
   const { data: scoped = [] } = useJobs(activeProfileId);
+  const { data: products = [] } = useProducts(activeProfileId);
+  const productImage = (productId: string | null) => products.find((p) => p.id === productId)?.image_url ?? null;
   const gasto = useGastoMes(activeProfileId);
   const canCost = can("custos", "visualizar", activeProfileId);
   const profileName = (id: string) => profiles.find((p) => p.id === id)?.name ?? "Perfil";
   const count = (f: (j: (typeof scoped)[number]) => boolean) => scoped.filter(f).length;
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const gerando = count((j) => j.status === "gerando_cenas" || j.status === "gerando_video");
-  const stats: { icon: typeof Video; value: string | number; label: string; context?: string | undefined; to: string; bar?: number | undefined }[] = [
+  const stats: { icon: typeof Video; value: string | number; label: string; context?: string | undefined; to: string; search?: Record<string, string> | undefined; bar?: number | undefined }[] = [
     { icon: Video, value: count((j) => j.status === "video_pronto"), label: "Vídeos prontos", context: `${count((j) => j.status === "video_pronto" && !j.approved_at)} aguardando revisão`, to: "/app/videos" },
     { icon: FileClock, value: count((j) => j.status === "rascunho_enviado"), label: "Rascunhos aguardando", context: `${count((j) => j.status === "rascunho_enviado" && !!j.approved_at)} aprovados para postar`, to: "/app/rascunhos" },
-    { icon: CheckCircle2, value: count((j) => j.status === "publicado" && !!j.published_at && new Date(j.published_at) >= monthStart), label: "Publicados", context: "neste mês", to: "/app/rascunhos" },
+    { icon: CheckCircle2, value: count((j) => j.status === "publicado" && !!j.published_at && new Date(j.published_at) >= monthStart), label: "Publicados", context: "neste mês", to: "/app/rascunhos", search: { tab: "publicados" } },
     { icon: Workflow, value: scoped.length, label: "Jobs no pipeline", context: `${gerando} gerando agora`, to: "/app/pipeline" },
   ];
   if (canCost && gasto) {
@@ -48,8 +50,8 @@ function DashboardContent() {
   return <>
     <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Visão geral" action={<Button variant="secondary" onClick={openOnboarding}>Como funciona</Button>} />
     <OnboardingBanner />
-    <div className={`grid gap-3 sm:grid-cols-2 ${stats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>{stats.map(({ icon: Icon, value, label, context, to, bar }) => (
-      <Link key={label} to={to} className="block rounded-lg border border-border bg-card p-5 transition-colors hover:border-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <div className={`grid gap-3 sm:grid-cols-2 ${stats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>{stats.map(({ icon: Icon, value, label, context, to, search, bar }) => (
+      <Link key={label} to={to} {...(search ? { search } : {})} className="block rounded-lg border border-border bg-card p-5 transition-colors hover:border-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <div className="flex items-center gap-2 text-[13px] text-muted-foreground"><Icon className="size-[18px]" strokeWidth={1.8} />{label}</div>
         <strong className="mt-2 block font-display text-[36px] font-semibold leading-tight">{value}</strong>
         {context && <p className="mt-1 text-[13px] text-muted-foreground">{context}</p>}
@@ -59,7 +61,7 @@ function DashboardContent() {
     <section className="mt-6 panel">
       <div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="sm" asChild><Link to="/app/pipeline">Ver pipeline</Link></Button></div>
       <div className="divide-y divide-border">{scoped.slice(0, 5).map((job) => {
-        const thumb = job.video_thumbnail_url ?? job.ai_video_thumbnail_url ?? job.scenes?.find((s) => s.image_url)?.image_url;
+        const thumb = job.video_thumbnail_url ?? job.ai_video_thumbnail_url ?? job.scenes?.find((s) => s.image_url)?.image_url ?? productImage(job.product_id);
         return <Link key={job.id} to="/app/rascunhos" search={{ jobId: job.id, perfil: job.profile_id }} className="-mx-2 grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-[rgba(255,255,255,0.03)]">
           {thumb ? <img src={thumb} alt="" className="size-10 rounded-md object-cover" /> : <span className="grid size-10 place-items-center rounded-md bg-muted text-muted-foreground"><ImageIcon className="size-4" /></span>}
           <div className="min-w-0"><p className="truncate text-sm font-semibold">{job.title || "Sem título"}</p><p className="truncate whitespace-pre text-xs text-muted-foreground">{profileName(job.profile_id)}{"  "}{relativeTime(job.created_at)}</p></div>
