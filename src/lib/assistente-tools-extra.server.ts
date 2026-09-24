@@ -148,16 +148,16 @@ export function buildToolsExtra(ctx: Ctx) {
       description: "Versões de um vídeo próprio/gravado: original, editada e IA, com data e qual está marcada para postagem.",
       inputSchema: z.object({ job_id: z.string() }),
       execute: async ({ job_id }) => {
-        const { data: j } = await db.from("jobs").select("id, title, formato, recorded_at, video_original_path, video_edited_path, video_edits, ai_video_path, ai_video_url, ai_status, video_choice, updated_at").eq("id", job_id).maybeSingle();
+        const { data: j } = await db.from("jobs").select("id, title, formato, recorded_at, video_original_path, video_edited_path, video_original_duracao, video_edited_duracao, ai_video_duracao, video_edits, ai_video_path, ai_video_url, ai_status, video_choice, updated_at").eq("id", job_id).maybeSingle();
         if (!j) return { erro: "Não encontrei esse job." };
-        const dur = (j.video_edits as Any)?.duration ?? (j.video_edits as Any)?.duracao ?? null;
+        const seg = (v: unknown) => (v != null && Number(v) > 0 ? `${Math.round(Number(v))}s` : null);
         const versoes = [
-          { versao: "Original gravada", existe: !!j.video_original_path, data: quando(j.recorded_at), duracao: null },
-          { versao: "Editada", existe: !!j.video_edited_path, data: j.video_edited_path ? quando(j.updated_at) : null, duracao: dur ? `${Math.round(Number(dur))}s` : null },
-          { versao: "Gerada por IA", existe: !!(j.ai_video_path || j.ai_video_url), data: null, duracao: null, estado: j.ai_status ?? null },
+          { versao: "Original gravada", existe: !!j.video_original_path, data: quando(j.recorded_at), duracao: seg(j.video_original_duracao) },
+          { versao: "Editada", existe: !!j.video_edited_path, data: j.video_edited_path ? quando(j.updated_at) : null, duracao: seg(j.video_edited_duracao) },
+          { versao: "Gerada por IA", existe: !!(j.ai_video_path || j.ai_video_url), data: null, duracao: seg(j.ai_video_duracao), estado: j.ai_status ?? null },
         ];
         return {
-          titulo: j.title, versoes: versoes.map((v) => ({ ...v, duracao: v.duracao ?? "não registrada" })),
+          titulo: j.title, versoes: versoes.map((v) => ({ ...v, duracao: v.existe ? v.duracao ?? "ainda não lida (abra Rascunhos para preencher)" : null })),
           marcada_para_postagem: j.video_choice === "ia" ? "Gerada por IA" : j.video_edited_path ? "Editada" : j.video_original_path ? "Original gravada" : "nenhuma",
           link: linkJob(job_id),
         };

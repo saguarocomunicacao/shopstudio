@@ -179,7 +179,7 @@ No menu da sua foto, Guia do Shop Studio, ou no botão Como funciona da Visão g
 No detalhe do job, seção Histórico: etapas, tempo em cada uma, quem avançou ou voltou, tentativas e erros. [Pipeline](/app/pipeline)
 
 ## FAQ: Onde vejo minhas notificações?
-Pergunte ao assistente "quais minhas notificações". Uma central de notificações no topo virá em breve.
+Pergunte ao assistente "quais minhas notificações". Vídeos criados pela automação avisam os Admins e Gerentes do perfil. Uma central de notificações no topo virá em breve.
 
 ## FAQ: O assistente pode fazer ações por mim?
 Não. O assistente só consulta e explica, e mostra o link da tela onde você faz a ação.
