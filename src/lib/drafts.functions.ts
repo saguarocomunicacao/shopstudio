@@ -248,9 +248,12 @@ export const approveDraft = createServerFn({ method: "POST" })
 export const markDraftPublished = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) =>
-    z.object({ jobId: z.string().uuid(), url: z.string().trim().max(500).optional() }).parse(data),
+    z.object({ jobId: z.string().uuid(), url: z.string().trim().min(8, "Cole o link do vídeo no TikTok.").max(500) }).parse(data),
   )
   .handler(async ({ data, context }) => {
+    const { resolverLinkTiktok, ligarHistorico } = await import("./metricas.server");
+    const link = await resolverLinkTiktok(data.url);
+    if (!link) throw new Error("Não reconhecemos esse link. Abra o vídeo no TikTok, toque em Compartilhar > Copiar link e cole aqui.");
     const { data: job, error: readError } = await context.supabase
       .from("jobs")
       .select("id, status, profile_id")
@@ -273,10 +276,13 @@ export const markDraftPublished = createServerFn({ method: "POST" })
       .update({
         status: "publicado",
         published_at: new Date().toISOString(),
-        published_url: data.url?.trim() || null,
+        published_url: link.url,
+        tiktok_video_url: link.url,
+        tiktok_video_id: link.id,
       })
       .eq("id", data.jobId);
     if (error) throw new Error(error.message);
+    await ligarHistorico(job.profile_id, link.id, data.jobId);
     return { ok: true };
   });
 
