@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Copy,
   Film,
+  Heart,
   Loader2,
   LockKeyhole,
   Play,
@@ -422,6 +423,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
           <TabsList className="h-auto min-w-max justify-start">
             {QUEUES.map((q) => (
               <TabsTrigger key={q.key} value={q.key}>
+                {q.key === "favoritos" && <Heart className="size-4" />}
                 {q.label} ({countQueue(q)})
               </TabsTrigger>
             ))}
@@ -591,7 +593,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
               : queue === "roteiros"
                 ? "Nenhum roteiro pronto para gravar. Crie um vídeo próprio ou gere o roteiro de um produto nesse formato."
                 : queue === "favoritos"
-                  ? "Nenhum favorito ainda. Toque na estrela de um vídeo para guardá-lo aqui."
+                  ? "Nenhum favorito ainda. Toque no coração de um vídeo para guardá-lo aqui."
                   : queue === "lixeira"
                   ? "A lixeira está vazia."
                   : "Nenhum vídeo publicado ainda."}

@@ -26,6 +26,7 @@ import { actionError } from "@/lib/api-keys";
 import { isMobileViewport } from "@/lib/mobile-fullscreen";
 import { ACCEPTED_DOC_TYPES } from "@/lib/document-text";
 import { VideoDownloadButton } from "./video-download-button";
+import { FavoriteStar, InlineTitle } from "./job-title-fav";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
@@ -391,6 +392,12 @@ export function RecordingKitDialog({
           <div className="max-h-[92vh] overflow-y-auto p-6 [scrollbar-gutter:stable]">
             <DialogHeader>
               <DialogTitle>Gravar eu mesmo</DialogTitle>
+              <div className="flex items-center gap-2 pt-1">
+                <div className="min-w-0 flex-1">
+                  <InlineTitle jobId={job.id} title={job.title} canEdit={canEdit} className="text-base font-semibold" />
+                </div>
+                {canEdit && <FavoriteStar job={job} className="shrink-0" />}
+              </div>
               <DialogDescription>
                 A inteligência artificial escreve os textos; você grava o vídeo lendo o teleprompter.
               </DialogDescription>
