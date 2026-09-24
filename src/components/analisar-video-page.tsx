@@ -427,7 +427,7 @@ const ETAPA_NOME: Record<string, string> = {
 const bytesTxt = (b: number | null | undefined) =>
   b == null ? "—" : b >= 1024 * 1024 ? `${(b / 1024 / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB` : `${Math.max(1, Math.round(b / 1024))} KB`;
 
-function OrigemBloco({ a, videoUrl, podeEditar, onReanalisar }: { a: Analise; videoUrl?: string; podeEditar: boolean; onReanalisar: () => void }) {
+function OrigemBloco({ a, videoUrl, podeEditar, onReanalisar }: { a: Analise; videoUrl?: string | undefined; podeEditar: boolean; onReanalisar: () => void }) {
   const qc = useQueryClient();
   const link = a.link_url || a.youtube_url;
   const [editando, setEditando] = useState(false);
