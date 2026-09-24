@@ -276,7 +276,7 @@ export function useTrashedJobs(profileId: string | null, enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status, visual_style_override, visual_style_custom",
+          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status, visual_style_override, visual_style_custom, favorito",
         )
         .eq("profile_id", profileId!)
         .not("deleted_at", "is", null)
@@ -296,7 +296,7 @@ export function useJobs(profileId: string | null, enabled = true) {
       const { data, error } = await supabase
         .from("jobs")
         .select(
-          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status, visual_style_override, visual_style_custom",
+          "id, product_id, profile_id, status, title, created_at, script, hook, post_cta, caption, hashtags, video_url, video_thumbnail_url, render_id, render_error, render_started_at, render_stage, scenes, gemini_images_count, veo_takes_count, voice_ref, video_path, video_original_path, video_edited_path, video_choice, video_edits, ai_status, ai_render_stage, ai_render_error, ai_video_url, ai_video_path, ai_video_thumbnail_url, published_url, approved_at, published_at, rejection_reason, script_refs, formato, roteiro_blocos, texto_tela, recorded_at, deleted_at, deleted_from_status, visual_style_override, visual_style_custom, favorito",
         )
         .eq("profile_id", profileId!)
         .is("deleted_at", null)
