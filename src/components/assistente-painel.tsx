@@ -203,7 +203,7 @@ export function AssistentePainel() {
       {naoLida && <span className="absolute right-0.5 top-0.5 h-3 w-3 rounded-full border-2 border-card bg-brand-cyan" aria-label="Resposta não lida" />}
     </button>
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-[400px] [&>button]:hidden">
+      <SheetContent side="right" className="flex w-full flex-col gap-0 border-border bg-card p-0 text-foreground sm:max-w-[400px] [&>button]:hidden">
         <div className="flex items-start justify-between gap-2 border-b border-border px-4 py-3">
           <div className="min-w-0">
             <SheetTitle className="font-display text-base font-semibold">Assistente</SheetTitle>
@@ -217,7 +217,7 @@ export function AssistentePainel() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 text-sm">
+        <div className="flex-1 overflow-y-auto bg-background px-4 py-4 text-sm text-foreground">
           {historico ? (
             <div className="grid gap-1">
               <div className="mb-2 flex items-center justify-between"><p className="font-semibold">Histórico</p><Button variant="ghost" size="sm" onClick={() => setHistorico(null)}>Voltar</Button></div>
@@ -240,7 +240,7 @@ export function AssistentePainel() {
           ) : (
             <div className="grid gap-3">
               {msgs.map((m, i) => m.papel === "user" ? (
-                <div key={i} className="ml-auto max-w-[85%] whitespace-pre-wrap rounded-lg bg-primary/10 px-3 py-2 text-foreground">{m.conteudo}</div>
+                <div key={i} className="ml-auto max-w-[85%] whitespace-pre-wrap rounded-lg bg-primary/10 px-3 py-2 text-foreground dark:bg-primary/16">{m.conteudo}</div>
               ) : m.papel === "aviso" ? (
                 <p key={i} className="text-center text-xs text-muted-foreground">{m.conteudo}</p>
               ) : m.papel === "erro" ? (
@@ -252,8 +252,10 @@ export function AssistentePainel() {
               ))}
               {streaming !== null && (
                 <div className="max-w-[90%]">
-                  {(toolAtual || !streaming) && <p className="mb-1 text-xs text-muted-foreground">{toolAtual ?? "Pensando..."}</p>}
-                  {streaming && <div className="rounded-lg border border-border bg-card px-3 py-2"><Markdown text={streaming} onLink={onLink} /></div>}
+                  {toolAtual && <p className="mb-1 text-xs text-muted-foreground">{toolAtual}</p>}
+                  <div className="rounded-lg border border-border bg-card px-3 py-2">
+                    {streaming ? <Markdown text={streaming} onLink={onLink} /> : <span className="typing-dots" aria-label="Digitando"><span /><span /><span /></span>}
+                  </div>
                 </div>
               )}
               <div ref={fimRef} />
