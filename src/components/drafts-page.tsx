@@ -488,7 +488,9 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                   <DraftThumb job={job} preview={previewOf(job.id)} loadingPreview={!!job.video_path && previews.isFetching && !previewOf(job.id)} onOpen={abrir} />
                 )}
                 </div>
-                <InlineTitle jobId={job.id} title={job.title} canEdit={canRemove(job)} className="mt-3 text-sm font-bold" />
+                <div className="mt-3">
+                  <InlineTitle jobId={job.id} title={job.title} canEdit={canRemove(job)} className="text-sm font-bold" />
+                </div>
                 <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                   <div className="flex min-w-0 items-center gap-2">
