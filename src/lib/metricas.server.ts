@@ -122,25 +122,29 @@ export async function processarColeta(profileId: string): Promise<string> {
   const itens = (res.ok ? await res.json().catch(() => []) : []) as Any[];
   const handle = limparHandle(p.handle).toLowerCase();
   const videos = itens.filter((i) => i && i.id && !i.error && (!i.authorMeta?.name || String(i.authorMeta.name).toLowerCase() === handle));
-  if (!videos.length) {
+  const autor = itens.find((i) => i?.authorMeta && String(i.authorMeta.name ?? "").toLowerCase() === handle)?.authorMeta as Any | undefined;
+  if (!videos.length && !autor) {
     const erroItem = itens.find((i) => i?.error)?.error as string | undefined;
-    const privado = itens.some((i) => i?.authorMeta?.privateAccount);
-    const msg = privado
-      ? `A conta @${handle} é privada. Deixe a conta pública para coletar métricas.`
-      : erroItem && /not.?found|doesn.?t exist|no.?user|invalid/i.test(erroItem)
-        ? `Não encontramos a conta @${handle} no TikTok. Confira o @ na aba Dados do perfil.`
-        : erroItem
-          ? `Não foi possível ler a conta @${handle} no TikTok. Tente atualizar de novo.`
-          : `A conta @${handle} ainda não tem vídeos públicos, então o TikTok não devolveu números.`;
+    const msg = erroItem && /not.?found|doesn.?t exist|no.?user|invalid/i.test(erroItem)
+      ? `Não encontramos a conta @${handle} no TikTok. Confira o @ na aba Dados do perfil.`
+      : `Não foi possível ler a conta @${handle} no TikTok. Tente atualizar de novo.`;
     await falhar(msg);
-    return "sem_videos";
+    return "sem_dados";
   }
   const hoje = hojeBr();
-  const a = videos[0].authorMeta ?? {};
+  const a = autor ?? videos[0].authorMeta ?? {};
+  if (a.privateAccount) {
+    await falhar(`A conta @${handle} é privada. Deixe a conta pública para coletar métricas.`);
+    return "privada";
+  }
   await db.from("perfil_metricas").upsert({
     tenant_id: p.tenant_id, profile_id: profileId, data: hoje,
     seguidores: num(a.fans), seguindo: num(a.following), curtidas_total: num(a.heart), videos_total: num(a.video),
   } as never, { onConflict: "profile_id,data" });
+  if (!videos.length) {
+    await salvarColeta(profileId, p.tenant_id, { status: "ok", run_id: null, ultima_coleta_em: new Date().toISOString(), ultimo_erro: null });
+    return "ok_sem_videos";
+  }
 
   const ids = videos.map((i) => String(i.id));
   const { data: jobs } = await db.from("jobs").select("id, tiktok_video_id").eq("profile_id", profileId).in("tiktok_video_id", ids);
