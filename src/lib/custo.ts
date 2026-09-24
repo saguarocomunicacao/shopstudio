@@ -45,6 +45,7 @@ export const ETAPA_LABELS: Record<EtapaConsumo, string> = {
   roteiro_texto: "Roteiro",
   narracao_elevenlabs: "Narração (ElevenLabs)",
   transcricao_audio: "Ditado por voz",
+  analise_video: "Análise de vídeo",
 };
 
 export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {

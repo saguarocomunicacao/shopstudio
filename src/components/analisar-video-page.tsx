@@ -75,7 +75,7 @@ async function lerDuracao(file: File): Promise<number | null> {
 function useAnalises(profileId: string | null) {
   const qc = useQueryClient();
   useEffect(() => {
-    if (!profileId) return;
+    if (!profileId) return undefined;
     const ch = supabase
       .channel(`analises-${profileId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "video_analises", filter: `profile_id=eq.${profileId}` }, () =>
@@ -355,7 +355,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
   // Extrai um frame por cena no navegador (uma vez).
   const extraindo = useRef(false);
   useEffect(() => {
-    if (!podeEditar || a.origem !== "arquivo" || a.status !== "pronto" || !r?.cenas?.length || (a.frames ?? []).length || !videoUrl || extraindo.current) return;
+    if (!podeEditar || a.origem !== "arquivo" || a.status !== "pronto" || !r?.cenas?.length || (a.frames ?? []).length || !videoUrl || extraindo.current) return undefined;
     extraindo.current = true;
     (async () => {
       const frames: { inicio: number; path: string }[] = [];
@@ -374,6 +374,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
         qc.invalidateQueries({ queryKey: ["video-analises", a.profile_id] });
       }
     })();
+    return undefined;
   }, [a, r, videoUrl, podeEditar, qc]);
 
   const pular = (s: number) => {
