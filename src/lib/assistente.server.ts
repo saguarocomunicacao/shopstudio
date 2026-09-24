@@ -8,7 +8,9 @@ import { stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
 import manual from "./assistente-manual.md?raw";
 import { JOB_STATUS_LABELS, type JobStatusKey } from "./content";
-import { ACAO_LABELS, type BillableAction } from "./custo-core";
+import { ACAO_LABELS, type BillableAction, type ConsumoEventoRow, type CreditoTaxaRow, type TarifaRow } from "./custo-core";
+import { agregarPeriodo, calcularGastoMes, computeJobCusto, ETAPA_VISUAL_LABELS, SELECT_EVENTOS_CUSTO, type AppConfigRow } from "./custo-calculo";
+import { montarConsumoConsolidado } from "./consumo-tenant.functions";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Db = any;
@@ -116,13 +118,39 @@ function periodo(p: string, de?: string | null, ate?: string | null) {
   return { desde: mes.toISOString(), ate: agora.toISOString(), rotulo: "este mês" };
 }
 
-async function custosPorJob(db: Db, jobIds: string[]) {
-  const m = new Map<string, number>();
-  if (!jobIds.length) return m;
-  const { data } = await db.from("consumo_eventos").select("job_id, tool_price_cents").in("job_id", jobIds).limit(2000);
-  for (const e of (data ?? []) as Array<{ job_id: string; tool_price_cents: number }>) m.set(e.job_id, (m.get(e.job_id) ?? 0) + (e.tool_price_cents ?? 0));
+const reais = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+/** Mesmas consultas de useTarifas (tela Custos), com o login do usuário. */
+async function precosDoUsuario(db: Db) {
+  const [t, x, c] = await Promise.all([
+    db.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    db.from("credito_taxas").select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
+    db.from("app_config").select("value_num").eq("key", "cotacao_usd_brl").maybeSingle(),
+  ]);
+  const tarifas = ((t.data ?? []) as any[]).map((r) => ({ ...r, preco_unitario: Number(r.preco_unitario) })) as TarifaRow[];
+  const taxas = ((x.data ?? []) as any[]).map((r) => ({ ...r, credito_por_unidade: Number(r.credito_por_unidade) })) as CreditoTaxaRow[];
+  return { tarifas, taxas, cotacao: Number(c.data?.value_num ?? 1) };
+}
+
+/** Pode ver custo de job? Mesma regra do selo de custo no Pipeline. */
+const podeVerCustoJob = (ctx: Ctx, profileId: string | null) => ctx.access.isBackoffice || ctx.access.can("custos", "visualizar", profileId);
+
+/** Custo por job exatamente como o Pipeline mostra (useJobCustos → computeJobCusto). */
+async function custosPorJob(ctx: Ctx, jobs: Array<{ id: string; profile_id: string | null }>) {
+  const m = new Map<string, ReturnType<typeof computeJobCusto>>();
+  const visiveis = jobs.filter((j) => podeVerCustoJob(ctx, j.profile_id));
+  if (!visiveis.length) return m;
+  const [precos, ev] = await Promise.all([
+    precosDoUsuario(ctx.db),
+    ctx.db.from("consumo_eventos").select(SELECT_EVENTOS_CUSTO).in("job_id", visiveis.map((j) => j.id)).order("created_at", { ascending: true }).limit(5000),
+  ]);
+  const porJob = new Map<string, ConsumoEventoRow[]>();
+  for (const e of (ev.data ?? []) as ConsumoEventoRow[]) { const l = porJob.get(e.job_id!) ?? []; l.push(e); porJob.set(e.job_id!, l); }
+  for (const [id, l] of porJob) m.set(id, computeJobCusto(l, precos.tarifas, precos.cotacao, precos.taxas));
   return m;
 }
+const custoTxt = (ctx: Ctx, profileId: string | null, c: ReturnType<typeof computeJobCusto> | undefined) =>
+  !podeVerCustoJob(ctx, profileId) ? "sem permissão" : reais(c?.totalBrl ?? 0);
 
 export function buildTools(ctx: Ctx) {
   const { db } = ctx;
@@ -200,7 +228,7 @@ export function buildTools(ctx: Ctx) {
         const { data, error } = await q;
         if (error) return { erro: "Não consegui ler os jobs." };
         const rows = (data ?? []) as Array<any>;
-        const [custos, nomes] = await Promise.all([custosPorJob(db, rows.map((r) => r.id)), nomesUsuarios(db, rows.map((r) => r.created_by))]);
+        const [custos, nomes] = await Promise.all([custosPorJob(ctx, rows as any), nomesUsuarios(db, rows.map((r) => r.created_by))]);
         return rows.map((j) => ({
           titulo: j.title, produto: j.products?.name ?? null, formato: formatoLabel(j.formato), estado: statusLabel(j.status, j.ai_render_stage),
           criado_por: quem(nomes, j.created_by), custo: brl(custos.get(j.id) ?? 0), criado_em: j.created_at, atualizado_em: j.updated_at, id: j.id, link: linkJob(j.id),
@@ -221,19 +249,14 @@ export function buildTools(ctx: Ctx) {
         const j = (data ?? [])[0] as any | undefined;
         if (!j) return { erro: "Não encontrei esse job." };
         const [ev, nomes, share] = await Promise.all([
-          db.from("consumo_eventos").select("etapa, tool_price_cents").eq("job_id", j.id).limit(1000),
+          custosPorJob(ctx, [j]),
           nomesUsuarios(db, [j.created_by]),
           db.from("job_shares").select("token").eq("job_id", j.id).limit(1).then((r: any) => r, () => ({ data: null })),
         ]);
-        const porEtapa: Record<string, string> = {};
-        const soma: Record<string, number> = {};
-        let total = 0;
-        for (const e of (ev.data ?? []) as Array<{ etapa: string; tool_price_cents: number }>) {
-          const l = ETAPA_LABEL[e.etapa] ?? e.etapa;
-          soma[l] = (soma[l] ?? 0) + (e.tool_price_cents ?? 0);
-          total += e.tool_price_cents ?? 0;
-        }
-        for (const [k, v] of Object.entries(soma)) porEtapa[k] = brl(v);
+        const cj = ev.get(j.id);
+        const podeCusto = podeVerCustoJob(ctx, j.profile_id);
+        const porEtapa: Record<string, string> | string = podeCusto ? Object.fromEntries((cj?.etapas ?? []).map((e) => [ETAPA_LABEL[e.etapa] ?? e.etapa, reais(e.valorBrl)])) : "sem permissão";
+        const total = cj?.totalBrl ?? 0;
         const cenas = Array.isArray(j.scenes) ? (j.scenes as Array<any>).slice(0, 20).map((c, i) => ({ numero: i + 1, descricao: String(c["prompt"] ?? c["descricao"] ?? c["description"] ?? "").slice(0, 200), aprovada: Boolean(c["approved"] ?? c["aprovada"]) })) : [];
         const formato = formatoLabel(j.formato);
         const token = (share as any)?.data?.[0]?.token;
@@ -264,8 +287,8 @@ export function buildTools(ctx: Ctx) {
         const { data } = await q;
         const j = (data ?? [])[0] as any | undefined;
         if (!j) return { erro: `Nenhum vídeo ${tipo} encontrado.` };
-        const custo = (await custosPorJob(db, [j.id])).get(j.id) ?? 0;
-        return { titulo: j.title, produto: j.products?.name, perfil: j.profiles?.name, data: tipo === "publicado" ? j.published_at : j.updated_at, custo: brl(custo), link_tiktok: j.published_url ?? null, link: linkJob(j.id) };
+        const custo = custoTxt(ctx, j.profile_id, (await custosPorJob(ctx, [j])).get(j.id));
+        return { titulo: j.title, produto: j.products?.name, perfil: j.profiles?.name, data: tipo === "publicado" ? j.published_at : j.updated_at, custo, link_tiktok: j.published_url ?? null, link: linkJob(j.id) };
       },
     }),
 
