@@ -147,7 +147,7 @@ export function NewOwnVideoDialog({
               disabled={ocupado}
               onClick={() => setModo(opcao.valor)}
               className={`rounded-xl border p-3 text-left transition ${
-                modo === opcao.valor ? "border-[#25F4EE] bg-[#25F4EE]/10" : "border-border hover:bg-secondary/60"
+                modo === opcao.valor ? "border-brand-cyan bg-success-soft" : "border-border hover:bg-secondary/60"
               }`}
             >
               <span className="flex items-center gap-2 text-sm font-black">
@@ -557,7 +557,7 @@ export function RecordingKitDialog({
                     variant="secondary"
                     disabled={salvar.isPending}
                     onClick={() => salvar.mutate()}
-                    className={`bg-[#25F4EE] text-[#0A0A0A] hover:bg-[#25F4EE]/90${isDirty ? " ring-2 ring-[#25F4EE] ring-offset-2 ring-offset-background animate-pulse" : ""}`}
+                    className={`bg-brand-cyan text-foreground hover:bg-brand-cyan/90${isDirty ? " ring-2 ring-brand-cyan ring-offset-2 ring-offset-background animate-pulse" : ""}`}
                   >
                     {salvar.isPending ? <Loader2 className="animate-spin" /> : <Save />}
                     Salvar alterações
