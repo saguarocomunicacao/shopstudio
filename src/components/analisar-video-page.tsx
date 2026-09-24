@@ -44,7 +44,7 @@ type Analise = {
   etapa_log?: EtapaLog[] | null;
 };
 
-type EtapaLog = { etapa: string; em: string; tentativa?: number; motivo?: string; detalhe?: string; erro?: string };
+type EtapaLog = { etapa: string; em: string; tentativa?: number; motivo?: string; detalhe?: string; erro?: string; definitivo?: boolean };
 
 type RedeMeta = { autor: string | null; views: number | null; likes: number | null; comentarios: number | null; compartilhamentos: number | null; publicado_em: string | null };
 
@@ -542,6 +542,47 @@ function OrigemBloco({ a, videoUrl, podeEditar, onReanalisar }: { a: Analise; vi
   );
 }
 
+function AcoesErro({ a, onReanalisar }: { a: Analise; onReanalisar: () => void }) {
+  const qc = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [enviando, setEnviando] = useState(false);
+  const ultimoErro = [...(a.etapa_log ?? [])].reverse().find((l) => l?.etapa === "erro");
+  const definitivo = a.origem !== "arquivo" && !a.storage_path && !!ultimoErro?.definitivo;
+  const enviar = async (file: File) => {
+    if (!TIPOS.includes(file.type)) { toast.error("Use um vídeo MP4, MOV ou WEBM."); return; }
+    if (file.size > MAX) { toast.error("O vídeo passa de 200 MB."); return; }
+    setEnviando(true);
+    try {
+      const path = `${a.tenant_id}/${a.profile_id}/${a.id}/video`;
+      const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type, upsert: true });
+      if (error) throw new Error("O envio do arquivo falhou. Tente de novo.");
+      const duracao = await lerDuracao(file);
+      const { error: e2 } = await supabase.from("video_analises").update({
+        storage_path: path, mime_type: file.type, arquivo_nome: file.name, arquivo_bytes: file.size,
+        duracao: duracao ?? a.duracao, frames: [],
+        etapa_log: [...(a.etapa_log ?? []), { etapa: "enviado", em: new Date().toISOString() }],
+      } as never).eq("id", a.id);
+      if (e2) throw new Error("Não foi possível salvar o arquivo na análise.");
+      await qc.invalidateQueries({ queryKey: ["video-analises", a.profile_id] });
+      onReanalisar();
+    } catch (e) {
+      toast.error(friendlyError(e));
+    } finally {
+      setEnviando(false);
+    }
+  };
+  return (
+    <div className="flex flex-wrap gap-2">
+      <input ref={inputRef} type="file" accept="video/mp4,video/quicktime,video/webm" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void enviar(f); }} />
+      {definitivo ? (
+        <Button disabled={enviando} onClick={() => inputRef.current?.click()}>{enviando ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}Enviar arquivo</Button>
+      ) : (
+        <Button onClick={onReanalisar}><RefreshCw className="size-4" />Tentar novamente</Button>
+      )}
+    </div>
+  );
+}
+
 function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise; onVoltar: () => void; onReanalisar: () => void; podeEditar: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ytStart, setYtStart] = useState(0);
@@ -670,7 +711,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
             <div className="rounded-lg border border-border bg-card p-6 text-sm">
               <p className="mb-1 font-medium">{a.erro ?? "Não foi possível analisar o vídeo."}</p>
               <p className="mb-3 text-muted-foreground">Os detalhes da origem e o motivo registrado estão ao lado, em "Etapas".</p>
-              {podeEditar && <Button onClick={onReanalisar}><RefreshCw className="size-4" />Tentar novamente</Button>}
+              {podeEditar && <AcoesErro a={a} onReanalisar={onReanalisar} />}
             </div>
           ) : a.status !== "pronto" || !r ? (
             <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
