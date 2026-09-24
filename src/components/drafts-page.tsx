@@ -1,4 +1,5 @@
 import { ehLinkTiktok } from "@/lib/metricas-calc";
+import { TiktokLinkInline, VincularExternoDialog } from "./tiktok-link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -443,10 +444,18 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
           </p>
         </div>
         {canCreate && (
-          <Button onClick={() => setNovoOpen(true)}>
-            <Video />
-            Novo vídeo próprio
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {queue === "publicado" && activeProfileId && (
+              <Button variant="secondary" onClick={() => setExternoOpen(true)}>
+                <Link2 />
+                Vincular vídeo externo
+              </Button>
+            )}
+            <Button onClick={() => setNovoOpen(true)}>
+              <Video />
+              Novo vídeo próprio
+            </Button>
+          </div>
         )}
       </div>
 
@@ -524,6 +533,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                   <InlineTitle jobId={job.id} title={job.title} canEdit={canRemove(job)} className="text-sm font-bold" />
                 </div>
                 <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
+                {!isTrash && job.status === "publicado" && !job.tiktok_video_id && <TiktokLinkInline jobId={job.id} canEdit={canRemove(job)} />}
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                   <div className="flex min-w-0 items-center gap-2">
                     <span
@@ -650,6 +660,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
           }}
         />
       )}
+      {activeProfileId && <VincularExternoDialog profileId={activeProfileId} open={externoOpen} onOpenChange={setExternoOpen} />}
       <NewOwnVideoDialog open={novoOpen} onOpenChange={setNovoOpen} onCreated={(jobId) => setRecordingId(jobId)} />
 
       <AlertDialog open={!!trashing} onOpenChange={(open) => !open && setTrashing(null)}>
