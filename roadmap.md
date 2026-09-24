@@ -107,3 +107,11 @@
 - [x] Fonte extra do roteirista, "meu perfil" sem coleta duplicada, remoção mantendo análises
 - [x] Tools listar_referencias e detalhe_referencia
 - [x] Gráfico de seguidores com 1 coleta mostra o ponto único
+
+## Inteligência: rotas, status, Insights e correções
+- [x] URLs próprias (/app/analises, /app/analises/:id?tab, /app/referencias/:id?tab); /app/analisar redireciona
+- [x] Mapa único de status (Na fila, Baixando/Analisando, Pronta, Erro com motivo)
+- [x] Insights em JSON validado (retentativa 1x) e tela em blocos; Enviar para o roteirista
+- [x] Capas: bug do upsert em lote corrigido + backfill do @cazzacuradoriaa
+- [x] Contagem prontas/analisando/erro e aviso ao gerar com análises em andamento
+- [ ] Baixar PDF (opcional, não feito)

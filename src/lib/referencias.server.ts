@@ -118,11 +118,12 @@ export async function processarColetaRef(refId: string): Promise<string> {
       { onConflict: "referencia_id,tiktok_video_id,data" },
     );
     const { data: existentes } = await db.from("referencia_videos").select("tiktok_video_id, capa_path").eq("referencia_id", refId);
-    const comCapa = new Set(((existentes ?? []) as Any[]).filter((e) => e.capa_path).map((e) => e.tiktok_video_id));
+    const capaAtual = new Map(((existentes ?? []) as Any[]).filter((e) => e.capa_path).map((e) => [e.tiktok_video_id, e.capa_path as string]));
     const linhas = [];
     for (const i of videos) {
       const vid = String(i.id);
-      const capa = comCapa.has(vid) ? undefined : i.videoMeta?.coverUrl ? await guardarCapa(ref.tenant_id, pasta, vid, i.videoMeta.coverUrl) : null;
+      // Sempre manda capa_path: num upsert em lote, campo ausente em uma linha vira NULL em todas.
+      const capa = capaAtual.get(vid) ?? (i.videoMeta?.coverUrl ? await guardarCapa(ref.tenant_id, pasta, vid, i.videoMeta.coverUrl) : null);
       linhas.push({
         tenant_id: ref.tenant_id, referencia_id: refId, profile_id: ref.profile_id, tiktok_video_id: vid,
         url: i.webVideoUrl || `https://www.tiktok.com/@${ref.handle}/video/${vid}`,
@@ -130,7 +131,7 @@ export async function processarColetaRef(refId: string): Promise<string> {
         publicado_em: i.createTimeISO ?? null,
         duracao: Number.isFinite(Number(i.videoMeta?.duration)) ? Number(i.videoMeta.duration) : null,
         fixado: !!i.isPinned,
-        ...(capa !== undefined ? { capa_path: capa } : {}),
+        capa_path: capa,
       });
     }
     await db.from("referencia_videos").upsert(linhas as never, { onConflict: "referencia_id,tiktok_video_id" });
@@ -281,31 +282,86 @@ export async function gerarInsights(refId: string, dados: Any[], meuPerfil: { no
   const mediana = views.length ? (views.length % 2 ? views[(views.length - 1) / 2]! : Math.round((views[views.length / 2 - 1]! + views[views.length / 2]!) / 2)) : 0;
   const { resolvePrompt, renderPrompt } = await import("./prompts.server");
   const base = await resolvePrompt(db, ref.profile_id, "insights_referencia");
+  const regrasJson = `\n\nFORMATO OBRIGATÓRIO DA RESPOSTA: devolva somente um JSON (sem Markdown) com os campos:
+- resumo: exatamente 3 frases curtas com o essencial.
+- padroes: 5 itens, um para cada chave (gancho, formato, duracao, ritmo, produto_2s), com "achado" em 1 a 2 frases e "posicao" = "acima" se o padrão aparece nos vídeos acima da mediana de views, "abaixo" se aparece nos abaixo, "neutro" se não há diferença.
+- ganchos: os até 5 ganchos que mais funcionaram, com "video_id" copiado exatamente do campo "video" dos dados, "gancho" transcrito e "por_que" em 1 frase.
+- recomendacoes: 3 a 5 ações em sequência para o meu perfil, cada uma com "titulo" curto e "explicacao" em 1 frase.
+- comparativo: 4 a 6 linhas com "aspecto", "melhores" (o que os 5 mais vistos fazem) e "piores" (o que os 5 menos vistos fazem).
+Sempre que citar um vídeo no texto, use o título (legenda) e nunca o número do vídeo. Escreva em português do Brasil, sem travessão. Nunca invente números.`;
   const prompt = renderPrompt(base, {
     handle: ref.handle, mediana_views: mediana.toLocaleString("pt-BR"), meu_perfil: meuPerfil.nome, nicho: meuPerfil.nicho || "geral",
     dados: JSON.stringify(dados),
-  });
+  }) + regrasJson;
   const { resolveApiKey } = await import("./api-keys.server");
   const key = await resolveApiKey(ref.tenant_id, "gemini");
   const { GEMINI_MODEL } = await import("./video-analise.server");
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4 } }),
-  });
-  if (!res.ok) {
-    console.error("[referencias] insights", res.status, (await res.text().catch(() => "")).slice(0, 300));
-    throw new Error(res.status === 429 ? "O serviço de IA está ocupado. Tente de novo em instantes." : "Não foi possível gerar os insights agora.");
-  }
-  const body = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } };
-  const texto = (body.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
+  const { insightsSchema, insightsGeminiSchema, semTravessao } = await import("./insights-schema");
   const { recordConsumo } = await import("./consumo.server");
   const meta = { tipo: "insights_referencia", referencia_id: refId, handle: ref.handle };
-  const tin = body.usageMetadata?.promptTokenCount ?? 0;
-  const tout = body.usageMetadata?.candidatesTokenCount ?? 0;
-  if (tin) await recordConsumo({ profileId: ref.profile_id, etapa: "analise_video", acao: "analise_video", modelo: GEMINI_MODEL, unidade: "token_input", quantidade: tin, semDebito: true, metadados: meta });
-  if (tout) await recordConsumo({ profileId: ref.profile_id, etapa: "analise_video", acao: "analise_video", modelo: GEMINI_MODEL, unidade: "token_output", quantidade: tout, semDebito: true, metadados: meta });
-  if (!texto) throw new Error("A IA não devolveu os insights. Tente novamente.");
-  await salvar(refId, { insights: texto, insights_em: new Date().toISOString() });
-  return texto;
+  const ids = new Set(dados.map((d) => String(d.video)));
+
+  for (let tentativa = 1; tentativa <= 2; tentativa++) {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4, responseMimeType: "application/json", responseSchema: insightsGeminiSchema },
+      }),
+    });
+    if (!res.ok) {
+      console.error("[referencias] insights", res.status, (await res.text().catch(() => "")).slice(0, 300));
+      throw new Error(res.status === 429 ? "O serviço de IA está ocupado. Tente de novo em instantes." : "Não foi possível gerar os insights agora.");
+    }
+    const body = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } };
+    const texto = (body.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("").trim();
+    const tin = body.usageMetadata?.promptTokenCount ?? 0;
+    const tout = body.usageMetadata?.candidatesTokenCount ?? 0;
+    if (tin) await recordConsumo({ profileId: ref.profile_id, etapa: "analise_video", acao: "analise_video", modelo: GEMINI_MODEL, unidade: "token_input", quantidade: tin, semDebito: true, metadados: meta });
+    if (tout) await recordConsumo({ profileId: ref.profile_id, etapa: "analise_video", acao: "analise_video", modelo: GEMINI_MODEL, unidade: "token_output", quantidade: tout, semDebito: true, metadados: meta });
+    let parsed;
+    try {
+      parsed = insightsSchema.safeParse(JSON.parse(texto.replace(/^```(?:json)?|```$/g, "").trim()));
+    } catch {
+      parsed = null;
+    }
+    if (!parsed?.success) {
+      console.error("[referencias] insights json inválido", tentativa, texto.slice(0, 200));
+      continue;
+    }
+    const v = parsed.data;
+    const limpo = {
+      versao: 2 as const, n_videos: dados.length,
+      resumo: v.resumo.slice(0, 3).map(semTravessao),
+      padroes: v.padroes.map((p) => ({ ...p, achado: semTravessao(p.achado) })),
+      ganchos: v.ganchos.filter((g) => ids.has(g.video_id)).slice(0, 5).map((g) => ({ ...g, gancho: semTravessao(g.gancho), por_que: semTravessao(g.por_que ?? "") })),
+      recomendacoes: v.recomendacoes.map((r) => ({ titulo: semTravessao(r.titulo), explicacao: semTravessao(r.explicacao) })),
+      comparativo: v.comparativo.map((c) => ({ aspecto: semTravessao(c.aspecto), melhores: semTravessao(c.melhores), piores: semTravessao(c.piores) })),
+    };
+    const json = JSON.stringify(limpo);
+    await salvar(refId, { insights: json, insights_em: new Date().toISOString() });
+    return json;
+  }
+  throw new Error("A IA não devolveu os insights no formato esperado. Tente novamente.");
+}
+
+/** "Enviar para o roteirista": acrescenta as recomendações nas observações de estilo do perfil. */
+export async function enviarRecomendacoes(refId: string) {
+  const db = await admin();
+  const { data: r } = await db.from("referencia_perfis").select("id, tenant_id, profile_id, handle, insights").eq("id", refId).maybeSingle();
+  const ref = r as Any;
+  if (!ref) throw new Error("Referência não encontrada.");
+  const { lerInsights, recomendacoesComoTexto } = await import("./insights-schema");
+  const li = lerInsights(ref.insights);
+  if (!li || !("v2" in li)) throw new Error("Gere os insights de novo para enviar as recomendações.");
+  const bloco = recomendacoesComoTexto(li.v2, ref.handle);
+  const { data: idt } = await db.from("profile_identities").select("style_notes").eq("profile_id", ref.profile_id).maybeSingle();
+  const atual = String((idt as Any)?.style_notes ?? "");
+  const marca = `Recomendações a partir de @${ref.handle}:`;
+  // Substitui o bloco anterior do mesmo @ (não duplica).
+  const semAntigo = atual.includes(marca) ? atual.split(/\n{2,}/).filter((b) => !b.startsWith(marca)).join("\n\n") : atual;
+  const novo = [semAntigo.trim(), bloco].filter(Boolean).join("\n\n");
+  if (idt) await db.from("profile_identities").update({ style_notes: novo, updated_at: new Date().toISOString() } as never).eq("profile_id", ref.profile_id);
+  else await db.from("profile_identities").insert({ profile_id: ref.profile_id, tenant_id: ref.tenant_id, style_notes: novo } as never);
 }

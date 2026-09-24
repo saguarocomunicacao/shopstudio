@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useNavigate, useRouter } from "@tanstack/react-router";
+import { StatusAnaliseBadge } from "./status-analise";
 import { ExternalLink, Pencil } from "lucide-react";
 import { shareOrDownloadVideo } from "@/lib/video-download";
 import { Copy, Download, FileVideo2, Loader2, Play, RefreshCw, Trash2, Upload, ArrowLeft, ImageIcon } from "lucide-react";
@@ -73,14 +75,6 @@ const tempo = (s: number | null | undefined) => {
   const v = Math.max(0, Math.round(Number(s ?? 0)));
   return `${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`;
 };
-const STATUS: Record<Analise["status"], [string, string]> = {
-  na_fila: ["Na fila", "status-violet"],
-  enviando: ["Enviando", "status-violet"],
-  baixando: ["Baixando", "status-violet"],
-  analisando: ["Analisando", "status-blue"],
-  pronto: ["Pronto", "status-lime"],
-  erro: ["Erro", "status-pink"],
-};
 
 function ytId(url: string) {
   const m = url.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([\w-]{6,})/);
@@ -138,14 +132,26 @@ function useAnalises(profileId: string | null) {
   });
 }
 
-export function AnalisarVideoPage() {
+export const ABAS_ANALISE = ["resumo", "cenas", "transcricao", "gancho", "produto"] as const;
+export type AbaAnalise = (typeof ABAS_ANALISE)[number];
+
+export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string | null; tab?: AbaAnalise | undefined } = {}) {
   const { activeProfileId, can, isBackoffice } = useStudio();
   const podeVerCusto = isBackoffice || can("custos", "visualizar", activeProfileId);
   const { data: custos } = useAnaliseCustos(podeVerCusto ? activeProfileId : null);
   const podeCriar = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
   const { data: analises = [], isLoading, error } = useAnalises(activeProfileId);
   const [novo, setNovo] = useState(false);
-  const [abertaId, setAbertaId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const router = useRouter();
+  const setAbertaId = (id: string | null) => {
+    if (id) void navigate({ to: "/app/analises/$id", params: { id } });
+    else void navigate({ to: "/app/analises" });
+  };
+  const voltar = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
+    else setAbertaId(null);
+  };
   const executar = useServerFn(executarAnalise);
   const avancar = useServerFn(avancarAnalise);
   const qc = useQueryClient();
@@ -192,7 +198,12 @@ export function AnalisarVideoPage() {
     );
   }
 
-  if (aberta) return <DetalheAnalise a={aberta} onVoltar={() => setAbertaId(null)} onReanalisar={() => reanalisar(aberta)} podeEditar={podeCriar} />;
+  if (aberta) return <DetalheAnalise a={aberta} tab={tab ?? "resumo"} onTab={(t) => void navigate({ to: "/app/analises/$id", params: { id: aberta.id }, search: { tab: t }, replace: true })} onVoltar={voltar} onReanalisar={() => reanalisar(aberta)} podeEditar={podeCriar} />;
+  if (abertaId) {
+    return isLoading
+      ? <div className="flex items-center gap-2 p-8 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</div>
+      : <div className="space-y-4 p-8 text-center text-sm text-muted-foreground"><p>Esta análise não foi encontrada no perfil selecionado.</p><Button variant="outline" onClick={() => setAbertaId(null)}><ArrowLeft className="size-4" />Ver análises</Button></div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -237,12 +248,7 @@ export function AnalisarVideoPage() {
                   <td className="p-3">{a.duracao ? tempo(a.duracao) : "—"}</td>
                   <td className="p-3 whitespace-nowrap">{new Date(a.created_at).toLocaleDateString("pt-BR")}</td>
                   <td className="p-3">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS[a.status][1]}`}>
-                      {(a.status === "analisando" || a.status === "enviando" || a.status === "baixando") && <Loader2 className="size-3 animate-spin" />}
-                      {a.status === "analisando" && (a as { etapa?: string | null }).etapa
-                        ? ({ enviando: "Enviando à IA", processando_no_gemini: "IA processando", gerando: "Gerando análise" } as Record<string, string>)[(a as { etapa?: string | null }).etapa!] ?? STATUS[a.status][0]
-                        : STATUS[a.status][0]}
-                    </span>
+                    <StatusAnaliseBadge id={a.id} status={a.status} etapa={(a as { etapa?: string | null }).etapa ?? null} erro={a.erro} />
                   </td>
                   {podeVerCusto && (
                     <td className="p-3 whitespace-nowrap">
@@ -588,7 +594,7 @@ function AcoesErro({ a, onReanalisar }: { a: Analise; onReanalisar: () => void }
   );
 }
 
-function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise; onVoltar: () => void; onReanalisar: () => void; podeEditar: boolean }) {
+function DetalheAnalise({ a, tab, onTab, onVoltar, onReanalisar, podeEditar }: { a: Analise; tab: AbaAnalise; onTab: (t: AbaAnalise) => void; onVoltar: () => void; onReanalisar: () => void; podeEditar: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ytStart, setYtStart] = useState(0);
   const baixarVideo = useServerFn(baixarVideoDaAnalise);
@@ -725,7 +731,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
               {a.status === "enviando" ? "Enviando o vídeo..." : a.status === "baixando" ? "Baixando o vídeo do link. Leva de alguns segundos a poucos minutos; você pode sair e voltar." : "Analisando o vídeo. Isso pode levar um ou dois minutos; você pode sair e voltar."}
             </div>
           ) : (
-            <Tabs defaultValue="resumo">
+            <Tabs value={tab} onValueChange={(v) => onTab(v as AbaAnalise)}>
               <TabsList className="flex h-auto flex-wrap justify-start">
                 <TabsTrigger value="resumo">Resumo</TabsTrigger>
                 <TabsTrigger value="cenas">Cenas ({r.cenas.length})</TabsTrigger>

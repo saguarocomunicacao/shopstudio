@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ReferenciasPage } from "@/components/referencias-page";
 
-export const Route = createFileRoute("/_authenticated/app/referencias")({
+export const Route = createFileRoute("/_authenticated/app/referencias/")({
   head: () => ({
     meta: [
       { title: "Perfis de referência — Shop Studio" },

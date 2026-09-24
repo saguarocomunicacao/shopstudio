@@ -35,13 +35,16 @@ import { Route as AuthenticatedAppPipelineRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAppProdutosRouteImport } from './routes/_authenticated/app/produtos'
 import { Route as AuthenticatedAppPromptsRouteImport } from './routes/_authenticated/app/prompts'
 import { Route as AuthenticatedAppRascunhosRouteImport } from './routes/_authenticated/app/rascunhos'
-import { Route as AuthenticatedAppReferenciasRouteImport } from './routes/_authenticated/app/referencias'
 import { Route as AuthenticatedAppVideosRouteImport } from './routes/_authenticated/app/videos'
 import { Route as AuthTiktokCallbackRouteImport } from './routes/auth_.tiktok.callback'
+import { Route as AuthenticatedAppAnalisesIndexRouteImport } from './routes/_authenticated/app/analises.index'
+import { Route as AuthenticatedAppAnalisesIdRouteImport } from './routes/_authenticated/app/analises.$id'
 import { Route as AuthenticatedAppPerfisIndexRouteImport } from './routes/_authenticated/app/perfis.index'
 import { Route as AuthenticatedAppPerfisNovoRouteImport } from './routes/_authenticated/app/perfis.novo'
 import { Route as AuthenticatedAppPlanosIndexRouteImport } from './routes/_authenticated/app/planos.index'
 import { Route as AuthenticatedAppPlanosPlanIdRouteImport } from './routes/_authenticated/app/planos.$planId'
+import { Route as AuthenticatedAppReferenciasIndexRouteImport } from './routes/_authenticated/app/referencias.index'
+import { Route as AuthenticatedAppReferenciasIdRouteImport } from './routes/_authenticated/app/referencias.$id'
 import { Route as ApiPublicApifyWebhookTokenRouteImport } from './routes/api/public/apify-webhook.$token'
 import { Route as ApiPublicCronApifyDownloadsRouteImport } from './routes/api/public/cron/apify-downloads'
 import { Route as ApiPublicCronAutomationRouteImport } from './routes/api/public/cron/automation'
@@ -190,12 +193,6 @@ const AuthenticatedAppRascunhosRoute =
     path: '/app/rascunhos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAppReferenciasRoute =
-  AuthenticatedAppReferenciasRouteImport.update({
-    id: '/app/referencias',
-    path: '/app/referencias',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedAppVideosRoute = AuthenticatedAppVideosRouteImport.update({
   id: '/app/videos',
   path: '/app/videos',
@@ -206,6 +203,18 @@ const AuthTiktokCallbackRoute = AuthTiktokCallbackRouteImport.update({
   path: '/auth/tiktok/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAppAnalisesIndexRoute =
+  AuthenticatedAppAnalisesIndexRouteImport.update({
+    id: '/app/analises/',
+    path: '/app/analises/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppAnalisesIdRoute =
+  AuthenticatedAppAnalisesIdRouteImport.update({
+    id: '/app/analises/$id',
+    path: '/app/analises/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAppPerfisIndexRoute =
   AuthenticatedAppPerfisIndexRouteImport.update({
     id: '/app/perfis/',
@@ -228,6 +237,18 @@ const AuthenticatedAppPlanosPlanIdRoute =
   AuthenticatedAppPlanosPlanIdRouteImport.update({
     id: '/app/planos/$planId',
     path: '/app/planos/$planId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppReferenciasIndexRoute =
+  AuthenticatedAppReferenciasIndexRouteImport.update({
+    id: '/app/referencias/',
+    path: '/app/referencias/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppReferenciasIdRoute =
+  AuthenticatedAppReferenciasIdRouteImport.update({
+    id: '/app/referencias/$id',
+    path: '/app/referencias/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const ApiPublicApifyWebhookTokenRoute =
@@ -302,12 +323,13 @@ export interface FileRoutesByFullPath {
   '/app/produtos': typeof AuthenticatedAppProdutosRoute
   '/app/prompts': typeof AuthenticatedAppPromptsRoute
   '/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
-  '/app/referencias': typeof AuthenticatedAppReferenciasRoute
   '/app/videos': typeof AuthenticatedAppVideosRoute
   '/auth/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/analises/$id': typeof AuthenticatedAppAnalisesIdRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
+  '/app/referencias/$id': typeof AuthenticatedAppReferenciasIdRoute
   '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
   '/api/public/cron/apify-downloads': typeof ApiPublicCronApifyDownloadsRoute
   '/api/public/cron/automation': typeof ApiPublicCronAutomationRoute
@@ -315,8 +337,10 @@ export interface FileRoutesByFullPath {
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
+  '/app/analises/': typeof AuthenticatedAppAnalisesIndexRoute
   '/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
   '/app/planos/': typeof AuthenticatedAppPlanosIndexRoute
+  '/app/referencias/': typeof AuthenticatedAppReferenciasIndexRoute
   '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
 }
 export interface FileRoutesByTo {
@@ -344,12 +368,13 @@ export interface FileRoutesByTo {
   '/app/produtos': typeof AuthenticatedAppProdutosRoute
   '/app/prompts': typeof AuthenticatedAppPromptsRoute
   '/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
-  '/app/referencias': typeof AuthenticatedAppReferenciasRoute
   '/app/videos': typeof AuthenticatedAppVideosRoute
   '/auth/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/analises/$id': typeof AuthenticatedAppAnalisesIdRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
+  '/app/referencias/$id': typeof AuthenticatedAppReferenciasIdRoute
   '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
   '/api/public/cron/apify-downloads': typeof ApiPublicCronApifyDownloadsRoute
   '/api/public/cron/automation': typeof ApiPublicCronAutomationRoute
@@ -357,8 +382,10 @@ export interface FileRoutesByTo {
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
+  '/app/analises': typeof AuthenticatedAppAnalisesIndexRoute
   '/app/perfis': typeof AuthenticatedAppPerfisIndexRoute
   '/app/planos': typeof AuthenticatedAppPlanosIndexRoute
+  '/app/referencias': typeof AuthenticatedAppReferenciasIndexRoute
   '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
 }
 export interface FileRoutesById {
@@ -388,12 +415,13 @@ export interface FileRoutesById {
   '/_authenticated/app/produtos': typeof AuthenticatedAppProdutosRoute
   '/_authenticated/app/prompts': typeof AuthenticatedAppPromptsRoute
   '/_authenticated/app/rascunhos': typeof AuthenticatedAppRascunhosRoute
-  '/_authenticated/app/referencias': typeof AuthenticatedAppReferenciasRoute
   '/_authenticated/app/videos': typeof AuthenticatedAppVideosRoute
   '/auth_/tiktok/callback': typeof AuthTiktokCallbackRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/analises/$id': typeof AuthenticatedAppAnalisesIdRoute
   '/_authenticated/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/_authenticated/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
+  '/_authenticated/app/referencias/$id': typeof AuthenticatedAppReferenciasIdRoute
   '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
   '/api/public/cron/apify-downloads': typeof ApiPublicCronApifyDownloadsRoute
   '/api/public/cron/automation': typeof ApiPublicCronAutomationRoute
@@ -401,8 +429,10 @@ export interface FileRoutesById {
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
+  '/_authenticated/app/analises/': typeof AuthenticatedAppAnalisesIndexRoute
   '/_authenticated/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
   '/_authenticated/app/planos/': typeof AuthenticatedAppPlanosIndexRoute
+  '/_authenticated/app/referencias/': typeof AuthenticatedAppReferenciasIndexRoute
   '/_authenticated/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
 }
 export interface FileRouteTypes {
@@ -432,12 +462,13 @@ export interface FileRouteTypes {
     | '/app/produtos'
     | '/app/prompts'
     | '/app/rascunhos'
-    | '/app/referencias'
     | '/app/videos'
     | '/auth/tiktok/callback'
     | '/app/'
+    | '/app/analises/$id'
     | '/app/perfis/novo'
     | '/app/planos/$planId'
+    | '/app/referencias/$id'
     | '/api/public/apify-webhook/$token'
     | '/api/public/cron/apify-downloads'
     | '/api/public/cron/automation'
@@ -445,8 +476,10 @@ export interface FileRouteTypes {
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
+    | '/app/analises/'
     | '/app/perfis/'
     | '/app/planos/'
+    | '/app/referencias/'
     | '/app/perfis/$id/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -474,12 +507,13 @@ export interface FileRouteTypes {
     | '/app/produtos'
     | '/app/prompts'
     | '/app/rascunhos'
-    | '/app/referencias'
     | '/app/videos'
     | '/auth/tiktok/callback'
     | '/app'
+    | '/app/analises/$id'
     | '/app/perfis/novo'
     | '/app/planos/$planId'
+    | '/app/referencias/$id'
     | '/api/public/apify-webhook/$token'
     | '/api/public/cron/apify-downloads'
     | '/api/public/cron/automation'
@@ -487,8 +521,10 @@ export interface FileRouteTypes {
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
+    | '/app/analises'
     | '/app/perfis'
     | '/app/planos'
+    | '/app/referencias'
     | '/app/perfis/$id/editar'
   id:
     | '__root__'
@@ -517,12 +553,13 @@ export interface FileRouteTypes {
     | '/_authenticated/app/produtos'
     | '/_authenticated/app/prompts'
     | '/_authenticated/app/rascunhos'
-    | '/_authenticated/app/referencias'
     | '/_authenticated/app/videos'
     | '/auth_/tiktok/callback'
     | '/_authenticated/app/'
+    | '/_authenticated/app/analises/$id'
     | '/_authenticated/app/perfis/novo'
     | '/_authenticated/app/planos/$planId'
+    | '/_authenticated/app/referencias/$id'
     | '/api/public/apify-webhook/$token'
     | '/api/public/cron/apify-downloads'
     | '/api/public/cron/automation'
@@ -530,8 +567,10 @@ export interface FileRouteTypes {
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
+    | '/_authenticated/app/analises/'
     | '/_authenticated/app/perfis/'
     | '/_authenticated/app/planos/'
+    | '/_authenticated/app/referencias/'
     | '/_authenticated/app/perfis/$id/editar'
   fileRoutesById: FileRoutesById
 }
@@ -740,13 +779,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRascunhosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/app/referencias': {
-      id: '/_authenticated/app/referencias'
-      path: '/app/referencias'
-      fullPath: '/app/referencias'
-      preLoaderRoute: typeof AuthenticatedAppReferenciasRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/app/videos': {
       id: '/_authenticated/app/videos'
       path: '/app/videos'
@@ -760,6 +792,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/tiktok/callback'
       preLoaderRoute: typeof AuthTiktokCallbackRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/app/analises/': {
+      id: '/_authenticated/app/analises/'
+      path: '/app/analises'
+      fullPath: '/app/analises/'
+      preLoaderRoute: typeof AuthenticatedAppAnalisesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/analises/$id': {
+      id: '/_authenticated/app/analises/$id'
+      path: '/app/analises/$id'
+      fullPath: '/app/analises/$id'
+      preLoaderRoute: typeof AuthenticatedAppAnalisesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/app/perfis/': {
       id: '/_authenticated/app/perfis/'
@@ -787,6 +833,20 @@ declare module '@tanstack/react-router' {
       path: '/app/planos/$planId'
       fullPath: '/app/planos/$planId'
       preLoaderRoute: typeof AuthenticatedAppPlanosPlanIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/referencias/': {
+      id: '/_authenticated/app/referencias/'
+      path: '/app/referencias'
+      fullPath: '/app/referencias/'
+      preLoaderRoute: typeof AuthenticatedAppReferenciasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/referencias/$id': {
+      id: '/_authenticated/app/referencias/$id'
+      path: '/app/referencias/$id'
+      fullPath: '/app/referencias/$id'
+      preLoaderRoute: typeof AuthenticatedAppReferenciasIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/apify-webhook/$token': {
@@ -864,13 +924,16 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppProdutosRoute: typeof AuthenticatedAppProdutosRoute
   AuthenticatedAppPromptsRoute: typeof AuthenticatedAppPromptsRoute
   AuthenticatedAppRascunhosRoute: typeof AuthenticatedAppRascunhosRoute
-  AuthenticatedAppReferenciasRoute: typeof AuthenticatedAppReferenciasRoute
   AuthenticatedAppVideosRoute: typeof AuthenticatedAppVideosRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppAnalisesIdRoute: typeof AuthenticatedAppAnalisesIdRoute
   AuthenticatedAppPerfisNovoRoute: typeof AuthenticatedAppPerfisNovoRoute
   AuthenticatedAppPlanosPlanIdRoute: typeof AuthenticatedAppPlanosPlanIdRoute
+  AuthenticatedAppReferenciasIdRoute: typeof AuthenticatedAppReferenciasIdRoute
+  AuthenticatedAppAnalisesIndexRoute: typeof AuthenticatedAppAnalisesIndexRoute
   AuthenticatedAppPerfisIndexRoute: typeof AuthenticatedAppPerfisIndexRoute
   AuthenticatedAppPlanosIndexRoute: typeof AuthenticatedAppPlanosIndexRoute
+  AuthenticatedAppReferenciasIndexRoute: typeof AuthenticatedAppReferenciasIndexRoute
   AuthenticatedAppPerfisIdEditarRoute: typeof AuthenticatedAppPerfisIdEditarRoute
 }
 
@@ -890,13 +953,16 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppProdutosRoute: AuthenticatedAppProdutosRoute,
   AuthenticatedAppPromptsRoute: AuthenticatedAppPromptsRoute,
   AuthenticatedAppRascunhosRoute: AuthenticatedAppRascunhosRoute,
-  AuthenticatedAppReferenciasRoute: AuthenticatedAppReferenciasRoute,
   AuthenticatedAppVideosRoute: AuthenticatedAppVideosRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppAnalisesIdRoute: AuthenticatedAppAnalisesIdRoute,
   AuthenticatedAppPerfisNovoRoute: AuthenticatedAppPerfisNovoRoute,
   AuthenticatedAppPlanosPlanIdRoute: AuthenticatedAppPlanosPlanIdRoute,
+  AuthenticatedAppReferenciasIdRoute: AuthenticatedAppReferenciasIdRoute,
+  AuthenticatedAppAnalisesIndexRoute: AuthenticatedAppAnalisesIndexRoute,
   AuthenticatedAppPerfisIndexRoute: AuthenticatedAppPerfisIndexRoute,
   AuthenticatedAppPlanosIndexRoute: AuthenticatedAppPlanosIndexRoute,
+  AuthenticatedAppReferenciasIndexRoute: AuthenticatedAppReferenciasIndexRoute,
   AuthenticatedAppPerfisIdEditarRoute: AuthenticatedAppPerfisIdEditarRoute,
 }
 
