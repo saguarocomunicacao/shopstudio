@@ -3,7 +3,8 @@ import { PageHeader } from "./page-header";
 import { TarifasCard } from "./tarifas-card";
 import { CreditoTaxasCard } from "./credito-taxas-card";
 import { BudgetCard } from "./budget-card";
-import { CheckCircle2, FileClock, ImageIcon, Loader2, Plus, Video, Wallet, Workflow } from "lucide-react";
+import { CheckCircle2, FileClock, ImageIcon, Loader2, Plus, Radar, Video, Wallet, Workflow } from "lucide-react";
+import { resumoRadarFn } from "@/lib/radar.functions";
 import { Link } from "@tanstack/react-router";
 import { OnboardingBanner, openOnboarding } from "./onboarding-guide";
 import { useGastoMes } from "@/lib/orcamento";
@@ -56,12 +57,16 @@ function DashboardContent() {
   const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
   const views7 = useViews7(activeProfileId);
   const gerando = count((j) => j.status === "gerando_cenas" || j.status === "gerando_video");
+  const loadRadar = useServerFn(resumoRadarFn);
+  const podeRadar = can("metricas", "visualizar", activeProfileId);
+  const { data: radar } = useQuery({ queryKey: ["radar-resumo", activeProfileId], queryFn: () => loadRadar({ data: { profileId: activeProfileId! } }), enabled: !!activeProfileId && podeRadar });
   const stats: { icon: typeof Video; value: string | number; label: string; context?: string | undefined; to: string; search?: Record<string, string> | undefined; bar?: number | undefined }[] = [
     { icon: Video, value: count((j) => j.status === "video_pronto"), label: "Vídeos prontos", context: `${count((j) => j.status === "video_pronto" && !j.approved_at)} aguardando revisão`, to: "/app/videos" },
     { icon: FileClock, value: count((j) => j.status === "rascunho_enviado"), label: "Rascunhos aguardando", context: `${count((j) => j.status === "rascunho_enviado" && !!j.approved_at)} aprovados para postar`, to: "/app/rascunhos" },
     { icon: CheckCircle2, value: count((j) => j.status === "publicado" && !!j.published_at && new Date(j.published_at) >= monthStart), label: "Publicados", context: views7 != null ? `neste mês · ${views7.toLocaleString("pt-BR")} views nos últimos 7 dias` : "neste mês", to: "/app/rascunhos", search: { tab: "publicados" } },
     { icon: Workflow, value: scoped.length, label: "Jobs no pipeline", context: `${gerando} gerando agora`, to: "/app/pipeline" },
   ];
+  if (radar) stats.push({ icon: Radar, value: radar.hoje, label: "Radar", context: radar.hoje === 1 ? "vídeo em alta hoje" : "vídeos em alta hoje", to: "/app/radar" });
   if (canCost && gasto) {
     // Mesmo perfil do topo: gasto do mês (Brasília) desse perfil, igual à tela Custos filtrada nele.
     const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -75,7 +80,7 @@ function DashboardContent() {
   return <>
     <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Visão geral" action={<Button variant="secondary" onClick={openOnboarding}>Como funciona</Button>} />
     <OnboardingBanner />
-    <div className={`grid gap-3 sm:grid-cols-2 ${stats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>{stats.map(({ icon: Icon, value, label, context, to, search, bar }) => (
+    <div className={`grid gap-3 sm:grid-cols-2 ${stats.length === 6 ? "xl:grid-cols-3" : stats.length === 5 ? "xl:grid-cols-5" : "xl:grid-cols-4"}`}>{stats.map(({ icon: Icon, value, label, context, to, search, bar }) => (
       <Link key={label} to={to} {...(search ? { search } : {})} className="block rounded-lg border border-border bg-card p-5 transition-colors hover:border-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <div className="flex items-center gap-2 text-[13px] text-muted-foreground"><Icon className="size-[18px]" strokeWidth={1.8} />{label}</div>
         <strong className="mt-2 block font-display text-[36px] text-foreground font-semibold leading-tight">{value}</strong>
