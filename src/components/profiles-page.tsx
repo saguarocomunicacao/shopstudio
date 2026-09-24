@@ -303,7 +303,7 @@ export function ProfilesPage() {
             {profiles.map((p, i) => {
               const isExpanded = expanded.has(p.id);
               return (
-                <article key={p.id} className="rounded-xl border bg-card p-3 shadow-sm">
+                <article key={p.id} className="rounded-[14px] border bg-card p-3">
                   <div className="grid grid-cols-[auto_36px_minmax(0,1fr)_auto] items-center gap-2">
                     <Button variant="ghost" size="icon" className="size-8" onClick={() => toggle(p.id)} aria-expanded={isExpanded} aria-label={`${isExpanded ? "Recolher" : "Expandir"} ${p.name}`}>
                       <ChevronDown className={`size-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
