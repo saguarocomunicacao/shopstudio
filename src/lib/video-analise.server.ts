@@ -135,15 +135,19 @@ export async function comecarDownload(row: Pick<Row, "id" | "tenant_id" | "orige
   }
 }
 
-/** Confere downloads em andamento (cron de 1 min). */
-export async function verificarDownloads(limite = 5) {
+/** Chamado pelo webhook do Apify quando o run termina. Reivindica a linha para não processar duas vezes. */
+export async function concluirDownload(runId: string) {
   const db = await admin();
-  const { data } = await db.from("video_analises").select("*").eq("status", "baixando").order("download_iniciado_em").limit(limite);
-  const out: { id: string; r: string }[] = [];
-  for (const row of (data ?? []) as unknown as Row[]) {
-    out.push({ id: row.id, r: await verificarUm(row).catch((e) => { console.error("[analise] verificar", e); return "falha"; }) });
-  }
-  return out;
+  const { data } = await db
+    .from("video_analises")
+    .update({ download_iniciado_em: null } as never)
+    .eq("apify_run_id", runId)
+    .eq("status", "baixando")
+    .not("download_iniciado_em", "is", null)
+    .select("*");
+  const row = ((data ?? []) as unknown as Row[])[0];
+  if (!row) return "ignorado";
+  return verificarUm({ ...row, download_iniciado_em: new Date().toISOString() });
 }
 
 async function verificarUm(row: Row): Promise<string> {
