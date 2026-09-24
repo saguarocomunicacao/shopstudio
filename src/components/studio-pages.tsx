@@ -20,6 +20,7 @@ import { GlobalPromptsSettings } from "./prompts-page";
 import { SyncCategoriesButton } from "./category-select";
 import { ChampionRefsToggle } from "./champion-refs-toggle";
 import { ProfileGate } from "./profile-gate";
+import { MetricasContent } from "./metricas-page";
 import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { useStudio } from "./studio-context";
 import { VideoDownloadButton } from "./video-download-button";
@@ -146,13 +147,7 @@ function VideosContent() {
 
 export function MetricsPage() { return <ProfileGate><MetricsContent /></ProfileGate>; }
 
-function MetricsContent() {
-  const { activeProfile } = useStudio();
-  return <>
-    <Heading eyebrow={activeProfile?.name ?? "Perfil"} title="Performance" />
-    <Empty>Ainda não há dados de desempenho. Publique conteúdo para começar a medir.</Empty>
-  </>;
-}
+function MetricsContent() { return <MetricasContent />; }
 
 export function SettingsPage() {
   const { isBackoffice } = useStudio();
