@@ -44,6 +44,7 @@ import { Route as AuthenticatedAppPlanosPlanIdRouteImport } from './routes/_auth
 import { Route as ApiPublicApifyWebhookTokenRouteImport } from './routes/api/public/apify-webhook.$token'
 import { Route as ApiPublicCronApifyDownloadsRouteImport } from './routes/api/public/cron/apify-downloads'
 import { Route as ApiPublicCronAutomationRouteImport } from './routes/api/public/cron/automation'
+import { Route as ApiPublicCronMetricasRouteImport } from './routes/api/public/cron/metricas'
 import { Route as ApiPublicCronStoreVideosRouteImport } from './routes/api/public/cron/store-videos'
 import { Route as ApiPublicCronTiktokRefreshRouteImport } from './routes/api/public/cron/tiktok-refresh'
 import { Route as ApiPublicJson2videoWebhookTokenRouteImport } from './routes/api/public/json2video-webhook.$token'
@@ -239,6 +240,11 @@ const ApiPublicCronAutomationRoute = ApiPublicCronAutomationRouteImport.update({
   path: '/api/public/cron/automation',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronMetricasRoute = ApiPublicCronMetricasRouteImport.update({
+  id: '/api/public/cron/metricas',
+  path: '/api/public/cron/metricas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCronStoreVideosRoute =
   ApiPublicCronStoreVideosRouteImport.update({
     id: '/api/public/cron/store-videos',
@@ -297,6 +303,7 @@ export interface FileRoutesByFullPath {
   '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
   '/api/public/cron/apify-downloads': typeof ApiPublicCronApifyDownloadsRoute
   '/api/public/cron/automation': typeof ApiPublicCronAutomationRoute
+  '/api/public/cron/metricas': typeof ApiPublicCronMetricasRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
@@ -337,6 +344,7 @@ export interface FileRoutesByTo {
   '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
   '/api/public/cron/apify-downloads': typeof ApiPublicCronApifyDownloadsRoute
   '/api/public/cron/automation': typeof ApiPublicCronAutomationRoute
+  '/api/public/cron/metricas': typeof ApiPublicCronMetricasRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
@@ -379,6 +387,7 @@ export interface FileRoutesById {
   '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
   '/api/public/cron/apify-downloads': typeof ApiPublicCronApifyDownloadsRoute
   '/api/public/cron/automation': typeof ApiPublicCronAutomationRoute
+  '/api/public/cron/metricas': typeof ApiPublicCronMetricasRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
@@ -421,6 +430,7 @@ export interface FileRouteTypes {
     | '/api/public/apify-webhook/$token'
     | '/api/public/cron/apify-downloads'
     | '/api/public/cron/automation'
+    | '/api/public/cron/metricas'
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
@@ -461,6 +471,7 @@ export interface FileRouteTypes {
     | '/api/public/apify-webhook/$token'
     | '/api/public/cron/apify-downloads'
     | '/api/public/cron/automation'
+    | '/api/public/cron/metricas'
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
@@ -502,6 +513,7 @@ export interface FileRouteTypes {
     | '/api/public/apify-webhook/$token'
     | '/api/public/cron/apify-downloads'
     | '/api/public/cron/automation'
+    | '/api/public/cron/metricas'
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
     | '/api/public/json2video-webhook/$token'
@@ -525,6 +537,7 @@ export interface RootRouteChildren {
   ApiPublicApifyWebhookTokenRoute: typeof ApiPublicApifyWebhookTokenRoute
   ApiPublicCronApifyDownloadsRoute: typeof ApiPublicCronApifyDownloadsRoute
   ApiPublicCronAutomationRoute: typeof ApiPublicCronAutomationRoute
+  ApiPublicCronMetricasRoute: typeof ApiPublicCronMetricasRoute
   ApiPublicCronStoreVideosRoute: typeof ApiPublicCronStoreVideosRoute
   ApiPublicCronTiktokRefreshRoute: typeof ApiPublicCronTiktokRefreshRoute
   ApiPublicJson2videoWebhookTokenRoute: typeof ApiPublicJson2videoWebhookTokenRoute
@@ -777,6 +790,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicCronAutomationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/metricas': {
+      id: '/api/public/cron/metricas'
+      path: '/api/public/cron/metricas'
+      fullPath: '/api/public/cron/metricas'
+      preLoaderRoute: typeof ApiPublicCronMetricasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/store-videos': {
       id: '/api/public/cron/store-videos'
       path: '/api/public/cron/store-videos'
@@ -876,6 +896,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicApifyWebhookTokenRoute: ApiPublicApifyWebhookTokenRoute,
   ApiPublicCronApifyDownloadsRoute: ApiPublicCronApifyDownloadsRoute,
   ApiPublicCronAutomationRoute: ApiPublicCronAutomationRoute,
+  ApiPublicCronMetricasRoute: ApiPublicCronMetricasRoute,
   ApiPublicCronStoreVideosRoute: ApiPublicCronStoreVideosRoute,
   ApiPublicCronTiktokRefreshRoute: ApiPublicCronTiktokRefreshRoute,
   ApiPublicJson2videoWebhookTokenRoute: ApiPublicJson2videoWebhookTokenRoute,

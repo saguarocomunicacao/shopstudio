@@ -1,3 +1,4 @@
+import { ehLinkTiktok } from "@/lib/metricas-calc";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -858,7 +859,7 @@ function DraftKitDialog({ jobId, job, canEdit, onClose, onResumeRecording }: { j
   });
 
   const publishMut = useMutation({
-    mutationFn: () => publish({ data: { jobId, url: postUrl.trim() || undefined } }),
+    mutationFn: () => publish({ data: { jobId, url: postUrl.trim() } }),
     onSuccess: () => {
       toast.success("Marcado como publicado.");
       setPublishOpen(false);
@@ -1082,22 +1083,23 @@ function DraftKitDialog({ jobId, job, canEdit, onClose, onResumeRecording }: { j
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Marcar como publicado</DialogTitle>
-            <DialogDescription>Se quiser, cole o link do post no TikTok para alimentar as métricas.</DialogDescription>
+            <DialogDescription>Cole o link do vídeo no TikTok. Ele é usado para acompanhar as métricas deste vídeo.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
-            <Label htmlFor="post-url">Link do post (opcional)</Label>
+            <Label htmlFor="post-url">Link do vídeo no TikTok</Label>
             <Input
               id="post-url"
               value={postUrl}
               onChange={(e) => setPostUrl(e.target.value)}
               placeholder="https://www.tiktok.com/@perfil/video/..."
             />
+            {postUrl.trim() && !ehLinkTiktok(postUrl) && <p className="text-xs text-destructive">Cole um link do tiktok.com.</p>}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setPublishOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
+            <Button onClick={() => publishMut.mutate()} disabled={publishMut.isPending || !ehLinkTiktok(postUrl)}>
               {publishMut.isPending && <Loader2 className="animate-spin" />}
               Confirmar
             </Button>
