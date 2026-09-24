@@ -35,7 +35,14 @@ type Analise = {
   frames: { inicio: number; path: string }[];
   custo_cents: number;
   created_at: string;
+  pergunta?: string | null;
+  mime_type?: string | null;
+  arquivo_nome?: string | null;
+  arquivo_bytes?: number | null;
+  etapa_log?: EtapaLog[] | null;
 };
+
+type EtapaLog = { etapa: string; em: string; tentativa?: number; motivo?: string; detalhe?: string; erro?: string };
 
 type RedeMeta = { autor: string | null; views: number | null; likes: number | null; comentarios: number | null; compartilhamentos: number | null; publicado_em: string | null };
 
@@ -295,6 +302,7 @@ function NovaAnaliseDialog({ open, onOpenChange, profileId, onCriada }: { open: 
           origem: aba,
           linkUrl: aba === "link" ? url.trim() : null,
           mimeType: file?.type ?? null,
+          arquivoBytes: file?.size ?? null,
           titulo: aba === "arquivo" ? (file?.name ?? "") : "",
           duracao,
           pergunta: pergunta.trim() || null,
@@ -512,7 +520,7 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
         }
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
-        <div className="lg:sticky lg:top-20 lg:self-start">
+        <div className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           <div className="overflow-hidden rounded-xl border border-border bg-overlay">
             {porUrl && a.youtube_url ? (
               <iframe
@@ -526,14 +534,18 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
             ) : videoUrl ? (
               <video ref={videoRef} src={videoUrl} controls playsInline className="max-h-[70vh] w-full" />
             ) : (
-              <div className="grid aspect-[9/16] max-h-[60vh] w-full place-items-center text-sm text-muted-foreground">Carregando vídeo...</div>
+              <div className="grid aspect-[9/16] max-h-[60vh] w-full place-items-center p-4 text-center text-sm text-muted-foreground">
+                {a.storage_path ? "Carregando vídeo..." : a.status === "erro" ? "O vídeo não foi baixado." : a.status === "baixando" ? "Baixando o vídeo..." : "Sem vídeo salvo."}
+              </div>
             )}
           </div>
+          <OrigemBloco a={a} videoUrl={videoUrl} podeEditar={podeEditar} onReanalisar={onReanalisar} />
         </div>
         <div>
           {a.status === "erro" ? (
             <div className="rounded-lg border border-border bg-card p-6 text-sm">
-              <p className="mb-3">{a.erro ?? "Não foi possível analisar o vídeo."}</p>
+              <p className="mb-1 font-medium">{a.erro ?? "Não foi possível analisar o vídeo."}</p>
+              <p className="mb-3 text-muted-foreground">Os detalhes da origem e o motivo registrado estão ao lado, em "Etapas".</p>
               {podeEditar && <Button onClick={onReanalisar}><RefreshCw className="size-4" />Tentar novamente</Button>}
             </div>
           ) : a.status !== "pronto" || !r ? (
@@ -551,17 +563,6 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
                 <TabsTrigger value="produto">Produto</TabsTrigger>
               </TabsList>
               <TabsContent value="resumo" className="space-y-4">
-                {a.rede_meta && (
-                  <section className="rounded-lg border border-border bg-card p-4">
-                    <div className="mb-2 flex items-center gap-2 text-sm font-semibold"><RedeIcon origem={a.origem} />{a.rede_meta.autor ? `@${a.rede_meta.autor}` : ORIGEM_LABEL[a.origem]}</div>
-                    <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">
-                      {([["Views", a.rede_meta.views], ["Likes", a.rede_meta.likes], ["Comentários", a.rede_meta.comentarios], ["Compart.", a.rede_meta.compartilhamentos]] as const).map(([l, v]) => (
-                        <div key={l}><p className="text-xs text-muted-foreground">{l}</p><p className="font-display font-semibold">{num(v)}</p></div>
-                      ))}
-                      <div><p className="text-xs text-muted-foreground">Publicado</p><p className="font-display font-semibold">{a.rede_meta.publicado_em && !Number.isNaN(Date.parse(a.rede_meta.publicado_em)) ? new Date(a.rede_meta.publicado_em).toLocaleDateString("pt-BR") : "—"}</p></div>
-                    </div>
-                  </section>
-                )}
                 <Bloco titulo="Resumo" texto={r.resumo}><p className="whitespace-pre-line">{r.resumo}</p></Bloco>
                 <Bloco titulo="Estilo" texto={`Formato: ${r.formato}\nTom de voz: ${r.tom_de_voz}\nRitmo: ${r.ritmo.cortes_por_minuto} cortes/min. ${r.ritmo.descricao}`}>
                   <p><span className="text-muted-foreground">Formato:</span> {r.formato}</p>
