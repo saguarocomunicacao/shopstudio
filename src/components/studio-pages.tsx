@@ -61,7 +61,7 @@ function DashboardContent() {
     <section className="mt-6 panel">
       <div className="mb-4 flex items-center justify-between"><div><h2 className="font-bold">Últimos jobs</h2><p className="text-xs text-muted-foreground">Atividade mais recente</p></div><Button variant="ghost" size="sm" asChild><Link to="/app/pipeline">Ver pipeline</Link></Button></div>
       <div className="divide-y divide-border">{scoped.slice(0, 5).map((job) => {
-        const thumb = job.video_thumbnail_url ?? job.ai_video_thumbnail_url ?? job.scenes?.find((s) => s.image_url)?.image_url;
+        const thumb = job.video_thumbnail_url ?? job.ai_video_thumbnail_url ?? job.scenes?.find((s) => s.image_url)?.image_url ?? productImage(job.product_id);
         return <Link key={job.id} to="/app/rascunhos" search={{ jobId: job.id, perfil: job.profile_id }} className="-mx-2 grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-[rgba(255,255,255,0.03)]">
           {thumb ? <img src={thumb} alt="" className="size-10 rounded-md object-cover" /> : <span className="grid size-10 place-items-center rounded-md bg-muted text-muted-foreground"><ImageIcon className="size-4" /></span>}
           <div className="min-w-0"><p className="truncate text-sm font-semibold">{job.title || "Sem título"}</p><p className="truncate whitespace-pre text-xs text-muted-foreground">{profileName(job.profile_id)}{"  "}{relativeTime(job.created_at)}</p></div>
