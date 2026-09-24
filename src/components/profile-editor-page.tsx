@@ -616,7 +616,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
               <div className="grid gap-2 sm:max-w-sm">
                 <Label htmlFor="p-avatar-mode">Modo</Label>
                 <Select value={form.avatarMode} onValueChange={(v) => setForm({ ...form, avatarMode: v })}>
-                  <SelectTrigger id="p-avatar-mode"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="p-avatar-mode" data-tour="avatar-mode"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="livre">Pessoa nova a cada vídeo</SelectItem>
                     <SelectItem value="fixo">Sempre a mesma pessoa</SelectItem>

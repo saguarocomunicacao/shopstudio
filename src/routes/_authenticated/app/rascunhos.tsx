@@ -5,6 +5,8 @@ export const Route = createFileRoute("/_authenticated/app/rascunhos")({
   validateSearch: (search: Record<string, unknown>) => ({
     jobId: typeof search["jobId"] === "string" ? search["jobId"] : undefined,
     perfil: typeof search["perfil"] === "string" ? search["perfil"] : undefined,
+    tab: typeof search["tab"] === "string" ? search["tab"] : undefined,
+    guia: typeof search["guia"] === "string" ? search["guia"] : undefined,
   }),
   head: () => ({
     meta: [
