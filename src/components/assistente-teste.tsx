@@ -4,12 +4,12 @@ import { useRouterState } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { perguntarAssistente } from "@/lib/assistente.functions";
-import { useStudio } from "@/components/studio-shell";
+import { useStudio } from "@/components/studio-context";
 
 type Msg = { role: "user" | "assistant"; content: string; ferramentas?: string[] };
 
 export function AssistenteTeste() {
-  const { activeProfileId } = useStudio() as { activeProfileId?: string | null };
+  const { activeProfileId } = useStudio();
   const rota = useRouterState({ select: (s) => s.location.pathname });
   const perguntar = useServerFn(perguntarAssistente);
   const [msgs, setMsgs] = useState<Msg[]>([]);
