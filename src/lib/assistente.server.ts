@@ -524,7 +524,7 @@ export async function runAssistente(ctx: Ctx, msgs: ChatMsg[], rota: string | nu
     tools: buildTools(ctx),
     stopWhen: stepCountIs(8),
     maxRetries: 0,
-    abortSignal: opts.signal,
+    ...(opts.signal ? { abortSignal: opts.signal } : {}),
     onStepFinish: (s) => {
       for (const c of s.toolCalls ?? []) {
         ferramentas.push(c.toolName);

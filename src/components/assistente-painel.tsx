@@ -39,7 +39,7 @@ function inline(text: string, onLink: (href: string) => void): ReactNode[] {
     if (m.index > last) out.push(text.slice(last, m.index));
     if (m[1]) out.push(<strong key={k++} className="font-semibold">{m[1]}</strong>);
     else {
-      const href = m[3];
+      const href = m[3] ?? "";
       out.push(href.startsWith("/")
         ? <a key={k++} href={href} onClick={(e) => { e.preventDefault(); onLink(href); }} className="font-medium text-primary underline underline-offset-2">{m[2]}</a>
         : <a key={k++} href={href} target="_blank" rel="noreferrer" className="font-medium text-primary underline underline-offset-2">{m[2]}</a>);
@@ -65,7 +65,7 @@ function Markdown({ text, onLink }: { text: string; onLink: (href: string) => vo
     if (ul || ol) {
       const ordered = !!ol;
       if (!lista || lista.ordered !== ordered) { flush(); lista = { ordered, itens: [] }; }
-      lista.itens.push((ul ?? ol)![1]);
+      lista.itens.push((ul ?? ol)![1] ?? "");
       continue;
     }
     flush();
@@ -167,7 +167,7 @@ export function AssistentePainel() {
           if (ev.t === "conversa" && ev.id) setConversaId(ev.id);
           else if (ev.t === "tool") setToolAtual(TOOL_LABELS[ev.nome ?? ""] ?? "Consultando...");
           else if (ev.t === "delta") { acumulado += ev.x ?? ""; setToolAtual(null); setStreaming(acumulado); }
-          else if (ev.t === "fim") { terminou = true; setMsgs((m) => [...m, { id: ev.id, papel: "assistant", conteudo: ev.texto ?? acumulado }]); if (!openRef.current) setNaoLida(true); }
+          else if (ev.t === "fim") { terminou = true; setMsgs((m) => [...m, { papel: "assistant" as const, conteudo: ev.texto ?? acumulado }]); if (!openRef.current) setNaoLida(true); }
           else if (ev.t === "limite") { terminou = true; setLimite(ev.segundos ?? 60); setMsgs((m) => m.slice(0, -1)); setTexto(p); }
           else if (ev.t === "erro") { terminou = true; falha(); }
         }
@@ -193,7 +193,7 @@ export function AssistentePainel() {
   }
 
   if (OCULTAR(path)) return null;
-  const sugestoes = SUGESTOES[path] ?? SUGESTOES["/app"];
+  const sugestoes = SUGESTOES[path] ?? SUGESTOES["/app"] ?? [];
   const fmtMin = (s: number) => s >= 60 ? `${Math.ceil(s / 60)} min` : `${s}s`;
 
   return <>
