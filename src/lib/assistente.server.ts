@@ -500,7 +500,9 @@ ${manual}`;
 
 export type ChatMsg = { role: "user" | "assistant"; content: string };
 
-export async function runAssistente(ctx: Ctx, msgs: ChatMsg[], rota: string | null) {
+export type StreamOpts = { onTool?: (nome: string) => void; onDelta?: (t: string) => void; signal?: AbortSignal };
+
+export async function runAssistente(ctx: Ctx, msgs: ChatMsg[], rota: string | null, opts: StreamOpts = {}) {
   const key = process.env["LOVABLE_API_KEY"];
   if (!key) throw new Error("Assistente indisponível no momento.");
   let perfilNome: string | null = null;
@@ -522,6 +524,7 @@ export async function runAssistente(ctx: Ctx, msgs: ChatMsg[], rota: string | nu
     tools: buildTools(ctx),
     stopWhen: stepCountIs(8),
     maxRetries: 0,
+    abortSignal: opts.signal,
     onStepFinish: (s) => {
       for (const c of s.toolCalls ?? []) {
         ferramentas.push(c.toolName);
@@ -533,8 +536,15 @@ export async function runAssistente(ctx: Ctx, msgs: ChatMsg[], rota: string | nu
       openai: { forceReasoning: true, reasoningEffort: "low", store: false, include: ["reasoning.encrypted_content"] },
     },
   });
-  const texto = await result.text;
-  const uso = await result.totalUsage;
+  let texto = "";
+  for await (const part of result.fullStream) {
+    const p = part as { type: string; text?: string; toolName?: string; error?: unknown };
+    if (p.type === "text-delta" && p.text) { texto += p.text; opts.onDelta?.(p.text); }
+    else if (p.type === "tool-call" && p.toolName) opts.onTool?.(p.toolName);
+    else if (p.type === "error") throw p.error;
+  }
+  let uso = { inputTokens: 0, outputTokens: 0 } as { inputTokens?: number; outputTokens?: number };
+  try { uso = await result.totalUsage; } catch { /* abortado */ }
   return { texto, ferramentas, consultas, uso: { input: uso.inputTokens ?? 0, output: uso.outputTokens ?? 0 } };
 }
 
