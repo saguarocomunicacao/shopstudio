@@ -311,6 +311,7 @@ export function buildTools(ctx: Ctx) {
       inputSchema: z.object({ periodo: z.enum(["hoje", "semana", "mes", "intervalo"]), de: z.string().nullable(), ate: z.string().nullable(), profile_id: perfilArg }),
       execute: async ({ periodo: per, de, ate, profile_id }) => {
         const r = periodo(per, de, ate);
+        console.log("[dbg resumo_custos]", JSON.stringify({ per, de, ate, profile_id, ctxP: ctx.profileId, r }));
         const consumo = await consumoCarteira(ctx, r.desde, r.ate);
 
         // Cliente (não backoffice): a tela Custos é a visão consolidada por ação, sem orçamento.
