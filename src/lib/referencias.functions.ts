@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { dadosParaInsights, lerDadosReferencia, ultimosNumeros } from "./referencias-dados";
+import { dadosParaInsights, lerDadosReferencia } from "./referencias-dados";
 
 type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
@@ -40,7 +40,7 @@ export const listarReferencias = createServerFn({ method: "POST" })
     const ids = lista.map((r) => r.id);
     const [an, custo] = await Promise.all([
       ids.length ? db.from("video_analises").select("referencia_id, status, custo_cents").in("referencia_id", ids) : Promise.resolve({ data: [] }),
-      ids.length ? db.from("consumo_eventos").select("tool_price_cents, metadados").eq("profile_id", data.profileId).in("metadados->>referencia_id", ids) : Promise.resolve({ data: [] }),
+      ids.length ? db.from("consumo_eventos").select("tool_price_cents, metadados").eq("profile_id", data.profileId).in("metadados->>referencia_id" as never, ids) : Promise.resolve({ data: [] }),
     ]);
     const itens = [];
     for (const r of lista) {
@@ -196,4 +196,3 @@ export const gerarInsightsRef = createServerFn({ method: "POST" })
     return { texto };
   });
 
-export { ultimosNumeros };
