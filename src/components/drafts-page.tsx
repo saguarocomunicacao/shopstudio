@@ -71,18 +71,34 @@ import { actionError } from "@/lib/api-keys";
 import { supabase } from "@/integrations/supabase/client";
 import { captureVideoThumbnail } from "@/lib/video-thumbnail";
 import { VideoDownloadButton } from "./video-download-button";
+import { FavoriteStar, InlineTitle, useFavoriteJobs, useJobsRealtime } from "./job-title-fav";
 
 const errMessage = (e: unknown) => actionError(e, "Algo deu errado.");
 
-type QueueKey = "roteiros" | "revisao" | "aprovado" | "publicado" | "lixeira";
+type QueueKey = "roteiros" | "revisao" | "aprovado" | "publicado" | "favoritos" | "lixeira";
 
 const QUEUES: { key: QueueKey; label: string; status?: DbJob["status"]; badge: string }[] = [
   { key: "roteiros", label: "Roteiros prontos", badge: "status-violet" },
   { key: "revisao", label: "Aguardando revisão", status: "video_pronto", badge: "status-violet" },
   { key: "aprovado", label: "Aprovados", status: "rascunho_enviado", badge: "status-cyan" },
   { key: "publicado", label: "Publicados", status: "publicado", badge: "status-published" },
+  { key: "favoritos", label: "Favoritos", badge: "status-violet" },
   { key: "lixeira", label: "Lixeira", badge: "status-neutral" },
 ];
+
+/** Aba de origem de um job (usada na aba Favoritos). */
+const origemDe = (job: DbJob): QueueKey | null =>
+  job.deleted_at
+    ? "lixeira"
+    : roteiroPronto(job)
+      ? "roteiros"
+      : job.status === "video_pronto"
+        ? "revisao"
+        : job.status === "rascunho_enviado"
+          ? "aprovado"
+          : job.status === "publicado"
+            ? "publicado"
+            : null;
 
 /** Roteiros concluídos do formato de gravação que ainda aguardam a pessoa gravar. */
 const roteiroPronto = (job: DbJob) =>
@@ -251,10 +267,12 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
   const { activeProfileId, activeProfile, can } = useStudio();
   const { data: jobs = [], isLoading, isError } = useJobs(activeProfileId);
   const { data: trashed = [], isError: trashError } = useTrashedJobs(activeProfileId);
+  const { data: favs = [] } = useFavoriteJobs(activeProfileId);
+  useJobsRealtime(activeProfileId);
   const canViewProducts = can("produtos", "visualizar");
   const { data: products = [] } = useProducts(activeProfileId, canViewProducts);
   const tabParam = (useSearch({ strict: false }) as { tab?: string }).tab;
-  const fromTab = (t?: string): QueueKey | null => t === "roteiros" || t === "revisao" || t === "lixeira" ? t : t === "aprovados" ? "aprovado" : t === "publicados" ? "publicado" : null;
+  const fromTab = (t?: string): QueueKey | null => t === "roteiros" || t === "revisao" || t === "lixeira" || t === "favoritos" ? t : t === "aprovados" ? "aprovado" : t === "publicados" ? "publicado" : null;
   const [queue, setQueue] = useState<QueueKey>(fromTab(tabParam) ?? "roteiros");
   useEffect(() => { const q = fromTab(tabParam); if (q) setQueue(q); }, [tabParam]);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -285,14 +303,18 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
   const roteirosList = jobs.filter(roteiroPronto);
   const current = QUEUES.find((q) => q.key === queue);
   const isTrash = queue === "lixeira";
-  const list = isTrash
+  const list = queue === "favoritos"
+    ? favs
+    : isTrash
     ? trashed
     : queue === "roteiros"
       ? roteirosList
       : jobs.filter((j) => j.status === current?.status);
   const countOf = (status: DbJob["status"]) => jobs.filter((j) => j.status === status).length;
   const countQueue = (item: (typeof QUEUES)[number]) =>
-    item.key === "lixeira"
+    item.key === "favoritos"
+      ? favs.length
+      : item.key === "lixeira"
       ? trashed.length
       : item.key === "roteiros"
         ? roteirosList.length
@@ -419,10 +441,14 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
       ) : list.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {list.map((job) => {
+            const origem = queue === "favoritos" ? origemDe(job) : queue;
+            const isTrash = origem === "lixeira";
+            const current = QUEUES.find((q) => q.key === origem);
+            const queue_ = origem;
             const pendente = isTrash
               ? job.deleted_from_status === "roteiro_pronto"
-              : queue === "roteiros" && job.status === "roteiro_pronto";
-            const fluxoIaProprio = !isTrash && queue === "roteiros" && job.formato === "gravacao";
+              : queue_ === "roteiros" && job.status === "roteiro_pronto";
+            const fluxoIaProprio = !isTrash && queue_ === "roteiros" && job.formato === "gravacao";
             const abrir = () => (fluxoIaProprio ? openRecordingKit(job.id, false) : setOpenId(job.id));
             const badgeLabel = isTrash
               ? "Na lixeira"
@@ -430,9 +456,11 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                 ? jobStatusLabel(job)
                 : pendente
                   ? "Pendente de gravação"
-                  : current?.label;
+                  : current?.label ?? jobStatusLabel(job);
             return (
               <article key={job.id} className="panel">
+                <div className="relative">
+                {canRemove(job) && <FavoriteStar job={job} className="absolute right-2 top-2 z-30" />}
                 {pendente && !job.video_path ? (
                   <section className="flex aspect-[9/16] w-full flex-col justify-between rounded-xl border border-primary/30 bg-primary/5 p-5">
                     <div>
@@ -457,7 +485,8 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                 ) : (
                   <DraftThumb job={job} preview={previewOf(job.id)} loadingPreview={!!job.video_path && previews.isFetching && !previewOf(job.id)} onOpen={abrir} />
                 )}
-                <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>
+                </div>
+                <InlineTitle jobId={job.id} title={job.title} canEdit={canRemove(job)} className="mt-3 text-sm font-bold" />
                 <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                   <div className="flex min-w-0 items-center gap-2">
@@ -466,6 +495,9 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                     >
                       {badgeLabel}
                     </span>
+                    {queue === "favoritos" && isTrash && job.deleted_from_status && (
+                      <span className="status-neutral inline-flex rounded-lg px-2 py-0.5 text-xs font-medium">{jobStatusLabel({ ...job, status: job.deleted_from_status })}</span>
+                    )}
                     {!isTrash && !pendente && !job.video_path && (
                       <span className="status-pink inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium">
                         <AlertTriangle className="size-3" />
@@ -558,13 +590,15 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
               ? "Nenhum rascunho aprovado no momento."
               : queue === "roteiros"
                 ? "Nenhum roteiro pronto para gravar. Crie um vídeo próprio ou gere o roteiro de um produto nesse formato."
-                : queue === "lixeira"
+                : queue === "favoritos"
+                  ? "Nenhum favorito ainda. Toque na estrela de um vídeo para guardá-lo aqui."
+                  : queue === "lixeira"
                   ? "A lixeira está vazia."
                   : "Nenhum vídeo publicado ainda."}
         </div>
       )}
 
-      {openId && <DraftKitDialog jobId={openId} onClose={() => setOpenId(null)} onResumeRecording={() => {
+      {openId && <DraftKitDialog jobId={openId} job={[...jobs, ...trashed, ...favs].find((j) => j.id === openId) ?? null} canEdit={canCreate} onClose={() => setOpenId(null)} onResumeRecording={() => {
         const jobId = openId;
         setOpenId(null);
         openRecordingKit(jobId, true);
@@ -722,7 +756,7 @@ function PostTextField({
   );
 }
 
-function DraftKitDialog({ jobId, onClose, onResumeRecording }: { jobId: string; onClose: () => void; onResumeRecording: () => void }) {
+function DraftKitDialog({ jobId, job, canEdit, onClose, onResumeRecording }: { jobId: string; job: DbJob | null; canEdit: boolean; onClose: () => void; onResumeRecording: () => void }) {
   const qc = useQueryClient();
   const fetchKit = useServerFn(getDraftKit);
   const retryStorage = useServerFn(retryDraftVideoStorage);
@@ -829,6 +863,14 @@ function DraftKitDialog({ jobId, onClose, onResumeRecording }: { jobId: string; 
         <div className="max-h-[92vh] overflow-y-auto p-6 [scrollbar-gutter:stable]">
         <DialogHeader>
           <DialogTitle>Kit de postagem</DialogTitle>
+          {job && (
+            <div className="flex items-start gap-2 pt-1">
+              <div className="min-w-0 flex-1">
+                <InlineTitle jobId={job.id} title={job.title} canEdit={canEdit} className="text-base font-semibold" />
+              </div>
+              {canEdit && <FavoriteStar job={job} className="shrink-0" />}
+            </div>
+          )}
           <DialogDescription>Baixe o vídeo, copie os textos e publique no TikTok.</DialogDescription>
         </DialogHeader>
 

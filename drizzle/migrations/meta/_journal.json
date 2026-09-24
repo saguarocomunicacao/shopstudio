@@ -470,6 +470,20 @@
       "when": 1790270799256,
       "tag": "0066_assistente_conversas",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1790272966870,
+      "tag": "0067_jobs_favorito",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1790273003122,
+      "tag": "0068_jobs_realtime",
+      "breakpoints": true
     }
   ]
 }
