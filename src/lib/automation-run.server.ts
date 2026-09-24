@@ -102,7 +102,7 @@ async function carregarTarifas(admin: Admin): Promise<Tarifas> {
     admin.from("app_config").select("value_num").eq("key", "cotacao_usd").maybeSingle(),
   ]);
   return {
-    tarifas: (tarifasRes.data ?? []).map((t: any) => ({ ...t, preco_unitario: Number(t.preco_unitario) })),
+    tarifas: (tarifasRes.data ?? []).map((t: any) => ({ ...t, preco_unitario: Number(t.preco_exato ?? t.preco_unitario) })),
     taxas: (taxasRes.data ?? []).map((t: any) => ({ ...t, credito_por_unidade: Number(t.credito_por_unidade) })),
     cotacao: Number(cfgRes.data?.value_num ?? 5.5),
   };

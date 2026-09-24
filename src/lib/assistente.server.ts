@@ -121,11 +121,11 @@ const reais = (v: number) => v.toLocaleString("pt-BR", { style: "currency", curr
 /** Mesmas consultas de useTarifas (tela Custos), com o login do usuário. */
 async function precosDoUsuario(db: Db) {
   const [t, x, c] = await Promise.all([
-    db.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    db.from("tarifas").select("tipo_unidade, modelo, preco_unitario, preco_exato, moeda, vigente_desde, ativo"),
     db.from("credito_taxas").select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
     db.from("app_config").select("value_num").eq("key", "cotacao_usd_brl").maybeSingle(),
   ]);
-  const tarifas = ((t.data ?? []) as any[]).map((r) => ({ ...r, preco_unitario: Number(r.preco_unitario) })) as TarifaRow[];
+  const tarifas = ((t.data ?? []) as any[]).map((r) => ({ ...r, preco_unitario: Number(r.preco_exato ?? r.preco_unitario) })) as TarifaRow[];
   const taxas = ((x.data ?? []) as any[]).map((r) => ({ ...r, credito_por_unidade: Number(r.credito_por_unidade) })) as CreditoTaxaRow[];
   return { tarifas, taxas, cotacao: Number(c.data?.value_num ?? 1) };
 }

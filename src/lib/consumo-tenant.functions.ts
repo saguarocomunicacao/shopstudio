@@ -25,7 +25,7 @@ const SELECT =
 async function carregarPrecos() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [tarifasRes, taxasRes, cotacaoRes] = await Promise.all([
-    supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, preco_exato, moeda, vigente_desde, ativo"),
     supabaseAdmin
       .from("credito_taxas")
       .select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
@@ -33,7 +33,7 @@ async function carregarPrecos() {
   ]);
   const tarifas = ((tarifasRes.data ?? []) as Array<Record<string, unknown>>).map((t) => ({
     ...t,
-    preco_unitario: Number(t["preco_unitario"]),
+    preco_unitario: Number(t["preco_exato"] ?? t["preco_unitario"]),
   })) as TarifaRow[];
   const taxas = ((taxasRes.data ?? []) as Array<Record<string, unknown>>).map((t) => ({
     ...t,

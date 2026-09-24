@@ -115,14 +115,14 @@ async function resolverCreditoETarifa(
   }
 
   const [tarifasRes, taxasRes] = await Promise.all([
-    supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, moeda, vigente_desde, ativo"),
+    supabaseAdmin.from("tarifas").select("tipo_unidade, modelo, preco_unitario, preco_exato, moeda, vigente_desde, ativo"),
     supabaseAdmin
       .from("credito_taxas")
       .select("action_type, fornecedor, credito_por_unidade, regra, vigente_desde, ativo"),
   ]);
   const tarifas = ((tarifasRes.data ?? []) as Array<Record<string, unknown>>).map((t) => ({
     ...t,
-    preco_unitario: Number(t["preco_unitario"]),
+    preco_unitario: Number(t["preco_exato"] ?? t["preco_unitario"]),
   })) as never[];
   const taxas = ((taxasRes.data ?? []) as Array<Record<string, unknown>>).map((t) => ({
     ...t,
