@@ -130,28 +130,34 @@ export async function comecarDownload(row: Pick<Row, "id" | "tenant_id" | "orige
   } catch (e) {
     const msg = e instanceof Error && !/MISSING_TENANT_KEY/.test(e.message) ? e.message : e instanceof Error ? e.message : "Não foi possível baixar o link.";
     if (!(e instanceof ErroAmigavel)) console.error("[analise] download", e);
-    await db.from("video_analises").update({ status: "erro", erro: msg } as never).eq("id", row.id);
+    if (!soDownload) await db.from("video_analises").update({ status: "erro", erro: msg } as never).eq("id", row.id);
     return { ok: false as const, erro: msg };
   }
 }
 
-/** Confere downloads em andamento (cron de 1 min). */
-export async function verificarDownloads(limite = 5) {
+/** Chamado pelo webhook do Apify quando o run termina. Reivindica a linha para não processar duas vezes. */
+export async function concluirDownload(runId: string) {
   const db = await admin();
-  const { data } = await db.from("video_analises").select("*").eq("status", "baixando").order("download_iniciado_em").limit(limite);
-  const out: { id: string; r: string }[] = [];
-  for (const row of (data ?? []) as unknown as Row[]) {
-    out.push({ id: row.id, r: await verificarUm(row).catch((e) => { console.error("[analise] verificar", e); return "falha"; }) });
-  }
-  return out;
+  const { data } = await db
+    .from("video_analises")
+    .update({ download_iniciado_em: null } as never)
+    .eq("apify_run_id", runId)
+    .eq("status", "baixando")
+    .not("download_iniciado_em", "is", null)
+    .select("*");
+  const row = ((data ?? []) as unknown as Row[])[0];
+  if (!row) return "ignorado";
+  return verificarUm({ ...row, download_iniciado_em: new Date().toISOString() });
 }
 
 async function verificarUm(row: Row): Promise<string> {
   const db = await admin();
   const upd = (v: Record<string, unknown>) => db.from("video_analises").update(v as never).eq("id", row.id);
+  const falhar = (erro: string) =>
+    row.so_download && row.resultado ? upd({ status: "pronto", so_download: false, apify_run_id: null, erro }) : upd({ status: "erro", erro });
   const ap = await import("./apify.server");
   const rede = row.origem as (typeof REDES)[number];
-  if (!row.apify_run_id) { await upd({ status: "erro", erro: "O download não começou. Tente novamente." }); return "sem_run"; }
+  if (!row.apify_run_id) { await falhar("O download não começou. Tente novamente."); return "sem_run"; }
   const run = await ap.lerRun(row.tenant_id, row.apify_run_id);
   const idade = Date.now() - new Date(row.download_iniciado_em ?? Date.now()).getTime();
   const registrarCusto = async () => {
@@ -168,14 +174,14 @@ async function verificarUm(row: Row): Promise<string> {
     if (idade > 10 * 60 * 1000) {
       await ap.abortarRun(row.tenant_id, row.apify_run_id);
       await registrarCusto();
-      await upd({ status: "erro", erro: "O download demorou demais (mais de 10 minutos). Tente novamente." });
+      await falhar("O download demorou demais (mais de 10 minutos). Tente novamente.");
       return "timeout";
     }
     return "aguardando";
   }
   if (run.status !== "SUCCEEDED") {
     await registrarCusto();
-    await upd({ status: "erro", erro: run.status === "TIMED-OUT" ? "O download demorou demais. Tente novamente." : "Não foi possível baixar esse vídeo. Confira se ele é público e ainda está no ar." });
+    await falhar(run.status === "TIMED-OUT" ? "O download demorou demais. Tente novamente." : "Não foi possível baixar esse vídeo. Confira se ele é público e ainda está no ar.");
     return run.status;
   }
   await registrarCusto();
@@ -183,19 +189,19 @@ async function verificarUm(row: Row): Promise<string> {
   const mp4 = item ? ap.acharMp4(item) : null;
   if (!item || !mp4) {
     console.error("[analise] item sem mp4", JSON.stringify(item ?? {}).slice(0, 600));
-    await upd({ status: "erro", erro: "Não foi possível baixar esse vídeo. Ele pode ser privado ou ter sido removido." });
+    await falhar("Não foi possível baixar esse vídeo. Ele pode ser privado ou ter sido removido.");
     return "sem_mp4";
   }
   const meta = ap.extrairMeta(rede, item);
   let arquivo;
   try { arquivo = await ap.baixarArquivo(row.tenant_id, mp4); } catch (e) {
     console.error("[analise] copiar mp4", e);
-    await upd({ status: "erro", erro: "Não foi possível copiar o vídeo baixado. Tente novamente." });
+    await falhar("Não foi possível copiar o vídeo baixado. Tente novamente.");
     return "copia";
   }
   const path = `${row.tenant_id}/${row.profile_id}/${row.id}/video`;
   const { error } = await db.storage.from("video-analises").upload(path, arquivo.bytes, { contentType: arquivo.mime, upsert: true });
-  if (error) { console.error("[analise] upload", error.message); await upd({ status: "erro", erro: "Não foi possível guardar o vídeo baixado." }); return "upload"; }
+  if (error) { console.error("[analise] upload", error.message); await falhar("Não foi possível guardar o vídeo baixado."); return "upload"; }
   const titulo = row.titulo && !/^Vídeo d/.test(row.titulo) ? row.titulo : meta.titulo || row.titulo;
   const base = {
     storage_path: path, mime_type: arquivo.mime, rede_meta: meta, titulo,
@@ -217,59 +223,90 @@ export async function rodarAnalise(id: string, reanalisar: boolean): Promise<{ o
   const row = data as unknown as Row | null;
   if (!row) return { ok: false, erro: "Análise não encontrada." };
   const upd = (v: Record<string, unknown>) => supabaseAdmin.from("video_analises").update(v as never).eq("id", row.id);
+  try {
+    if (reanalisar) {
+      const { assertSaldoPerfil } = await import("./saldo.server");
+      await assertSaldoPerfil(row.profile_id, { analise_video: 1 });
+    }
+    await upd({ status: "analisando", erro: null });
+    const { resolveApiKey } = await import("./api-keys.server");
+    const key = await resolveApiKey(row.tenant_id, "gemini");
 
+    let fileUri: string;
+    let mime: string | null = null;
+    if (!row.storage_path && row.youtube_url) {
+      fileUri = row.youtube_url;
+    } else {
+      const { data: blob, error } = await supabaseAdmin.storage.from("video-analises").download(row.storage_path!);
+      if (error || !blob) throw new ErroAmigavel("O arquivo do vídeo não foi encontrado. Envie de novo.");
+      mime = row.mime_type || blob.type || "video/mp4";
+      fileUri = await enviarParaGemini(key, await blob.arrayBuffer(), mime);
+    }
+
+    const { resolvePrompt, renderPrompt } = await import("./prompts.server");
+    let base = "";
     try {
-      if (data.reanalisar) {
-        const { assertSaldoPerfil } = await import("./saldo.server");
-        await assertSaldoPerfil(row.profile_id, { analise_video: 1 });
-      }
-      await upd({ status: "analisando", erro: null });
-      const { resolveApiKey } = await import("./api-keys.server");
-      const key = await resolveApiKey(row.tenant_id, "gemini");
+      base = await resolvePrompt(supabaseAdmin, row.profile_id, "analise_video");
+    } catch {
+      base = "Analise o vídeo curto de venda em português do Brasil. Foco: {pergunta}";
+    }
+    const prompt =
+      renderPrompt(base, { pergunta: row.pergunta || "análise padrão completa" }) +
+      "\n\nResponda somente no JSON do schema. Tempos em segundos. resumo com no máximo 3 linhas.";
 
-      let fileUri: string;
-      let mime: string | null = null;
-      if (!row.storage_path && row.youtube_url) {
-        fileUri = row.youtube_url;
-      } else {
-        const { data: blob, error } = await supabaseAdmin.storage.from("video-analises").download(row.storage_path!);
-        if (error || !blob) throw new ErroAmigavel("O arquivo enviado não foi encontrado. Envie de novo.");
-        mime = row.mime_type || blob.type || "video/mp4";
-        fileUri = await enviarParaGemini(key, await blob.arrayBuffer(), mime);
-      }
-
-      const { resolvePrompt, renderPrompt } = await import("./prompts.server");
-      let base = "";
+    let resultado: ResultadoAnalise | null = null;
+    let tokensIn = 0;
+    let tokensOut = 0;
+    for (let tentativa = 0; tentativa < 2 && !resultado; tentativa++) {
+      const { texto, uso } = await gerar(key, fileUri, mime, prompt);
+      tokensIn += uso.promptTokenCount ?? 0;
+      tokensOut += uso.candidatesTokenCount ?? 0;
       try {
-        base = await resolvePrompt(supabaseAdmin, row.profile_id, "analise_video");
-      } catch {
-        base = "Analise o vídeo curto de venda em português do Brasil. Foco: {pergunta}";
+        resultado = ResultadoSchema.parse(JSON.parse(texto));
+      } catch (e) {
+        console.error("[analise] json inválido", tentativa, String(e).slice(0, 200));
       }
-      const prompt =
-        renderPrompt(base, { pergunta: row.pergunta || "análise padrão completa" }) +
-        "\n\nResponda somente no JSON do schema. Tempos em segundos. resumo com no máximo 3 linhas.";
+    }
 
-      let resultado: ResultadoAnalise | null = null;
-      let tokensIn = 0;
-      let tokensOut = 0;
-      for (let tentativa = 0; tentativa < 2 && !resultado; tentativa++) {
-        const { texto, uso } = await gerar(key, fileUri, mime, prompt);
-        tokensIn += uso.promptTokenCount ?? 0;
-        tokensOut += uso.candidatesTokenCount ?? 0;
-        try {
-          resultado = ResultadoSchema.parse(JSON.parse(texto));
-        } catch (e) {
-          console.error("[analise] json inválido", tentativa, String(e).slice(0, 200));
-        }
-      }
+    const { recordConsumo } = await import("./consumo.server");
+    const eventoId = await recordConsumo({
+      profileId: row.profile_id, etapa: "analise_video", acao: "analise_video", modelo: GEMINI_MODEL,
+      unidade: "token_input", quantidade: tokensIn, metadados: { analise_id: row.id, origem: row.origem },
+    });
+    if (tokensOut)
+      await recordConsumo({
+        profileId: row.profile_id, etapa: "analise_video", acao: "analise_video", modelo: GEMINI_MODEL,
+        unidade: "token_output", quantidade: tokensOut, semDebito: true, metadados: { analise_id: row.id },
+      });
+    let custo = 0;
+    if (eventoId) {
+      const { data: ev } = await supabaseAdmin.from("consumo_eventos").select("tool_price_cents").eq("id", eventoId).maybeSingle();
+      custo = Number(ev?.tool_price_cents ?? 0);
+    }
+    if (!resultado) throw new ErroAmigavel("A análise voltou incompleta. Tente novamente.");
 
-      const { recordConsumo } = await import("./consumo.server");
-      const eventoId = await recordConsumo({
-        profileId: row.profile_id,
-        etapa: "analise_video",
-        acao: "analise_video",
-        modelo: GEMINI_MODEL,
-        unidade: "token_input",
-        quantidade: tokensIn,
-        metadados: { analise_id: row.id, origem: row.origem },
+    const titulo = !row.storage_path && resultado.titulo_video ? resultado.titulo_video.slice(0, 200) : row.titulo;
+    await upd({
+      status: "pronto", resultado, titulo,
+      duracao: row.duracao ?? (resultado.duracao_segundos || null),
+      consumo_evento_id: eventoId,
+      custo_cents: Number(row.custo_cents ?? 0) + custo,
+      frames: reanalisar ? [] : row.frames,
+    });
+    if (row.created_by) {
+      await supabaseAdmin.from("notificacoes").insert({
+        tenant_id: row.tenant_id, user_id: row.created_by, tipo: "analise_pronta",
+        texto: `Análise pronta: ${titulo}`, origem: "usuario",
+      });
+    }
+    return { ok: true };
+  } catch (e) {
+    const msg =
+      e instanceof ErroAmigavel || (e instanceof Error && e.name === "SemSaldo")
+        ? (e as Error).message
+        : "Não foi possível analisar o vídeo agora.";
+    if (!(e instanceof ErroAmigavel)) console.error("[analise] falha", e);
+    await upd({ status: "erro", erro: msg });
+    return { ok: false, erro: msg };
+  }
 }

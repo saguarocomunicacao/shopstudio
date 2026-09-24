@@ -32,6 +32,7 @@ export function detectarRede(url: string): Rede | null {
 
 const GATEWAY = "https://connector-gateway.lovable.dev/apify";
 const DIRETO = "https://api.apify.com/v2";
+const WEBHOOK_BASE = "https://project--c5a0c6dd-28ab-4eee-a22b-3c59cd2e5a81.lovable.app";
 
 async function keySource(tenantId: string): Promise<"shop_studio" | "byok"> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -72,7 +73,19 @@ function inputDoAtor(rede: Rede, url: string) {
 /** Inicia o run e devolve o id (não espera terminar). */
 export async function iniciarDownload(tenantId: string, rede: Rede, url: string): Promise<string> {
   const ator = (await atorDe(rede)).replace("/", "~");
-  const res = await apifyFetch(tenantId, `/acts/${ator}/runs?timeout=600&maxItems=1`, {
+  const token = process.env["AUTOMATION_CRON_TOKEN"];
+  const hook = token
+    ? Buffer.from(
+        JSON.stringify([
+          {
+            eventTypes: ["ACTOR.RUN.SUCCEEDED", "ACTOR.RUN.FAILED", "ACTOR.RUN.TIMED_OUT", "ACTOR.RUN.ABORTED"],
+            requestUrl: `${WEBHOOK_BASE}/api/public/apify-webhook/${token}`,
+          },
+        ]),
+      ).toString("base64")
+    : "";
+  // timeout=600: o próprio Apify encerra o run em 10 min e avisa pelo webhook.
+  const res = await apifyFetch(tenantId, `/acts/${ator}/runs?timeout=600&maxItems=1${hook ? `&webhooks=${encodeURIComponent(hook)}` : ""}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(inputDoAtor(rede, url)),
@@ -88,7 +101,7 @@ export async function iniciarDownload(tenantId: string, rede: Rede, url: string)
   return json.data.id;
 }
 
-export type RunInfo = { status: string; datasetId?: string; custoUsd: number };
+export type RunInfo = { status: string; datasetId?: string | undefined; custoUsd: number };
 
 export async function lerRun(tenantId: string, runId: string): Promise<RunInfo> {
   const res = await apifyFetch(tenantId, `/actor-runs/${runId}`);

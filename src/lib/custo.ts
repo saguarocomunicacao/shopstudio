@@ -46,6 +46,7 @@ export const ETAPA_LABELS: Record<EtapaConsumo, string> = {
   narracao_elevenlabs: "Narração (ElevenLabs)",
   transcricao_audio: "Ditado por voz",
   analise_video: "Análise de vídeo",
+  apify_download: "Download de link (Apify)",
 };
 
 export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
@@ -57,6 +58,7 @@ export const UNIDADE_LABELS: Record<UnidadeTarifa, (q: number) => string> = {
   token_output: (q) => `${Math.round(q)} tokens`,
   mil_caracteres: (q) => `${Number(q.toFixed(2))} mil caracteres`,
   minuto_audio: (q) => `${Number(q.toFixed(2))} min de áudio`,
+  usd_real: (q) => `US$ ${q.toFixed(4)}`,
 };
 
 export { computeJobCusto } from "./custo-calculo";

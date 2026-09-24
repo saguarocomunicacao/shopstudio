@@ -161,7 +161,8 @@ export async function montarConsumoConsolidado(
   }
 }
 
-const FORNECEDOR_DE: Record<EtapaConsumo, "google" | "kalodata" | "json2video" | "elevenlabs"> = {
+const FORNECEDOR_DE: Record<EtapaConsumo, "google" | "kalodata" | "json2video" | "elevenlabs" | "apify"> = {
+  apify_download: "apify",
   cena_gemini: "google",
   animacao_veo: "google",
   roteiro_texto: "google",
@@ -184,7 +185,7 @@ export type ConsumoFornecedor = {
 export type ExtratoCredito = {
   id: string;
   created_at: string;
-  fornecedor: "google" | "kalodata" | "json2video" | "elevenlabs";
+  fornecedor: "google" | "kalodata" | "json2video" | "elevenlabs" | "apify";
   label: string;
   credito: number | null;
   unidade: string | null;
@@ -193,7 +194,7 @@ export type ExtratoCredito = {
 };
 export type ConsumoFornecedores = {
   totalBrl: number;
-  fornecedores: Record<"google" | "kalodata" | "json2video" | "elevenlabs", ConsumoFornecedor>;
+  fornecedores: Record<"google" | "kalodata" | "json2video" | "elevenlabs" | "apify", ConsumoFornecedor>;
   extrato: ExtratoCredito[];
 };
 
@@ -230,6 +231,7 @@ export const consumoPorFornecedor = createServerFn({ method: "POST" })
     const extrato: ExtratoCredito[] = [];
     const fornecedores: ConsumoFornecedores["fornecedores"] = {
       google: vazio(),
+      apify: vazio(),
       kalodata: vazio(),
       json2video: vazio(),
       elevenlabs: vazio(),

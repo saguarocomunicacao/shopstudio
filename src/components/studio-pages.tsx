@@ -7,7 +7,10 @@ import { CheckCircle2, FileClock, ImageIcon, Loader2, Plus, Video, Wallet, Workf
 import { Link } from "@tanstack/react-router";
 import { OnboardingBanner, openOnboarding } from "./onboarding-guide";
 import { useGastoMes } from "@/lib/orcamento";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
@@ -191,6 +194,11 @@ export function SettingsPage() {
               <p className="mb-3 mt-1 text-xs text-muted-foreground">Referência de ganchos que já estão vendendo na categoria do produto.</p>
               <ChampionRefsToggle />
             </div>
+            <div className="mt-4 border-t pt-4">
+              <p className="text-sm font-semibold">Download de links (Apify)</p>
+              <p className="mb-3 mt-1 text-xs text-muted-foreground">Robô usado em cada rede na tela Analisar vídeo.</p>
+              <ApifyActorsForm />
+            </div>
           </section>
         </TabsContent>
         <TabsContent value="tarifas"><div className="grid gap-4"><TarifasCard /><CreditoTaxasCard /></div></TabsContent>
@@ -205,5 +213,42 @@ export function SettingsPage() {
         <TabsContent value="assistente"><AssistenteTeste /></TabsContent>
       </Tabs>
     </>
+  );
+}
+
+const APIFY_REDES = [
+  { key: "apify_actor_tiktok", label: "TikTok", padrao: "clockworks/tiktok-scraper" },
+  { key: "apify_actor_youtube", label: "YouTube", padrao: "streamers/youtube-video-downloader" },
+  { key: "apify_actor_instagram", label: "Instagram", padrao: "apify/instagram-reel-scraper" },
+];
+
+function ApifyActorsForm() {
+  const [valores, setValores] = useState<Record<string, string>>({});
+  const [salvando, setSalvando] = useState(false);
+  useEffect(() => {
+    supabase
+      .from("app_config")
+      .select("key, value_text")
+      .in("key", APIFY_REDES.map((r) => r.key))
+      .then(({ data }) => setValores(Object.fromEntries((data ?? []).map((d) => [d.key, d.value_text ?? ""]))));
+  }, []);
+  const salvar = async () => {
+    setSalvando(true);
+    const rows = APIFY_REDES.map((r) => ({ key: r.key, value_text: (valores[r.key] || r.padrao).trim() }));
+    const { error } = await supabase.from("app_config").upsert(rows, { onConflict: "key" });
+    setSalvando(false);
+    if (error) toast.error("Não foi possível salvar os robôs.");
+    else toast.success("Robôs salvos.");
+  };
+  return (
+    <div className="grid gap-2">
+      {APIFY_REDES.map((r) => (
+        <label key={r.key} className="grid gap-1 text-xs sm:grid-cols-[90px_1fr] sm:items-center">
+          <span className="font-medium">{r.label}</span>
+          <Input value={valores[r.key] ?? ""} placeholder={r.padrao} onChange={(e) => setValores((v) => ({ ...v, [r.key]: e.target.value }))} />
+        </label>
+      ))}
+      <div><Button size="sm" variant="outline" disabled={salvando} onClick={salvar}>Salvar robôs</Button></div>
+    </div>
   );
 }

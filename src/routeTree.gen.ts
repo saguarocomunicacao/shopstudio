@@ -41,6 +41,7 @@ import { Route as AuthenticatedAppPerfisIndexRouteImport } from './routes/_authe
 import { Route as AuthenticatedAppPerfisNovoRouteImport } from './routes/_authenticated/app/perfis.novo'
 import { Route as AuthenticatedAppPlanosIndexRouteImport } from './routes/_authenticated/app/planos.index'
 import { Route as AuthenticatedAppPlanosPlanIdRouteImport } from './routes/_authenticated/app/planos.$planId'
+import { Route as ApiPublicApifyWebhookTokenRouteImport } from './routes/api/public/apify-webhook.$token'
 import { Route as ApiPublicCronAutomationRouteImport } from './routes/api/public/cron/automation'
 import { Route as ApiPublicCronStoreVideosRouteImport } from './routes/api/public/cron/store-videos'
 import { Route as ApiPublicCronTiktokRefreshRouteImport } from './routes/api/public/cron/tiktok-refresh'
@@ -220,6 +221,12 @@ const AuthenticatedAppPlanosPlanIdRoute =
     path: '/app/planos/$planId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicApifyWebhookTokenRoute =
+  ApiPublicApifyWebhookTokenRouteImport.update({
+    id: '/api/public/apify-webhook/$token',
+    path: '/api/public/apify-webhook/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicCronAutomationRoute = ApiPublicCronAutomationRouteImport.update({
   id: '/api/public/cron/automation',
   path: '/api/public/cron/automation',
@@ -280,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
+  '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
   '/api/public/cron/automation': typeof ApiPublicCronAutomationRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
@@ -318,6 +326,7 @@ export interface FileRoutesByTo {
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
+  '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
   '/api/public/cron/automation': typeof ApiPublicCronAutomationRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
@@ -358,6 +367,7 @@ export interface FileRoutesById {
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
   '/_authenticated/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
+  '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
   '/api/public/cron/automation': typeof ApiPublicCronAutomationRoute
   '/api/public/cron/store-videos': typeof ApiPublicCronStoreVideosRoute
   '/api/public/cron/tiktok-refresh': typeof ApiPublicCronTiktokRefreshRoute
@@ -398,6 +408,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/perfis/novo'
     | '/app/planos/$planId'
+    | '/api/public/apify-webhook/$token'
     | '/api/public/cron/automation'
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
@@ -436,6 +447,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/perfis/novo'
     | '/app/planos/$planId'
+    | '/api/public/apify-webhook/$token'
     | '/api/public/cron/automation'
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
@@ -475,6 +487,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/'
     | '/_authenticated/app/perfis/novo'
     | '/_authenticated/app/planos/$planId'
+    | '/api/public/apify-webhook/$token'
     | '/api/public/cron/automation'
     | '/api/public/cron/store-videos'
     | '/api/public/cron/tiktok-refresh'
@@ -496,6 +509,7 @@ export interface RootRouteChildren {
   ApiAssistenteRoute: typeof ApiAssistenteRoute
   VTokenRoute: typeof VTokenRoute
   AuthTiktokCallbackRoute: typeof AuthTiktokCallbackRoute
+  ApiPublicApifyWebhookTokenRoute: typeof ApiPublicApifyWebhookTokenRoute
   ApiPublicCronAutomationRoute: typeof ApiPublicCronAutomationRoute
   ApiPublicCronStoreVideosRoute: typeof ApiPublicCronStoreVideosRoute
   ApiPublicCronTiktokRefreshRoute: typeof ApiPublicCronTiktokRefreshRoute
@@ -728,6 +742,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppPlanosPlanIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/apify-webhook/$token': {
+      id: '/api/public/apify-webhook/$token'
+      path: '/api/public/apify-webhook/$token'
+      fullPath: '/api/public/apify-webhook/$token'
+      preLoaderRoute: typeof ApiPublicApifyWebhookTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/cron/automation': {
       id: '/api/public/cron/automation'
       path: '/api/public/cron/automation'
@@ -831,6 +852,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAssistenteRoute: ApiAssistenteRoute,
   VTokenRoute: VTokenRoute,
   AuthTiktokCallbackRoute: AuthTiktokCallbackRoute,
+  ApiPublicApifyWebhookTokenRoute: ApiPublicApifyWebhookTokenRoute,
   ApiPublicCronAutomationRoute: ApiPublicCronAutomationRoute,
   ApiPublicCronStoreVideosRoute: ApiPublicCronStoreVideosRoute,
   ApiPublicCronTiktokRefreshRoute: ApiPublicCronTiktokRefreshRoute,

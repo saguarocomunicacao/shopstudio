@@ -45,8 +45,8 @@ async function precos(db: Any) {
 }
 
 const FORNECEDOR_DE = (etapa: string) =>
-  etapa === "busca_kalodata" ? "kalodata" : etapa === "montagem_json2video" ? "json2video" : etapa === "narracao_elevenlabs" ? "elevenlabs" : "google";
-const FORNECEDOR_NOME: Record<string, string> = { google: "Google (Gemini + Veo)", kalodata: "Kalodata", json2video: "JSON2Video", elevenlabs: "ElevenLabs" };
+  etapa === "apify_download" ? "apify" : etapa === "busca_kalodata" ? "kalodata" : etapa === "montagem_json2video" ? "json2video" : etapa === "narracao_elevenlabs" ? "elevenlabs" : "google";
+const FORNECEDOR_NOME: Record<string, string> = { google: "Google (Gemini + Veo)", kalodata: "Kalodata", json2video: "JSON2Video", elevenlabs: "ElevenLabs", apify: "Apify" };
 
 export function buildToolsExtra(ctx: Ctx) {
   const { db } = ctx;
@@ -397,12 +397,20 @@ export function buildToolsExtra(ctx: Ctx) {
     }),
 
     detalhe_analise: tool({
-      description: "Resultado completo de uma análise de vídeo: resumo, gancho, CTA, produto, cenas, transcrição, hashtags.",
+      description: "Resultado completo de uma análise de vídeo: rede, @autor, estatísticas da rede, resumo, gancho, CTA, produto, cenas, transcrição, hashtags.",
       inputSchema: z.object({ analise_id: z.string() }),
       execute: async ({ analise_id }) => {
-        const { data, error } = await db.from("video_analises").select("titulo, origem, youtube_url, status, erro, resultado, created_at").eq("id", analise_id).maybeSingle();
+        const { data, error } = await db.from("video_analises").select("titulo, origem, youtube_url, link_url, rede_meta, status, erro, resultado, created_at").eq("id", analise_id).maybeSingle();
         if (error || !data) return { erro: "Análise não encontrada." };
-        return { ...(data as Any), link: "/app/analisar" };
+        const d = data as Any;
+        const m = (d.rede_meta ?? null) as Any;
+        return {
+          titulo: d.titulo, status: d.status, erro: d.erro, criado_em: quando(d.created_at), resultado: d.resultado,
+          rede: d.origem === "arquivo" ? "arquivo enviado" : d.origem, link_original: d.link_url ?? d.youtube_url ?? null,
+          autor: m?.autor ? `@${m.autor}` : null,
+          estatisticas: m ? { views: m.views, likes: m.likes, comentarios: m.comentarios, compartilhamentos: m.compartilhamentos, publicado_em: m.publicado_em } : null,
+          link: "/app/analisar",
+        };
       },
     }),
 
