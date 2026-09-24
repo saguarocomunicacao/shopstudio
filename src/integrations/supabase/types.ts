@@ -400,6 +400,60 @@ export type Database = {
         }
         Relationships: []
       }
+      buscas_produto: {
+        Row: {
+          created_at: string
+          filtros: Json
+          id: string
+          origem: string
+          profile_id: string | null
+          resultados: Json
+          tenant_id: string
+          termo: string | null
+          total: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          filtros?: Json
+          id?: string
+          origem?: string
+          profile_id?: string | null
+          resultados?: Json
+          tenant_id: string
+          termo?: string | null
+          total?: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          filtros?: Json
+          id?: string
+          origem?: string
+          profile_id?: string | null
+          resultados?: Json
+          tenant_id?: string
+          termo?: string | null
+          total?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buscas_produto_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buscas_produto_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           category_id: string
@@ -645,6 +699,60 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fornecedor_planos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_eventos: {
+        Row: {
+          ator: string | null
+          created_at: string
+          de_status: string | null
+          id: string
+          job_id: string
+          mensagem: string | null
+          para_status: string | null
+          profile_id: string
+          tenant_id: string
+          tipo: string
+        }
+        Insert: {
+          ator?: string | null
+          created_at?: string
+          de_status?: string | null
+          id?: string
+          job_id: string
+          mensagem?: string | null
+          para_status?: string | null
+          profile_id: string
+          tenant_id: string
+          tipo: string
+        }
+        Update: {
+          ator?: string | null
+          created_at?: string
+          de_status?: string | null
+          id?: string
+          job_id?: string
+          mensagem?: string | null
+          para_status?: string | null
+          profile_id?: string
+          tenant_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_eventos_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "job_eventos_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1028,6 +1136,54 @@ export type Database = {
           videos?: Json
         }
         Relationships: []
+      }
+      notificacoes: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string | null
+          lida: boolean
+          tenant_id: string
+          texto: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          lida?: boolean
+          tenant_id: string
+          texto: string
+          tipo: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          lida?: boolean
+          tenant_id?: string
+          texto?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificacoes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       permissions: {
         Row: {

@@ -484,6 +484,13 @@
       "when": 1790273003122,
       "tag": "0068_jobs_realtime",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1790274270139,
+      "tag": "0069_assistente_cobertura_eventos_notificacoes_buscas",
+      "breakpoints": true
     }
   ]
 }
