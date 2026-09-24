@@ -59,7 +59,7 @@ export function buildToolsExtra(ctx: Ctx) {
       execute: async ({ profile_id, dias }) => {
         const p = pid(ctx, profile_id);
         if (!ctx.access.can("produtos", "visualizar", p) && !ctx.access.isBackoffice) return semAcesso("Produtos");
-        let q = db.from("buscas_produto").select("id, origem, termo, filtros, total, user_id, created_at, profile_id").order("created_at", { ascending: false }).limit(20);
+        let q = db.from("buscas_produto").select("id, origem, termo, filtros, total, user_id, created_at, profile_id, consumo_evento_id").order("created_at", { ascending: false }).limit(20);
         if (p) q = q.eq("profile_id", p);
         if (dias) q = q.gte("created_at", new Date(Date.now() - dias * 86400_000).toISOString());
         const { data, error } = await q;
@@ -67,18 +67,18 @@ export function buildToolsExtra(ctx: Ctx) {
         const rows = (data ?? []) as Any[];
         if (!rows.length) return { buscas: [], observacao: "Nenhuma busca registrada. O histórico começou a ser guardado nesta versão e fica 30 dias." };
         const m = await nomes(db, rows.map((r) => r.user_id));
-        // Custo: mesma linha de busca da tela Custos (agregarPeriodo), casada pelo horário.
+        // Custo: linha da tela Custos (agregarPeriodo) do evento de consumo vinculado à busca.
         let custoPorBusca = new Map<string, string>();
         if (podeCustos(p)) {
-          const desde = new Date(new Date(rows[rows.length - 1].created_at).getTime() - 60_000).toISOString();
-          let ev = db.from("consumo_eventos").select(SELECT_EVENTOS_CUSTO).eq("etapa", "busca_kalodata").gte("created_at", desde).limit(2000);
-          if (p) ev = ev.eq("profile_id", p);
-          const [{ data: eventos }, pr] = await Promise.all([ev, precos(db)]);
-          const linhas = agregarPeriodo((eventos ?? []) as ConsumoEventoRow[], pr.tarifas, pr.cotacao, [], pr.taxas).buscas;
+          const evIds = rows.map((r) => r.consumo_evento_id).filter(Boolean);
+          const [{ data: eventos }, pr] = await Promise.all([
+            evIds.length ? db.from("consumo_eventos").select(SELECT_EVENTOS_CUSTO).in("id", evIds) : Promise.resolve({ data: [] }),
+            precos(db),
+          ]);
+          const linhas = new Map(agregarPeriodo((eventos ?? []) as ConsumoEventoRow[], pr.tarifas, pr.cotacao, [], pr.taxas).buscas.map((l) => [l.id, l]));
           custoPorBusca = new Map(rows.map((r) => {
-            const t = new Date(r.created_at).getTime();
-            const l = linhas.find((x) => Math.abs(new Date(x.created_at).getTime() - t) < 20_000);
-            return [r.id, l ? reais(l.valorBrl) : "não encontrado"];
+            const l = r.consumo_evento_id ? linhas.get(r.consumo_evento_id) : undefined;
+            return [r.id, l ? reais(l.valorBrl) : "sem custo registrado"];
           }));
         }
         return rows.map((r) => ({
@@ -148,16 +148,16 @@ export function buildToolsExtra(ctx: Ctx) {
       description: "Versões de um vídeo próprio/gravado: original, editada e IA, com data e qual está marcada para postagem.",
       inputSchema: z.object({ job_id: z.string() }),
       execute: async ({ job_id }) => {
-        const { data: j } = await db.from("jobs").select("id, title, formato, recorded_at, video_original_path, video_edited_path, video_edits, ai_video_path, ai_video_url, ai_status, video_choice, updated_at").eq("id", job_id).maybeSingle();
+        const { data: j } = await db.from("jobs").select("id, title, formato, recorded_at, video_original_path, video_edited_path, video_original_duracao, video_edited_duracao, ai_video_duracao, video_edits, ai_video_path, ai_video_url, ai_status, video_choice, updated_at").eq("id", job_id).maybeSingle();
         if (!j) return { erro: "Não encontrei esse job." };
-        const dur = (j.video_edits as Any)?.duration ?? (j.video_edits as Any)?.duracao ?? null;
+        const seg = (v: unknown) => (v != null && Number(v) > 0 ? `${Math.round(Number(v))}s` : null);
         const versoes = [
-          { versao: "Original gravada", existe: !!j.video_original_path, data: quando(j.recorded_at), duracao: null },
-          { versao: "Editada", existe: !!j.video_edited_path, data: j.video_edited_path ? quando(j.updated_at) : null, duracao: dur ? `${Math.round(Number(dur))}s` : null },
-          { versao: "Gerada por IA", existe: !!(j.ai_video_path || j.ai_video_url), data: null, duracao: null, estado: j.ai_status ?? null },
+          { versao: "Original gravada", existe: !!j.video_original_path, data: quando(j.recorded_at), duracao: seg(j.video_original_duracao) },
+          { versao: "Editada", existe: !!j.video_edited_path, data: j.video_edited_path ? quando(j.updated_at) : null, duracao: seg(j.video_edited_duracao) },
+          { versao: "Gerada por IA", existe: !!(j.ai_video_path || j.ai_video_url), data: null, duracao: seg(j.ai_video_duracao), estado: j.ai_status ?? null },
         ];
         return {
-          titulo: j.title, versoes: versoes.map((v) => ({ ...v, duracao: v.duracao ?? "não registrada" })),
+          titulo: j.title, versoes: versoes.map((v) => ({ ...v, duracao: v.existe ? v.duracao ?? "ainda não lida (abra Rascunhos para preencher)" : null })),
           marcada_para_postagem: j.video_choice === "ia" ? "Gerada por IA" : j.video_edited_path ? "Editada" : j.video_original_path ? "Original gravada" : "nenhuma",
           link: linkJob(job_id),
         };

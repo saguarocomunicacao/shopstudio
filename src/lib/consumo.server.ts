@@ -144,7 +144,7 @@ async function resolverCreditoETarifa(
 }
 
 /** Grava um evento de consumo. Nunca derruba a geração se o log falhar. */
-export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
+export async function recordConsumo(evento: ConsumoEvento): Promise<string | null> {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -195,7 +195,7 @@ export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
     if (semTarifa) metadados["sem_tarifa"] = true;
     if (credito.semTaxa) metadados["sem_taxa_credito"] = true;
 
-    const { error } = await supabaseAdmin.from("consumo_eventos").insert({
+    const { data: inserido, error } = await supabaseAdmin.from("consumo_eventos").insert({
       tenant_id: tenantId,
       job_id: evento.jobId ?? null,
       profile_id: evento.profileId ?? null,
@@ -211,10 +211,12 @@ export async function recordConsumo(evento: ConsumoEvento): Promise<void> {
       credito_unidade: credito.unidade,
       credito_origem: credito.origem,
       metadados: metadados as never,
-    });
+    }).select("id").maybeSingle();
     if (error) console.error("[consumo] falha ao registrar evento", error.message);
+    return (inserido as { id?: string } | null)?.id ?? null;
   } catch (e) {
     console.error("[consumo] falha ao registrar evento", e);
+    return null;
   }
 }
 

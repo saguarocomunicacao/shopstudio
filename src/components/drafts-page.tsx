@@ -47,12 +47,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { jobStatusLabel, relativeTime, useJobs, useProducts, useTrashedJobs, type DbJob } from "@/lib/content";
-import { restoreOriginalRecording } from "@/lib/recording.functions";
+import { restoreOriginalRecording, saveVideoDurations } from "@/lib/recording.functions";
+import { videoDuration } from "@/lib/video-duration";
 import {
   approveDraft,
   createDraftThumbnailUpload,
   getDraftKit,
   getDraftPreviews,
+  getMissingDurationSources,
   moveDraftBack,
   duplicateJob,
   purgeDraft,
@@ -297,6 +299,8 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
     setOpenId(initialJobId);
   }, [initialJobId, isLoading, jobs]);
   const loadPreviews = useServerFn(getDraftPreviews);
+  const loadMissingDur = useServerFn(getMissingDurationSources);
+  const saveDur = useServerFn(saveVideoDurations);
 
   const canCreate = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
   const canRemove = (job: DbJob) =>
@@ -311,6 +315,33 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
     : queue === "roteiros"
       ? roteirosList
       : jobs.filter((j) => j.status === current?.status);
+  // Backfill silencioso das durações: uma vez por job por sessão, só para cards visíveis.
+  const durChecked = useRef(new Set<string>());
+  const durIds = list.map((j) => j.id).filter((id) => !durChecked.current.has(id)).slice(0, 60).join(",");
+  useEffect(() => {
+    if (!durIds) return;
+    const ids = durIds.split(",");
+    ids.forEach((id) => durChecked.current.add(id));
+    let cancel = false;
+    (async () => {
+      try {
+        const { items } = await loadMissingDur({ data: { jobIds: ids } });
+        for (const it of items) {
+          if (cancel) return;
+          const [original, edited, ai] = await Promise.all([
+            it.original ? videoDuration(it.original) : null,
+            it.edited ? videoDuration(it.edited) : null,
+            it.ai ? videoDuration(it.ai) : null,
+          ]);
+          if (original || edited || ai) await saveDur({ data: { jobId: it.id, original, edited, ai } });
+        }
+      } catch {
+        /* silencioso */
+      }
+    })();
+    return () => { cancel = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [durIds]);
   const countOf = (status: DbJob["status"]) => jobs.filter((j) => j.status === status).length;
   const countQueue = (item: (typeof QUEUES)[number]) =>
     item.key === "favoritos"

@@ -597,3 +597,23 @@ export const duplicateJob = createServerFn({ method: "POST" })
       throw e;
     }
   });
+
+/** Links das versões ainda sem duração registrada (backfill no navegador). */
+export const getMissingDurationSources = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => z.object({ jobIds: z.array(z.string().uuid()).max(60) }).parse(data))
+  .handler(async ({ data, context }) => {
+    if (!data.jobIds.length) return { items: [] as Array<{ id: string; original: string | null; edited: string | null; ai: string | null }> };
+    const { data: rows } = await context.supabase
+      .from("jobs")
+      .select("id, video_original_path, video_edited_path, ai_video_path, ai_video_url, video_original_duracao, video_edited_duracao, ai_video_duracao")
+      .in("id", data.jobIds);
+    const items = [];
+    for (const r of (rows ?? []) as Array<Record<string, any>>) {
+      const original = r["video_original_path"] && r["video_original_duracao"] == null ? await sign(r["video_original_path"]) : null;
+      const edited = r["video_edited_path"] && r["video_edited_duracao"] == null ? await sign(r["video_edited_path"]) : null;
+      const ai = (r["ai_video_path"] || r["ai_video_url"]) && r["ai_video_duracao"] == null ? (await sign(r["ai_video_path"])) ?? r["ai_video_url"] : null;
+      if (original || edited || ai) items.push({ id: r["id"] as string, original, edited, ai });
+    }
+    return { items };
+  });
