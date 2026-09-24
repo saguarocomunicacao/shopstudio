@@ -25,7 +25,7 @@ export const getMetricas = createServerFn({ method: "POST" })
     const db = context.supabase;
     if (!(await podeVerMetricas(db, data.profileId))) return { semPermissao: true as const };
     const desde = new Date(Date.now() - (Math.max(data.dias, 30) + 8) * 86400_000).toISOString().slice(0, 10);
-    const [perfil, coleta, prof, jobs, videos, naoVinc] = await Promise.all([
+    const [perfil, coleta, prof, jobs, videos, naoVinc, pubNaoVinc] = await Promise.all([
       db.from("perfil_metricas").select("data, seguidores, seguindo, curtidas_total, videos_total").eq("profile_id", data.profileId).gte("data", desde).order("data"),
       db.from("metricas_coleta").select("status, ultima_coleta_em, ultimo_erro, ultimo_manual_em, iniciado_em").eq("profile_id", data.profileId).maybeSingle(),
       db.from("profiles").select("handle").eq("id", data.profileId).maybeSingle(),

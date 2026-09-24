@@ -19,6 +19,7 @@ async function lerMetricas(db: Any, profileId: string, dias: number) {
     db.from("profiles").select("handle").eq("id", profileId).maybeSingle(),
     db.from("jobs").select("id, title, formato, video_choice, published_at, tiktok_video_id, tiktok_video_url").eq("profile_id", profileId).eq("status", "publicado").is("deleted_at", null).limit(200),
     db.from("video_metricas").select("tiktok_video_id, job_id, data, views, likes, comentarios, compartilhamentos, salvos, reposts").eq("profile_id", profileId).gte("data", desde).order("data").limit(10000),
+    db.from("videos_nao_vinculados").select("tiktok_video_id, publicado_em").eq("profile_id", profileId).limit(500),
   ]);
   const js = (jobs.data ?? []) as JobMetricaBase[];
   return {
