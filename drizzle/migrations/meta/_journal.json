@@ -491,6 +491,13 @@
       "when": 1790274270139,
       "tag": "0069_assistente_cobertura_eventos_notificacoes_buscas",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1790274837938,
+      "tag": "0070_busca_consumo_vinculo_duracoes_notif_automacao",
+      "breakpoints": true
     }
   ]
 }

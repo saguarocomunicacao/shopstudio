@@ -402,6 +402,7 @@ export type Database = {
       }
       buscas_produto: {
         Row: {
+          consumo_evento_id: string | null
           created_at: string
           filtros: Json
           id: string
@@ -414,6 +415,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          consumo_evento_id?: string | null
           created_at?: string
           filtros?: Json
           id?: string
@@ -426,6 +428,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          consumo_evento_id?: string | null
           created_at?: string
           filtros?: Json
           id?: string
@@ -438,6 +441,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "buscas_produto_consumo_evento_id_fkey"
+            columns: ["consumo_evento_id"]
+            isOneToOne: false
+            referencedRelation: "consumo_eventos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "buscas_produto_profile_id_fkey"
             columns: ["profile_id"]
@@ -870,6 +880,7 @@ export type Database = {
           ai_render_stage: string | null
           ai_render_started_at: string | null
           ai_status: string | null
+          ai_video_duracao: number | null
           ai_video_path: string | null
           ai_video_storage_error: string | null
           ai_video_storage_status: string | null
@@ -919,8 +930,10 @@ export type Database = {
           updated_at: string
           veo_takes_count: number
           video_choice: string
+          video_edited_duracao: number | null
           video_edited_path: string | null
           video_edits: Json | null
+          video_original_duracao: number | null
           video_original_path: string | null
           video_path: string | null
           video_storage_attempts: number
@@ -940,6 +953,7 @@ export type Database = {
           ai_render_stage?: string | null
           ai_render_started_at?: string | null
           ai_status?: string | null
+          ai_video_duracao?: number | null
           ai_video_path?: string | null
           ai_video_storage_error?: string | null
           ai_video_storage_status?: string | null
@@ -989,8 +1003,10 @@ export type Database = {
           updated_at?: string
           veo_takes_count?: number
           video_choice?: string
+          video_edited_duracao?: number | null
           video_edited_path?: string | null
           video_edits?: Json | null
+          video_original_duracao?: number | null
           video_original_path?: string | null
           video_path?: string | null
           video_storage_attempts?: number
@@ -1010,6 +1026,7 @@ export type Database = {
           ai_render_stage?: string | null
           ai_render_started_at?: string | null
           ai_status?: string | null
+          ai_video_duracao?: number | null
           ai_video_path?: string | null
           ai_video_storage_error?: string | null
           ai_video_storage_status?: string | null
@@ -1059,8 +1076,10 @@ export type Database = {
           updated_at?: string
           veo_takes_count?: number
           video_choice?: string
+          video_edited_duracao?: number | null
           video_edited_path?: string | null
           video_edits?: Json | null
+          video_original_duracao?: number | null
           video_original_path?: string | null
           video_path?: string | null
           video_storage_attempts?: number
@@ -1143,6 +1162,7 @@ export type Database = {
           id: string
           job_id: string | null
           lida: boolean
+          origem: string
           tenant_id: string
           texto: string
           tipo: string
@@ -1153,6 +1173,7 @@ export type Database = {
           id?: string
           job_id?: string | null
           lida?: boolean
+          origem?: string
           tenant_id: string
           texto: string
           tipo: string
@@ -1163,6 +1184,7 @@ export type Database = {
           id?: string
           job_id?: string | null
           lida?: boolean
+          origem?: string
           tenant_id?: string
           texto?: string
           tipo?: string
