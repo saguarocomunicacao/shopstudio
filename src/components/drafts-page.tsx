@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Copy,
   Film,
+  Heart,
   Loader2,
   LockKeyhole,
   Play,
@@ -422,6 +423,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
           <TabsList className="h-auto min-w-max justify-start">
             {QUEUES.map((q) => (
               <TabsTrigger key={q.key} value={q.key}>
+                {q.key === "favoritos" && <Heart className="size-4" />}
                 {q.label} ({countQueue(q)})
               </TabsTrigger>
             ))}
@@ -486,7 +488,9 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                   <DraftThumb job={job} preview={previewOf(job.id)} loadingPreview={!!job.video_path && previews.isFetching && !previewOf(job.id)} onOpen={abrir} />
                 )}
                 </div>
-                <InlineTitle jobId={job.id} title={job.title} canEdit={canRemove(job)} className="mt-3 text-sm font-bold" />
+                <div className="mt-3">
+                  <InlineTitle jobId={job.id} title={job.title} canEdit={canRemove(job)} className="text-sm font-bold" />
+                </div>
                 <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
                 <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                   <div className="flex min-w-0 items-center gap-2">
@@ -591,7 +595,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
               : queue === "roteiros"
                 ? "Nenhum roteiro pronto para gravar. Crie um vídeo próprio ou gere o roteiro de um produto nesse formato."
                 : queue === "favoritos"
-                  ? "Nenhum favorito ainda. Toque na estrela de um vídeo para guardá-lo aqui."
+                  ? "Nenhum favorito ainda. Toque no coração de um vídeo para guardá-lo aqui."
                   : queue === "lixeira"
                   ? "A lixeira está vazia."
                   : "Nenhum vídeo publicado ainda."}

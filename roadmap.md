@@ -90,3 +90,8 @@
 - [x] Atualizar aparência e indicador do botão flutuante
 - [x] Assinar miniaturas privadas e corrigir a ordem de fallback dos últimos jobs
 - [x] Validar dados reais, carregamento privado e compilação; sessão visual indisponível
+
+## Títulos e favoritos dos Rascunhos
+- [x] Manter o lápis visível e ampliar sua área de toque
+- [x] Destacar o campo de edição com borda magenta tracejada e acessível
+- [x] Substituir estrelas por corações nos cards, detalhe, kit e aba Favoritos

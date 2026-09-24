@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Star } from "lucide-react";
+import { Heart, Pencil } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,11 +53,16 @@ function invalidateJobs(qc: ReturnType<typeof useQueryClient>) {
 export function FavoriteStar({ job, className, disabled }: { job: Pick<DbJob, "id"> & { favorito?: boolean | null }; className?: string; disabled?: boolean }) {
   const qc = useQueryClient();
   const [fav, setFav] = useState(!!job.favorito);
+  const [justFavorited, setJustFavorited] = useState(false);
   useEffect(() => setFav(!!job.favorito), [job.favorito]);
   const toggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const next = !fav;
     setFav(next);
+    if (next) {
+      setJustFavorited(true);
+      window.setTimeout(() => setJustFavorited(false), 200);
+    }
     // Retira/insere na hora na aba Favoritos.
     qc.setQueriesData<DbJob[]>({ queryKey: ["jobs-favs"] }, (old) =>
       old ? (next ? old : old.filter((j) => j.id !== job.id)) : old,
@@ -78,11 +83,18 @@ export function FavoriteStar({ job, className, disabled }: { job: Pick<DbJob, "i
       aria-label={fav ? "Remover dos favoritos" : "Adicionar aos favoritos"}
       title={fav ? "Remover dos favoritos" : "Favoritar"}
       className={cn(
-        "grid size-7 place-items-center rounded-full bg-[rgba(0,0,0,0.45)] transition hover:bg-[rgba(0,0,0,0.6)] disabled:opacity-50",
+        "grid size-11 place-items-center rounded-full bg-overlay/70 transition-colors hover:bg-overlay disabled:opacity-50",
         className,
       )}
     >
-      <Star className={cn("size-4", fav ? "fill-brand-cyan text-brand-cyan" : "text-primary-foreground")} />
+      <Heart
+        strokeWidth={2}
+        className={cn(
+          "size-[22px] text-primary",
+          fav && "fill-primary",
+          justFavorited && "animate-favorite-pop",
+        )}
+      />
     </button>
   );
 }
@@ -154,12 +166,12 @@ export function InlineTitle({
           }
         }}
         aria-label="Editar título"
-        className={cn("w-full rounded-md border border-input bg-background px-1.5 py-0.5 outline-none focus:ring-2 focus:ring-ring", className)}
+        className={cn("animate-title-edit-border w-full rounded-lg border border-dashed border-primary bg-card px-2 py-1 outline-none", className)}
       />
     );
   }
   return (
-    <div className="group/title flex min-w-0 items-start gap-1">
+    <div className="flex min-w-0 items-center gap-1">
       <p className={cn("min-w-0 flex-1 whitespace-pre-wrap break-words", className)} onDoubleClick={start}>
         {shown || fallback}
       </p>
@@ -172,7 +184,7 @@ export function InlineTitle({
           }}
           aria-label="Editar título"
           title="Editar título"
-          className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground transition hover:text-foreground md:opacity-0 md:group-hover/title:opacity-100 focus-visible:opacity-100"
+          className="grid size-11 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground"
         >
           <Pencil className="size-4" />
         </button>

@@ -228,6 +228,13 @@
   box-shadow: 0 8px 24px var(--assistant-shadow);
 }
 .assistant-launcher:hover { background: var(--assistant-hover); }
+@keyframes title-edit-border-blink { 0%,100% { border-color:var(--primary); } 50% { border-color:color-mix(in oklab,var(--primary) 30%,transparent); } }
+@keyframes favorite-pop { 0%,100% { transform:scale(1); } 50% { transform:scale(1.25); } }
+.animate-title-edit-border { animation:title-edit-border-blink 1.4s step-end infinite; }
+.animate-favorite-pop { animation:favorite-pop 200ms ease-out; }
+@media (prefers-reduced-motion:reduce) {
+  .animate-title-edit-border,.animate-favorite-pop { animation:none; }
+}
 @utility status-orange { background:var(--warning-soft); color:var(--warning-ink); }
 @utility status-pink { background:var(--danger-soft); color:var(--primary); }
 @utility status-published { background:var(--border); color:var(--foreground); }

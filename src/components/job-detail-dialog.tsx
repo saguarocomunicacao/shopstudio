@@ -26,6 +26,7 @@ import { brl } from "@/lib/custo";
 import { useEstimativaVeo, useGastoMes } from "@/lib/orcamento";
 import { actionError } from "@/lib/api-keys";
 import { VideoDownloadButton } from "./video-download-button";
+import { FavoriteStar, InlineTitle } from "./job-title-fav";
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
@@ -150,7 +151,15 @@ export function JobDetailDialog({
     <Dialog open={!!job} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[88vh] max-w-2xl overflow-y-auto [scrollbar-gutter:stable]">
         <DialogHeader>
-          <DialogTitle>{job?.title || productName}</DialogTitle>
+          <DialogTitle className="sr-only">{job?.title || productName}</DialogTitle>
+          {job && (
+            <div className="flex items-center gap-2 pr-8">
+              <div className="min-w-0 flex-1">
+                <InlineTitle jobId={job.id} title={job.title || productName} canEdit={canEdit} className="font-display text-lg font-semibold" />
+              </div>
+              {canEdit && <FavoriteStar job={job} className="shrink-0" />}
+            </div>
+          )}
         </DialogHeader>
         <div className="-mx-1 grid gap-4 px-1 py-2">
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
