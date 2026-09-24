@@ -8,7 +8,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 
 const SUPER_ADMIN_EMAIL = "saguaro.comunicacao@gmail.com";
-const providerSchema = z.enum(["gemini", "json2video", "elevenlabs", "kalodata"]);
+const providerSchema = z.enum(["gemini", "json2video", "elevenlabs", "kalodata", "apify"]);
 
 type Ctx = { supabase: { from: (t: string) => any; rpc: (n: string, a?: unknown) => any }; userId: string };
 

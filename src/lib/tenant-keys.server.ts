@@ -47,6 +47,10 @@ export async function testProviderKey(provider: KeyProvider, key: string): Promi
         ? { ok: true, detalhe: "Chave do JSON2Video aceita." }
         : { ok: false, detalhe: `O JSON2Video respondeu com erro (${res.status}).` };
     }
+    if (provider === "apify") {
+      const res = await fetch("https://api.apify.com/v2/users/me", { headers: { Authorization: `Bearer ${key}` } });
+      return res.ok ? { ok: true, detalhe: "Chave do Apify aceita." } : { ok: false, detalhe: "O Apify recusou esta chave." };
+    }
     const res = await fetch("https://www.kalodata.com/openapi/v1/tiktok/category/rank", {
       method: "POST",
       headers: { "Content-Type": "application/json", "secret-key": key },
