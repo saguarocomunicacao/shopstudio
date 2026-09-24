@@ -84,3 +84,9 @@
 - [x] Exibir geração de cenas, animação e vídeo pronto em Rascunhos
 - [x] Mover o card pelas colunas corretas do Pipeline
 - [x] Validar progressão preservando as versões gravadas
+
+## Assistente e miniaturas da Visão geral
+- [x] Criar ícone próprio de robô e aplicar no botão, cabeçalho e mensagens
+- [x] Atualizar aparência e indicador do botão flutuante
+- [x] Assinar miniaturas privadas e corrigir a ordem de fallback dos últimos jobs
+- [ ] Validar visualmente no tema escuro e em tamanhos desktop/mobile

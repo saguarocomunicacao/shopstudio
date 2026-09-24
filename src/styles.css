@@ -123,6 +123,7 @@
   --secondary-brand: oklch(0.647 0.238 17.7);
   --brand-cyan: oklch(0.876 0.146 191.6);
   --brand-cyan-foreground: oklch(0.15 0.01 285.7);
+  --assistant-shadow: oklch(0.647 0.238 17.7 / 35%);
   --cyan-ink: oklch(0.664 0.113 191.0);
   --warning: oklch(0.782 0.158 72.3);
   --success-soft: oklch(0.968 0.024 193.6);
@@ -183,6 +184,7 @@
   --secondary-brand: oklch(0.647 0.238 17.7);
   --brand-cyan: oklch(0.876 0.146 191.6);
   --brand-cyan-foreground: oklch(0.15 0.01 285.7);
+  --assistant-shadow: oklch(0.647 0.238 17.7 / 35%);
   --cyan-ink: oklch(0.664 0.113 191.0);
   --warning: oklch(0.782 0.158 72.3);
   --success-soft: oklch(0.664 0.113 191.0 / 18%);
@@ -218,6 +220,12 @@
 @utility status-violet { background:var(--warning-soft); color:var(--warning-ink); }
 @utility status-cyan { background:var(--success-soft); color:var(--cyan-ink); }
 @utility status-lime { background:var(--success-soft); color:var(--cyan-ink); }
+
+.assistant-launcher {
+  background: var(--primary);
+  box-shadow: 0 8px 24px var(--assistant-shadow);
+}
+.assistant-launcher:hover { background: color-mix(in oklab, var(--primary) 94%, black); }
 @utility status-orange { background:var(--warning-soft); color:var(--warning-ink); }
 @utility status-pink { background:var(--danger-soft); color:var(--primary); }
 @utility status-published { background:var(--border); color:var(--foreground); }

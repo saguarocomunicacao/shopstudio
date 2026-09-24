@@ -442,10 +442,10 @@ export const getDraftPreviews = createServerFn({ method: "POST" })
     z.object({ jobIds: z.array(z.string().uuid()).max(60) }).parse(data),
   )
   .handler(async ({ data, context }) => {
-    if (!data.jobIds.length) return { previews: [] as { id: string; videoUrl: string | null; thumbnailUrl: string | null }[] };
+    if (!data.jobIds.length) return { previews: [] as { id: string; videoUrl: string | null; thumbnailUrl: string | null; aiThumbnailUrl: string | null }[] };
     const { data: rows, error } = await context.supabase
       .from("jobs")
-      .select("id, video_path, video_thumbnail_path, video_thumbnail_url")
+      .select("id, video_path, video_thumbnail_path, video_thumbnail_url, ai_video_thumbnail_path, ai_video_thumbnail_url")
       .in("id", data.jobIds);
     if (error) throw new Error(error.message);
     const previews = await Promise.all(
@@ -453,6 +453,7 @@ export const getDraftPreviews = createServerFn({ method: "POST" })
         id: row.id as string,
         videoUrl: await sign(row.video_path as string | null),
         thumbnailUrl: (await sign(row.video_thumbnail_path as string | null)) ?? (row.video_thumbnail_url as string | null),
+        aiThumbnailUrl: (await sign(row.ai_video_thumbnail_path as string | null)) ?? (row.ai_video_thumbnail_url as string | null),
       })),
     );
     return { previews };
