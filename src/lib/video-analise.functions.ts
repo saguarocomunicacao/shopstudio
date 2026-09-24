@@ -17,6 +17,7 @@ export const criarAnalise = createServerFn({ method: "POST" })
         titulo: z.string().trim().max(200),
         duracao: z.number().min(0).max(36000).nullable(),
         pergunta: z.string().trim().max(1000).nullable(),
+        arquivoBytes: z.number().int().min(0).nullable().optional(),
       })
       .parse(d),
   )
@@ -51,6 +52,9 @@ export const criarAnalise = createServerFn({ method: "POST" })
       titulo: data.titulo || (rede ? `Vídeo do ${nomeRede}` : "Vídeo enviado"),
       duracao: data.duracao,
       pergunta: data.pergunta || null,
+      arquivo_nome: rede ? null : data.titulo || null,
+      arquivo_bytes: rede ? null : (data.arquivoBytes ?? null),
+      etapa_log: [{ etapa: rede ? "baixando" : "enviado", em: new Date().toISOString() }],
       status: rede ? "baixando" : "enviando",
     } as never);
     if (error) {

@@ -162,7 +162,11 @@ export async function comecarDownload(row: Pick<Row, "id" | "tenant_id" | "orige
     if (!url || !REDES.includes(rede)) throw new ErroAmigavel("Link inválido.");
     const { iniciarDownload } = await import("./apify.server");
     const runId = await iniciarDownload(row.tenant_id, rede, url);
+    const { data: atual } = await db.from("video_analises").select("etapa_log").eq("id", row.id).maybeSingle();
+    const logAtual = ((atual as { etapa_log?: unknown[] } | null)?.etapa_log ?? []) as unknown[];
+    const ultimo = logAtual[logAtual.length - 1] as { etapa?: string } | undefined;
     await db.from("video_analises").update({
+      etapa_log: ultimo?.etapa === "baixando" && logAtual.length === 1 ? logAtual : [...logAtual, { etapa: "baixando", em: new Date().toISOString(), run_id: runId }],
       status: "baixando", erro: null, apify_run_id: runId, download_iniciado_em: new Date().toISOString(), so_download: soDownload,
     } as never).eq("id", row.id);
     return { ok: true as const };
@@ -228,8 +232,14 @@ export async function varrerDownloadsParados(limite = 10) {
 async function verificarUm(row: Row): Promise<string> {
   const db = await admin();
   const upd = (v: Record<string, unknown>) => db.from("video_analises").update(v as never).eq("id", row.id);
-  const falhar = (erro: string) =>
-    row.so_download && row.resultado ? upd({ status: "pronto", so_download: false, apify_run_id: null, erro }) : upd({ status: "erro", erro });
+  const logDl = async (entrada: Record<string, unknown>) => {
+    const { data: atual } = await db.from("video_analises").select("etapa_log").eq("id", row.id).maybeSingle();
+    return [...(((atual as { etapa_log?: unknown[] } | null)?.etapa_log ?? []) as unknown[]), { em: new Date().toISOString(), ...entrada }];
+  };
+  const falhar = async (erro: string, detalhe?: string) => {
+    const etapa_log = await logDl({ etapa: "erro", motivo: erro, ...(detalhe ? { detalhe } : {}), run_id: row.apify_run_id });
+    return row.so_download && row.resultado ? upd({ status: "pronto", so_download: false, apify_run_id: null, erro, etapa_log }) : upd({ status: "erro", erro, etapa_log });
+  };
   const ap = await import("./apify.server");
   const rede = row.origem as (typeof REDES)[number];
   if (!row.apify_run_id) { await falhar("O download não começou. Tente novamente."); return "sem_run"; }
@@ -256,7 +266,7 @@ async function verificarUm(row: Row): Promise<string> {
   }
   if (run.status !== "SUCCEEDED") {
     await registrarCusto();
-    await falhar(run.status === "TIMED-OUT" ? "O download demorou demais. Tente novamente." : "Não foi possível baixar esse vídeo. Confira se ele é público e ainda está no ar.");
+    await falhar(run.status === "TIMED-OUT" ? "O download demorou demais. Tente novamente." : "Não foi possível baixar esse vídeo. Confira se ele é público e ainda está no ar.", `Apify: ${run.status}`);
     return run.status;
   }
   await registrarCusto();
@@ -264,14 +274,15 @@ async function verificarUm(row: Row): Promise<string> {
   const mp4 = item ? ap.acharMp4(item) : null;
   if (!item || !mp4) {
     console.error("[analise] item sem mp4", JSON.stringify(item ?? {}).slice(0, 600));
-    await falhar("Não foi possível baixar esse vídeo. Ele pode ser privado ou ter sido removido.");
+    const errApify = item && typeof (item as Record<string, unknown>)["error"] === "string" ? String((item as Record<string, unknown>)["error"]) : null;
+    await falhar("Não foi possível baixar esse vídeo. Ele pode ser privado ou ter sido removido.", errApify ? `Apify: ${errApify}` : item ? "Apify: resultado sem arquivo de vídeo" : "Apify: nenhum resultado");
     return "sem_mp4";
   }
   const meta = ap.extrairMeta(rede, item);
   let arquivo;
   try { arquivo = await ap.baixarArquivo(row.tenant_id, mp4); } catch (e) {
     console.error("[analise] copiar mp4", e);
-    await falhar("Não foi possível copiar o vídeo baixado. Tente novamente.");
+    await falhar("Não foi possível copiar o vídeo baixado. Tente novamente.", e instanceof Error ? e.message : undefined);
     return "copia";
   }
   const path = `${row.tenant_id}/${row.profile_id}/${row.id}/video`;
@@ -279,7 +290,8 @@ async function verificarUm(row: Row): Promise<string> {
   if (error) { console.error("[analise] upload", error.message); await falhar("Não foi possível guardar o vídeo baixado."); return "upload"; }
   const titulo = row.titulo && !/^Vídeo d/.test(row.titulo) ? row.titulo : meta.titulo || row.titulo;
   const base = {
-    storage_path: path, mime_type: arquivo.mime, rede_meta: meta, titulo,
+    storage_path: path, mime_type: arquivo.mime, rede_meta: meta, titulo, arquivo_bytes: arquivo.bytes.byteLength,
+    etapa_log: await logDl({ etapa: "baixado" }),
     duracao: row.duracao ?? meta.duracao, apify_run_id: null, frames: [],
   };
   if (row.so_download && row.resultado) {
