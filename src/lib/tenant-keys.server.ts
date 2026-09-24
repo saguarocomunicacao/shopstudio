@@ -4,7 +4,7 @@
  * decifrado dentro do servidor. Nunca volta em claro para o navegador.
  */
 
-export type KeyProvider = "gemini" | "json2video" | "elevenlabs" | "kalodata";
+export type KeyProvider = "gemini" | "json2video" | "elevenlabs" | "kalodata" | "apify";
 
 async function aesKey(): Promise<CryptoKey> {
   const raw = process.env["APP_ENCRYPTION_KEY"];

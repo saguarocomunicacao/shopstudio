@@ -101,7 +101,7 @@ export async function iniciarDownload(tenantId: string, rede: Rede, url: string)
   return json.data.id;
 }
 
-export type RunInfo = { status: string; datasetId?: string; custoUsd: number };
+export type RunInfo = { status: string; datasetId?: string | undefined; custoUsd: number };
 
 export async function lerRun(tenantId: string, runId: string): Promise<RunInfo> {
   const res = await apifyFetch(tenantId, `/actor-runs/${runId}`);
