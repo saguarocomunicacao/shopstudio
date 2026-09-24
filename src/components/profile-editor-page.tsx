@@ -138,7 +138,8 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const isNew = !profileId;
   const allowed = isNew ? can("perfis", "criar") : profileId ? can("perfis", "editar", profileId) : false;
 
-  const [tab, setTab] = useState<TabKey>("dados");
+  const tabParam = (useSearch({ strict: false }) as { tab?: string }).tab;
+  const [tab, setTab] = useState<TabKey>(TABS.some((t) => t.key === tabParam) ? (tabParam as TabKey) : "dados");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saved, setSaved] = useState<FormState>(emptyForm);
   const [avatarItems, setAvatarItems] = useState<AvatarItem[]>([]);
