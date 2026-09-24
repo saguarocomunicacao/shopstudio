@@ -100,9 +100,11 @@ export function DraftsPage({ initialJobId }: { initialJobId?: string | undefined
 function DraftThumb({
   job,
   preview,
+  loadingPreview = false,
   onOpen,
 }: {
   job: DbJob;
+  loadingPreview?: boolean;
   preview?: { videoUrl: string | null; thumbnailUrl: string | null } | undefined;
   onOpen: () => void;
 }) {
@@ -110,6 +112,13 @@ function DraftThumb({
   const [generatedPoster, setGeneratedPoster] = useState<string | null>(null);
   const [thumbFailed, setThumbFailed] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
+  useEffect(() => {
+    if (!loadingPreview) return;
+    setLoadTimedOut(false);
+    const t = window.setTimeout(() => setLoadTimedOut(true), 15000);
+    return () => window.clearTimeout(t);
+  }, [loadingPreview]);
   const thumbnailAttempted = useRef(false);
   const qc = useQueryClient();
   const createThumbnailUpload = useServerFn(createDraftThumbnailUpload);
@@ -200,7 +209,7 @@ function DraftThumb({
     <button type="button" onClick={onOpen} className="block w-full overflow-hidden rounded-xl">
       {posterUrl ? (
         <img src={posterUrl} alt={job.title || "Rascunho"} className="aspect-[9/16] w-full bg-black object-cover" />
-      ) : (
+      ) : loadingPreview && !loadTimedOut ? (
         <div className="draft-thumbnail-placeholder aspect-[9/16] w-full">
           <span className="route-loader-mark scale-75" aria-hidden="true">
             <span className="route-loader-ring" />
@@ -208,8 +217,32 @@ function DraftThumb({
           </span>
           <p>Preparando a prévia do vídeo...</p>
         </div>
+      ) : (
+        <NoVideoPlaceholder job={job} />
       )}
     </button>
+  );
+}
+
+function NoVideoPlaceholder({ job }: { job: DbJob }) {
+  const sceneImage = (job.scenes ?? []).find((c) => c.approved && c.image_url)?.image_url ?? (job.scenes ?? []).find((c) => c.image_url)?.image_url;
+  const running = job.status === "gerando_cenas" || job.status === "gerando_video";
+  const message =
+    job.status === "cenas_geradas"
+      ? "Cenas geradas, aguardando geração do vídeo. Abra para revisar e gerar."
+      : running
+        ? `${jobStatusLabel(job)}...`
+        : job.video_path
+          ? "Não foi possível carregar a prévia. Abra para ver o vídeo."
+          : "Ainda sem vídeo. Abra para continuar.";
+  return (
+    <div className="relative aspect-[9/16] w-full">
+      {sceneImage && <img src={sceneImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-60" />}
+      <div className="draft-thumbnail-placeholder relative h-full w-full">
+        {running ? <Loader2 className="size-8 animate-spin text-brand-cyan" /> : <Film className="size-8 text-brand-cyan" />}
+        <p>{message}</p>
+      </div>
+    </div>
   );
 }
 
@@ -419,7 +452,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
                     </div>
                   </section>
                 ) : (
-                  <DraftThumb job={job} preview={previewOf(job.id)} onOpen={abrir} />
+                  <DraftThumb job={job} preview={previewOf(job.id)} loadingPreview={!!job.video_path && previews.isFetching && !previewOf(job.id)} onOpen={abrir} />
                 )}
                 <p className="mt-3 whitespace-pre-wrap break-words text-sm font-bold">{job.title || "Sem título"}</p>
                 <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted-foreground">{relativeTime(job.created_at)}</p>
