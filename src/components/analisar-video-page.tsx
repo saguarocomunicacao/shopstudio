@@ -46,7 +46,7 @@ type Analise = {
 
 type EtapaLog = { etapa: string; em: string; tentativa?: number; motivo?: string; detalhe?: string; erro?: string; definitivo?: boolean };
 
-type RedeMeta = { autor: string | null; views: number | null; likes: number | null; comentarios: number | null; compartilhamentos: number | null; publicado_em: string | null };
+type RedeMeta = { autor: string | null; views: number | null; likes: number | null; comentarios: number | null; compartilhamentos: number | null; salvos?: number | null; publicado_em: string | null };
 
 const BUCKET = "video-analises";
 const ORIGEM_LABEL: Record<Analise["origem"], string> = { arquivo: "Arquivo", youtube: "YouTube", tiktok: "TikTok", instagram: "Instagram" };
@@ -438,6 +438,9 @@ function OrigemBloco({ a, videoUrl, podeEditar, onReanalisar }: { a: Analise; vi
   const log = (a.etapa_log ?? []).filter((l) => l && l.etapa);
   const ocupado = ["analisando", "enviando", "baixando"].includes(a.status);
   const nomeArquivo = a.arquivo_nome || `${a.titulo.replace(/[^\w\s.-]+/g, "").trim().slice(0, 60) || "video"}.${a.mime_type === "video/webm" ? "webm" : a.mime_type === "video/quicktime" ? "mov" : "mp4"}`;
+  const engajamento = m?.views && m.views > 0
+    ? (((m.likes ?? 0) + (m.comentarios ?? 0) + (m.compartilhamentos ?? 0) + (m.salvos ?? 0)) / m.views) * 100
+    : null;
 
   const salvarPergunta = async () => {
     setSalvando(true);
@@ -468,11 +471,12 @@ function OrigemBloco({ a, videoUrl, podeEditar, onReanalisar }: { a: Analise; vi
         </div>
       )}
 
-      {(m?.publicado_em || m?.views != null || m?.likes != null) && (
+      {(m?.publicado_em || m?.views != null || m?.likes != null || m?.salvos != null) && (
         <div className="grid grid-cols-3 gap-3">
-          {([["Views", m?.views], ["Likes", m?.likes], ["Coment.", m?.comentarios], ["Compart.", m?.compartilhamentos]] as const).map(([l, v]) => (
+          {([["Views", m?.views], ["Likes", m?.likes], ["Coment.", m?.comentarios], ["Compart.", m?.compartilhamentos], ...(m?.salvos != null ? [["Salvos", m.salvos] as const] : [])] as const).map(([l, v]) => (
             <div key={l}><p className="text-xs text-muted-foreground">{l}</p><p className="font-display font-semibold">{num(v)}</p></div>
           ))}
+          <div><p className="text-xs text-muted-foreground">Engajamento</p><p className="font-display font-semibold">{engajamento == null ? "—" : `${engajamento.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%`}</p></div>
           <div className="col-span-2"><p className="text-xs text-muted-foreground">Publicado</p><p className="font-display font-semibold">{m?.publicado_em && !Number.isNaN(Date.parse(m.publicado_em)) ? new Date(m.publicado_em).toLocaleDateString("pt-BR") : "—"}</p></div>
         </div>
       )}
@@ -481,7 +485,7 @@ function OrigemBloco({ a, videoUrl, podeEditar, onReanalisar }: { a: Analise; vi
         <p className="text-xs text-muted-foreground">Arquivo</p>
         {a.storage_path ? (
           <>
-            <p className="break-all font-medium">{nomeArquivo}</p>
+            <p className="line-clamp-2 break-all font-medium">{nomeArquivo}</p>
             <p className="text-muted-foreground">{bytesTxt(a.arquivo_bytes)} · {a.duracao ? tempo(a.duracao) : "duração —"}</p>
             <Button
               variant="outline" size="sm" disabled={!videoUrl || baixando}
@@ -656,7 +660,8 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
   return (
     <div className="space-y-6">
       <PageHeader
-        title={<span className="line-clamp-2">{a.titulo}</span>}
+        title={<span className="line-clamp-2 whitespace-normal" title={a.titulo}>{a.titulo}</span>}
+        titleClassName="whitespace-normal"
         description={`${ORIGEM_LABEL[a.origem]} · ${new Date(a.created_at).toLocaleString("pt-BR")}${a.duracao ? ` · ${tempo(a.duracao)}` : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
@@ -746,8 +751,8 @@ function DetalheAnalise({ a, onVoltar, onReanalisar, podeEditar }: { a: Analise;
                     <div key={i} className="flex gap-3 rounded-lg border border-border bg-card p-3">
                       {!!a.storage_path && (
                         img ? (
-                          <button type="button" onClick={() => setLightbox(li)} aria-label={`Ampliar frame da cena ${i + 1}`} className="grid w-[160px] shrink-0 place-items-center self-start overflow-hidden rounded-md bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                            <img src={img} alt={`Frame da cena ${i + 1}`} className="h-auto max-h-[284px] w-full object-contain transition-opacity hover:opacity-90" />
+                          <button type="button" onClick={() => setLightbox(li)} aria-label={`Ampliar frame da cena ${i + 1}`} className="grid max-h-[160px] max-w-[160px] shrink-0 place-items-center self-start overflow-hidden rounded-md bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                            <img src={img} alt={`Frame da cena ${i + 1}`} className="h-auto max-h-[160px] w-auto max-w-[160px] object-contain transition-opacity hover:opacity-90" />
                           </button>
                         ) : (
                           <div className="grid aspect-video w-[160px] shrink-0 place-items-center self-start rounded-md bg-muted"><ImageIcon className="size-4 text-muted-foreground" /></div>
