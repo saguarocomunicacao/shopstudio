@@ -2449,6 +2449,7 @@ export type Database = {
         | "transcricao_audio"
         | "assistente"
         | "analise_video"
+        | "apify_download"
       job_status:
         | "novo"
         | "produto_escolhido"
@@ -2469,6 +2470,7 @@ export type Database = {
         | "token_output"
         | "mil_caracteres"
         | "minuto_audio"
+        | "usd_real"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2606,6 +2608,7 @@ export const Constants = {
         "transcricao_audio",
         "assistente",
         "analise_video",
+        "apify_download",
       ],
       job_status: [
         "novo",
@@ -2628,6 +2631,7 @@ export const Constants = {
         "token_output",
         "mil_caracteres",
         "minuto_audio",
+        "usd_real",
       ],
     },
   },
