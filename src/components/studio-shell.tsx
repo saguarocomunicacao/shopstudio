@@ -15,9 +15,7 @@ import { StudioProvider, useStudio } from "./studio-context";
 import { UpdateGate } from "./update-gate";
 import { SessionExpiredDialog } from "./session-expired-dialog";
 import { MissingKeyDialog, PendingKeysBanner } from "./missing-key-dialog";
-import logoLightAsset from "@/assets/logo-light.png.asset.json";
 import logoDarkAsset from "@/assets/logo-dark.png.asset.json";
-import logoMarkLightAsset from "@/assets/logo-mark-light.png.asset.json";
 import logoMarkDarkAsset from "@/assets/logo-mark-dark.png.asset.json";
 
 type NavItem = readonly [string, string, typeof CircleGauge, ModuleKey | null];
