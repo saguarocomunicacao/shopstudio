@@ -426,3 +426,12 @@
 @keyframes tour-pulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 45%, transparent); } 50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--primary) 0%, transparent); } }
 .tour-target, .tour-live { outline: 2px solid var(--primary); outline-offset: 2px; animation: tour-pulse 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .tour-target, .tour-live { animation: none; } }
+
+/* Scrollbars no tema escuro: trilho preto, barra cinza escuro */
+.dark { color-scheme: dark; }
+.dark * { scrollbar-color: #3a3a40 #000; }
+.dark ::-webkit-scrollbar { width: 10px; height: 10px; }
+.dark ::-webkit-scrollbar-track { background: #000; }
+.dark ::-webkit-scrollbar-corner { background: #000; }
+.dark ::-webkit-scrollbar-thumb { background: #3a3a40; border-radius: 999px; border: 2px solid #000; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #4a4a52; }
