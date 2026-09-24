@@ -2172,19 +2172,24 @@ export type Database = {
       }
       video_analises: {
         Row: {
+          apify_run_id: string | null
           consumo_evento_id: string | null
           created_at: string
           created_by: string | null
           custo_cents: number
+          download_iniciado_em: string | null
           duracao: number | null
           erro: string | null
           frames: Json
           id: string
+          link_url: string | null
           mime_type: string | null
           origem: string
           pergunta: string | null
           profile_id: string
+          rede_meta: Json | null
           resultado: Json | null
+          so_download: boolean
           status: string
           storage_path: string | null
           tenant_id: string
@@ -2193,19 +2198,24 @@ export type Database = {
           youtube_url: string | null
         }
         Insert: {
+          apify_run_id?: string | null
           consumo_evento_id?: string | null
           created_at?: string
           created_by?: string | null
           custo_cents?: number
+          download_iniciado_em?: string | null
           duracao?: number | null
           erro?: string | null
           frames?: Json
           id?: string
+          link_url?: string | null
           mime_type?: string | null
           origem: string
           pergunta?: string | null
           profile_id: string
+          rede_meta?: Json | null
           resultado?: Json | null
+          so_download?: boolean
           status?: string
           storage_path?: string | null
           tenant_id: string
@@ -2214,19 +2224,24 @@ export type Database = {
           youtube_url?: string | null
         }
         Update: {
+          apify_run_id?: string | null
           consumo_evento_id?: string | null
           created_at?: string
           created_by?: string | null
           custo_cents?: number
+          download_iniciado_em?: string | null
           duracao?: number | null
           erro?: string | null
           frames?: Json
           id?: string
+          link_url?: string | null
           mime_type?: string | null
           origem?: string
           pergunta?: string | null
           profile_id?: string
+          rede_meta?: Json | null
           resultado?: Json | null
+          so_download?: boolean
           status?: string
           storage_path?: string | null
           tenant_id?: string
