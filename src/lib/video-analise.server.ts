@@ -26,15 +26,34 @@ const RESPONSE_SCHEMA = obj({
   duracao_segundos: N,
 });
 
-class ErroAmigavel extends Error {}
+class ErroAmigavel extends Error {
+  detalhe?: string;
+  constructor(msg: string, detalhe?: string) {
+    super(msg);
+    this.detalhe = detalhe;
+  }
+}
 
-async function enviarParaGemini(key: string, bytes: ArrayBuffer, mime: string): Promise<string> {
+const PARTE = 8 * 1024 * 1024; // múltiplo de 256 KB, exigido pelo upload resumable
+
+type ArquivoGemini = { name: string; uri: string; state: string };
+
+/**
+ * Envia o vídeo do storage para a Files API em partes de 8 MB (upload resumable).
+ * Cada parte é lida do storage por Range: nunca o arquivo inteiro na memória.
+ */
+async function enviarParaGeminiPorPartes(key: string, signedUrl: string, mime: string): Promise<ArquivoGemini & { bytes: number }> {
+  const probe = await fetch(signedUrl, { headers: { Range: "bytes=0-0" } });
+  const total = Number((probe.headers.get("content-range") ?? "").split("/")[1] ?? 0);
+  await probe.body?.cancel().catch(() => null);
+  if (!total) throw new ErroAmigavel("O arquivo do vídeo não foi encontrado. Envie de novo.", `probe ${probe.status} sem content-range`);
+
   const start = await fetch(`https://generativelanguage.googleapis.com/upload/v1beta/files?key=${key}`, {
     method: "POST",
     headers: {
       "X-Goog-Upload-Protocol": "resumable",
       "X-Goog-Upload-Command": "start",
-      "X-Goog-Upload-Header-Content-Length": String(bytes.byteLength),
+      "X-Goog-Upload-Header-Content-Length": String(total),
       "X-Goog-Upload-Header-Content-Type": mime,
       "Content-Type": "application/json",
     },
@@ -42,27 +61,47 @@ async function enviarParaGemini(key: string, bytes: ArrayBuffer, mime: string): 
   });
   const uploadUrl = start.headers.get("x-goog-upload-url");
   if (!start.ok || !uploadUrl) {
-    console.error("[analise] upload start", start.status, (await start.text()).slice(0, 300));
-    throw new ErroAmigavel("Não foi possível enviar o vídeo para análise.");
+    const d = (await start.text().catch(() => "")).slice(0, 300);
+    console.error("[analise] upload start", start.status, d);
+    throw new ErroAmigavel("Não foi possível enviar o vídeo para análise.", `upload start ${start.status} ${d}`);
   }
-  const up = await fetch(uploadUrl, {
-    method: "POST",
-    headers: { "X-Goog-Upload-Offset": "0", "X-Goog-Upload-Command": "upload, finalize" },
-    body: bytes,
-  });
-  const info = (await up.json().catch(() => ({}))) as { file?: { name?: string; uri?: string; state?: string } };
-  if (!up.ok || !info.file?.uri) {
-    console.error("[analise] upload", up.status, JSON.stringify(info).slice(0, 300));
-    throw new ErroAmigavel("Não foi possível enviar o vídeo para análise.");
+
+  let info: { file?: { name?: string; uri?: string; state?: string } } = {};
+  for (let offset = 0; offset < total; offset += PARTE) {
+    const fim = Math.min(offset + PARTE, total) - 1;
+    const parte = await fetch(signedUrl, { headers: { Range: `bytes=${offset}-${fim}` } });
+    if (parte.status !== 206 && !(offset === 0 && fim === total - 1 && parte.ok)) {
+      await parte.body?.cancel().catch(() => null);
+      throw new ErroAmigavel("Não foi possível ler o arquivo do vídeo.", `range ${offset}-${fim} status ${parte.status}`);
+    }
+    const buf = await parte.arrayBuffer();
+    const ultima = fim === total - 1;
+    const up = await fetch(uploadUrl, {
+      method: "POST",
+      headers: {
+        "X-Goog-Upload-Offset": String(offset),
+        "X-Goog-Upload-Command": ultima ? "upload, finalize" : "upload",
+        "Content-Length": String(buf.byteLength),
+      },
+      body: buf,
+    });
+    if (!up.ok) {
+      const d = (await up.text().catch(() => "")).slice(0, 300);
+      console.error("[analise] upload parte", offset, up.status, d);
+      throw new ErroAmigavel("Não foi possível enviar o vídeo para análise.", `upload parte ${offset} ${up.status} ${d}`);
+    }
+    if (ultima) info = (await up.json().catch(() => ({}))) as typeof info;
+    else await up.body?.cancel().catch(() => null);
   }
-  let state = info.file.state;
-  for (let i = 0; i < 60 && state === "PROCESSING"; i++) {
-    await new Promise((r) => setTimeout(r, 2000));
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${info.file.name}?key=${key}`);
-    state = ((await r.json().catch(() => ({}))) as { state?: string }).state;
-  }
-  if (state !== "ACTIVE") throw new ErroAmigavel("O vídeo não pôde ser processado. Tente outro arquivo.");
-  return info.file.uri;
+  if (!info.file?.uri || !info.file.name) throw new ErroAmigavel("Não foi possível enviar o vídeo para análise.", `finalize sem file: ${JSON.stringify(info).slice(0, 300)}`);
+  return { name: info.file.name, uri: info.file.uri, state: info.file.state ?? "PROCESSING", bytes: total };
+}
+
+async function estadoArquivoGemini(key: string, name: string): Promise<{ state: string; erro?: string }> {
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/${name}?key=${key}`);
+  const j = (await r.json().catch(() => ({}))) as { state?: string; error?: { message?: string } };
+  if (!r.ok) return { state: "UNKNOWN", erro: `${r.status} ${JSON.stringify(j).slice(0, 300)}` };
+  return { state: j.state ?? "UNKNOWN", ...(j.error?.message ? { erro: j.error.message } : {}) };
 }
 
 async function gerar(key: string, fileUri: string, mime: string | null, prompt: string) {
