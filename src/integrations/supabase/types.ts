@@ -1333,6 +1333,190 @@ export type Database = {
         }
         Relationships: []
       }
+      pesquisas_tiktok: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custo_usd: number
+          erro: string | null
+          id: string
+          iniciado_em: string | null
+          insights: string | null
+          insights_em: string | null
+          n_videos: number
+          profile_id: string
+          qtd: number
+          run_id: string | null
+          status: string
+          tenant_id: string
+          termo: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custo_usd?: number
+          erro?: string | null
+          id?: string
+          iniciado_em?: string | null
+          insights?: string | null
+          insights_em?: string | null
+          n_videos?: number
+          profile_id: string
+          qtd?: number
+          run_id?: string | null
+          status?: string
+          tenant_id: string
+          termo: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custo_usd?: number
+          erro?: string | null
+          id?: string
+          iniciado_em?: string | null
+          insights?: string | null
+          insights_em?: string | null
+          n_videos?: number
+          profile_id?: string
+          qtd?: number
+          run_id?: string | null
+          status?: string
+          tenant_id?: string
+          termo?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pesquisas_tiktok_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesquisas_tiktok_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pesquisas_tiktok_videos: {
+        Row: {
+          anuncio: boolean
+          autor_handle: string | null
+          autor_nome: string | null
+          autor_seguidores: number | null
+          capa_path: string | null
+          comentarios: number | null
+          compartilhamentos: number | null
+          created_at: string
+          duracao: number | null
+          fotos: boolean
+          hashtags: string[]
+          id: string
+          idioma_pt: boolean
+          legenda: string | null
+          likes: number | null
+          pesquisa_id: string
+          posicao: number
+          profile_id: string
+          publicado_em: string | null
+          reposts: number | null
+          salvos: number | null
+          tenant_id: string
+          tiktok_shop: boolean
+          tiktok_video_id: string
+          url: string
+          views: number | null
+        }
+        Insert: {
+          anuncio?: boolean
+          autor_handle?: string | null
+          autor_nome?: string | null
+          autor_seguidores?: number | null
+          capa_path?: string | null
+          comentarios?: number | null
+          compartilhamentos?: number | null
+          created_at?: string
+          duracao?: number | null
+          fotos?: boolean
+          hashtags?: string[]
+          id?: string
+          idioma_pt?: boolean
+          legenda?: string | null
+          likes?: number | null
+          pesquisa_id: string
+          posicao?: number
+          profile_id: string
+          publicado_em?: string | null
+          reposts?: number | null
+          salvos?: number | null
+          tenant_id: string
+          tiktok_shop?: boolean
+          tiktok_video_id: string
+          url: string
+          views?: number | null
+        }
+        Update: {
+          anuncio?: boolean
+          autor_handle?: string | null
+          autor_nome?: string | null
+          autor_seguidores?: number | null
+          capa_path?: string | null
+          comentarios?: number | null
+          compartilhamentos?: number | null
+          created_at?: string
+          duracao?: number | null
+          fotos?: boolean
+          hashtags?: string[]
+          id?: string
+          idioma_pt?: boolean
+          legenda?: string | null
+          likes?: number | null
+          pesquisa_id?: string
+          posicao?: number
+          profile_id?: string
+          publicado_em?: string | null
+          reposts?: number | null
+          salvos?: number | null
+          tenant_id?: string
+          tiktok_shop?: boolean
+          tiktok_video_id?: string
+          url?: string
+          views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pesquisas_tiktok_videos_pesquisa_id_fkey"
+            columns: ["pesquisa_id"]
+            isOneToOne: false
+            referencedRelation: "pesquisas_tiktok"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesquisas_tiktok_videos_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pesquisas_tiktok_videos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_action_prices: {
         Row: {
           action_type: string
@@ -2688,6 +2872,7 @@ export type Database = {
           origem: string
           passo_lock: string | null
           pergunta: string | null
+          pesquisa_id: string | null
           profile_id: string
           rede_meta: Json | null
           referencia_id: string | null
@@ -2725,6 +2910,7 @@ export type Database = {
           origem: string
           passo_lock?: string | null
           pergunta?: string | null
+          pesquisa_id?: string | null
           profile_id: string
           rede_meta?: Json | null
           referencia_id?: string | null
@@ -2762,6 +2948,7 @@ export type Database = {
           origem?: string
           passo_lock?: string | null
           pergunta?: string | null
+          pesquisa_id?: string | null
           profile_id?: string
           rede_meta?: Json | null
           referencia_id?: string | null
@@ -2781,6 +2968,13 @@ export type Database = {
             columns: ["consumo_evento_id"]
             isOneToOne: false
             referencedRelation: "consumo_eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_analises_pesquisa_id_fkey"
+            columns: ["pesquisa_id"]
+            isOneToOne: false
+            referencedRelation: "pesquisas_tiktok"
             referencedColumns: ["id"]
           },
           {

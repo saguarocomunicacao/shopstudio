@@ -42,6 +42,8 @@ import { Route as AuthenticatedAppAnalisesIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedAppAnalisesIdRouteImport } from './routes/_authenticated/app/analises.$id'
 import { Route as AuthenticatedAppPerfisIndexRouteImport } from './routes/_authenticated/app/perfis.index'
 import { Route as AuthenticatedAppPerfisNovoRouteImport } from './routes/_authenticated/app/perfis.novo'
+import { Route as AuthenticatedAppPesquisaIndexRouteImport } from './routes/_authenticated/app/pesquisa.index'
+import { Route as AuthenticatedAppPesquisaIdRouteImport } from './routes/_authenticated/app/pesquisa.$id'
 import { Route as AuthenticatedAppPlanosIndexRouteImport } from './routes/_authenticated/app/planos.index'
 import { Route as AuthenticatedAppPlanosPlanIdRouteImport } from './routes/_authenticated/app/planos.$planId'
 import { Route as AuthenticatedAppReferenciasIndexRouteImport } from './routes/_authenticated/app/referencias.index'
@@ -233,6 +235,18 @@ const AuthenticatedAppPerfisNovoRoute =
     path: '/app/perfis/novo',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAppPesquisaIndexRoute =
+  AuthenticatedAppPesquisaIndexRouteImport.update({
+    id: '/app/pesquisa/',
+    path: '/app/pesquisa/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAppPesquisaIdRoute =
+  AuthenticatedAppPesquisaIdRouteImport.update({
+    id: '/app/pesquisa/$id',
+    path: '/app/pesquisa/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAppPlanosIndexRoute =
   AuthenticatedAppPlanosIndexRouteImport.update({
     id: '/app/planos/',
@@ -335,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/analises/$id': typeof AuthenticatedAppAnalisesIdRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
+  '/app/pesquisa/$id': typeof AuthenticatedAppPesquisaIdRoute
   '/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
   '/app/referencias/$id': typeof AuthenticatedAppReferenciasIdRoute
   '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
@@ -346,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/app/analises/': typeof AuthenticatedAppAnalisesIndexRoute
   '/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
+  '/app/pesquisa/': typeof AuthenticatedAppPesquisaIndexRoute
   '/app/planos/': typeof AuthenticatedAppPlanosIndexRoute
   '/app/referencias/': typeof AuthenticatedAppReferenciasIndexRoute
   '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
@@ -381,6 +397,7 @@ export interface FileRoutesByTo {
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/analises/$id': typeof AuthenticatedAppAnalisesIdRoute
   '/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
+  '/app/pesquisa/$id': typeof AuthenticatedAppPesquisaIdRoute
   '/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
   '/app/referencias/$id': typeof AuthenticatedAppReferenciasIdRoute
   '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
@@ -392,6 +409,7 @@ export interface FileRoutesByTo {
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/app/analises': typeof AuthenticatedAppAnalisesIndexRoute
   '/app/perfis': typeof AuthenticatedAppPerfisIndexRoute
+  '/app/pesquisa': typeof AuthenticatedAppPesquisaIndexRoute
   '/app/planos': typeof AuthenticatedAppPlanosIndexRoute
   '/app/referencias': typeof AuthenticatedAppReferenciasIndexRoute
   '/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
@@ -429,6 +447,7 @@ export interface FileRoutesById {
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/analises/$id': typeof AuthenticatedAppAnalisesIdRoute
   '/_authenticated/app/perfis/novo': typeof AuthenticatedAppPerfisNovoRoute
+  '/_authenticated/app/pesquisa/$id': typeof AuthenticatedAppPesquisaIdRoute
   '/_authenticated/app/planos/$planId': typeof AuthenticatedAppPlanosPlanIdRoute
   '/_authenticated/app/referencias/$id': typeof AuthenticatedAppReferenciasIdRoute
   '/api/public/apify-webhook/$token': typeof ApiPublicApifyWebhookTokenRoute
@@ -440,6 +459,7 @@ export interface FileRoutesById {
   '/api/public/json2video-webhook/$token': typeof ApiPublicJson2videoWebhookTokenRoute
   '/_authenticated/app/analises/': typeof AuthenticatedAppAnalisesIndexRoute
   '/_authenticated/app/perfis/': typeof AuthenticatedAppPerfisIndexRoute
+  '/_authenticated/app/pesquisa/': typeof AuthenticatedAppPesquisaIndexRoute
   '/_authenticated/app/planos/': typeof AuthenticatedAppPlanosIndexRoute
   '/_authenticated/app/referencias/': typeof AuthenticatedAppReferenciasIndexRoute
   '/_authenticated/app/perfis/$id/editar': typeof AuthenticatedAppPerfisIdEditarRoute
@@ -477,6 +497,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/app/analises/$id'
     | '/app/perfis/novo'
+    | '/app/pesquisa/$id'
     | '/app/planos/$planId'
     | '/app/referencias/$id'
     | '/api/public/apify-webhook/$token'
@@ -488,6 +509,7 @@ export interface FileRouteTypes {
     | '/api/public/json2video-webhook/$token'
     | '/app/analises/'
     | '/app/perfis/'
+    | '/app/pesquisa/'
     | '/app/planos/'
     | '/app/referencias/'
     | '/app/perfis/$id/editar'
@@ -523,6 +545,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/analises/$id'
     | '/app/perfis/novo'
+    | '/app/pesquisa/$id'
     | '/app/planos/$planId'
     | '/app/referencias/$id'
     | '/api/public/apify-webhook/$token'
@@ -534,6 +557,7 @@ export interface FileRouteTypes {
     | '/api/public/json2video-webhook/$token'
     | '/app/analises'
     | '/app/perfis'
+    | '/app/pesquisa'
     | '/app/planos'
     | '/app/referencias'
     | '/app/perfis/$id/editar'
@@ -570,6 +594,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/'
     | '/_authenticated/app/analises/$id'
     | '/_authenticated/app/perfis/novo'
+    | '/_authenticated/app/pesquisa/$id'
     | '/_authenticated/app/planos/$planId'
     | '/_authenticated/app/referencias/$id'
     | '/api/public/apify-webhook/$token'
@@ -581,6 +606,7 @@ export interface FileRouteTypes {
     | '/api/public/json2video-webhook/$token'
     | '/_authenticated/app/analises/'
     | '/_authenticated/app/perfis/'
+    | '/_authenticated/app/pesquisa/'
     | '/_authenticated/app/planos/'
     | '/_authenticated/app/referencias/'
     | '/_authenticated/app/perfis/$id/editar'
@@ -840,6 +866,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppPerfisNovoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/app/pesquisa/': {
+      id: '/_authenticated/app/pesquisa/'
+      path: '/app/pesquisa'
+      fullPath: '/app/pesquisa/'
+      preLoaderRoute: typeof AuthenticatedAppPesquisaIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/app/pesquisa/$id': {
+      id: '/_authenticated/app/pesquisa/$id'
+      path: '/app/pesquisa/$id'
+      fullPath: '/app/pesquisa/$id'
+      preLoaderRoute: typeof AuthenticatedAppPesquisaIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/app/planos/': {
       id: '/_authenticated/app/planos/'
       path: '/app/planos'
@@ -948,10 +988,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppAnalisesIdRoute: typeof AuthenticatedAppAnalisesIdRoute
   AuthenticatedAppPerfisNovoRoute: typeof AuthenticatedAppPerfisNovoRoute
+  AuthenticatedAppPesquisaIdRoute: typeof AuthenticatedAppPesquisaIdRoute
   AuthenticatedAppPlanosPlanIdRoute: typeof AuthenticatedAppPlanosPlanIdRoute
   AuthenticatedAppReferenciasIdRoute: typeof AuthenticatedAppReferenciasIdRoute
   AuthenticatedAppAnalisesIndexRoute: typeof AuthenticatedAppAnalisesIndexRoute
   AuthenticatedAppPerfisIndexRoute: typeof AuthenticatedAppPerfisIndexRoute
+  AuthenticatedAppPesquisaIndexRoute: typeof AuthenticatedAppPesquisaIndexRoute
   AuthenticatedAppPlanosIndexRoute: typeof AuthenticatedAppPlanosIndexRoute
   AuthenticatedAppReferenciasIndexRoute: typeof AuthenticatedAppReferenciasIndexRoute
   AuthenticatedAppPerfisIdEditarRoute: typeof AuthenticatedAppPerfisIdEditarRoute
@@ -978,10 +1020,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppAnalisesIdRoute: AuthenticatedAppAnalisesIdRoute,
   AuthenticatedAppPerfisNovoRoute: AuthenticatedAppPerfisNovoRoute,
+  AuthenticatedAppPesquisaIdRoute: AuthenticatedAppPesquisaIdRoute,
   AuthenticatedAppPlanosPlanIdRoute: AuthenticatedAppPlanosPlanIdRoute,
   AuthenticatedAppReferenciasIdRoute: AuthenticatedAppReferenciasIdRoute,
   AuthenticatedAppAnalisesIndexRoute: AuthenticatedAppAnalisesIndexRoute,
   AuthenticatedAppPerfisIndexRoute: AuthenticatedAppPerfisIndexRoute,
+  AuthenticatedAppPesquisaIndexRoute: AuthenticatedAppPesquisaIndexRoute,
   AuthenticatedAppPlanosIndexRoute: AuthenticatedAppPlanosIndexRoute,
   AuthenticatedAppReferenciasIndexRoute: AuthenticatedAppReferenciasIndexRoute,
   AuthenticatedAppPerfisIdEditarRoute: AuthenticatedAppPerfisIdEditarRoute,

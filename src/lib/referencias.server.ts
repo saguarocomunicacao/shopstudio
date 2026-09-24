@@ -200,7 +200,7 @@ export async function promoverFila(tenantId?: string) {
   const { comecarDownload } = await import("./video-analise.server");
   for (const t of tenants) {
     const { count } = await db.from("video_analises").select("id", { count: "exact", head: true })
-      .eq("tenant_id", t).not("referencia_id", "is", null).in("status", ["baixando", "analisando"]);
+      .eq("tenant_id", t).or("referencia_id.not.is.null,pesquisa_id.not.is.null").in("status", ["baixando", "analisando"]);
     let vagas = LIMITE_PARALELO - (count ?? 0);
     for (const i of itens.filter((x) => x.tenant_id === t)) {
       if (vagas <= 0) break;
@@ -282,6 +282,16 @@ export async function gerarInsights(refId: string, dados: Any[], meuPerfil: { no
   const { data: r } = await db.from("referencia_perfis").select("id, tenant_id, profile_id, handle").eq("id", refId).maybeSingle();
   const ref = r as Any;
   if (!ref) throw new Error("Referência não encontrada.");
+  const json = await gerarInsightsJson({ tenantId: ref.tenant_id, profileId: ref.profile_id, rotulo: ref.handle, dados, meuPerfil, meta: { tipo: "insights_referencia", referencia_id: refId, handle: ref.handle } });
+  await salvar(refId, { insights: json, insights_em: new Date().toISOString() });
+  return json;
+}
+
+/** Núcleo compartilhado (Perfis de referência e Pesquisar): mesmo prompt, mesmo formato. */
+export async function gerarInsightsJson(opts: { tenantId: string; profileId: string; rotulo: string; dados: Any[]; meuPerfil: { nome: string; nicho: string }; meta: Record<string, unknown>; contextoExtra?: string }) {
+  const db = await admin();
+  const { dados, meuPerfil, meta } = opts;
+  const ref = { tenant_id: opts.tenantId, profile_id: opts.profileId, handle: opts.rotulo };
   const views = dados.map((d) => Number(d.metricas?.views ?? 0)).sort((a, b) => a - b);
   const mediana = views.length ? (views.length % 2 ? views[(views.length - 1) / 2]! : Math.round((views[views.length / 2 - 1]! + views[views.length / 2]!) / 2)) : 0;
   const { resolvePrompt, renderPrompt } = await import("./prompts.server");
@@ -296,13 +306,12 @@ Sempre que citar um vídeo no texto, use o título (legenda) e nunca o número d
   const prompt = renderPrompt(base, {
     handle: ref.handle, mediana_views: mediana.toLocaleString("pt-BR"), meu_perfil: meuPerfil.nome, nicho: meuPerfil.nicho || "geral",
     dados: JSON.stringify(dados),
-  }) + regrasJson;
+  }) + (opts.contextoExtra ?? "") + regrasJson;
   const { resolveApiKey } = await import("./api-keys.server");
   const key = await resolveApiKey(ref.tenant_id, "gemini");
   const { GEMINI_MODEL } = await import("./video-analise.server");
   const { insightsSchema, insightsGeminiSchema, semTravessao } = await import("./insights-schema");
   const { recordConsumo } = await import("./consumo.server");
-  const meta = { tipo: "insights_referencia", referencia_id: refId, handle: ref.handle };
   const ids = new Set(dados.map((d) => String(d.video)));
 
   for (let tentativa = 1; tentativa <= 2; tentativa++) {
@@ -343,9 +352,7 @@ Sempre que citar um vídeo no texto, use o título (legenda) e nunca o número d
       recomendacoes: v.recomendacoes.map((r) => ({ titulo: semTravessao(r.titulo), explicacao: semTravessao(r.explicacao) })),
       comparativo: v.comparativo.map((c) => ({ aspecto: semTravessao(c.aspecto), melhores: semTravessao(c.melhores), piores: semTravessao(c.piores) })),
     };
-    const json = JSON.stringify(limpo);
-    await salvar(refId, { insights: json, insights_em: new Date().toISOString() });
-    return json;
+    return JSON.stringify(limpo);
   }
   throw new Error("A IA não devolveu os insights no formato esperado. Tente novamente.");
 }

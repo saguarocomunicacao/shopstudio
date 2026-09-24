@@ -15,6 +15,9 @@ import { useCategories, type DbProduct } from "@/lib/content";
 import { ProductDataTable } from "./product-data-table";
 import { SearchCostHistory } from "./search-cost-history";
 import { useStudio } from "./studio-context";
+import { Link } from "@tanstack/react-router";
+
+const nomeCurto = (n: string) => n.replace(/[\[\(].*?[\]\)]/g, " ").replace(/[^\p{L}\d\s]/gu, " ").split(/\s+/).filter(Boolean).slice(0, 3).join(" ");
 import { actionError } from "@/lib/api-keys";
 
 type Found = {
@@ -427,8 +430,11 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
               items={results.map((item) => ({ ...item, id: `${item.source}:${item.externalId}`, niche: item.category }))}
               renderActions={(item) => {
                 const already = saved.has(`${item.source}:${item.externalId}`);
-                if (!canCreate) return null;
-                return already ? (
+                const pesquisar = (
+                  <Link to="/app/pesquisa" search={{ q: nomeCurto(item.name) }} title="Pesquisar no TikTok" aria-label="Pesquisar no TikTok" className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground"><Search className="size-4" /></Link>
+                );
+                if (!canCreate) return pesquisar;
+                return <div className="flex items-center gap-1.5">{pesquisar}{already ? (
                   <span className="shrink-0 text-[11px] font-bold text-muted-foreground">No catálogo</span>
                 ) : (
                   <Checkbox
@@ -436,7 +442,7 @@ export function DiscoverPanel({ products }: { products: DbProduct[] }) {
                     checked={!!selected[item.externalId]}
                     onCheckedChange={(value) => setSelected((current) => ({ ...current, [item.externalId]: !!value }))}
                   />
-                );
+                )}</div>;
               }}
             />
           </div>

@@ -458,6 +458,64 @@ export function buildToolsExtra(ctx: Ctx) {
       },
     }),
 
+    listar_pesquisas: tool({
+      description: "Pesquisas do TikTok (Inteligência > Pesquisar) do perfil: termo, tipo (hashtag/palavra), data, nº de vídeos, status e custo em US$.",
+      inputSchema: z.object({ profile_id: perfilArg }),
+      execute: async ({ profile_id }) => {
+        const p = pid(ctx, profile_id);
+        if (!p) return { erro: "Selecione um perfil." };
+        if (!ctx.access.isBackoffice && !ctx.access.can("metricas", "visualizar", p)) return semAcesso("Pesquisar");
+        const { data } = await db.from("pesquisas_tiktok").select("id, tipo, termo, status, erro, n_videos, custo_usd, created_at").eq("profile_id", p).order("created_at", { ascending: false }).limit(30);
+        return { pesquisas: ((data ?? []) as Any[]).map((r) => ({ pesquisa_id: r.id, termo: r.tipo === "hashtag" ? `#${r.termo}` : r.termo, tipo: r.tipo, data: quando(r.created_at), videos: r.n_videos, status: r.status, erro: r.erro, custo_usd: Number(r.custo_usd ?? 0), link: `/app/pesquisa/${r.id}` })), link: "/app/pesquisa" };
+      },
+    }),
+
+    detalhe_pesquisa: tool({
+      description: "Resultado de uma pesquisa do TikTok: views médias, engajamento médio, duração média (sem anúncios; carrosséis fora da duração), hashtags usadas junto, @ que mais aparecem, os vídeos mais vistos e as análises feitas. Valores já prontos: copie, não calcule.",
+      inputSchema: z.object({ pesquisa_id: z.string().uuid(), so_portugues: z.boolean().nullable().describe("Padrão true: esconde vídeos que provavelmente são de outro idioma.") }),
+      execute: async ({ pesquisa_id, so_portugues }) => {
+        const { data: pq } = await db.from("pesquisas_tiktok").select("*").eq("id", pesquisa_id).maybeSingle();
+        if (!pq) return { erro: "Pesquisa não encontrada." };
+        const { lerDadosPesquisa } = await import("./pesquisa-dados");
+        const { resumoPesquisa, engajamentoVideo } = await import("./pesquisa-calc");
+        const d = await lerDadosPesquisa(db, pesquisa_id);
+        const vs = d.videos.filter((v) => so_portugues === false || v.idioma_pt);
+        const r = resumoPesquisa(vs, pq.termo);
+        const f1 = (x: number | null) => (x == null ? null : x.toLocaleString("pt-BR", { maximumFractionDigits: 1 }));
+        return {
+          termo: pq.tipo === "hashtag" ? `#${pq.termo}` : pq.termo, status: pq.status, videos: vs.length,
+          views_medias: r.viewsMedia?.toLocaleString("pt-BR") ?? null, engajamento_medio: r.engMedio == null ? null : `${f1(r.engMedio)}%`,
+          duracao_media: r.duracaoMedia == null ? null : `${Math.round(r.duracaoMedia)} s`, anuncios_fora_das_medias: r.anuncios, carrosseis_fotos: r.fotos,
+          hashtags_junto: r.hashtags.slice(0, 10).map((h) => `#${h.nome} (${h.qtd})`), perfis_que_mais_aparecem: r.autores.map((a) => `@${a.nome} (${a.qtd})`),
+          mais_vistos: [...vs].filter((v) => !v.anuncio).sort((a, b) => Number(b.views ?? 0) - Number(a.views ?? 0)).slice(0, 10).map((v) => ({ legenda: (v.legenda ?? "").slice(0, 120), perfil_tiktok: v.autor_handle ? `@${v.autor_handle}` : null, views: Number(v.views ?? 0).toLocaleString("pt-BR"), engajamento: engajamentoVideo(v) == null ? null : `${f1(engajamentoVideo(v))}%`, publicado: quando(v.publicado_em), fotos: v.fotos, link_tiktok: v.url })),
+          analises: { prontas: d.analises.filter((a) => a.status === "pronto").length, em_andamento: d.analises.filter((a) => ["na_fila", "baixando", "analisando", "enviando"].includes(a.status)).length },
+          ganchos_analisados: d.analises.filter((a) => a.status === "pronto" && a.resultado?.gancho?.texto).slice(0, 8).map((a) => a.resultado.gancho.texto),
+          link: `/app/pesquisa/${pesquisa_id}`,
+        };
+      },
+    }),
+
+    buscar_criadores: tool({
+      description: "Criadores do TikTok Shop BR da aba Produtos > Criadores (ranking do Kalodata), lidos da última busca salva (sem custo novo). Filtros opcionais aplicados sobre ela. Valores já prontos: copie. Para uma busca nova, oriente a usar a aba Criadores.",
+      inputSchema: z.object({ profile_id: perfilArg, seguidores_min: z.number().nullable(), seguidores_max: z.number().nullable(), so_video_50: z.boolean().nullable().describe("Padrão true: só quem tem 50%+ da receita em vídeo.") }),
+      execute: async ({ profile_id, seguidores_min, seguidores_max, so_video_50 }) => {
+        const p = pid(ctx, profile_id);
+        if (!p) return { erro: "Selecione um perfil." };
+        if (!ctx.access.isBackoffice && !ctx.access.can("produtos", "visualizar", p)) return semAcesso("Criadores");
+        const { data: b } = await db.from("buscas_produto").select("filtros, resultados, created_at").eq("profile_id", p).eq("origem", "criadores").order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (!b) return { erro: "Nenhuma busca de criadores ainda. Faça uma na aba Produtos > Criadores.", link: "/app/produtos?tab=criadores" };
+        const { data: refs } = await db.from("referencia_perfis").select("handle").eq("profile_id", p);
+        const ja = new Set(((refs ?? []) as Any[]).map((r) => String(r.handle).toLowerCase()));
+        const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+        const lista = ((b.resultados ?? []) as Any[]).filter((c) => (seguidores_min == null || c.seguidores >= seguidores_min) && (seguidores_max == null || c.seguidores <= seguidores_max) && (so_video_50 === false || (c.pctVideo ?? 0) >= 50));
+        return {
+          busca_em: quando(b.created_at), periodo: (b.filtros as Any)?.dateRange === "last7Day" ? "7 dias" : "30 dias", total: lista.length,
+          criadores: lista.slice(0, 20).map((c) => ({ perfil_tiktok: `@${c.handle}`, nome: c.nome, seguidores: Number(c.seguidores).toLocaleString("pt-BR"), receita_video: brl(c.receitaVideo), pct_video: c.pctVideo == null ? null : `${c.pctVideo}%`, receita_total: brl(c.receita), vendas: Number(c.vendas).toLocaleString("pt-BR"), crescimento: c.crescimento == null ? null : `${c.crescimento}%`, ja_acompanhado: ja.has(c.handle) })),
+          link: "/app/produtos?tab=criadores",
+        };
+      },
+    }),
+
     listar_referencias: tool({
       description: "Perfis de referência (Inteligência) do perfil: @, seguidores e variação, vídeos coletados, vídeos analisados, última coleta, status, se é 'meu perfil' e se é fonte do roteirista.",
       inputSchema: z.object({ profile_id: perfilArg }),
@@ -634,6 +692,9 @@ export const TOOL_LABELS_EXTRA: Record<string, string> = {
   resumo_metricas: "Consultando métricas...",
   listar_referencias: "Consultando perfis de referência...",
   radar_alertas: "Consultando o radar...",
+  listar_pesquisas: "Consultando pesquisas...",
+  detalhe_pesquisa: "Consultando pesquisa...",
+  buscar_criadores: "Consultando criadores...",
   detalhe_referencia: "Consultando perfil de referência...",
   metricas_video: "Consultando métricas do vídeo...",
   configuracoes_sistema: "Consultando configurações...",

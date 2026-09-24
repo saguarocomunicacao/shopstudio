@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronDown, ExternalLink, Trophy } from "lucide-react";
 import { brl } from "@/lib/custo";
 import type { ChampionRef } from "@/lib/content";
+import { AddReferenciaButton } from "./add-referencia-button";
 
 const MAX_VISIVEL = 5;
 
@@ -61,6 +62,7 @@ export function JobChampionRefs({ refs }: { refs?: ChampionRef[] | null | undefi
                   {ref.creator ? ` · @${ref.creator}` : ""}
                 </p>
               </div>
+              {ref.creator ? <AddReferenciaButton handle={ref.creator} compacto /> : null}
               {ref.url ? (
                 <a
                   href={ref.url}

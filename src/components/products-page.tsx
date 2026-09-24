@@ -18,6 +18,7 @@ import { enrichProductDetails } from "@/lib/discover.functions";
 import { generateProductDescription } from "@/lib/product-description.functions";
 import { DiscoverPanel } from "./discover-panel";
 import { RisingRadarPanel } from "./rising-radar-panel";
+import { CriadoresPanel } from "./criadores-panel";
 import { ProductDataTable } from "./product-data-table";
 import { ProfileGate } from "./profile-gate";
 import { useStudio } from "./studio-context";
@@ -117,8 +118,8 @@ function ProductsContent() {
 
   const [confirm, setConfirm] = useState<DbProduct | null>(null);
   const tabParam = (useSearch({ strict: false }) as { tab?: string }).tab;
-  const [tab, setTab] = useState<"catalogo" | "descobrir" | "ascensao">(tabParam === "descobrir" || tabParam === "ascensao" ? tabParam : "catalogo");
-  useEffect(() => { if (tabParam === "descobrir" || tabParam === "ascensao" || tabParam === "catalogo") setTab(tabParam); }, [tabParam]);
+  const [tab, setTab] = useState<"catalogo" | "descobrir" | "ascensao" | "criadores">(tabParam === "descobrir" || tabParam === "ascensao" || tabParam === "criadores" ? tabParam : "catalogo");
+  useEffect(() => { if (tabParam === "descobrir" || tabParam === "ascensao" || tabParam === "catalogo" || tabParam === "criadores") setTab(tabParam); }, [tabParam]);
   const [useTarget, setUseTarget] = useState<DbProduct | null>(null);
   const [details, setDetails] = useState<DbProduct | null>(null);
   const [refreshingId, setRefreshingId] = useState<string | null>(null);
@@ -268,7 +269,7 @@ function ProductsContent() {
         </div>
       ) : null}
       <div className="mb-4 flex gap-5 border-b border-border" role="tablist">
-        {([["catalogo", "Catálogo"], ["descobrir", "Descobrir"], ["ascensao", "Em ascensão"]] as const).map(([key, label]) => (
+        {([["catalogo", "Catálogo"], ["descobrir", "Descobrir"], ["ascensao", "Em ascensão"], ["criadores", "Criadores"]] as const).map(([key, label]) => (
           <button
             key={key}
             type="button"
@@ -283,6 +284,7 @@ function ProductsContent() {
 
       {tab === "descobrir" && <DiscoverPanel products={products} />}
       {tab === "ascensao" && <RisingRadarPanel products={products} />}
+      {tab === "criadores" && <CriadoresPanel />}
 
       <div className={`panel ${tab === "catalogo" ? "" : "hidden"}`}>
         <ProductDataTable
