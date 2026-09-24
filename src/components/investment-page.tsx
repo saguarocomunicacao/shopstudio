@@ -495,9 +495,37 @@ export function InvestmentPage() {
   if (isLoading || !data) return <p className="text-sm text-muted-foreground">Carregando investimento...</p>;
 
   const baixos = data.carteiras.filter((c) => c.baixo);
+  const consumoMes = data.carteiras.reduce((s, c) => s + c.consumoMesBrl, 0);
+
+  const exportarCsv = () => {
+    const head = ["Fornecedor", "Investido", "Consumido", "Consumo do mes", "Saldo"];
+    const linhas = data.carteiras.map((c) => [
+      c.def.nome,
+      c.aportadoBrl.toFixed(2),
+      c.consumoBrl.toFixed(2),
+      c.consumoMesBrl.toFixed(2),
+      c.saldoBrl === null ? "" : c.saldoBrl.toFixed(2),
+    ]);
+    const csv = [head, ...linhas].map((r) => r.map((v) => `"${v}"`).join(";")).join("\n");
+    const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `investimento-${hoje()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="grid gap-6">
+      <PageHeader
+        title="Investimento"
+        description={`Gasto do mês: ${brl(consumoMes)}`}
+        actions={
+          <Button variant="outline" size="sm" onClick={exportarCsv} disabled={!data.carteiras.length}>
+            <Download className="size-4" /> Exportar CSV
+          </Button>
+        }
+      />
       {isBackoffice && (
         <div className="panel flex flex-wrap items-end gap-3">
           <div className="grid gap-1">
