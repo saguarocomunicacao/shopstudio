@@ -23,7 +23,7 @@ import { actionError } from "@/lib/api-keys";
 const JANELAS = [{ v: 24, l: "24 h" }, { v: 72, l: "3 dias" }, { v: 168, l: "7 dias" }] as const;
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 
-type RadarItem = NonNullable<ReturnType<typeof useRadar>>["itens"][number];
+type RadarItem = { razao: number | null; razaoTexto: string | null; emAltaNicho: boolean };
 function motivoCompleto(i: RadarItem): string {
   return i.razaoTexto || (i.razao != null && i.razao >= 2 ? `${fmt(i.razao)}x a média do @` : i.emAltaNicho ? "Entre os 10% mais vistos do nicho na semana" : "Acima de 80% dos vídeos do @");
 }
