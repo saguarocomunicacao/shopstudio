@@ -75,7 +75,7 @@ function Nav({ compact, close }: { compact?: boolean; close?: () => void }) {
   const wrap = (node: ReactNode, label: string, force = false) => (compact || force ? (
     <Tooltip><TooltipTrigger asChild>{node}</TooltipTrigger><TooltipContent side="right" className="rounded-lg border border-border bg-card px-3 py-1.5 text-[13px] font-normal text-foreground shadow-md">{label}</TooltipContent></Tooltip>
   ) : node);
-  return <TooltipProvider delayDuration={300}><nav className="flex-1 overflow-y-auto px-3 pb-16 pt-2">{visible.map(([group, list], i) => {
+  return <TooltipProvider delayDuration={300}><nav className="sidebar-scroll flex-1 overflow-y-auto px-3 pb-16 pt-2">{visible.map(([group, list], i) => {
     const locked = noProfile && NEEDS_PROFILE.has(group);
     return <div key={group || "top"} className={i > 0 ? "mt-3 border-t border-sidebar-border pt-3" : ""}>{!compact && group && <p className="px-3 pb-1.5 text-xs font-medium text-sidebar-label">{group}</p>}<div className="space-y-0.5">{list.map(([label, to, Icon]) => {
       const inner = <><Icon strokeWidth={1.8} className="h-[18px] w-[18px] shrink-0" />{!compact && <span className="truncate">{label}</span>}</>;
