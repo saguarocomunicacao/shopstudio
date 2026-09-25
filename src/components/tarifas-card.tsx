@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { PageLoader } from "@/components/page-loader";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -157,10 +158,7 @@ export function TarifasCard() {
 
       <div className="mt-5 space-y-3">
         {isLoading && (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="size-4 animate-spin" />
-            Carregando tarifas...
-          </p>
+          <PageLoader />
         )}
         {tarifas.map((t) => (
           <TarifaRow

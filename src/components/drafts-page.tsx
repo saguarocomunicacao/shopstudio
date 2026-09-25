@@ -1,4 +1,5 @@
 import { ehLinkTiktok } from "@/lib/metricas-calc";
+import { PageLoader } from "@/components/page-loader";
 import { TikTokIcon } from "./tiktok-icon";
 import { TiktokLinkInline, VincularExternoDialog } from "./tiktok-link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -476,10 +477,7 @@ function DraftsContent({ initialJobId }: { initialJobId?: string | undefined }) 
       </Tabs>
 
       {isLoading ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" />
-          Carregando rascunhos...
-        </p>
+        <PageLoader />
       ) : isError || trashError ? (
         <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
           Não foi possível carregar os rascunhos. Tente novamente.

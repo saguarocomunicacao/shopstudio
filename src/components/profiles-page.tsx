@@ -1,4 +1,5 @@
 import { PageHeader } from "./page-header";
+import { PageLoader } from "@/components/page-loader";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronDown, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
@@ -246,7 +247,7 @@ export function ProfilesPage() {
   return (
     <>
       <Heading
-        eyebrow={loading ? "Carregando" : `${profiles.length} canais conectados`}
+        eyebrow={loading ? "" : `${profiles.length} canais conectados`}
         title="Perfis do TikTok"
         {...(canCreate ? { action: <Button asChild data-tour="add-profile"><Link to="/app/perfis/novo"><Plus />Adicionar perfil</Link></Button> } : {})}
       />
@@ -326,10 +327,8 @@ export function ProfilesPage() {
             })}
           </div>
         </TooltipProvider>
-      ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-          {loading ? "Carregando perfis..." : "Nenhum perfil disponível para você."}
-        </div>
+      ) : loading ? <PageLoader /> : (
+        <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Nenhum perfil disponível para você.</div>
       )}
 
       <AlertDialog open={!!confirm} onOpenChange={(open) => !open && setConfirm(null)}>

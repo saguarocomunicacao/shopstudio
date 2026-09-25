@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { PageLoader } from "@/components/page-loader";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Copy, Eye, Link2, Loader2, Share2, Undo2 } from "lucide-react";
 import { useState } from "react";
@@ -89,9 +90,7 @@ export function SharePanel({ jobId }: { jobId: string }) {
       </div>
 
       {shares.isLoading ? (
-        <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="size-3 animate-spin" /> Carregando links...
-        </p>
+        <PageLoader size="sm" />
       ) : rows.length ? (
         <ul className="mt-3 grid gap-2">
           {rows.map((s) => {

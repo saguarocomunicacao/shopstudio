@@ -1,4 +1,5 @@
 import { lerContextoPendente, limparContextoPendente } from "@/lib/contexto-compradores";
+import { PageLoader } from "@/components/page-loader";
 import { ImageLightbox } from "./image-lightbox";
 import { PageHeader } from "./page-header";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -342,7 +343,8 @@ function ProductsContent() {
             </div>
           )}
         />
-        {!products.length && <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{isLoading ? "Carregando produtos..." : isError ? "Não foi possível carregar os produtos. Tente novamente." : "Nenhum produto no catálogo."}</div>}
+        {!products.length && isLoading && <PageLoader />}
+        {!products.length && !isLoading && <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{isError ? "Não foi possível carregar os produtos. Tente novamente." : "Nenhum produto no catálogo."}</div>}
       </div>
 
       <Dialog open={!!details} onOpenChange={(open) => { if (!open) { setDetails(null); setEditing(false); } }}>
