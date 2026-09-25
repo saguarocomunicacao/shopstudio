@@ -7,7 +7,7 @@ import { StatusAnaliseBadge } from "./status-analise";
 import { InsightsV2View } from "./insights-view";
 import { lerInsights } from "@/lib/insights-schema";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Loader2, Pin, Plus, RefreshCw, Sparkles, Trash2, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, FolderOpen, Loader2, Pin, Plus, RefreshCw, Sparkles, Trash2, Users } from "lucide-react";
 import { PageHeader } from "./page-header";
 import { useStudio } from "./studio-context";
 import { CurvaViews, GraficoMetricas } from "./metricas-graficos";
