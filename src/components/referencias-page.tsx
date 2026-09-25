@@ -7,7 +7,7 @@ import { StatusAnaliseBadge } from "./status-analise";
 import { InsightsV2View } from "./insights-view";
 import { lerInsights } from "@/lib/insights-schema";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, Loader2, Pin, Plus, RefreshCw, Sparkles, Trash2, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronRight, Copy, FolderOpen, Loader2, Pin, Plus, RefreshCw, Sparkles, Trash2, Users } from "lucide-react";
 import { PageHeader } from "./page-header";
 import { useStudio } from "./studio-context";
 import { CurvaViews, GraficoMetricas } from "./metricas-graficos";
@@ -147,7 +147,7 @@ function ListaReferencias({ abrir }: { abrir: (id: string) => void }) {
                   {podeCusto && <TableCell className="px-3 text-right text-sm tabular-nums">{brl(i.custoCents / 100)}</TableCell>}
                   <TableCell className="px-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => abrir(i.id)}>Abrir</Button>
+                      <Button size="sm" onClick={() => abrir(i.id)}><FolderOpen />Abrir</Button>
                       {podeEditar && <Button size="icon" variant="ghost" aria-label="Atualizar" disabled={mutAtualizar.isPending || i.status === "coletando"} onClick={() => mutAtualizar.mutate(i.id)}><RefreshCw className="size-4" /></Button>}
                       {podeEditar && !i.meuPerfil && <AcompanharButton refId={i.id} handle={i.handle} acompanhar={i.acompanhar} compacto />}
                       {podeEditar && <Button size="icon" variant="ghost" aria-label="Remover" onClick={() => setApagar({ id: i.id, handle: i.handle })}><Trash2 className="size-4 text-primary" /></Button>}

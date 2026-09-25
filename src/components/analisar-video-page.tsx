@@ -6,7 +6,7 @@ import { useNavigate, useRouter } from "@tanstack/react-router";
 import { StatusAnaliseBadge } from "./status-analise";
 import { ExternalLink, Pencil } from "lucide-react";
 import { shareOrDownloadVideo } from "@/lib/video-download";
-import { Copy, Download, FileVideo2, Loader2, Play, RefreshCw, Trash2, Upload, ArrowLeft, ImageIcon } from "lucide-react";
+import { Copy, Download, FileVideo2, FolderOpen, Loader2, Play, RefreshCw, Trash2, Upload, ArrowLeft, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "./page-header";
@@ -16,6 +16,7 @@ import { AlertTriangle } from "lucide-react";
 import { useStudio } from "./studio-context";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -143,6 +144,7 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
   const podeCriar = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
   const { data: analises = [], isLoading, error } = useAnalises(activeProfileId);
   const [novo, setNovo] = useState(false);
+  const [apagar, setApagar] = useState<Analise | null>(null);
   const navigate = useNavigate();
   const router = useRouter();
   const setAbertaId = (id: string | null) => {
@@ -182,7 +184,6 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
     qc.invalidateQueries({ queryKey: ["video-analises", activeProfileId] });
   };
   const remover = async (a: Analise) => {
-    if (!confirm("Remover esta análise?")) return;
     const paths = [a.storage_path, ...(a.frames ?? []).map((f) => f.path)].filter(Boolean) as string[];
     if (paths.length) await supabase.storage.from(BUCKET).remove(paths);
     const { error: e } = await supabase.from("video_analises").delete().eq("id", a.id);
@@ -261,11 +262,11 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
                   )}
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setAbertaId(a.id)}>Abrir</Button>
+                      <Button size="sm" onClick={() => setAbertaId(a.id)}><FolderOpen />Abrir</Button>
                       {podeCriar && (
                         <>
                           <Button size="icon" variant="ghost" aria-label="Reanalisar" disabled={a.status === "analisando" || a.status === "enviando" || a.status === "baixando"} onClick={() => reanalisar(a)}><RefreshCw className="size-4" /></Button>
-                          <Button size="icon" variant="ghost" aria-label="Remover" onClick={() => remover(a)}><Trash2 className="size-4" /></Button>
+                          <Button size="icon" variant="ghost" aria-label="Remover" onClick={() => setApagar(a)}><Trash2 className="size-4 text-primary" /></Button>
                         </>
                       )}
                     </div>
@@ -277,6 +278,18 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
         )}
       </div>
       <NovaAnaliseDialog open={novo} onOpenChange={setNovo} profileId={activeProfileId} onCriada={(id) => setAbertaId(id)} />
+      <AlertDialog open={!!apagar} onOpenChange={(o) => !o && setApagar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover esta análise?</AlertDialogTitle>
+            <AlertDialogDescription>Apaga o vídeo, os frames e os dados da análise. Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.preventDefault(); if (apagar) { void remover(apagar); setApagar(null); } }}>Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

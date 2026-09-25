@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { ArrowLeft, Hash, Image as ImageIcon, Loader2, Megaphone, RefreshCw, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, FolderOpen, Hash, Image as ImageIcon, Loader2, Megaphone, RefreshCw, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
 import { PageHeader } from "./page-header";
 import { useStudio } from "./studio-context";
 import { StatusAnaliseBadge } from "./status-analise";
@@ -132,7 +132,7 @@ function Lista({ abrir, termoInicial }: { abrir: (id: string) => void; termoInic
                     {podeCusto && <TableCell className="px-3 text-right text-sm tabular-nums">{Number(i.custo_usd) ? usd(Number(i.custo_usd)) : "—"}</TableCell>}
                     <TableCell className="px-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => abrir(i.id)}>Abrir</Button>
+                        <Button size="sm" onClick={() => abrir(i.id)}><FolderOpen />Abrir</Button>
                         {podeEditar && <Button size="icon" variant="ghost" aria-label="Repetir" disabled={mut.isPending} onClick={() => mut.mutate({ tipo: i.tipo, termo: i.termo, qtd: [10, 30, 50].includes(i.qtd) ? i.qtd : 30 })}><RefreshCw className="size-4" /></Button>}
                         {podeEditar && <Button size="icon" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label="Remover" title="Remover pesquisa" disabled={mutRemover.isPending} onClick={() => setConfirmarRemocao({ id: i.id, rotulo: rotulo(i.tipo, i.termo) })}><Trash2 className="size-4" /></Button>}
                       </div>
