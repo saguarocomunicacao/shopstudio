@@ -218,7 +218,7 @@ function LandingPage() {
           </div>
         </section>
 
-        <section className="px-5 pb-24 lg:px-8 lg:pb-32">
+        <section className="px-5 py-24 lg:px-8 lg:py-32">
           <div className="landing-plasma-border landing-aura mx-auto max-w-7xl overflow-hidden rounded-[22px] px-6 py-16 text-center sm:px-12 lg:py-20">
             <h2 className="landing-display text-4xl font-bold sm:text-5xl">Coloque sua produção no automático</h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-landing-muted">Transforme sinais de venda em vídeos prontos, com revisão humana no ponto certo.</p>
