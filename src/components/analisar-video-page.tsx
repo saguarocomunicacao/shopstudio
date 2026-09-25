@@ -267,6 +267,7 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
                         <>
                           <Button size="icon" variant="ghost" aria-label="Reanalisar" disabled={a.status === "analisando" || a.status === "enviando" || a.status === "baixando"} onClick={() => reanalisar(a)}><RefreshCw className="size-4" /></Button>
                           <Button size="icon" variant="ghost" aria-label="Remover" onClick={() => setApagar(a)}><Trash2 className="size-4 text-primary" /></Button>
+                        </>
                       )}
                     </div>
                   </td>
