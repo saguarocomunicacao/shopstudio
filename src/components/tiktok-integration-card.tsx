@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, CheckCircle2, Link2, Loader2, RefreshCw, Unlink } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, Unlink } from "lucide-react";
+import { TikTokIcon } from "./tiktok-icon";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -132,7 +133,7 @@ export function TiktokIntegrationCard({ profileId, canEdit }: { profileId: strin
           <div className="mt-4 flex flex-wrap gap-2.5">
             {!conectado && (
               <Button onClick={() => conectar.mutate()} disabled={!canEdit || ocupado}>
-                {conectar.isPending ? <Loader2 className="animate-spin" /> : <Link2 />}
+                {conectar.isPending ? <Loader2 className="animate-spin" /> : <TikTokIcon className="size-4" />}
                 {comErro ? "Reconectar conta TikTok" : "Conectar conta TikTok"}
               </Button>
             )}

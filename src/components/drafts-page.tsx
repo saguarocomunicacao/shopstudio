@@ -1,4 +1,5 @@
 import { ehLinkTiktok } from "@/lib/metricas-calc";
+import { TikTokIcon } from "./tiktok-icon";
 import { TiktokLinkInline, VincularExternoDialog } from "./tiktok-link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -1048,8 +1049,8 @@ function DraftKitDialog({ jobId, job, canEdit, onClose, onResumeRecording }: { j
             )}
 
             {data.publishedUrl && (
-              <p className="text-xs text-muted-foreground">
-                Post no TikTok:{" "}
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <TikTokIcon className="size-3.5" />Post no TikTok:{" "}
                 <a className="font-semibold text-primary underline" href={data.publishedUrl} target="_blank" rel="noreferrer">
                   {data.publishedUrl}
                 </a>

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AlertTriangle, ExternalLink, Link2, Loader2 } from "lucide-react";
+import { AlertTriangle, Link2, Loader2 } from "lucide-react";
+import { TikTokIcon } from "./tiktok-icon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -103,7 +104,7 @@ export function VincularExternoDialog({ profileId, open, onOpenChange }: { profi
                     <p className="line-clamp-2 text-xs font-medium">{v.legenda || "Sem legenda"}</p>
                     <p className="text-[11px] text-muted-foreground">{v.publicado_em ? new Date(v.publicado_em).toLocaleDateString("pt-BR") : ""}</p>
                   </div>
-                  <a href={v.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground" aria-label="Abrir no TikTok"><ExternalLink className="size-4" /></a>
+                  <a href={v.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground" aria-label="Abrir no TikTok"><TikTokIcon className="size-4" /></a>
                   <Button size="sm" variant="secondary" disabled={mut.isPending} onClick={() => mut.mutate(v.url)}><Link2 />Vincular</Button>
                 </div>
               ))}
