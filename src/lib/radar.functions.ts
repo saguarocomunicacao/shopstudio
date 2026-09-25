@@ -24,13 +24,13 @@ export const listarRadarFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const db = context.supabase;
     if (!(await podeVer(db, data.profileId))) return { semPermissao: true as const, acompanhados: [], itens: [] };
-    const { data: refs } = await db.from("referencia_perfis").select("id, handle").eq("profile_id", data.profileId).eq("acompanhar", true).is("meu_perfil_id", null).order("handle");
+    const { data: refs } = await db.from("referencia_perfis").select("id, handle, acompanhar").eq("profile_id", data.profileId).is("meu_perfil_id", null).order("handle");
     const { listarRadar } = await import("./radar.server");
     const itens = await listarRadar(db, data.profileId, data.horas, data.refId);
     const urls = await assinar(itens.flatMap((i) => [i.capaPath, i.fotoPath]).filter(Boolean) as string[]);
     return {
       semPermissao: false as const,
-      acompanhados: (refs ?? []) as { id: string; handle: string }[],
+      acompanhados: (refs ?? []) as { id: string; handle: string; acompanhar: boolean }[],
       itens: itens.map((i) => ({ ...i, capaUrl: i.capaPath ? urls.get(i.capaPath) ?? null : null, fotoUrl: i.fotoPath ? urls.get(i.fotoPath) ?? null : null })),
     };
   });

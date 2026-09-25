@@ -3,13 +3,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { ExternalLink, EyeOff, Loader2, Sparkles, Wand2 } from "lucide-react";
+import { ChevronDown, ExternalLink, EyeOff, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { PageHeader } from "./page-header";
 import { useStudio } from "./studio-context";
 import { ProfileGate } from "./profile-gate";
 import { StatusAnaliseBadge } from "./status-analise";
 import { NewOwnVideoDialog, RecordingKitDialog } from "./recording-kit";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AcompanharButton } from "./acompanhar-button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { analisarRadarFn, listarRadarFn, marcarRadarFn } from "@/lib/radar.functions";
 import { useJobs } from "@/lib/content";
@@ -64,13 +66,24 @@ function RadarContent() {
           <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
           <SelectContent>{JANELAS.map((j) => <SelectItem key={j.v} value={String(j.v)}>{j.l}</SelectItem>)}</SelectContent>
         </Select>
-        <Select value={refId} onValueChange={setRefId}>
-          <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os @</SelectItem>
-            {(d?.acompanhados ?? []).map((r) => <SelectItem key={r.id} value={r.id}>@{r.handle}</SelectItem>)}
-          </SelectContent>
-        </Select>
+<Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[180px] justify-between font-normal">
+              <span className="truncate">{refId === "todos" ? "Todos os @" : `@${d?.acompanhados.find((r) => r.id === refId)?.handle ?? ""}`}</span><ChevronDown className="size-4 opacity-60" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-64 p-1">
+            <button type="button" onClick={() => setRefId("todos")} className={`w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary ${refId === "todos" ? "font-semibold" : ""}`}>Todos os @</button>
+            {(d?.acompanhados ?? []).map((r) => (
+              <div key={r.id} className="flex items-center gap-1">
+                <button type="button" onClick={() => setRefId(r.id)} className={`min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-left text-sm hover:bg-secondary ${refId === r.id ? "font-semibold" : ""} ${r.acompanhar ? "" : "text-muted-foreground"}`}>
+                  @{r.handle}{!r.acompanhar && <span className="ml-1 text-xs">(pausado)</span>}
+                </button>
+                {canCreate && <AcompanharButton refId={r.id} handle={r.handle} acompanhar={r.acompanhar} compacto />}
+              </div>
+            ))}
+          </PopoverContent>
+        </Popover>
       </div>}
     />
     <NewOwnVideoDialog
@@ -81,7 +94,7 @@ function RadarContent() {
     {q.isLoading ? <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando o radar...</p>
       : q.isError ? <Vazio>Não foi possível carregar o radar. Tente novamente.</Vazio>
       : d?.semPermissao ? <Vazio>Você não tem permissão para ver o Radar deste perfil.</Vazio>
-      : !d?.acompanhados.length ? <Vazio>Adicione @ em <Link to="/app/referencias" className="text-brand-cyan underline">Perfis de referência</Link> e ligue "Acompanhar diariamente".</Vazio>
+      : !d?.acompanhados.some((r) => r.acompanhar) ? <Vazio>Adicione @ em <Link to="/app/referencias" className="text-brand-cyan underline">Perfis de referência</Link> e ligue "Acompanhar diariamente".</Vazio>
       : !itens.length ? <Vazio>Nada em alta no período. O radar confere os @ acompanhados todo dia às 06:00.</Vazio>
       : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {itens.map((i) => (
