@@ -97,7 +97,7 @@ function RadarContent() {
       : d?.semPermissao ? <Vazio>Você não tem permissão para ver o Radar deste perfil.</Vazio>
       : !d?.acompanhados.some((r) => r.acompanhar) ? <Vazio>Adicione @ em <Link to="/app/referencias" className="text-brand-cyan underline">Perfis de referência</Link> e ligue "Acompanhar diariamente".</Vazio>
       : !itens.length ? <Vazio>Nada em alta no período. O radar confere os @ acompanhados todo dia às 06:00.</Vazio>
-      : <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      : <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {itens.map((i) => (
           <article key={i.id} className="flex flex-col overflow-hidden rounded-lg border border-border bg-card">
             <a href={i.url} target="_blank" rel="noreferrer" className="relative block aspect-[9/16] bg-video-bg">
