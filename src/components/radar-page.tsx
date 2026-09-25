@@ -104,8 +104,13 @@ function RadarContent() {
           <article key={i.id} className="flex flex-col overflow-hidden rounded-lg border border-border bg-card">
             <a href={i.url} target="_blank" rel="noreferrer" className="relative block aspect-[9/16] bg-video-bg">
               {i.capaUrl && <img src={i.capaUrl} alt="" className="size-full object-cover" loading="lazy" />}
-              <span className="absolute left-2 top-2 rounded-md bg-brand-cyan px-2 py-0.5 text-xs font-semibold text-black">{i.razaoTexto || (i.razao && i.razao >= 2 ? `${i.razao.toLocaleString("pt-BR")}x a média do @` : i.emAltaNicho ? "Top 10% do nicho" : "Acima do normal")}</span>
-              {i.status === "novo" && <span className="absolute right-2 top-2 rounded-md bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">Novo</span>}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="absolute left-2.5 top-2.5 inline-block max-w-[70%] truncate rounded-lg bg-brand-cyan/92 px-2 py-1 text-xs font-semibold text-black">{motivoCurto(i)}</span>
+                </TooltipTrigger>
+                <TooltipContent>{motivoCompleto(i)}</TooltipContent>
+              </Tooltip>
+              {i.status === "novo" && <span className="absolute right-2.5 top-2.5 rounded-lg bg-primary px-2 py-1 text-xs font-semibold text-primary-foreground">Novo</span>}
             </a>
             <div className="flex flex-1 flex-col gap-2 p-3">
               <div className="flex items-center gap-2">
