@@ -296,6 +296,7 @@ function Detalhe({ id, tab, onTab, voltar }: { id: string; tab: "videos" | "insi
                               </span>
                             </span>
                           </a>
+                          </div>
                         </TableCell>
                         <TableCell className="px-3 text-sm">
                           {v.autor_handle ? (
