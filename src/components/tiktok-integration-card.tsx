@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, CheckCircle2, Link2, Loader2, RefreshCw, Unlink } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, Unlink } from "lucide-react";
 import { TikTokIcon } from "./tiktok-icon";
 import { useEffect } from "react";
 import { toast } from "sonner";

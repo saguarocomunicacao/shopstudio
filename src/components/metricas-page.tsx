@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowDown, ArrowUp, ChevronDown, ChevronRight, ExternalLink, Eye, Film, Heart, Loader2, RefreshCw, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, ChevronDown, ChevronRight, Eye, Film, Heart, Loader2, RefreshCw, TrendingUp, Users } from "lucide-react";
 import { TikTokIcon } from "./tiktok-icon";
 import { CurvaViews, GraficoMetricas } from "./metricas-graficos";
 import { PageHeader } from "./page-header";
