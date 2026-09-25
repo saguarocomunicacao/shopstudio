@@ -32,7 +32,7 @@ export function LandingInteligencia() {
             <p className="mt-2"><span className="text-landing-mint">Gancho:</span> "Parei de comprar fronha comum depois disso"</p>
           </Bento>
           <Bento icon={<Users />} title="Perfis de referência" text="Acompanhe os @ que vendem. Analise os vídeos deles em lote e receba insights do que separa os melhores dos piores.">
-            {[["@casa.achados", "84%"], ["@dica.da.ju", "61%"], ["@lar.pratico", "42%"]].map(([h, w]) => <div key={h} className="mb-2 last:mb-0"><p>{h}</p><Barra w={w} /></div>)}
+            {([["@casa.achados", "84%"], ["@dica.da.ju", "61%"], ["@lar.pratico", "42%"]] as const).map(([h, w]) => <div key={h} className="mb-2 last:mb-0"><p>{h}</p><Barra w={w} /></div>)}
           </Bento>
           <Bento icon={<Radar />} title="Radar" text="Todo dia às 6h, o que subiu nas últimas 72h entre os perfis que você acompanha. Antes de saturar.">
             <div className="flex items-center gap-2"><div className="aspect-[9/16] w-10 rounded-md bg-landing-plasma-c/25" /><div className="space-y-1"><Chip forte>3,1x a média do @</Chip><p>@casa.achados · há 18 h</p><p className="text-landing-text">248 mil views</p></div></div>
