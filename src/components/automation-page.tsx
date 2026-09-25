@@ -3,6 +3,7 @@
  * por IA. Parte 1 — aqui só se cria, edita, ativa/pausa e remove agendas.
  * Nenhuma geração é disparada nesta parte.
  */
+import { PageLoader } from "@/components/page-loader";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Bot, CalendarClock, ExternalLink, Pencil, Plus, Trash2, Wallet, X } from "lucide-react";
@@ -579,7 +580,7 @@ function AutomationContent() {
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6}><PageLoader /></TableCell></TableRow>
             )}
             {!isLoading && isError && (
               <TableRow><TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">Não foi possível carregar as agendas. Tente novamente.</TableCell></TableRow>
@@ -864,7 +865,7 @@ function RunsLog({
           </TableHeader>
           <TableBody>
             {isLoading && (
-              <TableRow><TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8}><PageLoader /></TableCell></TableRow>
             )}
             {!isLoading && !filteredRuns.length && (
               <TableRow>

@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { PageLoader } from "@/components/page-loader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Loader2, Pencil, Plus, Power, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -99,7 +100,7 @@ export function PlansPage() {
       {isBackoffice && <Button asChild><Link to="/app/planos/$planId" params={{ planId: "novo" }}><Plus />Novo plano</Link></Button>}
     </div>
     <section className="panel overflow-hidden p-0">
-      {loading ? <p className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando planos...</p> : failed ? <p className="p-8 text-center text-sm text-muted-foreground">Não foi possível carregar os planos. Tente novamente.</p> : <Table>
+      {loading ? <PageLoader /> : failed ? <p className="p-8 text-center text-sm text-muted-foreground">Não foi possível carregar os planos. Tente novamente.</p> : <Table>
         <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="w-10"/><TableHead>Plano</TableHead><TableHead>Fonte de chave</TableHead><TableHead>Status</TableHead><TableHead>Empresas</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader>
         <TableBody>{(plans.data ?? []).map((plan) => {
           const open = expanded === plan.id;
@@ -171,7 +172,7 @@ export function PlanDetailPage({ planId }: { planId?: string }) {
     onError: (error) => toast.error(errMessage(error)),
   });
   if (!isBackoffice) return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Você não tem acesso a esta página.</div>;
-  if (editing && (planLoading || priceLoading)) return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando plano...</p>;
+  if (editing && (planLoading || priceLoading)) return <PageLoader />;
   return <div className="w-full">
     <div className="mb-6"><h1 className="page-title">{editing ? "Editar plano" : "Novo plano"}</h1></div>
     <section className="panel"><div className="grid gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(240px,1fr)_auto] md:items-end">

@@ -1,4 +1,5 @@
 import { LerComentariosButton } from "./comentarios-panel";
+import { PageLoader } from "@/components/page-loader";
 import { plural } from "@/lib/plural";
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -107,7 +108,7 @@ function ListaReferencias({ abrir }: { abrir: (id: string) => void }) {
         actions={podeEditar ? <Button onClick={() => setNovo(true)}><Plus />Adicionar @</Button> : undefined}
       />
       {q.isLoading ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</p>
+        <PageLoader />
       ) : !itens.length ? (
         <Vazio>Nenhum @ acompanhado ainda. Adicione um perfil do TikTok (seu ou de referência) para comparar vídeos e descobrir o que funciona.</Vazio>
       ) : (
@@ -273,7 +274,7 @@ function DetalheReferencia({ refId, tab, onTab, voltar }: { refId: string; tab: 
   const analisePorVideo = new Map((d?.analises ?? []).filter((a) => a.video_id).map((a) => [a.video_id!, a] as const));
   const analisadas = (d?.analises ?? []).filter((a) => a.status === "pronto").length;
 
-  if (q.isLoading) return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</p>;
+  if (q.isLoading) return <PageLoader />;
   if (!d) return <Vazio>Não foi possível abrir este perfil. <button className="font-semibold text-primary underline" onClick={voltar}>Voltar</button></Vazio>;
   const ref = d.ref as Record<string, never> & { handle: string; nome: string | null; fotoUrl: string | null; meu_perfil_id: string | null; acompanhar: boolean; fonte_roteirista: boolean; insights: string | null; insights_em: string | null };
   const ult = perfil[perfil.length - 1];

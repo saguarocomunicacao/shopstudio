@@ -2,6 +2,7 @@
  * Visão de custos do cliente: valor único por ação (sem separar ferramenta e
  * API), com seletor de período e extrato. Os números vêm prontos do servidor.
  */
+import { PageLoader } from "@/components/page-loader";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -89,7 +90,7 @@ export function TenantCostsView() {
       {isError ? (
         <div className="panel text-center text-sm text-muted-foreground">Não foi possível carregar os custos. Tente novamente.</div>
       ) : isLoading || !data ? (
-        <p className="text-sm text-muted-foreground">Carregando custos...</p>
+        <PageLoader />
       ) : data.eventos === 0 ? (
         <div className="panel text-center">
           <span className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-secondary text-primary">

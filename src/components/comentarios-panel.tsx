@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PageLoader } from "@/components/page-loader";
 import { plural } from "@/lib/plural";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -64,7 +65,7 @@ export function ComentariosPanel({ url, titulo, origem }: { url: string; titulo?
   }, [d]);
 
   if (!activeProfileId) return <p className="text-sm text-muted-foreground">Selecione um perfil no seletor acima.</p>;
-  if (q.isLoading) return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando…</p>;
+  if (q.isLoading) return <PageLoader />;
   if (d?.semPermissao) return <p className="text-sm text-muted-foreground">Você não tem permissão para ver comentários neste perfil.</p>;
 
   const seletor = (

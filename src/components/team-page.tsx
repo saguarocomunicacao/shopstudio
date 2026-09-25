@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { PageLoader } from "@/components/page-loader";
 import { Lock, Plus, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -100,7 +101,7 @@ export function TeamPage() {
   });
 
   if (!isAdmin) return <div className="panel text-sm text-muted-foreground">Apenas administradores podem gerenciar a equipe.</div>;
-  if (isLoading || !data) return <div className="panel text-sm text-muted-foreground">Carregando equipe...</div>;
+  if (isLoading || !data) return <PageLoader />;
 
   const adminRole = data.roles.find((r) => r.is_admin);
   const assignableRoles = data.roles.filter((r) => !r.is_admin);

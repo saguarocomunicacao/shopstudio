@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageLoader } from "@/components/page-loader";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -92,7 +93,7 @@ export function VincularExternoDialog({ profileId, open, onOpenChange }: { profi
         <div className="grid gap-2">
           <p className="text-sm font-semibold">Vídeos do perfil ainda sem vínculo</p>
           {sug.isLoading ? (
-            <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="size-3 animate-spin" />Carregando...</p>
+            <PageLoader size="sm" />
           ) : videos.length ? (
             <div className="grid max-h-72 gap-2 overflow-y-auto pr-1">
               {videos.map((v) => (

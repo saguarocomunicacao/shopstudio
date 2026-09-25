@@ -3,6 +3,7 @@
  * assinatura) contra o consumo real gravado, mostrando o que ainda resta sem
  * precisar abrir as plataformas externas.
  */
+import { PageLoader } from "@/components/page-loader";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Download, PiggyBank, Plus, Trash2, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -492,7 +493,7 @@ export function InvestmentPage() {
     );
   }
 
-  if (isLoading || !data) return <p className="text-sm text-muted-foreground">Carregando investimento...</p>;
+  if (isLoading || !data) return <PageLoader />;
 
   const baixos = data.carteiras.filter((c) => c.baixo);
   const consumoMes = data.carteiras.reduce((s, c) => s + c.consumoMesBrl, 0);

@@ -1,4 +1,5 @@
 import { ComentariosPanel } from "./comentarios-panel";
+import { PageLoader } from "@/components/page-loader";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -203,7 +204,7 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
   if (aberta) return <DetalheAnalise a={aberta} tab={tab ?? "resumo"} onTab={(t) => void navigate({ to: "/app/analises/$id", params: { id: aberta.id }, search: { tab: t }, replace: true })} onVoltar={voltar} onReanalisar={() => reanalisar(aberta)} podeEditar={podeCriar} />;
   if (abertaId) {
     return isLoading
-      ? <div className="flex items-center gap-2 p-8 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</div>
+      ? <PageLoader />
       : <div className="space-y-4 p-8 text-center text-sm text-muted-foreground"><p>Esta análise não foi encontrada no perfil selecionado.</p><Button variant="outline" onClick={() => setAbertaId(null)}><ArrowLeft className="size-4" />Ver análises</Button></div>;
   }
 
@@ -216,7 +217,7 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
       />
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
         {isLoading ? (
-          <div className="flex items-center gap-2 p-8 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</div>
+          <PageLoader />
         ) : error ? (
           <p className="p-8 text-sm text-muted-foreground">Não foi possível carregar as análises. Recarregue a página.</p>
         ) : !analises.length ? (

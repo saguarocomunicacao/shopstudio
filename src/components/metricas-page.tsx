@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { PageLoader } from "@/components/page-loader";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -136,7 +137,7 @@ export function MetricasContent() {
     />
   );
 
-  if (q.isLoading) return <>{header}<p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando métricas...</p></>;
+  if (q.isLoading) return <>{header}<PageLoader /></>;
   if (q.isError || !d || !resumo) return <>{header}<Vazio>Não foi possível carregar as métricas. Tente novamente.</Vazio></>;
 
   if (!d.handle)

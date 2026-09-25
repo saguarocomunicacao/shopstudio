@@ -2,6 +2,7 @@
  * Tela "Custos": todo o gasto da plataforma, calculado dos eventos de consumo
  * com a tarifa vigente e a cotação configurada. Métricas segue só com desempenho.
  */
+import { PageLoader } from "@/components/page-loader";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Download, UserSquare2, Users, Wallet } from "lucide-react";
@@ -328,7 +329,7 @@ export function CostsPage() {
           </div>
         </div>
       ) : isLoading || !data ? (
-        <p className="text-sm text-muted-foreground">Carregando custos...</p>
+        <PageLoader />
       ) : data.totalBrl <= 0 && !data.buscas.length ? (
         <div className="panel text-center">
           <span className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-secondary text-primary">

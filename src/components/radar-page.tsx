@@ -1,4 +1,5 @@
 import { LerComentariosButton } from "./comentarios-panel";
+import { PageLoader } from "@/components/page-loader";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -106,7 +107,7 @@ function RadarContent() {
       onCreated={(jobId) => { if (roteiro) void marcar({ data: { id: roteiro.id, status: "usado" } }).then(recarregar); setRecordingId(jobId); }}
     />
     {recordingJob && <RecordingKitDialog job={recordingJob} canEdit={canCreate} onClose={() => setRecordingId(null)} />}
-    {q.isLoading ? <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando o radar...</p>
+    {q.isLoading ? <PageLoader />
       : q.isError ? <Vazio>Não foi possível carregar o radar. Tente novamente.</Vazio>
       : d?.semPermissao ? <Vazio>Você não tem permissão para ver o Radar deste perfil.</Vazio>
       : !d?.acompanhados.some((r) => r.acompanhar) ? <Vazio>Adicione @ em <Link to="/app/referencias" className="text-brand-cyan underline">Perfis de referência</Link> e ligue "Acompanhar diariamente".</Vazio>

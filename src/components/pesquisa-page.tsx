@@ -1,4 +1,5 @@
 import { LerComentariosButton } from "./comentarios-panel";
+import { PageLoader } from "@/components/page-loader";
 import { plural } from "@/lib/plural";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -106,7 +107,7 @@ function Lista({ abrir, termoInicial }: { abrir: (id: string) => void; termoInic
         </form>
       )}
       <h2 className="mb-3 font-display text-base font-semibold">Pesquisas anteriores</h2>
-      {q.isLoading ? <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</p>
+      {q.isLoading ? <PageLoader />
         : !itens.length ? <Vazio>Nenhuma pesquisa ainda. As pesquisas ficam guardadas por 90 dias.</Vazio>
         : (
           <div className="panel overflow-x-auto p-0">
@@ -207,7 +208,7 @@ function Detalhe({ id, tab, onTab, voltar }: { id: string; tab: "videos" | "insi
   const analisePor = new Map((d?.analises ?? []).filter((a) => a.video_id).map((a) => [a.video_id!, a] as const));
   const acompanhados = new Set((d?.acompanhados ?? []).map((h) => h.toLowerCase()));
 
-  if (q.isLoading) return <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</p>;
+  if (q.isLoading) return <PageLoader />;
   if (!d || !p) return <Vazio>Não foi possível abrir esta pesquisa. <button className="font-semibold text-primary underline" onClick={voltar}>Voltar</button></Vazio>;
   const livres = (ids: string[]) => todos.filter((v) => ids.includes(v.tiktok_video_id) && !(analisePor.get(v.tiktok_video_id) && analisePor.get(v.tiktok_video_id)!.status !== "erro"));
   const top10 = visiveis.filter((v) => !v.anuncio).sort((a, b) => Number(b.views ?? 0) - Number(a.views ?? 0)).slice(0, 10).map((v) => v.tiktok_video_id);
