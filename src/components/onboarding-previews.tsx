@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { BarChart3, Bot, Camera, CircleGauge, Clapperboard, Copy, Download, FileClock, KanbanSquare, Package, PiggyBank, Plus, Radar, Sparkles, Upload, UserSquare2, Wallet, Menu } from "lucide-react";
+import { BarChart3, Bot, Camera, CircleGauge, Clapperboard, Copy, Download, FileClock, KanbanSquare, Compass, Package, PiggyBank, Plus, Radar, Sparkles, Upload, UserSquare2, Wallet, Menu } from "lucide-react";
 import logoDarkAsset from "@/assets/logo-dark.png.asset.json";
 
 /** Prévias fiéis (dados de exemplo fixos) das telas reais usadas no guia. */
