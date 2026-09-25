@@ -163,6 +163,15 @@ Abra o job e clique em Tentar novamente. Só a parte que falhou é refeita; a no
 ## FAQ: Como recuperar um vídeo excluído?
 Na aba Lixeira de Rascunhos, clique em Restaurar. [Lixeira](/app/rascunhos?tab=lixeira)
 
+## Inteligência: Comentários dos compradores
+O botão "Ler comentários" (ícone de balão) aparece nos vídeos de Perfis de referência, Radar, Pesquisar e em "Referências que inspiraram" do job. Também existe a aba "Comentários" no detalhe de uma análise de vídeo do TikTok.
+- Escolha 50, 100 ou 200 comentários. O custo estimado aparece antes (cerca de US$ 0,07 a cada 100). Leva 1 a 2 minutos.
+- A IA separa os comentários em Objeções, Dúvidas, Desejos, Elogios e Irrelevantes, mostra o sentimento geral e as "perguntas que ninguém respondeu" (dúvidas com zero respostas).
+- Comentários fixados e os que o dono do vídeo curtiu ganham um selo.
+- "Usar no roteiro": o próximo vídeo que você criar (pelo Usar do produto ou Novo vídeo próprio) recebe o bloco "Contexto dos compradores". O gancho responde a uma objeção real e o corpo cobre as 2 dúvidas mais comuns. O bloco fica visível e editável no job.
+- Automático: em Perfis > editar > Publicação, ligue "Ler comentários dos campeões ao gerar roteiro". O roteiro por campeões lê 50 comentários dos 3 vídeos campeões (vídeos lidos nos últimos 7 dias não são cobrados de novo).
+- Comentários ficam guardados por 90 dias.
+
 ## FAQ: Como aprovar um vídeo?
 Em Rascunhos, aba Aguardando revisão, assista e clique em Aprovar para postagem. [Revisão](/app/rascunhos?tab=revisao)
 
