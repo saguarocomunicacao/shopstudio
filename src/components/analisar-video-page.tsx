@@ -6,7 +6,7 @@ import { useNavigate, useRouter } from "@tanstack/react-router";
 import { StatusAnaliseBadge } from "./status-analise";
 import { ExternalLink, Pencil } from "lucide-react";
 import { shareOrDownloadVideo } from "@/lib/video-download";
-import { Copy, Download, FileVideo2, Loader2, Play, RefreshCw, Trash2, Upload, ArrowLeft, ImageIcon } from "lucide-react";
+import { Copy, Download, FileVideo2, FolderOpen, Loader2, Play, RefreshCw, Trash2, Upload, ArrowLeft, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "./page-header";
