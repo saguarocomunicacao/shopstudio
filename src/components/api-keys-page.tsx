@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { PageLoader } from "@/components/page-loader";
 import { useServerFn } from "@tanstack/react-start";
 import { CheckCircle2, Loader2, Trash2, XCircle } from "lucide-react";
 import { useState } from "react";
@@ -136,7 +137,7 @@ export function ApiKeysPage() {
       </div>
 
       {isLoading ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</p>
+        <PageLoader />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {PROVIDERS.map((meta) => <ProviderCard key={meta.id} meta={meta} row={byProvider.get(meta.id)} byok={byok} />)}

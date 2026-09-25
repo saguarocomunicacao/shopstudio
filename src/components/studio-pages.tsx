@@ -1,4 +1,5 @@
 import { AssistenteTeste } from "@/components/assistente-teste";
+import { PageLoader } from "@/components/page-loader";
 import { PageHeader } from "./page-header";
 import { TarifasCard } from "./tarifas-card";
 import { CreditoTaxasCard } from "./credito-taxas-card";
@@ -124,7 +125,7 @@ function VideosContent() {
     <Heading eyebrow={`${videos.length} ${videos.length === 1 ? "peça" : "peças"}`} title="Biblioteca de vídeos" action={<Button disabled={!canCreate} onClick={() => setNovoOpen(true)}><Plus />Novo vídeo próprio</Button>} />
     <NewOwnVideoDialog open={novoOpen} onOpenChange={setNovoOpen} onCreated={(jobId) => setRecordingId(jobId)} />
     {recordingJob && <RecordingKitDialog job={recordingJob} canEdit={canCreate} onClose={() => setRecordingId(null)} />}
-    {isLoading ? <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando vídeos...</p> : isError ? <Empty>Não foi possível carregar os vídeos. Tente novamente.</Empty> : rendering.length > 0 && <p className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{rendering.length} vídeo(s) renderizando...</p>}
+    {isLoading ? <PageLoader /> : isError ? <Empty>Não foi possível carregar os vídeos. Tente novamente.</Empty> : rendering.length > 0 && <p className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />{rendering.length} vídeo(s) renderizando...</p>}
     {!isLoading && !isError && (videos.length ? (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {videos.map((job) => (

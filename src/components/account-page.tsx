@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { PageLoader } from "@/components/page-loader";
 import { Loader2, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -170,7 +171,7 @@ export function AccountPage() {
           <p className="mt-1 text-sm text-muted-foreground">Condições da sua conta no Shop Studio.</p>
 
           {planLoading ? (
-            <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</p>
+            <PageLoader />
           ) : (
             <div className="mt-5 rounded-xl bg-secondary px-4 py-3">
               <p className="text-sm font-semibold" data-testid="plano-atual">{planName}</p>
@@ -211,7 +212,7 @@ function SaldoPanel({ tenantId, planId }: { tenantId: string | null; planId: str
       <p className="mt-1 text-sm text-muted-foreground">Quantidade restante de cada ação. As quantidades compradas não expiram.</p>
 
       {isLoading ? (
-        <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando saldo...</p>
+        <PageLoader />
       ) : (
         <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {linhas.map((linha) => (

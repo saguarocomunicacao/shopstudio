@@ -29,11 +29,6 @@ export function AppTransition({ mode = "loading" }: { mode?: TransitionMode }) {
         <div className="app-transition-mark">
           <img src={logoDarkAsset.url} alt="Shop Studio" className="app-transition-logo" />
         </div>
-        <div className="app-transition-copy">
-          <div className="app-transition-check" aria-hidden="true"><Check /></div>
-          <h1>{text.title}</h1>
-          <p>{text.detail}</p>
-        </div>
         <div className="app-transition-progress" aria-hidden="true"><span /></div>
       </div>
     </div>

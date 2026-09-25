@@ -1,4 +1,5 @@
 import { LerComentariosToggle } from "./ler-comentarios-toggle";
+import { PageLoader } from "@/components/page-loader";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -418,7 +419,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
   const goBack = () => void navigate({ to: "/app/perfis" });
 
   if (loading && !profile && !isNew) {
-    return <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Carregando perfil...</p>;
+    return <PageLoader />;
   }
   if (!allowed || (!isNew && !profile)) {
     return (

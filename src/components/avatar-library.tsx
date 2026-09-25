@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { PageLoader } from "@/components/page-loader";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Pencil, Plus, Star, Trash2, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -313,7 +314,7 @@ export function ProfileAvatarsCard({ profileId }: { profileId: string | null }) 
       </div>
 
       {isLoading ? (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Carregando...</p>
+        <PageLoader />
       ) : avatars.length === 0 ? (
         <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
           Nenhum avatar salvo ainda. Crie um com fotos ou só com a descrição.
@@ -579,7 +580,7 @@ export function PersonaTagsSummary({
         )}
       </div>
       {avatars.isLoading ? (
-        <p className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="size-3.5 animate-spin" />Carregando avatares...</p>
+        <PageLoader size="sm" />
       ) : !tags.length ? (
         <p className="text-xs text-muted-foreground">Nenhuma etiqueta {"{{...}}"} no roteiro. Use {"{{nome}}"} nas cenas para colocar uma persona.</p>
       ) : (

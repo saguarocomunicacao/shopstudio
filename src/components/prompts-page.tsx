@@ -1,4 +1,5 @@
 import { PageHeader } from "./page-header";
+import { PageLoader } from "@/components/page-loader";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -134,7 +135,7 @@ function ActiveProfilePrompts() {
   const byKey = new Map(overrides.map((o) => [o.key, o.body]));
   const canEdit = can("perfis", "editar", activeProfileId);
 
-  if (isLoading) return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Carregando prompts...</div>;
+  if (isLoading) return <PageLoader />;
 
   return (
     <>
@@ -153,7 +154,7 @@ function ActiveProfilePrompts() {
 
 export function GlobalPromptsSettings() {
   const { data: templates = [], isLoading } = usePromptTemplates();
-  if (isLoading) return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Carregando prompts...</div>;
+  if (isLoading) return <PageLoader />;
   return (
     <>
       <p className="mb-4 max-w-2xl text-sm text-muted-foreground">

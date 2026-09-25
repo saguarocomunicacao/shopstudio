@@ -686,8 +686,6 @@ export function RecordingStudio({
               <span className="route-loader-ring" aria-hidden="true" />
               <img src={loaderMark.url} alt="" className="route-loader-logo" />
             </div>
-            <h1>Preparando gravação...</h1>
-            <p>Carregando seu vídeo e suas edições</p>
           </div>
         </div>
       ) : !supported ? (
