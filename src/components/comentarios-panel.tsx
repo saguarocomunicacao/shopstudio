@@ -22,7 +22,7 @@ const EM_ANDAMENTO = ["coletando", "processando", "classificando"];
 const usd = (n: number) => `US$ ${n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const errMsg = (e: unknown) => (e instanceof Error ? e.message : "Algo deu errado.");
 
-export function ComentariosPanel({ url, titulo, origem }: { url: string; titulo?: string | null; origem?: string }) {
+export function ComentariosPanel({ url, titulo, origem }: { url: string; titulo?: string | null | undefined; origem?: string | undefined }) {
   const { activeProfileId } = useStudio();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -208,7 +208,7 @@ function BlocoCard({ titulo, itens }: { titulo: string; itens: Bloco[] }) {
 }
 
 /** Botão "Ler comentários" para linhas/cards: abre o painel num modal. */
-export function LerComentariosButton({ url, titulo, origem, size = "icon" }: { url: string; titulo?: string | null; origem?: string; size?: "icon" | "sm" }) {
+export function LerComentariosButton({ url, titulo, origem, size = "icon" }: { url: string; titulo?: string | null | undefined; origem?: string | undefined; size?: "icon" | "sm" }) {
   const [aberto, setAberto] = useState(false);
   return (
     <>

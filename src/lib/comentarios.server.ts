@@ -32,7 +32,7 @@ async function iniciarRun(tenantId: string, url: string, qtd: number) {
 }
 
 /** Cria (ou reaproveita) a leitura de um vídeo para o perfil. */
-export async function iniciarLeitura(opts: { tenantId: string; profileId: string; userId: string | null; url: string; titulo?: string | null; origem?: string | null; qtd: number; forcar?: boolean }) {
+export async function iniciarLeitura(opts: { tenantId: string; profileId: string; userId: string | null; url: string; titulo?: string | null | undefined; origem?: string | null | undefined; qtd: number; forcar?: boolean | undefined }) {
   const vid = videoIdDe(opts.url);
   if (!vid) throw new Error("Esse link não parece ser de um vídeo do TikTok.");
   const db = await admin();
