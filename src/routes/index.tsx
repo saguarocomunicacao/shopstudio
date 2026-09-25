@@ -192,10 +192,6 @@ function LandingPage() {
 
         <LandingInteligencia />
 
-        <div className="mx-auto max-w-7xl px-5 lg:px-8" aria-hidden="true">
-          <div className="h-px bg-gradient-to-r from-transparent via-landing-line to-transparent" />
-        </div>
-
         <section id="controle" className="mx-auto grid max-w-7xl scroll-mt-24 gap-14 px-5 py-24 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:px-8 lg:py-32">
           <div><SectionTitle title="Controle o processo. E o custo." text="Automação não precisa ser uma caixa-preta. Você decide onde a inteligência artificial avança." />
             <div className="mt-10 space-y-8">

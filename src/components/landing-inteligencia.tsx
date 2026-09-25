@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { ArrowRight, Bot, FileSearch, Lightbulb, MessageSquareText, Radar, Search, Sparkles, UserSearch, Users, Wand2 } from "lucide-react";
+import { RobotIcon } from "@/components/robot-icon";
+import { ArrowRight, Equal, Eye, Send, ShieldCheck, Bot, FileSearch, Lightbulb, MessageSquareText, Radar, Search, Sparkles, UserSearch, Users, Wand2 } from "lucide-react";
 
 const card = "rounded-[22px] border border-landing-line bg-landing-surface/60 p-6";
 const mini = "mt-5 rounded-xl border border-landing-line bg-landing-bg/70 p-3 text-[11px] leading-4 text-landing-muted";
@@ -83,58 +84,53 @@ export function LandingInteligencia() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-36">
-        <div className="grid gap-12 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:gap-16">
-        <div className="relative order-2 lg:order-1">
-          <div className="pointer-events-none absolute -left-16 -top-16 size-56 rounded-full bg-landing-plasma-c/15 blur-[90px]" aria-hidden="true" />
-          <div className="pointer-events-none absolute -bottom-16 -right-10 size-56 rounded-full bg-landing-mint/12 blur-[90px]" aria-hidden="true" />
-          <div className="landing-aura relative mx-auto w-full max-w-md overflow-hidden rounded-[24px] border border-landing-line bg-landing-bg/80 backdrop-blur-xl" aria-hidden="true">
-            <div className="flex items-center justify-between border-b border-landing-line px-5 py-3.5">
+      <section className="border-y border-landing-line bg-landing-surface/40">
+        <div className="mx-auto grid max-w-7xl gap-14 px-5 py-24 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-20 lg:px-8 lg:py-32">
+          <div>
+            <h2 className="landing-display text-3xl font-bold sm:text-5xl">Pergunte ao seu painel</h2>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-landing-muted">Um assistente que conhece o seu Shop Studio: pipeline, custos, saldo, métricas, referências. Ele consulta o que você já tem acesso e responde com o número da tela, não com estimativa.</p>
+            <div className="mt-10 space-y-8">
+              <Item icon={<Equal />} title="Mesmo número da tela" text="Nada é calculado por conta própria. O que ele responde é o que a tela mostra." />
+              <Item icon={<ShieldCheck />} title="Respeita sua permissão" text="Vê só o que o seu usuário vê. Nunca chaves, nunca outros clientes." />
+              <Item icon={<Eye />} title="Só consulta" text="Nada é aprovado, publicado ou gasto sem você." />
+            </div>
+          </div>
+          <div className="w-full overflow-hidden rounded-[14px] border border-landing-line bg-landing-bg lg:w-[420px]" aria-hidden="true">
+            <div className="flex items-center justify-between gap-3 border-b border-landing-line px-4 py-3">
               <div className="flex items-center gap-2.5">
-                <span className="grid size-8 place-items-center rounded-xl bg-landing-mint/10 text-landing-mint"><Bot className="size-4" /></span>
-                <div>
-                  <p className="text-sm font-semibold text-landing-text">Assistente</p>
-                  <p className="flex items-center gap-1.5 text-[11px] text-landing-muted"><span className="size-1.5 rounded-full bg-landing-done" />online agora</p>
-                </div>
+                <span className="relative grid size-8 place-items-center rounded-lg bg-landing-plasma-c text-landing-text"><RobotIcon className="size-4" /><span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-landing-bg bg-landing-mint" /></span>
+                <div><p className="text-sm font-semibold text-landing-text">Assistente</p><p className="text-[11px] text-landing-muted">Perfil: @promosdaregina</p></div>
               </div>
-              <div className="flex gap-1.5"><span className="size-2 rounded-full bg-landing-line" /><span className="size-2 rounded-full bg-landing-line" /><span className="size-2 rounded-full bg-landing-line" /></div>
+              <span className="rounded-md px-2 py-1 text-xs text-landing-muted">Nova conversa</span>
             </div>
-            <div className="space-y-4 p-5">
-              {[
-                { q: "Quanto gastei este mês?", a: <span>Em setembro: <span className="font-semibold text-landing-text">R$ 184,20</span>. O maior gasto foi animação de cenas, <span className="font-semibold text-landing-text">R$ 96,40</span>.</span> },
-                { q: "O que está aguardando revisão?", a: <span><span className="font-semibold text-landing-mint">3 vídeos</span> com cenas geradas esperando sua aprovação no Pipeline.</span> },
-                { q: "Qual vídeo em alta hoje no radar?", a: <span><span className="font-semibold text-landing-mint">@casa.achados</span>, fronha de cetim: <span className="font-semibold text-landing-text">248 mil views</span> em 18 h, 3,1x a média do @.</span> },
-              ].map(({ q, a }) => (
-                <div key={q} className="space-y-2">
-                  <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-landing-plasma-c px-3.5 py-2.5 text-sm text-landing-text shadow-[0_4px_16px_color-mix(in_oklab,var(--landing-plasma-c)_28%,transparent)]">{q}</p>
-                  <p className="w-fit max-w-[90%] rounded-2xl rounded-bl-sm border border-landing-line bg-landing-surface px-3.5 py-2.5 text-sm leading-6 text-landing-muted">{a}</p>
-                </div>
-              ))}
-              <div className="flex w-fit items-center gap-1 rounded-2xl rounded-bl-sm border border-landing-line bg-landing-surface px-3.5 py-3">
-                <span className="landing-blink size-1.5 rounded-full bg-landing-muted/60" />
-                <span className="landing-blink size-1.5 rounded-full bg-landing-muted/60" style={{ animationDelay: "0.2s" }} />
-                <span className="landing-blink size-1.5 rounded-full bg-landing-muted/60" style={{ animationDelay: "0.4s" }} />
-              </div>
+            <div className="space-y-3 p-4 text-[13px] leading-5">
+              <Par q="Quanto gastei este mês?"><span>Em setembro: <b className="font-semibold text-landing-text">R$ 184,20</b>. O maior gasto foi animação de cenas, <b className="font-semibold text-landing-text">R$ 96,40</b>.</span></Par>
+              <Par q="O que está aguardando revisão?"><span>3 vídeos com cenas geradas esperando sua aprovação no Pipeline.</span><span className="mt-1.5 flex items-center gap-1 font-medium text-landing-mint">Abrir Pipeline <ArrowRight className="size-3.5" /></span></Par>
+              <Par q="Qual vídeo em alta hoje no radar?"><span className="flex gap-2.5"><span className="aspect-[9/16] w-8 shrink-0 rounded bg-landing-surface-raised" /><span><b className="font-semibold text-landing-text">@casa.achados</b>, fronha de cetim: 248 mil views em 18 h, 3,1x a média do @.</span></span></Par>
             </div>
-            <div className="border-t border-landing-line p-4">
-              <div className="flex items-center gap-2 rounded-full border border-landing-line bg-landing-surface px-4 py-2.5">
-                <p className="flex-1 text-sm text-landing-muted/60">Pergunte algo sobre seu saldo ou pipeline…</p>
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-landing-mint text-landing-bg shadow-[0_0_14px_color-mix(in_oklab,var(--landing-mint)_40%,transparent)]"><ArrowRight className="size-4" /></span>
+            <div className="flex flex-wrap gap-1.5 px-4 pb-3">{["Meu saldo", "Últimas execuções", "Vídeos publicados"].map((t) => <span key={t} className="rounded-full border border-landing-line px-2.5 py-1 text-[11px] text-landing-muted">{t}</span>)}</div>
+            <div className="border-t border-landing-line p-3">
+              <div className="flex items-center gap-2 rounded-lg border border-landing-line bg-landing-surface px-3 py-2">
+                <p className="flex-1 text-[13px] text-landing-muted">Pergunte sobre o seu painel...</p>
+                <span className="grid size-7 shrink-0 place-items-center rounded-md bg-landing-plasma-c text-landing-text"><Send className="size-3.5" /></span>
               </div>
             </div>
           </div>
-        </div>
-        <div className="order-1 lg:order-2">
-          <Sparkles className="size-8 text-landing-mint" />
-          <h2 className="landing-display mt-6 text-3xl font-bold sm:text-5xl">Pergunte ao seu <span className="landing-plasma-text">painel</span></h2>
-          <p className="mt-5 text-lg leading-8 text-landing-muted">Um assistente que conhece o seu Shop Studio: pipeline, custos, saldo, métricas, referências. Ele consulta o que você já tem acesso e responde com número da tela, não com estimativa.</p>
-          <div className="mt-7 flex flex-wrap gap-2">
-            {["Pipeline", "Custos", "Saldo", "Métricas", "Referências"].map((t) => <span key={t} className="rounded-full border border-landing-line bg-landing-surface px-3 py-1.5 text-xs font-medium text-landing-text">{t}</span>)}
-          </div>
-          <p className="mt-7 inline-flex items-center gap-2 text-sm text-landing-muted"><ArrowRight className="size-4 text-landing-mint" />Só consulta. Nada é aprovado, publicado ou gasto sem você.</p>
-        </div>
         </div>
       </section>
     </>
+  );
+}
+
+function Item({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return <div className="flex gap-4"><span className="mt-1 grid size-10 shrink-0 place-items-center rounded-xl bg-landing-surface text-landing-mint [&_svg]:size-5">{icon}</span><div><h3 className="landing-display text-lg font-semibold">{title}</h3><p className="mt-1 leading-7 text-landing-muted">{text}</p></div></div>;
+}
+
+function Par({ q, children }: { q: string; children: ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <p className="ml-auto w-fit max-w-[85%] rounded-xl rounded-br-sm bg-landing-plasma-c px-3 py-2 text-landing-text">{q}</p>
+      <div className="flex w-fit max-w-[92%] flex-col rounded-xl rounded-bl-sm border border-landing-line bg-landing-surface px-3 py-2 text-landing-muted">{children}</div>
+    </div>
   );
 }
