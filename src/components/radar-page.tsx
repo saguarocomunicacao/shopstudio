@@ -120,15 +120,24 @@ function RadarContent() {
               </div>
               <p className="text-xs font-medium text-brand-cyan">{i.razaoTexto}{i.emAltaNicho && i.razao && i.razao >= 2 ? " · em alta no nicho" : ""}</p>
               {i.analise && <div className="flex items-center gap-2 text-xs"><StatusAnaliseBadge status={i.analise.status} /><Link to="/app/analises/$id" params={{ id: i.analise.id }} className="text-muted-foreground underline">Ver análise</Link></div>}
-              <div className="mt-auto flex flex-wrap gap-2 pt-1">
-                {i.analise?.status === "pronto"
-                  ? <Button size="sm" disabled={!canCreate} onClick={() => setRoteiro({ id: i.id, assunto: `Inspirado em @${i.handle} (${i.url}).\nGancho: ${i.analise?.gancho ?? ""}\nResumo: ${i.analise?.resumo ?? ""}`.slice(0, 1500) })}><Wand2 />Criar roteiro inspirado</Button>
-                  : !i.analise || i.analise.status === "erro"
-                    ? <Button size="sm" disabled={analisarM.isPending} onClick={() => analisarM.mutate(i.id)}><Sparkles />Analisar</Button>
-                    : null}
-                <Button size="sm" variant="secondary" asChild><a href={i.url} target="_blank" rel="noreferrer"><ExternalLink />Ver no TikTok</a></Button>
-                <LerComentariosButton url={i.url} titulo={i.analise?.gancho ?? `Vídeo de @${i.handle}`} origem="radar" size="sm" />
-                <Button size="sm" variant="ghost" onClick={() => ignorar.mutate(i.id)}><EyeOff />Ignorar</Button>
+              <div className="mt-auto flex flex-col gap-2 pt-1">
+                <div className="flex items-center gap-2">
+                  {i.analise?.status === "pronto"
+                    ? <Button size="sm" disabled={!canCreate} onClick={() => setRoteiro({ id: i.id, assunto: `Inspirado em @${i.handle} (${i.url}).\nGancho: ${i.analise?.gancho ?? ""}\nResumo: ${i.analise?.resumo ?? ""}`.slice(0, 1500) })}><Wand2 />Criar roteiro inspirado</Button>
+                    : !i.analise || i.analise.status === "erro"
+                      ? <Button size="sm" disabled={analisarM.isPending} onClick={() => analisarM.mutate(i.id)}><Sparkles />Analisar</Button>
+                      : null}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="icon" variant="secondary" className="ml-auto shrink-0" asChild><a href={i.url} target="_blank" rel="noreferrer" aria-label="Ver no TikTok"><TikTokIcon className="size-4" /></a></Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Ver no TikTok</TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <LerComentariosButton url={i.url} titulo={i.analise?.gancho ?? `Vídeo de @${i.handle}`} origem="radar" size="sm" />
+                  <Button size="sm" variant="ghost" onClick={() => ignorar.mutate(i.id)}><EyeOff />Ignorar</Button>
+                </div>
               </div>
             </div>
           </article>
