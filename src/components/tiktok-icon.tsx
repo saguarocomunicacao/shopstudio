@@ -1,8 +1,8 @@
-/** Ícone do TikTok (glyph) para usar em botões/links. */
-export function TikTokIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
-      <path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v3.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.96-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.64 3.14-6.01 3.05-1.66-.05-3.3-.71-4.52-1.85-1.92-1.82-2.5-4.76-1.68-7.21.61-1.85 2.1-3.4 3.94-4.07.06 1.45-.34 2.9.5 4.24.5.84 1.4 1.4 2.35 1.5.96.1 1.96-.21 2.68-.85.71-.64 1.13-1.6 1.13-2.57V0c1.31.01 2.61 0 3.91.02z" />
-    </svg>
-  );
+import { SiTiktok } from "react-icons/si";
+import { cn } from "@/lib/utils";
+
+/** Ícone oficial do TikTok (Simple Icons, monocromático). Cor herdada do texto. */
+export function TikTokIcon({ size, className }: { size?: number | string; className?: string }) {
+  // SiTiktok tem menos respiro que os ícones lucide; 0.9 iguala a altura óptica.
+  return <SiTiktok size={size ?? "1em"} className={cn("shrink-0 scale-90", className)} color="currentColor" aria-hidden="true" focusable="false" />;
 }

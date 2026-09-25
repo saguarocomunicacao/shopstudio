@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowDown, ArrowUp, ChevronDown, ChevronRight, ExternalLink, Eye, Film, Heart, Loader2, RefreshCw, TrendingUp, Users } from "lucide-react";
+import { TikTokIcon } from "./tiktok-icon";
 import { CurvaViews, GraficoMetricas } from "./metricas-graficos";
 import { PageHeader } from "./page-header";
 import { useStudio } from "./studio-context";
@@ -270,7 +271,7 @@ export function MetricasContent() {
                                 <p className="text-muted-foreground">Repostados: {fmt(l.reposts)}</p>
                                 {l.tiktok_video_url && (
                                   <a href={l.tiktok_video_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-primary underline" onClick={(e) => e.stopPropagation()}>
-                                    Abrir no TikTok <ExternalLink className="size-3" />
+                                    Abrir no TikTok <TikTokIcon className="size-3" />
                                   </a>
                                 )}
                               </div>
