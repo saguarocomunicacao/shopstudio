@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { adicionarReferenciaFn, analisarVideosRef, atualizarReferencia, avancarReferencia, gerarInsightsRef, getReferencia, listarReferencias, opcoesReferencia, removerReferenciaFn } from "@/lib/referencias.functions";
+import { AcompanharButton } from "./acompanhar-button";
 import { mediasReferencia } from "@/lib/referencias-calc";
 import { diaMenos, hojeBr, resumirMetricas, type PerfilSnap, type VideoSnap } from "@/lib/metricas-calc";
 import type { VideoRef } from "@/lib/referencias-dados";
@@ -36,7 +37,7 @@ const estAnaliseUsd = (dur: number | null) => 0.01 + ((dur ?? 30) * 300 * 0.75 +
 const usd = (v: number) => `US$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (≈ ${brl(v * USD_BRL)})`;
 
 const STATUS_COLETA: Record<string, [string, string]> = {
-  nunca: ["Aguardando", "status-violet"], coletando: ["Coletando", "status-blue"], processando: ["Coletando", "status-blue"], ok: ["Em dia", "status-lime"], erro: ["Erro", "status-pink"],
+  nunca: ["Aguardando", "status-violet"], coletando: ["Coletando", "status-blue"], processando: ["Coletando", "status-blue"], ok: ["Em dia", "status-lime"], pausado: ["Pausado", "status-violet"], erro: ["Erro", "status-pink"],
 };
 const Badge = ({ s }: { s: string }) => {
   const [t, c] = STATUS_COLETA[s] ?? ["—", "status-violet"];
@@ -141,12 +142,13 @@ function ListaReferencias({ abrir }: { abrir: (id: string) => void }) {
                   <TableCell className="px-3 text-right text-sm tabular-nums">{fmt(i.videos)}</TableCell>
                   <TableCell className="px-3 text-right text-sm tabular-nums">{fmt(i.analisados)}</TableCell>
                   <TableCell className="px-3 text-sm">{quando(i.ultimaColeta)}</TableCell>
-                  <TableCell className="px-3"><span title={i.erro ?? undefined}><Badge s={i.status} /></span></TableCell>
+                  <TableCell className="px-3"><span title={i.erro ?? undefined}><Badge s={!i.acompanhar && !i.meuPerfil && !["coletando", "processando"].includes(i.status) ? "pausado" : i.status} /></span></TableCell>
                   {podeCusto && <TableCell className="px-3 text-right text-sm tabular-nums">{brl(i.custoCents / 100)}</TableCell>}
                   <TableCell className="px-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
                       <Button size="sm" variant="ghost" onClick={() => abrir(i.id)}>Abrir</Button>
                       {podeEditar && <Button size="icon" variant="ghost" aria-label="Atualizar" disabled={mutAtualizar.isPending || i.status === "coletando"} onClick={() => mutAtualizar.mutate(i.id)}><RefreshCw className="size-4" /></Button>}
+                      {podeEditar && !i.meuPerfil && <AcompanharButton refId={i.id} handle={i.handle} acompanhar={i.acompanhar} compacto />}
                       {podeEditar && <Button size="icon" variant="ghost" aria-label="Remover" onClick={() => setApagar({ id: i.id, handle: i.handle })}><Trash2 className="size-4" /></Button>}
                     </div>
                   </TableCell>
@@ -281,7 +283,8 @@ function DetalheReferencia({ refId, tab, onTab, voltar }: { refId: string; tab: 
     { label: "Posts por semana", valor: m.porSemana == null ? "—" : m.porSemana.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) },
     { label: "Duração média", valor: m.duracaoMedia == null ? "—" : `${Math.round(m.duracaoMedia)} s` },
   ];
-  const coletaStatus = d.coleta?.status ?? "nunca";
+  const coletaReal = d.coleta?.status ?? "nunca";
+  const coletaStatus = !ref.acompanhar && !ref.meu_perfil_id && !["coletando", "processando"].includes(coletaReal) ? "pausado" : coletaReal;
 
   return (
     <>
@@ -295,7 +298,7 @@ function DetalheReferencia({ refId, tab, onTab, voltar }: { refId: string; tab: 
         </div>
         {d.podeEditar && (
           <div className="grid gap-2 text-sm">
-            <label className="flex items-center justify-between gap-3">Acompanhar diariamente<Switch checked={ref.acompanhar} disabled={!!ref.meu_perfil_id} onCheckedChange={(v) => mutOpcoes.mutate({ acompanhar: v })} /></label>
+            {!ref.meu_perfil_id && <AcompanharButton refId={refId} handle={ref.handle} acompanhar={ref.acompanhar} />}
             <label className="flex items-center justify-between gap-3">Usar como referência do roteirista<Switch checked={ref.fonte_roteirista} onCheckedChange={(v) => mutOpcoes.mutate({ fonteRoteirista: v })} /></label>
             <Button variant="secondary" size="sm" disabled={mutAtualizar.isPending || coletaStatus === "coletando"} onClick={() => mutAtualizar.mutate()}>
               {mutAtualizar.isPending || coletaStatus === "coletando" ? <Loader2 className="animate-spin" /> : <RefreshCw />}Atualizar
