@@ -184,7 +184,6 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
     qc.invalidateQueries({ queryKey: ["video-analises", activeProfileId] });
   };
   const remover = async (a: Analise) => {
-    if (!confirm("Remover esta análise?")) return;
     const paths = [a.storage_path, ...(a.frames ?? []).map((f) => f.path)].filter(Boolean) as string[];
     if (paths.length) await supabase.storage.from(BUCKET).remove(paths);
     const { error: e } = await supabase.from("video_analises").delete().eq("id", a.id);
