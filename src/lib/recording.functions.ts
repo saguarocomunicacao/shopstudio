@@ -353,7 +353,7 @@ export const generateRecordingScript = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, product_id, profile_id, status, title, formato, roteiro_modo, roteiro_origem, hook, post_cta, caption, hashtags, texto_tela")
+      .select("id, product_id, profile_id, status, title, formato, roteiro_modo, roteiro_origem, hook, post_cta, caption, hashtags, texto_tela, contexto_compradores")
       .eq("id", data.jobId)
       .maybeSingle();
     if (jobError) throw new Error(jobError.message);
@@ -434,7 +434,8 @@ export const generateRecordingScript = createServerFn({ method: "POST" })
         observacoes_estilo: identity?.style_notes?.trim() ?? "",
         tipo_cta: tipoCta,
       });
-      const prompt = `${renderedPrompt}\n\nREGRA OBRIGATÓRIA DE CONTINUIDADE: A fala do gancho (0-3s) já é o início do vídeo. Não repita a fala do gancho, nem uma paráfrase dela, em nenhum bloco de tempo. O primeiro bloco começa em 3s com fala nova e dá continuidade ao gancho.`;
+      const { blocoContextoCompradores } = await import("./comentarios-schema");
+      const prompt = `${renderedPrompt}${blocoContextoCompradores((job as { contexto_compradores?: string | null }).contexto_compradores)}\n\nREGRA OBRIGATÓRIA DE CONTINUIDADE: A fala do gancho (0-3s) já é o início do vídeo. Não repita a fala do gancho, nem uma paráfrase dela, em nenhum bloco de tempo. O primeiro bloco começa em 3s com fala nova e dá continuidade ao gancho.`;
 
       const { roteiro: generatedRoteiro, usage: u } = await callLovableAi(prompt);
       somarUso(u);
