@@ -1,3 +1,4 @@
+import { LerComentariosButton } from "./comentarios-panel";
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -373,7 +374,7 @@ function DetalheReferencia({ refId, tab, onTab, voltar }: { refId: string; tab: 
                         <TableCell className="px-3 text-right text-sm tabular-nums">{l.semDados ? "—" : fmt(l.compartilhamentos)}</TableCell>
                         <TableCell className="px-3 text-right text-sm tabular-nums">{l.semDados ? "—" : fmt(l.salvos)}</TableCell>
                         <TableCell className="px-3 text-right text-sm tabular-nums">{pct(l.engajamentoPct)}</TableCell>
-                        <TableCell className="px-3 text-sm"><StatusAnaliseBadge id={a?.id} status={a?.status} etapa={a?.etapa} erro={a?.erro} /></TableCell>
+                        <TableCell className="px-3 text-sm"><div className="flex items-center gap-1"><StatusAnaliseBadge id={a?.id} status={a?.status} etapa={a?.etapa} erro={a?.erro} /><LerComentariosButton url={l.url} titulo={l.legenda} origem="referencia" /></div></TableCell>
                       </TableRow>
                     );
                   })}

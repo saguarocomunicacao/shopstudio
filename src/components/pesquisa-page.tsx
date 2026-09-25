@@ -1,3 +1,4 @@
+import { LerComentariosButton } from "./comentarios-panel";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -281,6 +282,8 @@ function Detalhe({ id, tab, onTab, voltar }: { id: string; tab: "videos" | "insi
                       <TableRow key={v.tiktok_video_id}>
                         {d.podeEditar && <TableCell className="px-3"><Checkbox aria-label="Selecionar" checked={sel.has(v.tiktok_video_id)} onCheckedChange={(c) => setSel((s) => { const n = new Set(s); if (c) n.add(v.tiktok_video_id); else n.delete(v.tiktok_video_id); return n; })} /></TableCell>}
                         <TableCell className="px-3">
+                          <div className="flex items-center gap-1">
+                          <LerComentariosButton url={v.url} titulo={v.legenda} origem="pesquisa" />
                           <a href={v.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:underline">
                             <div className="h-12 w-9 shrink-0 overflow-hidden rounded bg-muted">{v.capaUrl && <img src={v.capaUrl} alt="" className="size-full object-cover" />}</div>
                             <span className="max-w-64">

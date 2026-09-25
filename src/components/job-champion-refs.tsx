@@ -1,3 +1,4 @@
+import { LerComentariosButton } from "./comentarios-panel";
 import { useState } from "react";
 import { ChevronDown, ExternalLink, Trophy } from "lucide-react";
 import { brl } from "@/lib/custo";
@@ -63,6 +64,7 @@ export function JobChampionRefs({ refs }: { refs?: ChampionRef[] | null | undefi
                 </p>
               </div>
               {ref.creator ? <AddReferenciaButton handle={ref.creator} compacto /> : null}
+              {ref.url ? <LerComentariosButton url={ref.url} titulo={ref.title} origem="campeoes" /> : null}
               {ref.url ? (
                 <a
                   href={ref.url}

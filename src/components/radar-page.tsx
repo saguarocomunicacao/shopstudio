@@ -1,3 +1,4 @@
+import { LerComentariosButton } from "./comentarios-panel";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -124,6 +125,7 @@ function RadarContent() {
                     ? <Button size="sm" disabled={analisarM.isPending} onClick={() => analisarM.mutate(i.id)}><Sparkles />Analisar</Button>
                     : null}
                 <Button size="sm" variant="secondary" asChild><a href={i.url} target="_blank" rel="noreferrer"><ExternalLink />Ver no TikTok</a></Button>
+                <LerComentariosButton url={i.url} titulo={i.analise?.gancho ?? `Vídeo de @${i.handle}`} origem="radar" size="sm" />
                 <Button size="sm" variant="ghost" onClick={() => ignorar.mutate(i.id)}><EyeOff />Ignorar</Button>
               </div>
             </div>
