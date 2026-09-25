@@ -1,4 +1,5 @@
 import { LerComentariosButton } from "./comentarios-panel";
+import { plural } from "@/lib/plural";
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -294,7 +295,7 @@ function DetalheReferencia({ refId, tab, onTab, voltar }: { refId: string; tab: 
         <Foto url={ref.fotoUrl} handle={ref.handle} grande />
         <div className="min-w-0 flex-1">
           <p className="font-display text-xl font-semibold">@{ref.handle} {ref.meu_perfil_id && <span className="ml-1 rounded-full bg-secondary px-2 py-0.5 align-middle text-xs font-medium">Meu perfil</span>}</p>
-          <p className="text-sm text-muted-foreground">{fmt(ult?.seguidores)} seguidores · {fmt(ult?.curtidas_total)} curtidas · {fmt(ult?.videos_total)} vídeos</p>
+          <p className="text-sm text-muted-foreground">{plural(ult?.seguidores, "seguidor", "seguidores", fmt)} · {plural(ult?.curtidas_total, "curtida", "curtidas", fmt)} · {plural(ult?.videos_total, "vídeo", "vídeos", fmt)}</p>
           <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><Badge s={coletaStatus} /> Última coleta: {quando(d.coleta?.ultima_coleta_em)}</p>
         </div>
         {d.podeEditar && (
@@ -463,7 +464,7 @@ function Insights({ refId, handle, texto, em, analises, videos, snaps, podeEdita
     <div className="space-y-4">
       <div className="panel flex flex-wrap items-center justify-between gap-2 p-4">
         <div className="text-sm">
-          <p className="font-medium">{texto ? `Gerado em ${quando(em)} com ${li && "v2" in li ? li.v2.n_videos : prontas} vídeos analisados` : "Insights ainda não gerados"}</p>
+          <p className="font-medium">{texto ? `Gerado em ${quando(em)} com ${plural(li && "v2" in li ? li.v2.n_videos : prontas, "vídeo analisado", "vídeos analisados")}` : "Insights ainda não gerados"}</p>
           <p className="text-xs text-muted-foreground">Análises deste @: {contagem}</p>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState } from "react";
+import { plural } from "@/lib/plural";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -111,7 +112,7 @@ export function CriadoresPanel() {
       {res && (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm text-muted-foreground">{lista.length} de {res.itens.length} criadores</p>
+            <p className="text-sm text-muted-foreground">{lista.length} de {plural(res.itens.length, "criador", "criadores")}</p>
             {podeEditar && (
               <Button className="ml-auto" size="sm" disabled={!livres.length || mutVarios.isPending} onClick={() => mutVarios.mutate(livres)}>
                 {mutVarios.isPending ? <Loader2 className="animate-spin" /> : <UserPlus />}Adicionar selecionados{livres.length ? ` (${livres.length}) · coleta inicial ≈ US$ ${(livres.length * estColetaUsd).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} (≈ ${brl(livres.length * estColetaUsd * USD_BRL)})` : ""}

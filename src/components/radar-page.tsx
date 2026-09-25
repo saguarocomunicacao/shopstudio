@@ -104,7 +104,7 @@ function RadarContent() {
           <article key={i.id} className="flex flex-col overflow-hidden rounded-lg border border-border bg-card">
             <a href={i.url} target="_blank" rel="noreferrer" className="relative block aspect-[9/16] bg-video-bg">
               {i.capaUrl && <img src={i.capaUrl} alt="" className="size-full object-cover" loading="lazy" />}
-              <span className="absolute left-2 top-2 rounded-md bg-brand-cyan px-2 py-0.5 text-xs font-semibold text-black">{i.razao && i.razao >= 2 ? `${i.razao.toLocaleString("pt-BR")}x a média` : i.emAltaNicho ? "Top do nicho" : "Acima do normal"}</span>
+              <span className="absolute left-2 top-2 rounded-md bg-brand-cyan px-2 py-0.5 text-xs font-semibold text-black">{i.razaoTexto || (i.razao && i.razao >= 2 ? `${i.razao.toLocaleString("pt-BR")}x a média do @` : i.emAltaNicho ? "Top 10% do nicho" : "Acima do normal")}</span>
               {i.status === "novo" && <span className="absolute right-2 top-2 rounded-md bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">Novo</span>}
             </a>
             <div className="flex flex-1 flex-col gap-2 p-3">
@@ -118,7 +118,7 @@ function RadarContent() {
                 <strong className="font-display text-xl">{fmt(i.views)}</strong><span className="text-xs text-muted-foreground">views</span>
                 {i.engajamentoPct != null && <span className="ml-auto text-xs text-muted-foreground">{i.engajamentoPct.toLocaleString("pt-BR")}% engaj.</span>}
               </div>
-              <p className="text-xs font-medium text-brand-cyan">{i.razaoTexto}{i.emAltaNicho && i.razao && i.razao >= 2 ? " · em alta no nicho" : ""}</p>
+              <p className="text-xs font-medium text-brand-cyan">{i.emAltaNicho && i.razao && i.razao >= 2 ? "Também entre os 10% mais vistos do nicho na semana" : ""}</p>
               {i.analise && <div className="flex items-center gap-2 text-xs"><StatusAnaliseBadge status={i.analise.status} /><Link to="/app/analises/$id" params={{ id: i.analise.id }} className="text-muted-foreground underline">Ver análise</Link></div>}
               <div className="mt-auto flex flex-col gap-2 pt-1">
                 <div className="flex items-center gap-2">
