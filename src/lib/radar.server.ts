@@ -77,8 +77,10 @@ export async function detectarRadar(refId: string): Promise<number> {
   const p80 = base.length >= 3 ? percentil(base.map((v) => v.views), 0.8) : Infinity;
 
   // Nicho: top 10% dos vídeos novos da semana entre os @ acompanhados deste perfil.
+  // Só vale com pelo menos 3 @ acompanhados e 10 vídeos novos na semana no perfil.
   const semana = todos.filter((v) => v.idadeH != null && v.idadeH <= 7 * 24);
-  const corteNicho = semana.length >= 5 ? percentil(semana.map((v) => v.views), 0.9) : Infinity;
+  const nRefs = new Set(todos.map((v) => v.referencia_id)).size;
+  const corteNicho = nRefs >= 3 && semana.length >= 10 ? percentil(semana.map((v) => v.views), 0.9) : Infinity;
 
   const { data: existentes } = await db.from("radar_alertas").select("tiktok_video_id").eq("referencia_id", refId);
   const jaTem = new Set(((existentes ?? []) as Any[]).map((e) => e.tiktok_video_id));
@@ -92,8 +94,8 @@ export async function detectarRadar(refId: string): Promise<number> {
     if (!acimaMedia && !acimaP80 && !nicho) continue;
     const janela = c.idadeH == null ? "" : c.idadeH <= 24 ? " em 24 h" : c.idadeH <= 48 ? " em 48 h" : " em 72 h";
     const razaoTexto = acimaMedia
-      ? `${fmt(razao!)}x a média do perfil${janela}`
-      : acimaP80 ? `Acima de 80% dos vídeos do perfil${janela}` : "Entre os 10% mais vistos do nicho na semana";
+      ? `${fmt(razao!)}x a média do @${janela}`
+      : acimaP80 ? `Acima de 80% dos vídeos do @${janela}` : "Entre os 10% mais vistos do nicho na semana";
     const linha = {
       tenant_id: ref.tenant_id, profile_id: ref.profile_id, referencia_id: refId, tiktok_video_id: String(c.tiktok_video_id),
       views: c.views, engajamento_pct: c.snap ? engajamento(c.snap) : null,

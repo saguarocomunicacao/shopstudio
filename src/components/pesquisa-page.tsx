@@ -1,4 +1,5 @@
 import { LerComentariosButton } from "./comentarios-panel";
+import { plural } from "@/lib/plural";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -227,7 +228,7 @@ function Detalhe({ id, tab, onTab, voltar }: { id: string; tab: "videos" | "insi
       <div className="panel mb-6 flex flex-wrap items-center gap-3 p-5">
         <div className="min-w-0 flex-1">
           <p className="font-display text-xl font-semibold">{rotulo(p.tipo, p.termo)}</p>
-          <p className="text-sm text-muted-foreground">{p.tipo === "hashtag" ? "Hashtag" : "Palavra"} · {quando(p.created_at)} · {fmt(p.n_videos)} vídeos</p>
+          <p className="text-sm text-muted-foreground">{p.tipo === "hashtag" ? "Hashtag" : "Palavra"} · {quando(p.created_at)} · {plural(p.n_videos, "vídeo", "vídeos", fmt)}</p>
         </div>
         {coletando && <span className="inline-flex items-center gap-1 rounded-full status-blue px-2 py-0.5 text-xs"><Loader2 className="size-3 animate-spin" />Coletando</span>}
       </div>
@@ -260,7 +261,7 @@ function Detalhe({ id, tab, onTab, voltar }: { id: string; tab: "videos" | "insi
               {resumo.autores.length ? (
                 <div className="space-y-2">{resumo.autores.map((a) => (
                   <div key={a.nome} className="flex items-center justify-between gap-2 text-sm">
-                    <span>@{a.nome} <span className="text-muted-foreground">· {a.qtd} vídeos</span></span>
+                    <span>@{a.nome} <span className="text-muted-foreground">· {plural(a.qtd, "vídeo", "vídeos")}</span></span>
                     <AddReferenciaButton handle={a.nome} jaAcompanhado={acompanhados.has(a.nome.toLowerCase())} compacto />
                   </div>
                 ))}</div>
@@ -281,7 +282,7 @@ function Detalhe({ id, tab, onTab, voltar }: { id: string; tab: "videos" | "insi
               </div>
             </div>
           </div>
-          {soPt && todos.length > visiveis.length && <p className="mb-2 text-xs text-muted-foreground">{todos.length - visiveis.length} vídeos escondidos por parecerem de outro idioma (detecção provável, pela legenda).</p>}
+          {soPt && todos.length > visiveis.length && <p className="mb-2 text-xs text-muted-foreground">{todos.length - visiveis.length === 1 ? "1 vídeo escondido por parecer" : `${todos.length - visiveis.length} vídeos escondidos por parecerem`} de outro idioma (detecção provável, pela legenda).</p>}
           {!visiveis.length ? <Vazio>{coletando ? "Buscando vídeos no TikTok..." : "Nenhum vídeo para mostrar."}</Vazio> : (
             <div className="panel overflow-x-auto p-0">
               <Table>

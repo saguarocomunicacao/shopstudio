@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { plural } from "@/lib/plural";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -110,7 +111,7 @@ export function ComentariosPanel({ url, titulo, origem }: { url: string; titulo?
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">{coleta.n_comentarios} comentários lidos · {new Date(coleta.updated_at).toLocaleDateString("pt-BR")}</p>
+        <p className="text-xs text-muted-foreground">{plural(coleta.n_comentarios, "comentário lido", "comentários lidos")} · {new Date(coleta.updated_at).toLocaleDateString("pt-BR")}</p>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" disabled={!d?.podeEditar || iniciar.isPending} onClick={() => iniciar.mutate(true)}>Ler de novo</Button>
           <Button size="sm" disabled={!ins || !d?.podeEditar} onClick={usar}>Usar no roteiro</Button>
@@ -161,7 +162,7 @@ export function ComentariosPanel({ url, titulo, origem }: { url: string; titulo?
               <div className="mb-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                 {c.autor && <span>@{c.autor}</span>}
                 <span>{c.likes} likes</span>
-                <span>{c.respostas} respostas</span>
+                <span>{plural(c.respostas, "resposta", "respostas")}</span>
                 {c.categoria && <Badge variant="outline">{CATEGORIA_LABEL[c.categoria as Categoria] ?? c.categoria}{c.subtipo ? ` · ${SUBTIPO_LABEL[c.subtipo as keyof typeof SUBTIPO_LABEL] ?? c.subtipo}` : ""}</Badge>}
                 {c.fixado && <Badge variant="secondary"><Pin className="size-3" />Fixado</Badge>}
                 {c.curtido_dono && <Badge variant="secondary"><Heart className="size-3" />Curtido pelo dono</Badge>}
