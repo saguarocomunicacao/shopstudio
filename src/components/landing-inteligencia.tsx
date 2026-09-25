@@ -83,27 +83,56 @@ export function LandingInteligencia() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-12 px-5 py-24 lg:grid-cols-[1.1fr_.9fr] lg:items-center lg:px-8 lg:py-32">
-        <div className="order-2 lg:order-1 landing-aura mx-auto w-full max-w-md rounded-[22px] border border-landing-line bg-landing-bg p-4 text-sm shadow-2xl shadow-black/40" aria-hidden="true">
-          <div className="flex items-center gap-2 border-b border-landing-line pb-3"><Bot className="size-5 text-landing-mint" /><p className="font-semibold text-landing-text">Assistente</p></div>
-          <div className="mt-4 space-y-3">
-            {[
-              ["Quanto gastei este mês?", "Em setembro: R$ 184,20. O maior gasto foi animação de cenas, R$ 96,40."],
-              ["O que está aguardando revisão?", "3 vídeos com cenas geradas esperando sua aprovação no Pipeline."],
-              ["Qual vídeo em alta hoje no radar?", "@casa.achados, fronha de cetim: 248 mil views em 18 h, 3,1x a média do @."],
-            ].map(([p, r]) => (
-              <div key={p} className="space-y-2">
-                <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-landing-plasma-c px-3 py-2 text-landing-text">{p}</p>
-                <p className="w-fit max-w-[90%] rounded-2xl rounded-bl-sm border border-landing-line bg-landing-surface px-3 py-2 text-landing-muted">{r}</p>
+      <section className="mx-auto max-w-7xl px-5 py-24 lg:px-8 lg:py-36">
+        <div className="grid gap-12 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:gap-16">
+        <div className="relative order-2 lg:order-1">
+          <div className="pointer-events-none absolute -left-16 -top-16 size-56 rounded-full bg-landing-plasma-c/15 blur-[90px]" aria-hidden="true" />
+          <div className="pointer-events-none absolute -bottom-16 -right-10 size-56 rounded-full bg-landing-mint/12 blur-[90px]" aria-hidden="true" />
+          <div className="landing-aura relative mx-auto w-full max-w-md overflow-hidden rounded-[24px] border border-landing-line bg-landing-bg/80 backdrop-blur-xl" aria-hidden="true">
+            <div className="flex items-center justify-between border-b border-landing-line px-5 py-3.5">
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-8 place-items-center rounded-xl bg-landing-mint/10 text-landing-mint"><Bot className="size-4" /></span>
+                <div>
+                  <p className="text-sm font-semibold text-landing-text">Assistente</p>
+                  <p className="flex items-center gap-1.5 text-[11px] text-landing-muted"><span className="size-1.5 rounded-full bg-landing-done" />online agora</p>
+                </div>
               </div>
-            ))}
+              <div className="flex gap-1.5"><span className="size-2 rounded-full bg-landing-line" /><span className="size-2 rounded-full bg-landing-line" /><span className="size-2 rounded-full bg-landing-line" /></div>
+            </div>
+            <div className="space-y-4 p-5">
+              {[
+                { q: "Quanto gastei este mês?", a: <span>Em setembro: <span className="font-semibold text-landing-text">R$ 184,20</span>. O maior gasto foi animação de cenas, <span className="font-semibold text-landing-text">R$ 96,40</span>.</span> },
+                { q: "O que está aguardando revisão?", a: <span><span className="font-semibold text-landing-mint">3 vídeos</span> com cenas geradas esperando sua aprovação no Pipeline.</span> },
+                { q: "Qual vídeo em alta hoje no radar?", a: <span><span className="font-semibold text-landing-mint">@casa.achados</span>, fronha de cetim: <span className="font-semibold text-landing-text">248 mil views</span> em 18 h, 3,1x a média do @.</span> },
+              ].map(({ q, a }) => (
+                <div key={q} className="space-y-2">
+                  <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-landing-plasma-c px-3.5 py-2.5 text-sm text-landing-text shadow-[0_4px_16px_color-mix(in_oklab,var(--landing-plasma-c)_28%,transparent)]">{q}</p>
+                  <p className="w-fit max-w-[90%] rounded-2xl rounded-bl-sm border border-landing-line bg-landing-surface px-3.5 py-2.5 text-sm leading-6 text-landing-muted">{a}</p>
+                </div>
+              ))}
+              <div className="flex w-fit items-center gap-1 rounded-2xl rounded-bl-sm border border-landing-line bg-landing-surface px-3.5 py-3">
+                <span className="landing-blink size-1.5 rounded-full bg-landing-muted/60" />
+                <span className="landing-blink size-1.5 rounded-full bg-landing-muted/60" style={{ animationDelay: "0.2s" }} />
+                <span className="landing-blink size-1.5 rounded-full bg-landing-muted/60" style={{ animationDelay: "0.4s" }} />
+              </div>
+            </div>
+            <div className="border-t border-landing-line p-4">
+              <div className="flex items-center gap-2 rounded-full border border-landing-line bg-landing-surface px-4 py-2.5">
+                <p className="flex-1 text-sm text-landing-muted/60">Pergunte algo sobre seu saldo ou pipeline…</p>
+                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-landing-mint text-landing-bg shadow-[0_0_14px_color-mix(in_oklab,var(--landing-mint)_40%,transparent)]"><ArrowRight className="size-4" /></span>
+              </div>
+            </div>
           </div>
         </div>
         <div className="order-1 lg:order-2">
           <Sparkles className="size-8 text-landing-mint" />
-          <h2 className="landing-display mt-6 text-3xl font-bold sm:text-5xl">Pergunte ao seu painel</h2>
+          <h2 className="landing-display mt-6 text-3xl font-bold sm:text-5xl">Pergunte ao seu <span className="landing-plasma-text">painel</span></h2>
           <p className="mt-5 text-lg leading-8 text-landing-muted">Um assistente que conhece o seu Shop Studio: pipeline, custos, saldo, métricas, referências. Ele consulta o que você já tem acesso e responde com número da tela, não com estimativa.</p>
-          <p className="mt-6 inline-flex items-center gap-2 text-sm text-landing-muted"><ArrowRight className="size-4 text-landing-mint" />Só consulta. Nada é aprovado, publicado ou gasto sem você.</p>
+          <div className="mt-7 flex flex-wrap gap-2">
+            {["Pipeline", "Custos", "Saldo", "Métricas", "Referências"].map((t) => <span key={t} className="rounded-full border border-landing-line bg-landing-surface px-3 py-1.5 text-xs font-medium text-landing-text">{t}</span>)}
+          </div>
+          <p className="mt-7 inline-flex items-center gap-2 text-sm text-landing-muted"><ArrowRight className="size-4 text-landing-mint" />Só consulta. Nada é aprovado, publicado ou gasto sem você.</p>
+        </div>
         </div>
       </section>
     </>
