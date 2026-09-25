@@ -85,7 +85,7 @@ export function buildToolsExtra(ctx: Ctx) {
       inputSchema: z.object({ profile_id: perfilArg, dias: z.number().nullable() }),
       execute: async ({ profile_id, dias }) => {
         const p = pid(ctx, profile_id);
-        if (!ctx.access.can("produtos", "visualizar", p) && !ctx.access.isBackoffice) return semAcesso("Produtos");
+        if (!ctx.access.can("produtos", "visualizar", p) && !ctx.access.isBackoffice) return semAcesso("Explorar");
         let q = db.from("buscas_produto").select("id, origem, termo, filtros, total, user_id, created_at, profile_id, consumo_evento_id").order("created_at", { ascending: false }).limit(20);
         if (p) q = q.eq("profile_id", p);
         if (dias) q = q.gte("created_at", new Date(Date.now() - dias * 86400_000).toISOString());
@@ -122,7 +122,7 @@ export function buildToolsExtra(ctx: Ctx) {
       inputSchema: z.object({ profile_id: perfilArg, busca_id: z.string().nullable() }),
       execute: async ({ profile_id, busca_id }) => {
         const p = pid(ctx, profile_id);
-        if (!ctx.access.can("produtos", "visualizar", p) && !ctx.access.isBackoffice) return semAcesso("Produtos");
+        if (!ctx.access.can("produtos", "visualizar", p) && !ctx.access.isBackoffice) return semAcesso("Explorar");
         let q = db.from("buscas_produto").select("id, origem, termo, total, resultados, created_at").order("created_at", { ascending: false }).limit(1);
         if (busca_id) q = q.eq("id", busca_id);
         else if (p) q = q.eq("profile_id", p);
@@ -524,14 +524,14 @@ export function buildToolsExtra(ctx: Ctx) {
     }),
 
     buscar_criadores: tool({
-      description: "Criadores do TikTok Shop BR da aba Produtos > Criadores (ranking do Kalodata), lidos da última busca salva (sem custo novo). Filtros opcionais aplicados sobre ela. Valores já prontos: copie. Para uma busca nova, oriente a usar a aba Criadores.",
+      description: "Criadores do TikTok Shop BR da aba Explorar > Criadores (ranking do Kalodata), lidos da última busca salva (sem custo novo). Filtros opcionais aplicados sobre ela. Valores já prontos: copie. Para uma busca nova, oriente a usar a aba Criadores.",
       inputSchema: z.object({ profile_id: perfilArg, seguidores_min: z.number().nullable(), seguidores_max: z.number().nullable(), so_video_50: z.boolean().nullable().describe("Padrão true: só quem tem 50%+ da receita em vídeo.") }),
       execute: async ({ profile_id, seguidores_min, seguidores_max, so_video_50 }) => {
         const p = pid(ctx, profile_id);
         if (!p) return { erro: "Selecione um perfil." };
         if (!ctx.access.isBackoffice && !ctx.access.can("produtos", "visualizar", p)) return semAcesso("Criadores");
         const { data: b } = await db.from("buscas_produto").select("filtros, resultados, created_at").eq("profile_id", p).eq("origem", "criadores").order("created_at", { ascending: false }).limit(1).maybeSingle();
-        if (!b) return { erro: "Nenhuma busca de criadores ainda. Faça uma na aba Produtos > Criadores.", link: "/app/produtos?tab=criadores" };
+        if (!b) return { erro: "Nenhuma busca de criadores ainda. Faça uma na aba Explorar > Criadores.", link: "/app/produtos?tab=criadores" };
         const { data: refs } = await db.from("referencia_perfis").select("handle").eq("profile_id", p);
         const ja = new Set(((refs ?? []) as Any[]).map((r) => String(r.handle).toLowerCase()));
         const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

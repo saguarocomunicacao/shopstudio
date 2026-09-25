@@ -27,8 +27,8 @@ import { actionError } from "@/lib/api-keys";
 
 const errMessage = (e: unknown) => actionError(e, "Não foi possível concluir a ação.");
 
-function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) {
-  return <PageHeader title={title} description={/\d/.test(eyebrow) ? eyebrow : undefined} actions={action} />;
+function Heading({ title, action, description }: { eyebrow?: string; title: string; action?: React.ReactNode; description?: string }) {
+  return <PageHeader title={title} description={description} actions={action} />;
 }
 
 const brl = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -256,7 +256,8 @@ function ProductsContent() {
     <>
       <Heading
         eyebrow="Descoberta"
-        title="Produtos em alta"
+        title="Explorar"
+        description="Produtos e criadores em alta no TikTok Shop, vindos do Kalodata"
         action={
           canUpdate && tab === "catalogo" && products.length ? (
             <Button variant="secondary" disabled={refreshAll.isPending} onClick={() => refreshAll.mutate()}>

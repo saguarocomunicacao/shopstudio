@@ -1,5 +1,5 @@
 /**
- * Produtos > Criadores: ranking de criadores do TikTok Shop BR (Kalodata creator/rank).
+ * Explorar > Criadores: ranking de criadores do TikTok Shop BR (Kalodata creator/rank).
  * Ficha (creator/detail) e vídeos mais vendidos (video/rank por criador) só ao abrir a linha.
  */
 import { createServerFn } from "@tanstack/react-start";
