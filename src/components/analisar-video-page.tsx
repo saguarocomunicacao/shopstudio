@@ -278,6 +278,18 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
         )}
       </div>
       <NovaAnaliseDialog open={novo} onOpenChange={setNovo} profileId={activeProfileId} onCriada={(id) => setAbertaId(id)} />
+      <AlertDialog open={!!apagar} onOpenChange={(o) => !o && setApagar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover esta análise?</AlertDialogTitle>
+            <AlertDialogDescription>Apaga o vídeo, os frames e os dados da análise. Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.preventDefault(); if (apagar) { void remover(apagar); setApagar(null); } }}>Remover</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
