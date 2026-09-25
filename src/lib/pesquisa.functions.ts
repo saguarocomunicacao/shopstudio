@@ -35,7 +35,7 @@ export const listarPesquisas = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const db = context.supabase;
     if (!(await podeVer(db, data.profileId))) return { semPermissao: true as const, itens: [] };
-    const { data: rows } = await db.from("pesquisas_tiktok").select("id, tipo, termo, qtd, status, erro, n_videos, custo_usd, created_at, sugestoes").eq("profile_id", data.profileId).order("created_at", { ascending: false }).limit(100);
+    const { data: rows } = await db.from("pesquisas_tiktok").select("id, tipo, termo, qtd, status, erro, n_videos, custo_usd, created_at").eq("profile_id", data.profileId).order("created_at", { ascending: false }).limit(100);
     return { semPermissao: false as const, itens: (rows ?? []) as Any[] };
   });
 

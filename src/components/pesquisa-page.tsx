@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ArrowLeft, Hash, Image as ImageIcon, Loader2, Megaphone, RefreshCw, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
 import { PageHeader } from "./page-header";
@@ -29,11 +29,10 @@ const pct = (n: number | null | undefined) => (n == null ? "—" : `${n.toLocale
 const quando = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—");
 const USD_BRL = 5.4;
 const usd = (v: number) => `US$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (≈ ${brl(v * USD_BRL)})`;
-const estPesquisaUsd = (qtd: number) => qtd * 0.005; // medido: 30 vídeos com região Brasil ≈ US$ 0,15
+const estPesquisaUsd = (qtd: number) => qtd * 0.004;
 const estAnaliseUsd = (dur: number | null) => 0.01 + ((dur ?? 30) * 300 * 0.75 + 2500 * 3.75) / 1_000_000;
 const rotulo = (tipo: string, termo: string) => (tipo === "hashtag" ? `#${termo}` : `"${termo}"`);
 
-const NOME_IDIOMA: Record<string, string> = { pt: "Português", en: "Inglês", es: "Espanhol", fr: "Francês", it: "Italiano", de: "Alemão", ja: "Japonês", ko: "Coreano", zh: "Chinês", ar: "Árabe", id: "Indonésio", ru: "Russo", tr: "Turco", vi: "Vietnamita", th: "Tailandês" };
 type VideoTela = VideoPesquisa & { capaUrl: string | null };
 
 export function PesquisaPage({ pesquisaId, tab, termoInicial }: { pesquisaId?: string; tab?: "videos" | "insights" | undefined; termoInicial?: string | undefined }) {
@@ -68,8 +67,6 @@ function Lista({ abrir, termoInicial }: { abrir: (id: string) => void; termoInic
   const q = useQuery({ queryKey: ["pesquisas", activeProfileId], queryFn: () => listar({ data: { profileId: activeProfileId! } }), enabled: !!activeProfileId });
   const itens = q.data?.itens ?? [];
   const inval = () => void qc.invalidateQueries({ queryKey: ["pesquisas", activeProfileId] });
-  const termoLimpo = termo.trim().replace(/^#+/, "").toLowerCase();
-  const sugestoesDoTermo = (itens.find((i) => i.termo.toLowerCase() === termoLimpo && (i.sugestoes ?? []).length)?.sugestoes ?? []) as string[];
   const mut = useMutation({
     mutationFn: (v: { tipo: "hashtag" | "palavra"; termo: string; qtd: 10 | 30 | 50 }) => criar({ data: { profileId: activeProfileId!, ...v } }),
     onSuccess: (r) => { toast.success("Pesquisa iniciada. Os vídeos chegam em 1 a 2 minutos."); inval(); abrir(r.id); },
@@ -101,12 +98,7 @@ function Lista({ abrir, termoInicial }: { abrir: (id: string) => void; termoInic
             </div>
             <Button type="submit" disabled={termo.trim().length < 2 || mut.isPending}>{mut.isPending ? <Loader2 className="animate-spin" /> : <Search />}Pesquisar</Button>
           </div>
-          <p className="text-xs text-muted-foreground">Custo estimado: cerca de {usd(estPesquisaUsd(qtd))}. Busca feita como se estivesse no Brasil. O valor real fica em Custos. {tipo === "palavra" && "A busca por palavra traz os mais relevantes, não só os recentes, e pode trazer vídeos de outros países."}</p>
-          {sugestoesDoTermo.length > 0 && (
-            <p className="text-xs text-muted-foreground">Esse termo parece estar em outro idioma. Tente {sugestoesDoTermo.map((sg, k) => (
-              <span key={sg}>{k > 0 && ", "}<button type="button" className="font-semibold text-primary underline" onClick={() => setTermo(sg)}>{tipo === "hashtag" ? "#" : ""}{sg}</button></span>
-            ))}.</p>
-          )}
+          <p className="text-xs text-muted-foreground">Custo estimado: cerca de {usd(estPesquisaUsd(qtd))}. O valor real fica em Custos. {tipo === "palavra" && "A busca por palavra traz os mais relevantes, não só os recentes, e pode trazer vídeos de outros países."}</p>
         </form>
       )}
       <h2 className="mb-3 font-display text-base font-semibold">Pesquisas anteriores</h2>
@@ -197,13 +189,9 @@ function Detalhe({ id, tab, onTab, voltar }: { id: string; tab: "videos" | "insi
     { label: "Views médias", valor: fmt(resumo.viewsMedia) },
     { label: "Engajamento médio", valor: pct(resumo.engMedio) },
     { label: "Duração média", valor: resumo.duracaoMedia == null ? "—" : `${Math.round(resumo.duracaoMedia)} s` },
-    { label: "Vídeos exibidos", valor: `${fmt(visiveis.length)} de ${fmt(todos.length)}` },
+    { label: "Vídeos", valor: fmt(visiveis.length) },
   ];
   void pessoa;
-  const outroIdioma = soPt ? todos.filter((v) => !v.idioma_pt).length : 0;
-  const anuncios = visiveis.filter((v) => v.anuncio).length;
-  const partes = [outroIdioma && `${outroIdioma} em outro idioma, escondidos`, anuncios && `${anuncios} ${anuncios === 1 ? "anúncio" : "anúncios"}, fora das médias`].filter(Boolean);
-  const contagem = `${fmt(todos.length)} coletados, ${fmt(visiveis.length)} exibidos${partes.length ? ` (${partes.join("; ")})` : ""}.`;
   const coletando = p.status === "coletando" || p.status === "processando";
 
   return (
@@ -212,9 +200,7 @@ function Detalhe({ id, tab, onTab, voltar }: { id: string; tab: "videos" | "insi
       <div className="panel mb-6 flex flex-wrap items-center gap-3 p-5">
         <div className="min-w-0 flex-1">
           <p className="font-display text-xl font-semibold">{rotulo(p.tipo, p.termo)}</p>
-          <p className="text-sm text-muted-foreground">{p.tipo === "hashtag" ? "Hashtag" : "Palavra"} · {quando(p.created_at)} · {fmt(p.n_videos)} de {fmt(p.qtd)} pedidos</p>
-          {!coletando && todos.length > 0 && <p className="text-sm">{contagem}</p>}
-          {(p.sugestoes ?? []).length > 0 && <p className="mt-1 text-xs text-muted-foreground">Termo em outro idioma. Tente {(p.sugestoes as string[]).map((sg, k) => <span key={sg}>{k > 0 && ", "}<Link to="/app/pesquisa" search={{ q: sg }} className="font-semibold text-primary underline">{p.tipo === "hashtag" ? "#" : ""}{sg}</Link></span>)}.</p>}
+          <p className="text-sm text-muted-foreground">{p.tipo === "hashtag" ? "Hashtag" : "Palavra"} · {quando(p.created_at)} · {fmt(p.n_videos)} vídeos</p>
         </div>
         {coletando && <span className="inline-flex items-center gap-1 rounded-full status-blue px-2 py-0.5 text-xs"><Loader2 className="size-3 animate-spin" />Coletando</span>}
       </div>
@@ -268,7 +254,7 @@ function Detalhe({ id, tab, onTab, voltar }: { id: string; tab: "videos" | "insi
               </div>
             </div>
           </div>
-          {soPt && todos.length > visiveis.length && <p className="mb-2 text-xs text-muted-foreground">{todos.length - visiveis.length} vídeos escondidos por estarem em outro idioma (detectado pela legenda).</p>}
+          {soPt && todos.length > visiveis.length && <p className="mb-2 text-xs text-muted-foreground">{todos.length - visiveis.length} vídeos escondidos por parecerem de outro idioma (detecção provável, pela legenda).</p>}
           {!visiveis.length ? <Vazio>{coletando ? "Buscando vídeos no TikTok..." : "Nenhum vídeo para mostrar."}</Vazio> : (
             <div className="panel overflow-x-auto p-0">
               <Table>
@@ -303,7 +289,7 @@ function Detalhe({ id, tab, onTab, voltar }: { id: string; tab: "videos" | "insi
                                 {v.anuncio && <Selo icone={<Megaphone className="size-3" />}>Anúncio</Selo>}
                                 {v.fotos && <Selo icone={<ImageIcon className="size-3" />}>Fotos</Selo>}
                                 {v.tiktok_shop && <Selo icone={<ShoppingBag className="size-3" />}>TikTok Shop</Selo>}
-                                {v.idioma && v.idioma !== "?" ? <Selo>{NOME_IDIOMA[v.idioma] ?? v.idioma.toUpperCase()}</Selo> : !v.idioma_pt && <Selo>Outro idioma (provável)</Selo>}
+                                {!v.idioma_pt && <Selo>Outro idioma (provável)</Selo>}
                               </span>
                             </span>
                           </a>
