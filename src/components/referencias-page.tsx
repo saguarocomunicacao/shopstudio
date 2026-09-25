@@ -147,7 +147,7 @@ function ListaReferencias({ abrir }: { abrir: (id: string) => void }) {
                   {podeCusto && <TableCell className="px-3 text-right text-sm tabular-nums">{brl(i.custoCents / 100)}</TableCell>}
                   <TableCell className="px-3 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => abrir(i.id)}>Abrir</Button>
+                      <Button size="sm" onClick={() => abrir(i.id)}><FolderOpen />Abrir</Button>
                       {podeEditar && <Button size="icon" variant="ghost" aria-label="Atualizar" disabled={mutAtualizar.isPending || i.status === "coletando"} onClick={() => mutAtualizar.mutate(i.id)}><RefreshCw className="size-4" /></Button>}
                       {podeEditar && !i.meuPerfil && <AcompanharButton refId={i.id} handle={i.handle} acompanhar={i.acompanhar} compacto />}
                       {podeEditar && <Button size="icon" variant="ghost" aria-label="Remover" onClick={() => setApagar({ id: i.id, handle: i.handle })}><Trash2 className="size-4 text-primary" /></Button>}
