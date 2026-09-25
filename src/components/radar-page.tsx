@@ -6,7 +6,7 @@ import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ChevronDown, EyeOff, Loader2, Sparkles, Wand2 } from "lucide-react";
 import { TikTokIcon } from "./tiktok-icon";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PageHeader } from "./page-header";
 import { useStudio } from "./studio-context";
 import { ProfileGate } from "./profile-gate";
@@ -29,7 +29,7 @@ function haQuanto(iso: string | null) {
   return h < 1 ? "agora" : h < 48 ? `há ${h} h` : `há ${Math.round(h / 24)} dias`;
 }
 
-export function RadarPage() { return <ProfileGate><RadarContent /></ProfileGate>; }
+export function RadarPage() { return <TooltipProvider delayDuration={200}><ProfileGate><RadarContent /></ProfileGate></TooltipProvider>; }
 
 function RadarContent() {
   const { activeProfileId, can } = useStudio();
