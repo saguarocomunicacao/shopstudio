@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { analisarVideosPesquisa, avancarPesquisa, criarPesquisa, enviarRecomendacoesPesquisaFn, gerarInsightsPesquisa, getPesquisa, listarPesquisas, removerPesquisaFn } from "@/lib/pesquisa.functions";
@@ -63,6 +64,7 @@ function Lista({ abrir, termoInicial }: { abrir: (id: string) => void; termoInic
   const [tipo, setTipo] = useState<"hashtag" | "palavra">(termoInicial ? "palavra" : "hashtag");
   const [termo, setTermo] = useState(termoInicial ?? "");
   const [qtd, setQtd] = useState<10 | 30 | 50>(30);
+  const [confirmarRemocao, setConfirmarRemocao] = useState<{ id: string; rotulo: string } | null>(null);
   const podeCusto = isBackoffice || can("custos", "visualizar", activeProfileId);
   const podeEditar = isBackoffice || can("pipeline", "editar", activeProfileId) || can("pipeline", "criar", activeProfileId);
   const q = useQuery({ queryKey: ["pesquisas", activeProfileId], queryFn: () => listar({ data: { profileId: activeProfileId! } }), enabled: !!activeProfileId });
@@ -75,7 +77,7 @@ function Lista({ abrir, termoInicial }: { abrir: (id: string) => void; termoInic
   });
   const mutRemover = useMutation({
     mutationFn: (id: string) => remover({ data: { id } }),
-    onSuccess: () => { toast.success("Pesquisa removida. As análises feitas continuam em Analisar vídeo."); inval(); },
+    onSuccess: () => { toast.success("Pesquisa removida. As análises feitas continuam em Analisar vídeo."); setConfirmarRemocao(null); inval(); },
     onError: (e) => toast.error(actionError(e, "Não foi possível remover.")),
   });
   if (q.data?.semPermissao) return <Vazio>Pesquisar não está disponível para o seu usuário neste perfil.</Vazio>;
@@ -132,7 +134,7 @@ function Lista({ abrir, termoInicial }: { abrir: (id: string) => void; termoInic
                       <div className="flex justify-end gap-1">
                         <Button size="sm" variant="ghost" onClick={() => abrir(i.id)}>Abrir</Button>
                         {podeEditar && <Button size="icon" variant="ghost" aria-label="Repetir" disabled={mut.isPending} onClick={() => mut.mutate({ tipo: i.tipo, termo: i.termo, qtd: [10, 30, 50].includes(i.qtd) ? i.qtd : 30 })}><RefreshCw className="size-4" /></Button>}
-                        {podeEditar && <Button size="icon" variant="ghost" aria-label="Remover" disabled={mutRemover.isPending} onClick={() => mutRemover.mutate(i.id)}><Trash2 className="size-4" /></Button>}
+                        {podeEditar && <Button size="icon" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label="Remover" title="Remover pesquisa" disabled={mutRemover.isPending} onClick={() => setConfirmarRemocao({ id: i.id, rotulo: rotulo(i.tipo, i.termo) })}><Trash2 className="size-4" /></Button>}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -141,6 +143,30 @@ function Lista({ abrir, termoInicial }: { abrir: (id: string) => void; termoInic
             </Table>
           </div>
         )}
+      <AlertDialog open={!!confirmarRemocao} onOpenChange={(open) => !open && setConfirmarRemocao(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover esta pesquisa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A pesquisa {confirmarRemocao?.rotulo} e os vídeos coletados serão removidos. As análises já feitas continuam disponíveis em Analisar vídeo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={mutRemover.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                if (confirmarRemocao) mutRemover.mutate(confirmarRemocao.id);
+              }}
+            >
+              {mutRemover.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+              Remover pesquisa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
