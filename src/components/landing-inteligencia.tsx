@@ -28,7 +28,7 @@ export function LandingInteligencia() {
         </div>
         <div className="mt-14 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Bento icon={<FileSearch />} title="Analisar vídeo" text="Cole um link ou envie um arquivo. Sai transcrição, cenas, gancho, CTA e produto, com os frames de cada cena." className="lg:col-span-2">
-            <div className="flex gap-2">{["0:00", "0:03", "0:07", "0:12", "0:18"].map((t, i) => <div key={t} className="flex-1"><div className={`aspect-[9/16] rounded-md ${i % 2 ? "bg-landing-surface-raised" : "bg-landing-plasma-c/25"}`} /><p className="mt-1 text-center">{t}</p></div>)}</div>
+            <div className="flex max-w-sm gap-2">{["0:00", "0:03", "0:07", "0:12", "0:18"].map((t, i) => <div key={t} className="flex-1"><div className={`aspect-[9/16] rounded-md ${i % 2 ? "bg-landing-surface-raised" : "bg-landing-plasma-c/25"}`} /><p className="mt-1 text-center">{t}</p></div>)}</div>
             <p className="mt-2"><span className="text-landing-mint">Gancho:</span> "Parei de comprar fronha comum depois disso"</p>
           </Bento>
           <Bento icon={<Users />} title="Perfis de referência" text="Acompanhe os @ que vendem. Analise os vídeos deles em lote e receba insights do que separa os melhores dos piores.">
@@ -44,7 +44,7 @@ export function LandingInteligencia() {
           <Bento icon={<UserSearch />} title="Criadores" text="Garimpo de perfis por categoria: receita em vídeo, seguidores, crescimento. Um clique para acompanhar.">
             {[["@beleza.real", "R$ 42 mil", "91%"], ["@mae.organizada", "R$ 28 mil", "76%"]].map(([h, r, p]) => <div key={h} className="mb-1.5 flex items-center justify-between last:mb-0"><span>{h}</span><span className="text-landing-text">{r}</span><Chip>{p} vídeo</Chip></div>)}
           </Bento>
-          <Bento icon={<MessageSquareText />} title="Comentários" text="Objeções, dúvidas e desejos reais dos compradores, direto para o roteiro." className="md:col-span-2 lg:col-span-1">
+          <Bento icon={<MessageSquareText />} title="Comentários" text="Objeções, dúvidas e desejos reais dos compradores, direto para o roteiro." className="md:col-span-2 lg:col-span-3">
             <div className="space-y-1.5"><p><span className="text-landing-mint">Objeção:</span> "Será que desbota na lavagem?"</p><p><span className="text-landing-mint">Dúvida:</span> "Serve pra cama king?"</p><p><span className="text-landing-mint">Desejo:</span> "Queria na cor rosé"</p></div>
           </Bento>
         </div>
@@ -74,7 +74,7 @@ export function LandingInteligencia() {
               {[["Gancho em até 2 s", "8 de 10 melhores"], ["Duração 20 a 35 s", "média dos melhores"], ["Produto na mão", "presente nos 5 melhores"]].map(([a, b]) => <div key={a} className="rounded-lg border border-landing-line bg-landing-surface/60 p-3"><p className="font-semibold text-landing-text">{a}</p><p className="mt-1">{b}</p></div>)}
             </div>
             <p className="mt-5 font-semibold text-landing-text">Ganchos que funcionaram</p>
-            <div className="mt-2 grid grid-cols-3 gap-2">{["\"Ninguém te conta isso\"", "\"Testei por 7 dias\"", "\"Pare de errar aqui\""].map((g, i) => <div key={g}><div className={`aspect-[9/16] rounded-md ${i === 1 ? "bg-landing-surface-raised" : "bg-landing-plasma-c/25"}`} /><p className="mt-1">{g}</p></div>)}</div>
+            <div className="mt-2 grid max-w-xs grid-cols-3 gap-2">{["\"Ninguém te conta isso\"", "\"Testei por 7 dias\"", "\"Pare de errar aqui\""].map((g, i) => <div key={g}><div className={`aspect-[9/16] rounded-md ${i === 1 ? "bg-landing-surface-raised" : "bg-landing-plasma-c/25"}`} /><p className="mt-1">{g}</p></div>)}</div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div><p className="mb-2 font-semibold text-landing-mint">5 melhores</p>{["92%", "80%", "74%", "66%", "58%"].map((w) => <div key={w} className="mb-1.5"><Barra w={w} /></div>)}</div>
               <div><p className="mb-2 font-semibold text-landing-text">5 piores</p>{["22%", "18%", "14%", "10%", "6%"].map((w) => <div key={w} className="mb-1.5"><Barra w={w} c="bg-landing-muted" /></div>)}</div>
