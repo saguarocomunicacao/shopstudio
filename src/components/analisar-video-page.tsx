@@ -144,6 +144,7 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
   const podeCriar = can("pipeline", "criar", activeProfileId) || can("pipeline", "editar", activeProfileId);
   const { data: analises = [], isLoading, error } = useAnalises(activeProfileId);
   const [novo, setNovo] = useState(false);
+  const [apagar, setApagar] = useState<Analise | null>(null);
   const navigate = useNavigate();
   const router = useRouter();
   const setAbertaId = (id: string | null) => {
