@@ -118,7 +118,7 @@ function RadarContent() {
                 <strong className="font-display text-xl">{fmt(i.views)}</strong><span className="text-xs text-muted-foreground">views</span>
                 {i.engajamentoPct != null && <span className="ml-auto text-xs text-muted-foreground">{i.engajamentoPct.toLocaleString("pt-BR")}% engaj.</span>}
               </div>
-              <p className="text-xs font-medium text-brand-cyan">{i.emAltaNicho && i.razao && i.razao >= 2 ? "Também entre os 10% mais vistos do nicho na semana" : ""}</p>
+              {i.emAltaNicho && i.razao != null && i.razao >= 2 && <p className="text-xs font-medium text-brand-cyan">Também entre os 10% mais vistos do nicho na semana</p>}
               {i.analise && <div className="flex items-center gap-2 text-xs"><StatusAnaliseBadge status={i.analise.status} /><Link to="/app/analises/$id" params={{ id: i.analise.id }} className="text-muted-foreground underline">Ver análise</Link></div>}
               <div className="mt-auto flex flex-col gap-2 pt-1">
                 <div className="flex items-center gap-2">
