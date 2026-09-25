@@ -168,7 +168,7 @@ function ListaReferencias({ abrir }: { abrir: (id: string) => void }) {
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); if (apagar) mutRemover.mutate(apagar.id); }} disabled={mutRemover.isPending}>Remover</AlertDialogAction>
+            <AlertDialogAction className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.preventDefault(); if (apagar) mutRemover.mutate(apagar.id); }} disabled={mutRemover.isPending}>Remover</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
