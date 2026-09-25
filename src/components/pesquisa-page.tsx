@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { ArrowLeft, Hash, Image as ImageIcon, Loader2, Megaphone, RefreshCw, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, FolderOpen, Hash, Image as ImageIcon, Loader2, Megaphone, RefreshCw, Search, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
 import { PageHeader } from "./page-header";
 import { useStudio } from "./studio-context";
 import { StatusAnaliseBadge } from "./status-analise";
