@@ -23,6 +23,18 @@ import { actionError } from "@/lib/api-keys";
 const JANELAS = [{ v: 24, l: "24 h" }, { v: 72, l: "3 dias" }, { v: 168, l: "7 dias" }] as const;
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 
+type RadarItem = NonNullable<ReturnType<typeof useRadar>>["itens"][number];
+function motivoCompleto(i: RadarItem): string {
+  return i.razaoTexto || (i.razao != null && i.razao >= 2 ? `${fmt(i.razao)}x a média do @` : i.emAltaNicho ? "Entre os 10% mais vistos do nicho na semana" : "Acima de 80% dos vídeos do @");
+}
+function motivoCurto(i: RadarItem): string {
+  const t = motivoCompleto(i);
+  if (/^\d/.test(t)) return t.replace(/\s+em\s+\d+\s+h$/, "");
+  if (t.includes("80%")) return "Top 20% do @";
+  if (t.includes("10%")) return "Top 10% do nicho";
+  return t;
+}
+
 function haQuanto(iso: string | null) {
   if (!iso) return "";
   const h = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 3600_000));
