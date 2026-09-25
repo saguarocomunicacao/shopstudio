@@ -261,7 +261,7 @@ export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string 
                   )}
                   <td className="p-3">
                     <div className="flex justify-end gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setAbertaId(a.id)}>Abrir</Button>
+                      <Button size="sm" onClick={() => setAbertaId(a.id)}><FolderOpen />Abrir</Button>
                       {podeCriar && (
                         <>
                           <Button size="icon" variant="ghost" aria-label="Reanalisar" disabled={a.status === "analisando" || a.status === "enviando" || a.status === "baixando"} onClick={() => reanalisar(a)}><RefreshCw className="size-4" /></Button>
