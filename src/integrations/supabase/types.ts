@@ -894,6 +894,7 @@ export type Database = {
           avatar_reference_urls: Json
           caption: string | null
           cenas_count: number | null
+          contexto_compradores: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -969,6 +970,7 @@ export type Database = {
           avatar_reference_urls?: Json
           caption?: string | null
           cenas_count?: number | null
+          contexto_compradores?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -1044,6 +1046,7 @@ export type Database = {
           avatar_reference_urls?: Json
           caption?: string | null
           cenas_count?: number | null
+          contexto_compradores?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -1977,6 +1980,7 @@ export type Database = {
           handle: string
           id: string
           initials: string
+          ler_comentarios_campeoes: boolean
           name: string
           niche: string
           profile_image_path: string | null
@@ -1992,6 +1996,7 @@ export type Database = {
           handle?: string
           id?: string
           initials?: string
+          ler_comentarios_campeoes?: boolean
           name: string
           niche?: string
           profile_image_path?: string | null
@@ -2007,6 +2012,7 @@ export type Database = {
           handle?: string
           id?: string
           initials?: string
+          ler_comentarios_campeoes?: boolean
           name?: string
           niche?: string
           profile_image_path?: string | null
@@ -3002,6 +3008,209 @@ export type Database = {
           },
           {
             foreignKeyName: "video_analises_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_comentarios: {
+        Row: {
+          autor: string | null
+          categoria: string | null
+          cid: string
+          coleta_id: string
+          created_at: string
+          curtido_dono: boolean
+          data: string | null
+          fixado: boolean
+          id: string
+          likes: number
+          profile_id: string
+          respostas: number
+          subtipo: string | null
+          tenant_id: string
+          texto: string
+          tiktok_video_id: string
+        }
+        Insert: {
+          autor?: string | null
+          categoria?: string | null
+          cid: string
+          coleta_id: string
+          created_at?: string
+          curtido_dono?: boolean
+          data?: string | null
+          fixado?: boolean
+          id?: string
+          likes?: number
+          profile_id: string
+          respostas?: number
+          subtipo?: string | null
+          tenant_id: string
+          texto: string
+          tiktok_video_id: string
+        }
+        Update: {
+          autor?: string | null
+          categoria?: string | null
+          cid?: string
+          coleta_id?: string
+          created_at?: string
+          curtido_dono?: boolean
+          data?: string | null
+          fixado?: boolean
+          id?: string
+          likes?: number
+          profile_id?: string
+          respostas?: number
+          subtipo?: string | null
+          tenant_id?: string
+          texto?: string
+          tiktok_video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_comentarios_coleta_id_fkey"
+            columns: ["coleta_id"]
+            isOneToOne: false
+            referencedRelation: "video_comentarios_coletas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_comentarios_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_comentarios_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_comentarios_coletas: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custo_usd: number
+          erro: string | null
+          id: string
+          iniciado_em: string | null
+          n_comentarios: number
+          origem: string | null
+          profile_id: string
+          qtd: number
+          run_id: string | null
+          status: string
+          tenant_id: string
+          tiktok_video_id: string
+          titulo: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custo_usd?: number
+          erro?: string | null
+          id?: string
+          iniciado_em?: string | null
+          n_comentarios?: number
+          origem?: string | null
+          profile_id: string
+          qtd?: number
+          run_id?: string | null
+          status?: string
+          tenant_id: string
+          tiktok_video_id: string
+          titulo?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custo_usd?: number
+          erro?: string | null
+          id?: string
+          iniciado_em?: string | null
+          n_comentarios?: number
+          origem?: string | null
+          profile_id?: string
+          qtd?: number
+          run_id?: string | null
+          status?: string
+          tenant_id?: string
+          tiktok_video_id?: string
+          titulo?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_comentarios_coletas_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_comentarios_coletas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_comentarios_insights: {
+        Row: {
+          coleta_id: string
+          created_at: string
+          insights: Json
+          modelo: string | null
+          profile_id: string
+          tenant_id: string
+        }
+        Insert: {
+          coleta_id: string
+          created_at?: string
+          insights: Json
+          modelo?: string | null
+          profile_id: string
+          tenant_id: string
+        }
+        Update: {
+          coleta_id?: string
+          created_at?: string
+          insights?: Json
+          modelo?: string | null
+          profile_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_comentarios_insights_coleta_id_fkey"
+            columns: ["coleta_id"]
+            isOneToOne: true
+            referencedRelation: "video_comentarios_coletas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_comentarios_insights_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_comentarios_insights_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
