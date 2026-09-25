@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import logoDark from "@/assets/logo-dark.png.asset.json";
 import heroPowerbank from "@/assets/hero-powerbank.png.asset.json";
 import studioRecording from "@/assets/landing/studio-recording.png.asset.json";
+import { LandingInteligencia } from "@/components/landing-inteligencia";
 import landingEditor from "@/assets/landing/landing-editor.png.asset.json";
 
 export const Route = createFileRoute("/")({
@@ -44,6 +45,7 @@ function LandingPage() {
             <a className="landing-focus transition-colors hover:text-landing-text" href="#como-funciona">Como funciona</a>
             <a className="landing-focus transition-colors hover:text-landing-text" href="#recursos">Recursos</a>
             <a className="landing-focus transition-colors hover:text-landing-text" href="#estudio">O estúdio de IA</a>
+            <a className="landing-focus transition-colors hover:text-landing-text" href="#inteligencia">Inteligência</a>
             <a className="landing-focus transition-colors hover:text-landing-text" href="#controle">Controle</a>
           </nav>
           <div className="flex items-center gap-2">
@@ -188,6 +190,8 @@ function LandingPage() {
           </div>
         </section>
 
+        <LandingInteligencia />
+
         <section id="controle" className="mx-auto grid max-w-7xl scroll-mt-24 gap-14 px-5 py-24 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:px-8 lg:py-32">
           <div><SectionTitle title="Controle o processo. E o custo." text="Automação não precisa ser uma caixa-preta. Você decide onde a inteligência artificial avança." />
             <div className="mt-10 space-y-8">
@@ -229,7 +233,7 @@ function LandingPage() {
       <footer className="border-t border-landing-line px-5 py-12 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-10 sm:grid-cols-[1fr_auto_auto]">
           <div><img src={logoDark.url} alt="Shop Studio" className="h-9 w-auto" /><p className="mt-3 max-w-xs text-sm leading-6 text-landing-muted">A esteira de vídeo do TikTok Shop, do produto ao post.</p></div>
-          <FooterLinks title="Produto" links={[["Como funciona","#como-funciona"],["Recursos","#recursos"],["O estúdio de IA","#estudio"],["Controle","#controle"]]} />
+          <FooterLinks title="Produto" links={[["Como funciona","#como-funciona"],["Recursos","#recursos"],["O estúdio de IA","#estudio"],["Inteligência","#inteligencia"],["Controle","#controle"]]} />
           <FooterLinks title="Conta" links={[["Entrar","/entrar"],["Criar conta","/entrar"]]} />
           <FooterLinks title="Legal" links={[["Política de Privacidade","/privacidade"],["Política de Segurança","/seguranca"]]} />
         </div>
