@@ -1,3 +1,4 @@
+import { JobContextoCompradores } from "./job-contexto-compradores";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BadgeCheck, Clapperboard, Images, Loader2, LockKeyhole, RefreshCw, Sparkles, Trash2, Undo2 } from "lucide-react";
@@ -227,6 +228,7 @@ export function JobDetailDialog({
           )}
 
           {job && <JobChampionRefs refs={job.script_refs ?? null} />}
+          {job && <JobContextoCompradores jobId={job.id} canEdit={canEdit && !isPostStage} />}
           {job && <JobVoiceSelect job={job} canEdit={canEdit && !isPostStage} />}
           {job && <JobCostSummary jobId={job.id} />}
           {job && <JobTimeline jobId={job.id} />}

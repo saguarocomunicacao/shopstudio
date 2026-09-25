@@ -1,3 +1,4 @@
+import { lerContextoPendente, limparContextoPendente } from "@/lib/contexto-compradores";
 import { ImageLightbox } from "./image-lightbox";
 import { PageHeader } from "./page-header";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -165,8 +166,10 @@ function ProductsContent() {
         title: product.name,
         created_by: userId,
         formato,
+        contexto_compradores: lerContextoPendente(),
       });
       if (error) throw new Error(error.message);
+      limparContextoPendente();
     },
     onSuccess: () => {
       toast.success(formato === "gravacao" ? "Vídeo criado. Gere o roteiro e grave você mesmo." : "Job criado no pipeline.");

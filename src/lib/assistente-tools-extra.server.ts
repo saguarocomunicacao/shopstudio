@@ -470,6 +470,34 @@ export function buildToolsExtra(ctx: Ctx) {
       },
     }),
 
+    comentarios_video: tool({
+      description: "Comentários já lidos de um vídeo do TikTok (link): objeções, dúvidas e desejos com frequência e exemplo, sentimento em %, perguntas sem resposta (0 respostas). Não faz leitura nova (custo): para ler, o usuário toca em 'Ler comentários' na tela. Valores prontos: copie.",
+      inputSchema: z.object({ profile_id: perfilArg, url: z.string().min(10) }),
+      execute: async ({ profile_id, url }) => {
+        const p = pid(ctx, profile_id);
+        if (!p) return { erro: "Selecione um perfil." };
+        if (!ctx.access.isBackoffice && !ctx.access.can("metricas", "visualizar", p)) return semAcesso("Comentários");
+        const vid = url.match(/\/(?:video|photo)\/(\d{8,25})/)?.[1];
+        if (!vid) return { erro: "Link de vídeo do TikTok inválido." };
+        const { data: col } = await db.from("video_comentarios_coletas").select("id, status, erro, n_comentarios, updated_at").eq("profile_id", p).eq("tiktok_video_id", vid).maybeSingle();
+        if (!col) return { status: "nunca_lido", dica: "Abra o vídeo em Perfis de referência, Radar, Pesquisa ou na análise e toque em 'Ler comentários'." };
+        const { data: ins } = await db.from("video_comentarios_insights").select("insights").eq("coleta_id", (col as Any).id).maybeSingle();
+        return { status: (col as Any).status, erro: (col as Any).erro, comentarios_lidos: (col as Any).n_comentarios, lido_em: quando((col as Any).updated_at), resumo: (ins as Any)?.insights ?? null };
+      },
+    }),
+
+    objecoes_categoria: tool({
+      description: "Agregado das objeções e dúvidas de compradores em todas as leituras de comentários do perfil nos últimos 30 dias (inclui os campeões lidos automaticamente no roteiro). Valores prontos: copie.",
+      inputSchema: z.object({ profile_id: perfilArg }),
+      execute: async ({ profile_id }) => {
+        const p = pid(ctx, profile_id);
+        if (!p) return { erro: "Selecione um perfil." };
+        if (!ctx.access.isBackoffice && !ctx.access.can("metricas", "visualizar", p)) return semAcesso("Comentários");
+        const { objecoesAgregadas } = await import("./comentarios.server");
+        return await objecoesAgregadas(p);
+      },
+    }),
+
     detalhe_pesquisa: tool({
       description: "Resultado de uma pesquisa do TikTok: views médias, engajamento médio, duração média (sem anúncios; carrosséis fora da duração), hashtags usadas junto, @ que mais aparecem, os vídeos mais vistos e as análises feitas. Valores já prontos: copie, não calcule.",
       inputSchema: z.object({ pesquisa_id: z.string().uuid(), so_portugues: z.boolean().nullable().describe("Padrão true: esconde vídeos que provavelmente são de outro idioma.") }),
@@ -693,6 +721,8 @@ export const TOOL_LABELS_EXTRA: Record<string, string> = {
   listar_referencias: "Consultando perfis de referência...",
   radar_alertas: "Consultando o radar...",
   listar_pesquisas: "Consultando pesquisas...",
+  comentarios_video: "Lendo os comentários salvos...",
+  objecoes_categoria: "Somando objeções dos compradores...",
   detalhe_pesquisa: "Consultando pesquisa...",
   buscar_criadores: "Consultando criadores...",
   detalhe_referencia: "Consultando perfil de referência...",

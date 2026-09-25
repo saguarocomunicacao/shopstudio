@@ -133,7 +133,7 @@ export async function generateScriptForJob(supabase: any, jobId: string, skipPer
     const { data: job, error: jobError } = await supabase
 
       .from("jobs")
-      .select("id, product_id, profile_id, status, title")
+      .select("id, product_id, profile_id, status, title, contexto_compradores")
       .eq("id", data.jobId)
       .maybeSingle();
     if (jobError) throw new Error(jobError.message);
@@ -192,7 +192,23 @@ export async function generateScriptForJob(supabase: any, jobId: string, skipPer
     // Perfis de referência marcados como fonte do roteirista (10 mais vistos já analisados).
     const { ganchosDeReferencias } = await import("./referencias.server");
     const refs = (await ganchosDeReferencias(job.profile_id)).map((r) => ({ videoId: "", title: r.title, views: r.views, revenue: 0, creator: r.creator, url: "" }));
-    const prompt = `${basePrompt}${championPromptBlock([...refs, ...campeoes])}`;
+    // Contexto dos compradores: o do job (editável) ou, com o toggle do perfil, o dos comentários dos campeões.
+    const { blocoContextoCompradores } = await import("./comentarios-schema");
+    let contexto: string = job.contexto_compradores ?? "";
+    if (!contexto.trim() && campeoes.length) {
+      const { data: prof } = await supabase.from("profiles").select("ler_comentarios_campeoes, tenant_id").eq("id", job.profile_id).maybeSingle();
+      if (prof?.ler_comentarios_campeoes) {
+        try {
+          const { withTenantKeys } = await import("./api-keys.server");
+          const { contextoDosCampeoes } = await import("./comentarios.server");
+          contexto = await withTenantKeys(prof.tenant_id, () => contextoDosCampeoes(job.profile_id, prof.tenant_id, campeoes));
+          if (contexto) await supabase.from("jobs").update({ contexto_compradores: contexto }).eq("id", job.id);
+        } catch (e) {
+          console.error("[roteiro] comentários dos campeões", e instanceof Error ? e.message : e);
+        }
+      }
+    }
+    const prompt = `${basePrompt}${championPromptBlock([...refs, ...campeoes])}${blocoContextoCompradores(contexto)}`;
 
 
     const { assertOrcamento } = await import("./orcamento.server");

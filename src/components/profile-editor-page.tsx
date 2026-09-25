@@ -1,3 +1,4 @@
+import { LerComentariosToggle } from "./ler-comentarios-toggle";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -816,6 +817,7 @@ export function ProfileEditorPage({ profileId }: { profileId: string | null }) {
             <div className="grid gap-4">
               <SectionTitle title="Fluxo de publicação" description="Comportamento de publicação deste perfil." />
               <div>
+                {profile?.id && <LerComentariosToggle profileId={profile.id} disabled={!allowed} />}
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-t py-4">
                   <div>
                     <p className="text-sm font-semibold">Revisão obrigatória</p>

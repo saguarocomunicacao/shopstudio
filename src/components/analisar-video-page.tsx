@@ -1,3 +1,4 @@
+import { ComentariosPanel } from "./comentarios-panel";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -132,7 +133,7 @@ function useAnalises(profileId: string | null) {
   });
 }
 
-export const ABAS_ANALISE = ["resumo", "cenas", "transcricao", "gancho", "produto"] as const;
+export const ABAS_ANALISE = ["resumo", "cenas", "transcricao", "gancho", "produto", "comentarios"] as const;
 export type AbaAnalise = (typeof ABAS_ANALISE)[number];
 
 export function AnalisarVideoPage({ abertaId = null, tab }: { abertaId?: string | null; tab?: AbaAnalise | undefined } = {}) {
@@ -738,7 +739,15 @@ function DetalheAnalise({ a, tab, onTab, onVoltar, onReanalisar, podeEditar }: {
                 <TabsTrigger value="transcricao">Transcrição</TabsTrigger>
                 <TabsTrigger value="gancho">Gancho e CTA</TabsTrigger>
                 <TabsTrigger value="produto">Produto</TabsTrigger>
+                {a.origem === "tiktok" && a.link_url && <TabsTrigger value="comentarios">Comentários</TabsTrigger>}
               </TabsList>
+              {a.origem === "tiktok" && a.link_url && (
+                <TabsContent value="comentarios">
+                  <div className="rounded-lg border border-border bg-card p-4">
+                    <ComentariosPanel url={a.link_url} titulo={a.titulo} origem="analise" />
+                  </div>
+                </TabsContent>
+              )}
               <TabsContent value="resumo" className="space-y-4">
                 <Bloco titulo="Resumo" texto={r.resumo}><p className="whitespace-pre-line">{r.resumo}</p></Bloco>
                 <Bloco titulo="Estilo" texto={`Formato: ${r.formato}\nTom de voz: ${r.tom_de_voz}\nRitmo: ${r.ritmo.cortes_por_minuto} cortes/min. ${r.ritmo.descricao}`}>

@@ -1,3 +1,5 @@
+import { lerContextoPendente, limparContextoPendente } from "@/lib/contexto-compradores";
+import { salvarContextoCompradores } from "@/lib/comentarios.functions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Copy, ListOrdered, Loader2, Plus, RefreshCw, Save, Sparkles, Trash2, Upload, Video } from "lucide-react";
@@ -73,6 +75,7 @@ export function NewOwnVideoDialog({
   const qc = useQueryClient();
   const createJob = useServerFn(createOwnVideoJob);
   const generate = useServerFn(generateRecordingScript);
+  const salvarContexto = useServerFn(salvarContextoCompradores);
   const [modo, setModo] = useState<ModoRoteiro>("criar");
   const [assunto, setAssunto] = useState("");
   const [roteiroPronto, setRoteiroPronto] = useState("");
@@ -102,6 +105,11 @@ export function NewOwnVideoDialog({
             ? { profileId: activeProfileId, modo, roteiroOrigem: roteiroPronto.trim() }
             : { profileId: activeProfileId, modo, assunto: assunto.trim() },
       });
+      const contexto = lerContextoPendente();
+      if (contexto) {
+        await salvarContexto({ data: { jobId, texto: contexto } }).catch(() => null);
+        limparContextoPendente();
+      }
       await generate({ data: { jobId } });
       return jobId;
     },

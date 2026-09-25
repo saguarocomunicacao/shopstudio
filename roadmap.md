@@ -132,3 +132,10 @@
 - [x] Adicionar a Perfis de referência (individual/múltiplo) + atalhos em Pesquisar/job (Radar já mostra só @ acompanhados)
 - [x] Buscas recentes; tool buscar_criadores
 - [ ] Validar telas logado e Insights de uma pesquisa (precisa 5 análises)
+
+## Fase 5: Comentários alimentando o roteiro
+- [x] Coleta de comentários (Apify), classificação por IA, retenção 90 dias
+- [x] Painel (aba na análise + botão nas telas), selos fixado/curtido, sem resposta = 0 respostas
+- [x] Usar no roteiro + bloco editável no job; toggle automático no perfil
+- [x] Tools do assistente e manual
+- [ ] Publicar
