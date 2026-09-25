@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useProducts, type DbProduct } from "@/lib/content";
 import { enrichProductDetails } from "@/lib/discover.functions";
@@ -303,16 +303,16 @@ function ProductsContent() {
           renderActions={(p) => (
             <div className="flex items-center justify-end gap-2.5">
               {canCreateJob && <Button size="sm" data-tour="use-product" onClick={() => setUseTarget(p)}><Sparkles />Usar</Button>}
-              <Tooltip>
+              <TooltipProvider delayDuration={200}><Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" className="size-8" onClick={() => setDetails(p)} aria-label={`Ver detalhes de ${p.name}`}>
                     <Eye className="size-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Ver detalhes</TooltipContent>
-              </Tooltip>
+              </Tooltip></TooltipProvider>
               {canUpdate && p.external_id && (
-                <Tooltip>
+                <TooltipProvider delayDuration={200}><Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
@@ -326,17 +326,17 @@ function ProductsContent() {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Atualizar dados</TooltipContent>
-                </Tooltip>
+                </Tooltip></TooltipProvider>
               )}
               {canRemove && (
-                <Tooltip>
+                <TooltipProvider delayDuration={200}><Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive" onClick={() => setConfirm(p)} aria-label={`Remover ${p.name}`}>
                       <Trash2 className="size-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Remover</TooltipContent>
-                </Tooltip>
+                </Tooltip></TooltipProvider>
               )}
             </div>
           )}
@@ -352,22 +352,22 @@ function ProductsContent() {
                 <div className="flex min-w-0 items-start gap-4">
                   {details.image_url ? <img src={details.image_url} alt="" className="size-[72px] shrink-0 rounded-lg object-cover" /> : <div className="size-[72px] shrink-0 rounded-lg bg-muted" />}
                   <div className="min-w-0 grid gap-1">
-                    <Tooltip>
+                    <TooltipProvider delayDuration={200}><Tooltip>
                       <TooltipTrigger asChild>
                         <DialogTitle className="line-clamp-2 font-display text-xl font-semibold leading-snug">{details.name}</DialogTitle>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-sm">{details.name}</TooltipContent>
-                    </Tooltip>
+                    </Tooltip></TooltipProvider>
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
                       {details.seller_name ? <span className="truncate">{details.seller_name}</span> : null}
                       {details.seller_name && atualizadoHa(details.updated_at) ? <span aria-hidden>·</span> : null}
                       {atualizadoHa(details.updated_at) ? <span>Atualizado {atualizadoHa(details.updated_at)}</span> : null}
-                      <Tooltip>
+                      <TooltipProvider delayDuration={200}><Tooltip>
                         <TooltipTrigger asChild>
                           <button type="button" aria-label="Somente leitura" className="inline-flex text-muted-foreground"><Lock className="size-3.5" /></button>
                         </TooltipTrigger>
                         <TooltipContent>Dados vindos do garimpo. Somente leitura.</TooltipContent>
-                      </Tooltip>
+                      </Tooltip></TooltipProvider>
                     </div>
                   </div>
                 </div>
