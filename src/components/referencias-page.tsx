@@ -150,7 +150,7 @@ function ListaReferencias({ abrir }: { abrir: (id: string) => void }) {
                       <Button size="sm" variant="ghost" onClick={() => abrir(i.id)}>Abrir</Button>
                       {podeEditar && <Button size="icon" variant="ghost" aria-label="Atualizar" disabled={mutAtualizar.isPending || i.status === "coletando"} onClick={() => mutAtualizar.mutate(i.id)}><RefreshCw className="size-4" /></Button>}
                       {podeEditar && !i.meuPerfil && <AcompanharButton refId={i.id} handle={i.handle} acompanhar={i.acompanhar} compacto />}
-                      {podeEditar && <Button size="icon" variant="ghost" aria-label="Remover" onClick={() => setApagar({ id: i.id, handle: i.handle })}><Trash2 className="size-4" /></Button>}
+                      {podeEditar && <Button size="icon" variant="ghost" aria-label="Remover" onClick={() => setApagar({ id: i.id, handle: i.handle })}><Trash2 className="size-4 text-primary" /></Button>}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -168,7 +168,7 @@ function ListaReferencias({ abrir }: { abrir: (id: string) => void }) {
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col gap-2 sm:flex-row">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); if (apagar) mutRemover.mutate(apagar.id); }} disabled={mutRemover.isPending}>Remover</AlertDialogAction>
+            <AlertDialogAction className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={(e) => { e.preventDefault(); if (apagar) mutRemover.mutate(apagar.id); }} disabled={mutRemover.isPending}>Remover</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
