@@ -9,7 +9,7 @@ export type ModuleKey = (typeof MODULES)[number];
 export type ActionKey = (typeof ACTIONS)[number];
 
 export const MODULE_LABELS: Record<ModuleKey, string> = {
-  perfis: "Perfis", produtos: "Produtos", pipeline: "Pipeline", videos: "Vídeos",
+  perfis: "Perfis", produtos: "Explorar", pipeline: "Pipeline", videos: "Vídeos",
   rascunhos: "Rascunhos", metricas: "Métricas", custos: "Custos", investimento: "Investimento", equipe: "Equipe", configuracoes: "Configurações",
   backoffice: "Backoffice (dados internos da operação)",
 };

@@ -7,7 +7,7 @@ import logoDarkAsset from "@/assets/logo-dark.png.asset.json";
 const NAV: [string | null, [string, typeof CircleGauge][]][] = [
   [null, [["Visão geral", CircleGauge]]],
   ["Configurar", [["Perfis", UserSquare2], ["Automação", Bot]]],
-  ["Produzir", [["Produtos", Package], ["Pipeline", KanbanSquare], ["Rascunhos", FileClock], ["Vídeos", Clapperboard]]],
+  ["Produzir", [["Explorar", Compass], ["Pipeline", KanbanSquare], ["Rascunhos", FileClock], ["Vídeos", Clapperboard]]],
   ["Inteligência", [["Analisar vídeo", Sparkles], ["Perfis de referência", Radar], ["Radar", Radar]]],
   ["Acompanhar", [["Métricas", BarChart3], ["Custos", Wallet], ["Investimento", PiggyBank]]],
 ];
@@ -151,13 +151,13 @@ function Screen({ i, mobile }: { i: number; mobile: boolean }) {
       <T n={1}><div className="w-72 rounded-lg border border-border bg-background px-3 py-2 text-sm">Sempre a mesma pessoa</div></T>
       <div className="mt-4 rounded-xl bg-secondary p-4"><p className="text-sm font-semibold">Pessoa fixa do perfil</p><div className="mt-3 inline-flex rounded-lg bg-background p-1 text-xs font-bold"><span className="px-3 py-1.5 text-muted-foreground">Gerar por IA</span><T n={2}><span className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground"><Upload className="mr-1 inline size-3" />Enviar fotos</span></T></div><div className="mt-3 flex gap-2">{[1, 2, 3].map((k) => <Thumb key={k} className="size-16" />)}</div></div>
     </Chrome>;
-    case 2: return <Chrome active="Produtos" crumb="Produzir / Produtos" mobile={mobile}>
-      <Header title="Produtos" desc="Produtos do TikTok Shop com programa de afiliado." />
+    case 2: return <Chrome active="Explorar" crumb="Produzir / Explorar" mobile={mobile}>
+      <Header title="Explorar" desc="Produtos e criadores em alta no TikTok Shop, vindos do Kalodata" />
       <Tabs items={["Catálogo", "Descobrir", "Em ascensão"]} active="Descobrir" target="Descobrir" targetN={1} />
       <ProductsTable action={(k) => k === 0 ? <T n={2}><Btn small variant="secondary">Salvar no catálogo</Btn></T> : <Btn small variant="secondary">Salvar no catálogo</Btn>} />
     </Chrome>;
-    case 3: return <Chrome active="Produtos" crumb="Produzir / Produtos" mobile={mobile}>
-      <Header title="Produtos" />
+    case 3: return <Chrome active="Explorar" crumb="Produzir / Explorar" mobile={mobile}>
+      <Header title="Explorar" />
       <Tabs items={["Catálogo", "Descobrir", "Em ascensão"]} active="Catálogo" />
       <div className="relative">
         <ProductsTable action={() => <Btn small><Sparkles className="size-3.5" />Usar</Btn>} />

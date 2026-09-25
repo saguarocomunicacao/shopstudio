@@ -27,7 +27,7 @@ type NavItem = readonly [string, string, typeof CircleGauge, ModuleKey | null];
 const groups: readonly (readonly [string, readonly NavItem[]])[] = [
   ["", [["Visão geral", "/app", CircleGauge, null]]],
   ["Configurar", [["Perfis", "/app/perfis", UserSquare2, "perfis"], ["Automação", "/app/automacao", Bot, null]]],
-  ["Produzir", [["Produtos", "/app/produtos", Package, "produtos"], ["Pipeline", "/app/pipeline", KanbanSquare, "pipeline"], ["Rascunhos", "/app/rascunhos", FileClock, "rascunhos"], ["Vídeos", "/app/videos", Clapperboard, "videos"]]],
+  ["Produzir", [["Explorar", "/app/produtos", Compass, "produtos"], ["Pipeline", "/app/pipeline", KanbanSquare, "pipeline"], ["Rascunhos", "/app/rascunhos", FileClock, "rascunhos"], ["Vídeos", "/app/videos", Clapperboard, "videos"]]],
   ["Inteligência", [["Analisar vídeo", "/app/analises", FileVideo2, "videos"], ["Perfis de referência", "/app/referencias", Users, "metricas"], ["Radar", "/app/radar", Radar, "metricas"], ["Pesquisar", "/app/pesquisa", Search, "metricas"]]],
   ["Acompanhar", [["Métricas", "/app/metricas", BarChart3, "metricas"], ["Custos", "/app/custos", Wallet, "custos"], ["Investimento", "/app/investimento", PiggyBank, "investimento"]]],
   ["Administrar", [["Equipe", "/app/equipe", Users, "equipe"], ["Empresas", "/app/empresas", Landmark, "backoffice"], ["Planos", "/app/planos", Wallet, "backoffice"], ["Configurações", "/app/configuracoes", Settings, "configuracoes"]]],
@@ -38,7 +38,7 @@ const basePath = (p: string) => p.replace(/^\/app\/(analises|referencias|pesquis
 const groupOf: Record<string, string> = Object.fromEntries(groups.flatMap(([g, list]) => g ? list.map(([, to]) => [to, g]) : []));
 groupOf["/app/prompts"] = "Administrar"; groupOf["/app/aprovacoes"] = "Administrar"; groupOf["/app/conta"] = "Conta"; groupOf["/app/apis"] = "Conta";
 
-const titles: Record<string, string> = { "/app": "Visão geral", "/app/perfis": "Perfis", "/app/produtos": "Produtos em alta", "/app/pipeline": "Pipeline de conteúdo", "/app/automacao": "Automação", "/app/videos": "Biblioteca de vídeos", "/app/analises": "Analisar vídeo", "/app/referencias": "Perfis de referência", "/app/radar": "Radar", "/app/pesquisa": "Pesquisar", "/app/rascunhos": "Rascunhos", "/app/metricas": "Métricas", "/app/custos": "Custos", "/app/investimento": "Investimento nos fornecedores", "/app/equipe": "Equipe e permissões", "/app/prompts": "Prompts do sistema", "/app/aprovacoes": "Empresas", "/app/empresas": "Empresas", "/app/planos": "Planos", "/app/configuracoes": "Configurações" };
+const titles: Record<string, string> = { "/app": "Visão geral", "/app/perfis": "Perfis", "/app/produtos": "Explorar", "/app/pipeline": "Pipeline de conteúdo", "/app/automacao": "Automação", "/app/videos": "Biblioteca de vídeos", "/app/analises": "Analisar vídeo", "/app/referencias": "Perfis de referência", "/app/radar": "Radar", "/app/pesquisa": "Pesquisar", "/app/rascunhos": "Rascunhos", "/app/metricas": "Métricas", "/app/custos": "Custos", "/app/investimento": "Investimento nos fornecedores", "/app/equipe": "Equipe e permissões", "/app/prompts": "Prompts do sistema", "/app/aprovacoes": "Empresas", "/app/empresas": "Empresas", "/app/planos": "Planos", "/app/configuracoes": "Configurações" };
 
 
 const initialsOf = (value: string) => value.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("") || "US";

@@ -12,7 +12,7 @@ Cada perfil é um canal do TikTok Shop. Sem perfil nenhuma outra tela funciona, 
 ## Automação (menu: Configurar > Automação, /app/automacao)
 Agendas por perfil que criam vídeos sozinhas em dias e horários definidos, com teto diário e mensal de gasto. A automação para em "Aguardando revisão": ninguém publica sozinho. Se faltar saldo, a agenda pausa com o motivo "sem saldo". Passo a passo: Automação > "Nova agenda" > escolha perfil, horários, fonte de produtos e tetos > salve.
 
-## Produtos (menu: Produzir > Produtos, /app/produtos)
+## Explorar (menu: Produzir > Explorar, antigo "Produtos", /app/produtos)
 Os produtos vêm somente do garimpo (Kalodata) e são só leitura. Abas: Catálogo (produtos salvos no perfil), Descobrir (em alta) e Radar de emergentes (em ascensão). "Ver detalhes" mostra preço, comissão, crescimento, hype e a descrição usada pela IA. "Usar neste perfil" cria um job.
 
 ## Pipeline (menu: Produzir > Pipeline, /app/pipeline)
@@ -48,9 +48,9 @@ Acompanhe um @ do TikTok (seu ou de referência) ligado ao perfil do topo. "Adic
 Mostra vídeos NOVOS (até 72 h) dos @ com "Acompanhar diariamente" que estão subindo rápido: acima de 2x a média de views do @ nos últimos 30 dias, acima de 80% dos vídeos do próprio @, ou entre os 10% mais vistos da semana entre os @ acompanhados do perfil (em alta no nicho). A checagem roda junto com a coleta diária das 06:00, sem custo extra. Filtros: 24 h, 3 dias, 7 dias e por @. Em cada card: "Analisar" (mesmo custo de Analisar vídeo), "Ver no TikTok", "Ignorar" e, depois da análise, "Criar roteiro inspirado" (abre Novo vídeo próprio com o gancho e o resumo). Admin e Gerente do perfil recebem aviso no sino.
 
 ## Inteligência: Pesquisar (menu: Inteligência > Pesquisar, /app/pesquisa; resultado em /app/pesquisa/<id>)
-Antes de gravar, veja o que está sendo postado sobre um tema. Escolha "Hashtag" ou "Palavra", a quantidade (10, 30 ou 50) e toque em "Pesquisar" (custo estimado aparece antes; o real fica em Custos). Os vídeos chegam em 1 a 2 minutos. No resultado: views médias, engajamento médio e duração média (anúncios ficam fora das médias com selo "Anúncio"; carrosséis de fotos têm selo "Fotos" e ficam fora da duração média), hashtags usadas junto, @ que mais aparecem e a tabela de vídeos, ordenada por data (mais recentes) ou por views. "Só português" vem ligado: esconde vídeos cuja legenda parece de outro idioma (detecção provável). A busca por palavra traz os mais relevantes, não só os recentes. "Analisar selecionados" / "Analisar os 10 mais vistos" usam o mesmo fluxo de Analisar vídeo. Clicar no @ oferece "Adicionar a Perfis de referência". Aba Insights com 5+ analisados; "Enviar para o roteirista" salva as recomendações do tema na Identidade do perfil. As pesquisas ficam guardadas por 90 dias. No Descobrir de Produtos, a lupa ao lado do produto abre a pesquisa já com o nome curto.
+Antes de gravar, veja o que está sendo postado sobre um tema. Escolha "Hashtag" ou "Palavra", a quantidade (10, 30 ou 50) e toque em "Pesquisar" (custo estimado aparece antes; o real fica em Custos). Os vídeos chegam em 1 a 2 minutos. No resultado: views médias, engajamento médio e duração média (anúncios ficam fora das médias com selo "Anúncio"; carrosséis de fotos têm selo "Fotos" e ficam fora da duração média), hashtags usadas junto, @ que mais aparecem e a tabela de vídeos, ordenada por data (mais recentes) ou por views. "Só português" vem ligado: esconde vídeos cuja legenda parece de outro idioma (detecção provável). A busca por palavra traz os mais relevantes, não só os recentes. "Analisar selecionados" / "Analisar os 10 mais vistos" usam o mesmo fluxo de Analisar vídeo. Clicar no @ oferece "Adicionar a Perfis de referência". Aba Insights com 5+ analisados; "Enviar para o roteirista" salva as recomendações do tema na Identidade do perfil. As pesquisas ficam guardadas por 90 dias. No Descobrir de Explorar, a lupa ao lado do produto abre a pesquisa já com o nome curto.
 
-## Produtos: aba Criadores (/app/produtos?tab=criadores)
+## Explorar: aba Criadores (/app/produtos?tab=criadores)
 Ranking de criadores do TikTok Shop BR pelo Kalodata (50 primeiros). Filtros: categoria (padrão: a do perfil), período 7 ou 30 dias, ordenação (padrão: receita em vídeo), seguidores mínimo/máximo, receita mínima e "só quem tem 50%+ da receita em vídeo" (ligado por padrão). Colunas: seguidores, receita em vídeo, % em vídeo, receita total, vendas, crescimento e R$ por mil views. Abrir a linha busca a ficha (vídeos e lives no período, novos seguidores, ticket médio, contatos) e os vídeos que mais venderam, com custo registrado. "Acompanhar" / "Adicionar selecionados" cria o @ em Perfis de referência com acompanhamento diário e primeira coleta (não duplica). Buscas recentes ficam salvas.
 
 ## Métricas, Custos e Investimento (menu: Acompanhar)
@@ -137,19 +137,19 @@ O TikTok exige que o produto seja marcado no carrinho no próprio app para gerar
 No kit de postagem, depois de publicar no TikTok, cole o link do vídeo e marque como publicado. [Aprovados](/app/rascunhos?tab=aprovados)
 
 ## FAQ: O que é hype score?
-Nota de 0 a 100 que combina vendas (40%), crescimento de receita (35%) e receita (25%). Quanto maior, mais quente o produto. [Produtos](/app/produtos)
+Nota de 0 a 100 que combina vendas (40%), crescimento de receita (35%) e receita (25%). Quanto maior, mais quente o produto. [Explorar](/app/produtos)
 
 ## FAQ: O que é o radar de emergentes (Em ascensão)?
 A aba Em ascensão busca produtos que mais cresceram no período, para pegar tendências antes de saturar. [Em ascensão](/app/produtos?tab=ascensao)
 
 ## FAQ: Como buscar produtos novos?
-Em Produtos, aba Descobrir, filtre por categoria, comissão, preço e período. Cada busca consome saldo de busca de produto. [Descobrir](/app/produtos?tab=descobrir)
+Em Explorar, aba Descobrir, filtre por categoria, comissão, preço e período. Cada busca consome saldo de busca de produto. [Descobrir](/app/produtos?tab=descobrir)
 
 ## FAQ: Como salvar um produto no catálogo?
-No Descobrir, marque os produtos e clique em Salvar selecionados (no Em ascensão, use o botão de salvar do produto). Eles vão para o Catálogo do perfil. [Produtos](/app/produtos)
+No Descobrir, marque os produtos e clique em Salvar selecionados (no Em ascensão, use o botão de salvar do produto). Eles vão para o Catálogo do perfil. [Explorar](/app/produtos)
 
 ## FAQ: De onde vem a descrição do produto?
-Vem do Kalodata, da IA ou foi escrita manualmente. A origem aparece como selo no detalhe do produto e dá para editar. [Produtos](/app/produtos)
+Vem do Kalodata, da IA ou foi escrita manualmente. A origem aparece como selo no detalhe do produto e dá para editar. [Explorar](/app/produtos)
 
 ## FAQ: Como começar um vídeo a partir de um produto?
 No Catálogo, clique em Usar no produto e escolha o formato: Completo ou Gravar eu mesmo. [Catálogo](/app/produtos?tab=catalogo)

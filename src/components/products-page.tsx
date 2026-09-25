@@ -256,7 +256,7 @@ function ProductsContent() {
     <>
       <Heading
         eyebrow="Descoberta"
-        title="Produtos em alta"
+        title="Explorar"
         action={
           canUpdate && tab === "catalogo" && products.length ? (
             <Button variant="secondary" disabled={refreshAll.isPending} onClick={() => refreshAll.mutate()}>
