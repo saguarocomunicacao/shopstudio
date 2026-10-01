@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { buildCan, useAccess, useSession, type AccessData, type ActionKey, type DbProfile, type ModuleKey } from "@/lib/access";
 
 const PROFILE_STORAGE_KEY = "shop-studio-active-profile";
+const TENANT_STORAGE_KEY = "shop-studio-active-tenant";
 
 type StudioContextValue = {
   /** Perfil ativo do filtro global. `null` significa "nenhum perfil selecionado". */
@@ -23,6 +24,9 @@ type StudioContextValue = {
   /** Backoffice: super admin fixo ou quem tem a permissão "backoffice". Dados internos da operação. */
   isBackoffice: boolean;
   approvalStatus: string;
+  /** Backoffice: empresa sendo navegada (null = todas). */
+  tenantId: string | null;
+  setTenantId: (id: string | null) => void;
 };
 
 const StudioContext = createContext<StudioContextValue | undefined>(undefined);
@@ -30,6 +34,8 @@ const StudioContext = createContext<StudioContextValue | undefined>(undefined);
 export function StudioProvider({ children }: { children: ReactNode }) {
   const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
   const [dark, setDark] = useState(true);
+  const [tenantId, setTenantIdState] = useState<string | null>(null);
+  useEffect(() => { setTenantIdState(window.localStorage.getItem(TENANT_STORAGE_KEY)); }, []);
   const { userId, loading: sessionLoading } = useSession();
   const { data: access, isLoading: accessLoading } = useAccess(userId);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -56,7 +62,15 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem("creator-studio-theme", nextDark ? "dark" : "light");
   };
 
-  const profiles = useMemo(() => access?.profiles ?? [], [access]);
+  const isBo = access?.isBackoffice ?? false;
+  const profiles = useMemo(() => {
+    const all = access?.profiles ?? [];
+    return isBo && tenantId ? all.filter((p) => p.tenant_id === tenantId) : all;
+  }, [access, isBo, tenantId]);
+  const setTenantId = (id: string | null) => {
+    setTenantIdState(id);
+    if (id) window.localStorage.setItem(TENANT_STORAGE_KEY, id); else window.localStorage.removeItem(TENANT_STORAGE_KEY);
+  };
 
   // Se o perfil guardado nao existe mais, volta para "nenhum selecionado".
   useEffect(() => {
@@ -108,10 +122,12 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       isSuperAdmin: access?.isSuperAdmin ?? false,
       isBackoffice: access?.isBackoffice ?? false,
       approvalStatus: access?.approvalStatus ?? "pendente",
+      tenantId: isBo ? tenantId : null,
+      setTenantId,
       pendingAccess:
         !!userId && !accessLoading && (access?.approvalStatus !== "aprovado" || (!isAdmin && profiles.length === 0)),
     };
-  }, [activeProfileId, dark, profiles, access, sessionLoading, accessLoading, userId]);
+  }, [activeProfileId, dark, profiles, access, sessionLoading, accessLoading, userId, tenantId, isBo]);
 
   return <StudioContext.Provider value={value}>{children}</StudioContext.Provider>;
 }

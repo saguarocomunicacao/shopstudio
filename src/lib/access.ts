@@ -17,7 +17,7 @@ export const ACTION_LABELS: Record<ActionKey, string> = {
   visualizar: "Visualizar", criar: "Criar", editar: "Editar", remover: "Remover", publicar: "Publicar", aprovar: "Aprovar", ver_global: "Ver global",
 };
 
-export type DbProfile = { id: string; slug: string; name: string; niche: string; initials: string; followers: number; status: string; handle: string; created_by: string | null; category_id: string | null; profile_image_path: string | null };
+export type DbProfile = { id: string; slug: string; name: string; niche: string; initials: string; followers: number; status: string; handle: string; created_by: string | null; category_id: string | null; profile_image_path: string | null; tenant_id?: string | null };
 export type Role = { id: string; name: string; description: string; is_system: boolean; is_admin: boolean };
 export type Permission = { id: string; module: string; action: string };
 export type RolePermission = { role_id: string; permission_id: string };

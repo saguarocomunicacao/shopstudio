@@ -19,6 +19,8 @@ import { OnboardingHost, openOnboarding } from "./onboarding-guide";
 import { TourHighlighter } from "./tour-highlighter";
 import { AssistentePainel } from "./assistente-painel";
 import { SessionExpiredDialog } from "./session-expired-dialog";
+import { useTenants } from "@/lib/tenants";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MissingKeyDialog, PendingKeysBanner } from "./missing-key-dialog";
 import logoDarkAsset from "@/assets/logo-dark.png.asset.json";
 import logoMarkDarkAsset from "@/assets/logo-mark-dark.png.asset.json";
@@ -106,6 +108,13 @@ function ProfilePicker() {
   return <DropdownMenu open={open} onOpenChange={setOpen}><DropdownMenuTrigger asChild><Button variant="secondary" className="h-10 max-w-[230px] justify-between gap-2 rounded-full pl-1.5 pr-3 sm:min-w-[200px]">{activeProfile ? <ProfileImage profile={activeProfile} className="size-6 bg-foreground text-[9px] text-background" /> : <span className="grid size-6 place-items-center rounded-full bg-foreground text-[9px] font-bold text-background">?</span>}<span className="min-w-0 flex-1 truncate text-left font-display text-[15px] font-semibold">{activeProfile?.name ?? "Selecionar perfil"}</span><ChevronDown className="h-4 w-4 text-muted-foreground" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-64 rounded-[14px] border-border p-1.5"><DropdownMenuLabel>Perfil ativo</DropdownMenuLabel><DropdownMenuSeparator/>{profiles.map(p => <DropdownMenuItem key={p.id} onClick={() => setActiveProfileId(p.id)} className={activeProfileId === p.id ? "bg-accent font-semibold text-primary" : ""}><ProfileImage profile={p} className="size-7 text-[9px]" /><span className="min-w-0 flex-1 truncate">{p.name}<span className="block truncate text-xs font-normal text-muted-foreground">@{p.handle || p.slug}</span></span></DropdownMenuItem>)}</DropdownMenuContent></DropdownMenu>;
 }
 
+function TenantPicker() {
+  const { isBackoffice, tenantId, setTenantId } = useStudio();
+  const { data: tenants = [] } = useTenants();
+  if (!isBackoffice) return null;
+  return <Select value={tenantId ?? "all"} onValueChange={(v) => setTenantId(v === "all" ? null : v)}><SelectTrigger aria-label="Empresa" className="h-10 w-[150px] rounded-full sm:w-[200px]"><Landmark className="h-4 w-4 shrink-0 text-muted-foreground" /><SelectValue placeholder="Empresa" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as empresas</SelectItem>{tenants.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent></Select>;
+}
+
 function useSignOut() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -151,7 +160,7 @@ function ShellContent({ children }: { children: ReactNode }) {
   return <div className="min-h-screen bg-background text-foreground">
     <aside className={`fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-sidebar-border bg-sidebar transition-[width] md:flex ${collapsed ? "w-16" : "w-60"}`}><Brand compact={collapsed}/><Nav compact={collapsed}/><Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? "Expandir menu" : "Recolher menu"} className={`absolute bottom-4 text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground ${collapsed ? "left-3" : "right-3"}`}>{collapsed ? <PanelLeftOpen/> : <PanelLeftClose/>}</Button></aside>
     {mobile && <div className="fixed inset-0 z-50 md:hidden"><button aria-label="Fechar menu" className="absolute inset-0 bg-overlay" onClick={() => setMobile(false)}/><aside className="relative flex h-full w-72 flex-col bg-sidebar"><Brand/><Button variant="ghost" size="icon" className="absolute right-3 top-3 text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-accent-foreground" onClick={() => setMobile(false)}><X/></Button><Nav close={() => setMobile(false)}/></aside></div>}
-    <div className={`transition-[padding] ${collapsed ? "md:pl-16" : "md:pl-60"}`}><header className="sticky top-0 z-20 grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-card px-4 lg:px-8"><div className="flex min-w-0 items-center gap-2"><Button variant="ghost" size="icon" className="shrink-0 md:hidden" onClick={() => setMobile(true)}><Menu/></Button><nav aria-label="Você está em" className="min-w-0 truncate text-sm text-muted-foreground">{groupOf[basePath(path)] ? <>{groupOf[basePath(path)]}<span className="mx-1.5">/</span></> : null}<span className="text-foreground">{titles[basePath(path)] ?? "Shop Studio"}</span></nav></div><div className="flex shrink-0 items-center gap-2 sm:gap-3"><ProfilePicker/><div className="hidden items-center gap-2 px-1 text-muted-foreground sm:flex">{dark ? <Moon className="h-4 w-4"/> : <Sun className="h-4 w-4"/>}<Switch aria-label="Alternar tema" checked={!dark} onCheckedChange={(v) => setDark(!v)}/></div><UserMenu/></div></header><main className="w-full p-4 lg:p-8"><PendingKeysBanner/>{children}</main></div>
+    <div className={`transition-[padding] ${collapsed ? "md:pl-16" : "md:pl-60"}`}><header className="sticky top-0 z-20 grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-card px-4 lg:px-8"><div className="flex min-w-0 items-center gap-2"><Button variant="ghost" size="icon" className="shrink-0 md:hidden" onClick={() => setMobile(true)}><Menu/></Button><nav aria-label="Você está em" className="min-w-0 truncate text-sm text-muted-foreground">{groupOf[basePath(path)] ? <>{groupOf[basePath(path)]}<span className="mx-1.5">/</span></> : null}<span className="text-foreground">{titles[basePath(path)] ?? "Shop Studio"}</span></nav></div><div className="flex shrink-0 items-center gap-2 sm:gap-3"><TenantPicker/><ProfilePicker/><div className="hidden items-center gap-2 px-1 text-muted-foreground sm:flex">{dark ? <Moon className="h-4 w-4"/> : <Sun className="h-4 w-4"/>}<Switch aria-label="Alternar tema" checked={!dark} onCheckedChange={(v) => setDark(!v)}/></div><UserMenu/></div></header><main className="w-full p-4 lg:p-8"><PendingKeysBanner/>{children}</main></div>
     <AssistentePainel/>
   </div>;
 }
